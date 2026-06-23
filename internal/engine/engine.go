@@ -130,6 +130,13 @@ func matchNode(pattern rules.MatchPattern, n *ir.IRNode) bool {
 			return false
 		}
 	}
+	if pattern.LHSIdentifier != "" {
+		lhs, _ := n.Attrs["lhs"].(string)
+		matched, err := regexp.MatchString(pattern.LHSIdentifier, lhs)
+		if err != nil || !matched {
+			return false
+		}
+	}
 	for _, f := range pattern.Filters {
 		if !evalFilter(f, n) {
 			return false

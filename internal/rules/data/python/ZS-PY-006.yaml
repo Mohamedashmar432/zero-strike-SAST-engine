@@ -18,4 +18,5 @@ references:
 tags: [secrets, credentials, hardcoded]
 match:
   kind: assignment
+  lhs_identifier: "(?i)(password|passwd|secret|api_key|token|credential|auth)"
 fix_suggestion: "Load secrets from os.environ or a secrets manager; never hardcode credentials."

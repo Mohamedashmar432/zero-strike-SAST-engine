@@ -18,6 +18,5 @@ references:
   - https://bandit.readthedocs.io/en/latest/plugins/b101_assert_used.html
 tags: [assert, security-check, dangerous-pattern]
 match:
-  kind: call
-  callee: assert
+  kind: assert_statement
 fix_suggestion: "Replace assert with an explicit if condition and raise an appropriate exception."

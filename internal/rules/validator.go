@@ -23,6 +23,7 @@ var validNodeKinds = map[string]bool{
 	string(ir.NodeKindTry):        true,
 	string(ir.NodeKindAttribute):  true,
 	string(ir.NodeKindBinaryOp):   true,
+	string(ir.NodeKindAssert):     true,
 }
 
 var validSeverities = map[string]bool{

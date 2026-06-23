@@ -1,0 +1,22 @@
+id: ZS-JS-001
+name: eval() Usage
+version: "1.0.0"
+language: javascript
+category: injection
+severity: high
+confidence: high
+cwe:
+  - CWE-95
+owasp:
+  - "A03:2021"
+description: |
+  eval() executes arbitrary JavaScript code from a string. If the string contains
+  user-controlled input, this is a direct code injection vulnerability.
+message: "eval() detected — avoid eval(); use JSON.parse() or safer alternatives"
+references:
+  - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/eval
+tags: [eval, injection, dangerous-function]
+match:
+  kind: call
+  callee: eval
+fix_suggestion: "Replace eval() with a safer alternative such as JSON.parse() for data parsing."

@@ -12,11 +12,12 @@ type Filter struct {
 // MatchPattern is a typed description of what IR node pattern to find.
 // Typed fields prevent map[string]interface{} schema drift.
 type MatchPattern struct {
-	Kind       string   // IRNode kind to match (e.g. "call")
-	Callee     string   // for call nodes: callee identifier text
-	Identifier string   // for identifier nodes: variable name
-	Literal    string   // for literal nodes: value (regex allowed)
-	Filters    []Filter
+	Kind          string   // IRNode kind to match (e.g. "call")
+	Callee        string   // for call nodes: callee identifier text
+	Identifier    string   // for identifier nodes: variable name
+	Literal       string   // for literal nodes: value (regex allowed)
+	LHSIdentifier string   // for assignment nodes: regex match on left-hand-side variable name
+	Filters       []Filter
 }
 
 // Rule is a parsed and validated security rule.

@@ -32,11 +32,12 @@ type ruleYAML struct {
 }
 
 type matchYAML struct {
-	Kind       string       `yaml:"kind"`
-	Callee     string       `yaml:"callee"`
-	Identifier string       `yaml:"identifier"`
-	Literal    string       `yaml:"literal"`
-	Filters    []filterYAML `yaml:"filters"`
+	Kind          string       `yaml:"kind"`
+	Callee        string       `yaml:"callee"`
+	Identifier    string       `yaml:"identifier"`
+	Literal       string       `yaml:"literal"`
+	LHSIdentifier string       `yaml:"lhs_identifier"`
+	Filters       []filterYAML `yaml:"filters"`
 }
 
 type filterYAML struct {
@@ -127,11 +128,12 @@ func (l *defaultLoader) parseYAML(source string, data []byte) ([]*Rule, error) {
 		References:    ry.References,
 		FixSuggestion: ry.FixSuggestion,
 		Match: MatchPattern{
-			Kind:       ry.Match.Kind,
-			Callee:     ry.Match.Callee,
-			Identifier: ry.Match.Identifier,
-			Literal:    ry.Match.Literal,
-			Filters:    convertFilters(ry.Match.Filters),
+			Kind:          ry.Match.Kind,
+			Callee:        ry.Match.Callee,
+			Identifier:    ry.Match.Identifier,
+			Literal:       ry.Match.Literal,
+			LHSIdentifier: ry.Match.LHSIdentifier,
+			Filters:       convertFilters(ry.Match.Filters),
 		},
 	}
 	return []*Rule{rule}, nil

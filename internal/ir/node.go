@@ -22,6 +22,7 @@ const (
 	NodeKindTry        NodeKind = "try"
 	NodeKindAttribute  NodeKind = "attribute"
 	NodeKindBinaryOp   NodeKind = "binary_op"
+	NodeKindAssert     NodeKind = "assert_statement"
 	NodeKindUnknown    NodeKind = "unknown"
 )
 

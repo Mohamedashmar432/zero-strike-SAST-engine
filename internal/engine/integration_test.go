@@ -80,11 +80,11 @@ func TestIntegration_OsSystemFiresZSPY005(t *testing.T) {
 	}
 }
 
-func TestIntegration_TempfileFiresZSPY010(t *testing.T) {
+func TestIntegration_OpenVariablePathFiresZSPY008(t *testing.T) {
 	_, idx := loadPythonRules(t)
-	results := matchSource(t, idx, "import tempfile\npath = tempfile.mktemp()\n")
-	if !hasRule(results, "ZS-PY-010") {
-		t.Error("expected ZS-PY-010 to fire on tempfile.mktemp() call")
+	results := matchSource(t, idx, "path = user_input\nf = open(path)\n")
+	if !hasRule(results, "ZS-PY-008") {
+		t.Error("expected ZS-PY-008 to fire on open() with variable path")
 	}
 }
 

@@ -13,6 +13,7 @@ import (
 	"github.com/zerostrike/scanner/internal/engine"
 	"github.com/zerostrike/scanner/internal/findings"
 	"github.com/zerostrike/scanner/internal/ir"
+	jsparser "github.com/zerostrike/scanner/internal/parser/javascript"
 	pythonparser "github.com/zerostrike/scanner/internal/parser/python"
 	"github.com/zerostrike/scanner/internal/rules"
 	"github.com/zerostrike/scanner/internal/walker"
@@ -44,8 +45,7 @@ type ScanPipeline struct {
 
 // New creates a ScanPipeline. Returns an error if rules fail to load or validate.
 func New(cfg ScanConfig) (*ScanPipeline, error) {
-	fsys, dir := rulesFS(cfg), rulesDir(cfg)
-	allRules, err := rules.NewLoader(fsys).LoadDir(dir)
+	allRules, err := loadAllRules(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("pipeline: load rules: %w", err)
 	}
@@ -70,22 +70,29 @@ func New(cfg ScanConfig) (*ScanPipeline, error) {
 	}, nil
 }
 
+// loadAllRules loads rules from all known language dirs (embedded or custom).
+func loadAllRules(cfg ScanConfig) ([]*rules.Rule, error) {
+	loader := rules.NewLoader(rulesFS(cfg))
+	if cfg.RulesDir != "" {
+		return loader.LoadDir(".")
+	}
+	var all []*rules.Rule
+	for _, dir := range []string{"data/python", "data/js"} {
+		rs, err := loader.LoadDir(dir)
+		if err != nil {
+			return nil, fmt.Errorf("load rules from %s: %w", dir, err)
+		}
+		all = append(all, rs...)
+	}
+	return all, nil
+}
+
 // rulesFS returns the fs.FS to load rules from.
-// If RulesDir is set, uses the OS filesystem; otherwise uses the embedded FS.
 func rulesFS(cfg ScanConfig) fs.FS {
 	if cfg.RulesDir != "" {
 		return os.DirFS(cfg.RulesDir)
 	}
 	return rules.EmbeddedFS
-}
-
-// rulesDir returns the directory argument for LoadDir.
-// ponytail: hardcoded to "data/python" for embedded — multi-language deferred to Sprint 4+
-func rulesDir(cfg ScanConfig) string {
-	if cfg.RulesDir != "" {
-		return "."
-	}
-	return "data/python"
 }
 
 // Run executes the scan and returns results.
@@ -199,8 +206,20 @@ func (p *ScanPipeline) buildIR(ctx context.Context, path string, lang core.Langu
 			return nil, nil, fmt.Errorf("parse %s: %w", path, err)
 		}
 		builder := pythonparser.NewIRBuilder()
-		irFile, warnings, buildErr := builder.Build(path, parseResult.Source)
-		return irFile, warnings, buildErr
+		irFile, buildWarnings, buildErr := builder.Build(path, parseResult.Source)
+		warningStrings := make([]string, len(buildWarnings))
+		for i, w := range buildWarnings {
+			warningStrings[i] = w.Message
+		}
+		return irFile, warningStrings, buildErr
+	case core.LangJavaScript:
+		builder := jsparser.NewIRBuilder()
+		irFile, buildWarnings, buildErr := builder.Build(path, source)
+		warningStrings := make([]string, len(buildWarnings))
+		for i, w := range buildWarnings {
+			warningStrings[i] = w.Message
+		}
+		return irFile, warningStrings, buildErr
 	default:
 		return nil, nil, fmt.Errorf("no parser for language %s", lang)
 	}
