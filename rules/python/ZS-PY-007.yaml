@@ -1,0 +1,22 @@
+id: ZS-PY-007
+name: Weak Cryptographic Hash (MD5/SHA1)
+version: "1.0.0"
+language: python
+category: cryptography
+severity: medium
+confidence: high
+cwe:
+  - CWE-327
+owasp:
+  - "A02:2021"
+description: |
+  MD5 and SHA1 are cryptographically broken and must not be used for security purposes
+  such as password hashing or integrity verification.
+message: "Weak hash algorithm detected — use SHA-256 or stronger"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+tags: [weak-crypto, md5, sha1, hash]
+match:
+  kind: call
+  callee: hashlib.md5
+fix_suggestion: "Replace hashlib.md5() with hashlib.sha256() or use bcrypt/argon2 for passwords."

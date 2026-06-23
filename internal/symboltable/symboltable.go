@@ -156,7 +156,12 @@ func (b *SymbolBuilder) walkNode(node *ir.IRNode, table *symbolTable, current Sc
 		if name != "" {
 			table.Define(Symbol{Name: name, Kind: SymbolFunction, Location: node.Location, Scope: current})
 		}
-		fs := Scope{ID: uuid.New().String(), ParentID: current.ID, Type: ScopeFunction}
+		// ponytail: Python LEGB excludes class scope from method lookup chain
+		parentID := current.ID
+		if current.Type == ScopeClass {
+			parentID = current.ParentID
+		}
+		fs := Scope{ID: uuid.New().String(), ParentID: parentID, Type: ScopeFunction}
 		table.scopes = append(table.scopes, fs)
 		table.scopeRanges = append(table.scopeRanges, scopeRange{scope: fs, loc: node.Location})
 		next = fs

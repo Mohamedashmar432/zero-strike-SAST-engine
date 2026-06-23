@@ -1,0 +1,23 @@
+id: ZS-PY-009
+name: assert Used for Security Check
+version: "1.0.0"
+language: python
+category: dangerous-patterns
+severity: medium
+confidence: high
+cwe:
+  - CWE-617
+owasp:
+  - "A04:2021"
+description: |
+  assert statements are removed when Python runs with the -O (optimize) flag.
+  Using assert for security checks (authentication, authorization, input validation)
+  silently disables those checks in optimized production deployments.
+message: "assert used for security check — use an explicit if/raise instead"
+references:
+  - https://bandit.readthedocs.io/en/latest/plugins/b101_assert_used.html
+tags: [assert, security-check, dangerous-pattern]
+match:
+  kind: call
+  callee: assert
+fix_suggestion: "Replace assert with an explicit if condition and raise an appropriate exception."

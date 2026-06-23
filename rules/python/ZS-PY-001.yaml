@@ -1,0 +1,21 @@
+id: ZS-PY-001
+name: Dangerous eval() Usage
+version: "1.0.0"
+language: python
+category: dangerous-functions
+severity: high
+confidence: high
+cwe:
+  - CWE-95
+owasp:
+  - "A03:2021"
+description: |
+  eval() with untrusted input allows arbitrary code execution.
+message: "Dangerous call to eval() — replace with ast.literal_eval() for safe parsing"
+references:
+  - https://owasp.org/Top10/A03_2021-Injection/
+tags: [rce, injection, eval]
+match:
+  kind: call
+  callee: eval
+fix_suggestion: "Use ast.literal_eval() instead of eval() when parsing user data."

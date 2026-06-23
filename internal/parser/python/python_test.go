@@ -44,7 +44,7 @@ eval(result)
 	}
 
 	builder := pythonparser.NewIRBuilder()
-	irFile, err := builder.Build("test.py", parseResult.Source)
+	irFile, _, err := builder.Build("test.py", parseResult.Source)
 	if err != nil {
 		t.Fatalf("Build failed: %v", err)
 	}
@@ -84,5 +84,34 @@ eval(result)
 	evalCalls := ir.FindCalls(irFile.Root, "eval")
 	if len(evalCalls) == 0 {
 		t.Error("eval() call not found")
+	}
+}
+
+// TestIRBuilder_MalformedFile verifies C5: a file with a syntax error must not panic,
+// must emit at least one BuildWarning, and must still yield IR nodes from valid portions.
+func TestIRBuilder_MalformedFile(t *testing.T) {
+	// Valid function followed by a syntax error, then another valid call.
+	src := []byte(`
+def greet(name):
+    return "hello"
+
+def (  # syntax error: missing function name
+
+greet("world")
+`)
+	builder := pythonparser.NewIRBuilder()
+	irFile, warnings, err := builder.Build("malformed.py", src)
+	if err != nil {
+		t.Fatalf("Build must not return error for syntax errors: %v", err)
+	}
+	if irFile == nil {
+		t.Fatal("IRFile must not be nil for partially malformed input")
+	}
+	if len(warnings) == 0 {
+		t.Error("expected at least one BuildWarning for malformed input, got none")
+	}
+	// Valid portions should still produce nodes.
+	if irFile.Root == nil {
+		t.Fatal("IRFile root must not be nil")
 	}
 }

@@ -1,0 +1,23 @@
+id: ZS-PY-008
+name: open() with Potentially User-Controlled Path
+version: "1.0.0"
+language: python
+category: path-traversal
+severity: high
+confidence: medium
+cwe:
+  - CWE-22
+owasp:
+  - "A01:2021"
+description: |
+  Detects calls to open() which may accept a user-controlled path.
+  Note: this rule is a syntactic approximation. Precision improves with taint analysis (Sprint 8).
+  It may produce false positives when the path is a constant string literal.
+message: "open() called with a variable path — validate and sanitize the path before use"
+references:
+  - https://owasp.org/www-community/attacks/Path_Traversal
+tags: [path-traversal, file-access, syntactic-approximation]
+match:
+  kind: call
+  callee: open
+fix_suggestion: "Validate the path with os.path.realpath() and confirm it stays within the allowed directory."

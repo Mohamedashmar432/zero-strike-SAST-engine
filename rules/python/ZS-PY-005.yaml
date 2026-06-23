@@ -1,0 +1,22 @@
+id: ZS-PY-005
+name: os.system() Command Injection
+version: "1.0.0"
+language: python
+category: command-injection
+severity: high
+confidence: high
+cwe:
+  - CWE-78
+owasp:
+  - "A03:2021"
+description: |
+  os.system() passes the command string directly to the shell, enabling command injection
+  when the command includes any user-controlled data.
+message: "os.system() is vulnerable to command injection — use subprocess with a list of args"
+references:
+  - https://docs.python.org/3/library/os.html#os.system
+tags: [command-injection, os-system]
+match:
+  kind: call
+  callee: os.system
+fix_suggestion: "Replace os.system() with subprocess.run([...], check=True)."

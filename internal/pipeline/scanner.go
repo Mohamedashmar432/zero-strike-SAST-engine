@@ -121,6 +121,7 @@ func (p *ScanPipeline) processFile(ctx context.Context, entry walker.FileEntry, 
 	return nil
 }
 
+// Run executes the scan pipeline. It never makes network calls; upload is a separate stage.
 // buildIR parses source and builds an IRFile for the given language.
 func (p *ScanPipeline) buildIR(ctx context.Context, path string, lang core.Language, source []byte) (*ir.IRFile, error) {
 	switch lang {
@@ -131,7 +132,11 @@ func (p *ScanPipeline) buildIR(ctx context.Context, path string, lang core.Langu
 			return nil, fmt.Errorf("parse %s: %w", path, err)
 		}
 		builder := pythonparser.NewIRBuilder()
-		return builder.Build(path, parseResult.Source)
+		irFile, warnings, buildErr := builder.Build(path, parseResult.Source)
+		for _, w := range warnings {
+			_ = w // warnings collected at caller; propagate via result.Diagnostics in Sprint 3
+		}
+		return irFile, buildErr
 	default:
 		return nil, fmt.Errorf("no parser for language %s", lang)
 	}

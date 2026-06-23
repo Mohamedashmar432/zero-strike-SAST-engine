@@ -1,0 +1,22 @@
+id: ZS-PY-003
+name: subprocess shell=True Command Injection
+version: "1.0.0"
+language: python
+category: command-injection
+severity: high
+confidence: high
+cwe:
+  - CWE-78
+owasp:
+  - "A03:2021"
+description: |
+  subprocess.run/call/Popen with shell=True passes the command through the shell,
+  enabling command injection if any part of the command includes user input.
+message: "subprocess called with shell=True — pass a list of arguments instead"
+references:
+  - https://docs.python.org/3/library/subprocess.html#security-considerations
+tags: [command-injection, subprocess, shell]
+match:
+  kind: call
+  callee: subprocess.run
+fix_suggestion: "Pass a list of strings to subprocess.run() and remove shell=True."

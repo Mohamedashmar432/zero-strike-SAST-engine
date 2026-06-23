@@ -1,0 +1,22 @@
+id: ZS-PY-010
+name: yaml.load Without safe_load
+version: "1.0.0"
+language: python
+category: deserialization
+severity: high
+confidence: high
+cwe:
+  - CWE-502
+owasp:
+  - "A08:2021"
+description: |
+  yaml.load() with untrusted input can execute arbitrary Python code via custom YAML tags.
+  Use yaml.safe_load() which only constructs standard Python objects.
+message: "yaml.load() is unsafe — use yaml.safe_load() or add Loader=yaml.SafeLoader"
+references:
+  - https://pyyaml.org/wiki/PyYAMLDocumentation#loading-yaml
+tags: [deserialization, yaml, unsafe-load]
+match:
+  kind: call
+  callee: yaml.load
+fix_suggestion: "Replace yaml.load(stream) with yaml.safe_load(stream)."

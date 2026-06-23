@@ -84,6 +84,131 @@ func TestBuildFromIR(t *testing.T) {
 	}
 }
 
+// TestClassScope_MethodBodyExclusion verifies Python LEGB: class scope is not in the
+// lookup chain for method bodies. A class-level assignment must NOT be resolved from
+// inside a method.
+func TestClassScope_MethodBodyExclusion(t *testing.T) {
+	// class Foo:        # line 1
+	//     cls_var = 1   # line 2
+	//     def method(self): # line 3
+	//         pass      # line 4
+	clsVarAssign := &ir.IRNode{
+		Kind:     ir.NodeKindAssignment,
+		Location: core.Location{StartLine: 2, EndLine: 2},
+		Children: []*ir.IRNode{
+			{Kind: ir.NodeKindIdentifier, Text: "cls_var", Location: core.Location{StartLine: 2}},
+		},
+	}
+	methodNode := &ir.IRNode{
+		Kind:     ir.NodeKindFunction,
+		Location: core.Location{StartLine: 3, EndLine: 4},
+		Attrs:    map[string]any{"function_name": "method"},
+	}
+	classNode := &ir.IRNode{
+		Kind:     ir.NodeKindClass,
+		Location: core.Location{StartLine: 1, EndLine: 4},
+		Children: []*ir.IRNode{clsVarAssign, methodNode},
+	}
+	root := &ir.IRNode{
+		Kind:     ir.NodeKindModule,
+		Location: core.Location{StartLine: 1, EndLine: 10},
+		Children: []*ir.IRNode{classNode},
+	}
+
+	table := symboltable.NewBuilder().Build(&ir.IRFile{Language: core.LangPython, Path: "cls.py", Root: root})
+
+	methodScope := table.ScopeAt(core.Location{StartLine: 3})
+	_, found := table.Resolve("cls_var", methodScope.ID)
+	if found {
+		t.Error("cls_var must not be visible inside method body (Python LEGB excludes class scope)")
+	}
+}
+
+// TestComprehensionScope_VariableIsolation verifies that Resolve does not walk DOWN
+// into child scopes. A symbol defined only in a comprehension scope must not be
+// found when resolving from the enclosing scope.
+func TestComprehensionScope_VariableIsolation(t *testing.T) {
+	table := symboltable.NewBuilder().Build(&ir.IRFile{Root: &ir.IRNode{
+		Kind:     ir.NodeKindModule,
+		Location: core.Location{StartLine: 1, EndLine: 10},
+	}})
+
+	globalScope := table.ScopeAt(core.Location{StartLine: 1})
+
+	// ponytail: builder does not yet emit comprehension scopes; this tests Resolve semantics only.
+	// Simulate comprehension scope as a child (ScopeBlock proxy) and verify it doesn't leak.
+	compScope := symboltable.Scope{ID: "comp-scope-1", ParentID: globalScope.ID, Type: symboltable.ScopeBlock}
+	table.Define(symboltable.Symbol{Name: "i", Kind: symboltable.SymbolVariable, Scope: compScope})
+
+	_, found := table.Resolve("i", globalScope.ID)
+	if found {
+		t.Error("comprehension loop variable must not be visible in enclosing scope (Resolve walks up, not down)")
+	}
+}
+
+// TestGlobalNonlocal_ScopeRebinding verifies that symbols in an outer function scope
+// are visible inside a nested function (the nonlocal use case), and that the scope
+// chain walk reaches them correctly.
+func TestGlobalNonlocal_ScopeRebinding(t *testing.T) {
+	// def outer():    # line 1
+	//     result = 0  # line 2
+	//     def inner():# line 3
+	//         pass    # line 4  ← resolve "result" should reach outer's scope
+	outerAssign := &ir.IRNode{
+		Kind:     ir.NodeKindAssignment,
+		Location: core.Location{StartLine: 2, EndLine: 2},
+		Children: []*ir.IRNode{
+			{Kind: ir.NodeKindIdentifier, Text: "result", Location: core.Location{StartLine: 2}},
+		},
+	}
+	innerFunc := &ir.IRNode{
+		Kind:     ir.NodeKindFunction,
+		Location: core.Location{StartLine: 3, EndLine: 4},
+		Attrs:    map[string]any{"function_name": "inner"},
+	}
+	outerFunc := &ir.IRNode{
+		Kind:     ir.NodeKindFunction,
+		Location: core.Location{StartLine: 1, EndLine: 4},
+		Attrs:    map[string]any{"function_name": "outer"},
+		Children: []*ir.IRNode{outerAssign, innerFunc},
+	}
+	root := &ir.IRNode{
+		Kind:     ir.NodeKindModule,
+		Location: core.Location{StartLine: 1, EndLine: 10},
+		Children: []*ir.IRNode{outerFunc},
+	}
+
+	table := symboltable.NewBuilder().Build(&ir.IRFile{Language: core.LangPython, Path: "nonlocal.py", Root: root})
+
+	innerScope := table.ScopeAt(core.Location{StartLine: 4})
+	sym, found := table.Resolve("result", innerScope.ID)
+	if !found {
+		t.Error("nonlocal: 'result' from outer scope must be visible inside inner function via scope chain")
+	} else if sym.Name != "result" {
+		t.Errorf("expected symbol name 'result', got %q", sym.Name)
+	}
+}
+
+// TestWalrus_BoundsToEnclosingScope verifies that a walrus-assigned variable is
+// resolvable from the enclosing (function/module) scope. The SymbolTable must find
+// symbols defined in the same scope they were Define'd into.
+// ponytail: builder does not yet emit walrus nodes; this tests Define+Resolve semantics.
+func TestWalrus_BoundsToEnclosingScope(t *testing.T) {
+	table := symboltable.NewBuilder().Build(&ir.IRFile{Root: &ir.IRNode{
+		Kind:     ir.NodeKindModule,
+		Location: core.Location{StartLine: 1, EndLine: 10},
+	}})
+
+	enclosingScope := table.ScopeAt(core.Location{StartLine: 1})
+	// Walrus `:=` inside a comprehension binds to the enclosing scope, not the comp scope.
+	table.Define(symboltable.Symbol{Name: "y", Kind: symboltable.SymbolVariable, Scope: enclosingScope})
+
+	_, found := table.Resolve("y", enclosingScope.ID)
+	if !found {
+		t.Error("walrus-assigned variable must be resolvable from the enclosing scope")
+	}
+}
+
 // TestScopeChain verifies that Resolve walks parent scopes.
 func TestScopeChain(t *testing.T) {
 	// module → function_def "outer" with assignment "x" inside

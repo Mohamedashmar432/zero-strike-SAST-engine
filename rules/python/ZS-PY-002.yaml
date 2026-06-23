@@ -1,0 +1,21 @@
+id: ZS-PY-002
+name: Insecure pickle.loads Deserialization
+version: "1.0.0"
+language: python
+category: deserialization
+severity: critical
+confidence: high
+cwe:
+  - CWE-502
+owasp:
+  - "A08:2021"
+description: |
+  pickle.loads() on untrusted data allows arbitrary code execution during deserialization.
+message: "Insecure deserialization via pickle.loads() — use a safe format like JSON"
+references:
+  - https://docs.python.org/3/library/pickle.html#pickle-inst
+tags: [deserialization, rce, pickle]
+match:
+  kind: call
+  callee: pickle.loads
+fix_suggestion: "Replace pickle with json or a safe serialization library."

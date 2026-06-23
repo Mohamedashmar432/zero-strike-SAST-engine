@@ -29,18 +29,19 @@ type Evidence struct {
 
 // Finding represents a single security issue detected in source code.
 type Finding struct {
-	ID         string
-	RuleID     string
-	RuleName   string
-	Category   string
-	Severity   Severity
-	Confidence Confidence
-	Message    string
-	Location   Location
-	Language   Language
-	Evidence   []Evidence
-	CWE        []string
-	OWASP      []string
-	References []string
-	Metadata   map[string]string
+	ID          string
+	RuleID      string
+	RuleName    string
+	Category    string
+	Severity    Severity
+	Confidence  Confidence
+	Message     string
+	Location    Location
+	Language    Language
+	Evidence    []Evidence
+	CWE         []string
+	OWASP       []string
+	References  []string
+	Metadata    map[string]string
+	Fingerprint string // stable cross-run identity: hash(ruleID + enclosingSymbol + normalizedSnippet)
 }

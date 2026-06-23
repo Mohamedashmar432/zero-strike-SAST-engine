@@ -1,0 +1,23 @@
+id: ZS-PY-004
+name: SQL String Formatting (Potential SQLi)
+version: "1.0.0"
+language: python
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-89
+owasp:
+  - "A03:2021"
+description: |
+  Detects SQL query strings that use Python string formatting operations.
+  Note: this rule is a syntactic approximation. Precision improves with taint analysis (Sprint 8).
+  It may produce false positives when formatting is applied to constant strings.
+message: "SQL query constructed with string formatting — use parameterized queries instead"
+references:
+  - https://owasp.org/www-community/attacks/SQL_Injection
+tags: [sqli, injection, syntactic-approximation]
+match:
+  kind: call
+  callee: execute
+fix_suggestion: "Use parameterized queries: cursor.execute(query, params) where params is a tuple."

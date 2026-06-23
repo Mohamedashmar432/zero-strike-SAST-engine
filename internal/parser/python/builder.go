@@ -16,24 +16,45 @@ type IRBuilder struct{}
 // NewIRBuilder creates a new IRBuilder.
 func NewIRBuilder() *IRBuilder { return &IRBuilder{} }
 
+// BuildWarning is a lightweight diagnostic emitted when the builder encounters a
+// tree-sitter ERROR node. It does not stop analysis of the surrounding file.
+type BuildWarning struct {
+	File    string
+	Message string
+	Line    int
+}
+
 // Build parses source and walks the resulting CST to produce an IRFile.
-func (b *IRBuilder) Build(path string, source []byte) (*ir.IRFile, error) {
+// Warnings are returned for any tree-sitter ERROR nodes encountered; the rest of
+// the file is still analyzed. Build never panics on malformed input.
+func (b *IRBuilder) Build(path string, source []byte) (*ir.IRFile, []BuildWarning, error) {
 	p := New()
 	result, err := p.Parse(context.Background(), source)
 	if err != nil {
-		return nil, fmt.Errorf("python builder: %w", err)
+		return nil, nil, fmt.Errorf("python builder: %w", err)
 	}
-	root := b.buildNode(result.RootNode, source, nil)
+	var warnings []BuildWarning
+	root := b.buildNode(result.RootNode, source, nil, path, &warnings)
 	return &ir.IRFile{
 		Language: core.LangPython,
 		Path:     path,
 		Root:     root,
-	}, nil
+	}, warnings, nil
 }
 
 // buildNode converts a single tree-sitter node into an IRNode, recursing into children.
-func (b *IRBuilder) buildNode(node *sitter.Node, source []byte, parent *ir.IRNode) *ir.IRNode {
-	if node == nil || node.IsError() || node.Type() == "ERROR" {
+func (b *IRBuilder) buildNode(node *sitter.Node, source []byte, parent *ir.IRNode, path string, warnings *[]BuildWarning) *ir.IRNode {
+	if node == nil {
+		return nil
+	}
+	if node.IsError() || node.Type() == "ERROR" {
+		// Skip ERROR subtree; emit a warning so the caller knows something was skipped.
+		start := node.StartPoint()
+		*warnings = append(*warnings, BuildWarning{
+			File:    path,
+			Message: fmt.Sprintf("syntax error at %s:%d — subtree skipped", path, int(start.Row)+1),
+			Line:    int(start.Row) + 1,
+		})
 		return nil
 	}
 	start := node.StartPoint()
@@ -55,16 +76,16 @@ func (b *IRBuilder) buildNode(node *sitter.Node, source []byte, parent *ir.IRNod
 		irNode.Text = node.Content(source)
 	}
 	extractAttrs(irNode, node, source)
-	irNode.Children = b.buildChildren(node, source, irNode)
+	irNode.Children = b.buildChildren(node, source, irNode, path, warnings)
 	return irNode
 }
 
 // buildChildren iterates over all children and collects non-nil IRNodes.
-func (b *IRBuilder) buildChildren(node *sitter.Node, source []byte, parent *ir.IRNode) []*ir.IRNode {
+func (b *IRBuilder) buildChildren(node *sitter.Node, source []byte, parent *ir.IRNode, path string, warnings *[]BuildWarning) []*ir.IRNode {
 	count := int(node.ChildCount())
 	children := make([]*ir.IRNode, 0, count)
 	for i := 0; i < count; i++ {
-		child := b.buildNode(node.Child(i), source, parent)
+		child := b.buildNode(node.Child(i), source, parent, path, warnings)
 		if child != nil {
 			children = append(children, child)
 		}
