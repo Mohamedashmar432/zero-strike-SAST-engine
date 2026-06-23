@@ -6,6 +6,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/zerostrike/scanner/internal/analyzer"
 	"github.com/zerostrike/scanner/internal/core"
 	"github.com/zerostrike/scanner/internal/detector"
 	"github.com/zerostrike/scanner/internal/ir"
@@ -105,7 +106,15 @@ func (p *ScanPipeline) processFile(ctx context.Context, entry walker.FileEntry, 
 		return nil
 	}
 
-	_ = irFile // rule matching comes in Sprint 3
+	analysisResult, err := analyzer.New().Analyze(ctx, irFile)
+	if err != nil {
+		mu.Lock()
+		result.Diagnostics = append(result.Diagnostics, scanDiagnostic{File: entry.Path, Message: err.Error()})
+		mu.Unlock()
+		return nil
+	}
+	_ = analysisResult // rule matching comes in Sprint 3
+
 	mu.Lock()
 	result.FilesScanned++
 	mu.Unlock()

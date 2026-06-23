@@ -9,6 +9,23 @@ import (
 	"github.com/zerostrike/scanner/internal/symboltable"
 )
 
+// New returns the default Analyzer implementation.
+func New() Analyzer { return &defaultAnalyzer{} }
+
+type defaultAnalyzer struct{}
+
+func (a *defaultAnalyzer) Analyze(_ context.Context, file *ir.IRFile) (*AnalysisResult, error) {
+	if file == nil {
+		return &AnalysisResult{}, nil
+	}
+	symbols := symboltable.NewBuilder().Build(file)
+	return &AnalysisResult{
+		File:    file.Path,
+		IR:      file,
+		Symbols: symbols,
+	}, nil
+}
+
 // Diagnostic is a non-finding observation from the analysis pass
 // (e.g., parse errors, skipped generated files, unsupported syntax).
 type Diagnostic struct {
