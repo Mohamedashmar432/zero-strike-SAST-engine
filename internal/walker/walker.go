@@ -10,6 +10,7 @@ type FileEntry struct {
 	Path     string
 	Language core.Language
 	Size     int64
+	IsBinary bool // true if the first 512 bytes contain a null byte
 }
 
 // Options controls the behaviour of a Walker.

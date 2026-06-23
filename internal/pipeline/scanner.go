@@ -5,17 +5,14 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"sync"
 
-	"github.com/zerostrike/scanner/internal/analyzer"
 	"github.com/zerostrike/scanner/internal/core"
-	"github.com/zerostrike/scanner/internal/detector"
-	"github.com/zerostrike/scanner/internal/engine"
 	"github.com/zerostrike/scanner/internal/findings"
-	"github.com/zerostrike/scanner/internal/ir"
-	jsparser "github.com/zerostrike/scanner/internal/parser/javascript"
-	pythonparser "github.com/zerostrike/scanner/internal/parser/python"
 	"github.com/zerostrike/scanner/internal/rules"
+	"github.com/zerostrike/scanner/internal/scanner"
+	"github.com/zerostrike/scanner/internal/scanner/sast"
+	scascan "github.com/zerostrike/scanner/internal/scanner/sca"
+	"github.com/zerostrike/scanner/internal/scanner/secrets"
 	"github.com/zerostrike/scanner/internal/walker"
 )
 
@@ -36,9 +33,7 @@ type scanDiagnostic struct {
 type ScanPipeline struct {
 	config    ScanConfig
 	walker    walker.Walker
-	detector  detector.Detector
-	eng       engine.Engine
-	ruleIndex *engine.RuleIndex
+	scanners  []scanner.Scanner
 	collector findings.Collector
 	dedup     findings.Deduplicator
 }
@@ -57,14 +52,23 @@ func New(cfg ScanConfig) (*ScanPipeline, error) {
 		}
 	}
 
-	idx := engine.BuildIndex(allRules)
+	var scanners []scanner.Scanner
+	scanners = append(scanners, sast.New(allRules, cfg.RootPath))
+	if cfg.EnableSecrets {
+		scanners = append(scanners, secrets.New())
+	}
+	if cfg.EnableSCA {
+		onError := cfg.SCAOnError
+		if onError == "" {
+			onError = "warn"
+		}
+		scanners = append(scanners, scascan.New(onError))
+	}
 
 	return &ScanPipeline{
 		config:    cfg,
 		walker:    walker.NewWalker(nil),
-		detector:  detector.NewDetector(),
-		eng:       engine.New(),
-		ruleIndex: idx,
+		scanners:  scanners,
 		collector: findings.NewCollector(),
 		dedup:     findings.NewDeduplicator(),
 	}, nil
@@ -96,16 +100,10 @@ func rulesFS(cfg ScanConfig) fs.FS {
 }
 
 // Run executes the scan and returns results.
-// It never makes network calls; upload is a separate stage.
 func (p *ScanPipeline) Run(ctx context.Context) (*ScanResult, error) {
 	fileCh, errCh := p.walker.Walk(p.config.RootPath)
 
-	var (
-		mu       sync.Mutex
-		result   ScanResult
-		allFiles []walker.FileEntry
-	)
-
+	var allFiles []walker.FileEntry
 	for entry := range fileCh {
 		allFiles = append(allFiles, entry)
 	}
@@ -113,114 +111,30 @@ func (p *ScanPipeline) Run(ctx context.Context) (*ScanResult, error) {
 		return nil, fmt.Errorf("walk failed: %w", err)
 	}
 
-	fileQueue := make(chan walker.FileEntry, len(allFiles))
-	for _, f := range allFiles {
-		fileQueue <- f
-	}
-	close(fileQueue)
+	var result ScanResult
+	result.FilesScanned = len(allFiles)
 
-	pipeErrs := make(chan error, 10)
-	workerPool(ctx, fileQueue, p.config.WorkerCount, func(entry walker.FileEntry) error {
-		return p.processFile(ctx, entry, &mu, &result)
-	}, pipeErrs)
-	close(pipeErrs)
-
-	for err := range pipeErrs {
+	for _, sc := range p.scanners {
+		var accepted []walker.FileEntry
+		for _, f := range allFiles {
+			if sc.Accepts(f) {
+				accepted = append(accepted, f)
+			}
+		}
+		scanFindings, diags, err := sc.Scan(ctx, accepted)
 		if err != nil {
-			result.Diagnostics = append(result.Diagnostics, scanDiagnostic{Message: err.Error()})
+			return nil, fmt.Errorf("scanner %s: %w", sc.Name(), err)
+		}
+		p.collector.Add(scanFindings)
+		for _, d := range diags {
+			loc := ""
+			if d.Location != nil {
+				loc = d.Location.File
+			}
+			result.Diagnostics = append(result.Diagnostics, scanDiagnostic{File: loc, Message: d.Message})
 		}
 	}
 
 	result.Findings = p.dedup.Deduplicate(p.collector.All())
 	return &result, nil
-}
-
-// processFile handles a single file through the parse → IR → analyze → match pipeline.
-func (p *ScanPipeline) processFile(ctx context.Context, entry walker.FileEntry, mu *sync.Mutex, result *ScanResult) error {
-	source, err := os.ReadFile(entry.Path)
-	if err != nil {
-		return nil // skip unreadable files silently
-	}
-
-	lang := p.detector.Detect(entry.Path, source)
-	if !lang.IsKnown() {
-		mu.Lock()
-		result.FilesSkipped++
-		mu.Unlock()
-		return nil
-	}
-
-	irFile, warnings, err := p.buildIR(ctx, entry.Path, lang, source)
-	if err != nil {
-		mu.Lock()
-		result.Diagnostics = append(result.Diagnostics, scanDiagnostic{File: entry.Path, Message: err.Error()})
-		mu.Unlock()
-		return nil
-	}
-	for _, w := range warnings {
-		mu.Lock()
-		result.Diagnostics = append(result.Diagnostics, scanDiagnostic{File: entry.Path, Message: w})
-		mu.Unlock()
-	}
-
-	analysisResult, err := analyzer.New().Analyze(ctx, irFile)
-	if err != nil {
-		mu.Lock()
-		result.Diagnostics = append(result.Diagnostics, scanDiagnostic{File: entry.Path, Message: err.Error()})
-		mu.Unlock()
-		return nil
-	}
-
-	mc := &engine.MatchContext{
-		Index:   p.ruleIndex,
-		File:    analysisResult,
-		Project: &engine.Project{Root: p.config.RootPath},
-	}
-	matchResults, err := p.eng.Match(ctx, mc)
-	if err != nil {
-		mu.Lock()
-		result.Diagnostics = append(result.Diagnostics, scanDiagnostic{File: entry.Path, Message: err.Error()})
-		mu.Unlock()
-		return nil
-	}
-
-	fileFindings := make([]core.Finding, 0, len(matchResults))
-	for _, mr := range matchResults {
-		fileFindings = append(fileFindings, findings.BuildFinding(mr, mc))
-	}
-	p.collector.Add(fileFindings)
-
-	mu.Lock()
-	result.FilesScanned++
-	mu.Unlock()
-	return nil
-}
-
-// buildIR parses source and builds an IRFile, returning any build warnings.
-func (p *ScanPipeline) buildIR(ctx context.Context, path string, lang core.Language, source []byte) (*ir.IRFile, []string, error) {
-	switch lang {
-	case core.LangPython:
-		parser := pythonparser.New()
-		parseResult, err := parser.Parse(ctx, source)
-		if err != nil {
-			return nil, nil, fmt.Errorf("parse %s: %w", path, err)
-		}
-		builder := pythonparser.NewIRBuilder()
-		irFile, buildWarnings, buildErr := builder.Build(path, parseResult.Source)
-		warningStrings := make([]string, len(buildWarnings))
-		for i, w := range buildWarnings {
-			warningStrings[i] = w.Message
-		}
-		return irFile, warningStrings, buildErr
-	case core.LangJavaScript:
-		builder := jsparser.NewIRBuilder()
-		irFile, buildWarnings, buildErr := builder.Build(path, source)
-		warningStrings := make([]string, len(buildWarnings))
-		for i, w := range buildWarnings {
-			warningStrings[i] = w.Message
-		}
-		return irFile, warningStrings, buildErr
-	default:
-		return nil, nil, fmt.Errorf("no parser for language %s", lang)
-	}
 }

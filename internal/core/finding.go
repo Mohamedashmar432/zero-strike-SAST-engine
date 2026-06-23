@@ -20,6 +20,34 @@ const (
 	ConfidenceLow    Confidence = "low"
 )
 
+// FindingKind discriminates between the three scanner modalities.
+type FindingKind string
+
+const (
+	FindingKindSAST   FindingKind = "sast"
+	FindingKindSecret FindingKind = "secret"
+	FindingKindSCA    FindingKind = "sca"
+)
+
+// SecretFinding carries metadata for a detected secret.
+type SecretFinding struct {
+	DetectorID string
+	Entropy    float64
+	Redacted   string // first 4 chars + "****" — display only, never fingerprinted
+}
+
+// DependencyFinding carries metadata for a vulnerable dependency.
+type DependencyFinding struct {
+	Ecosystem        string
+	Package          string
+	InstalledVersion string
+	VulnerableRange  string
+	FixedVersion     string   // "" if no fix published
+	AdvisoryIDs      []string // CVE-…, GHSA-…, PYSEC-…, OSV-…
+	Manifest         string   // path to the lock file
+	Direct           bool
+}
+
 // Evidence is a code snippet associated with a finding.
 type Evidence struct {
 	Snippet   string
@@ -44,4 +72,7 @@ type Finding struct {
 	References  []string
 	Metadata    map[string]string
 	Fingerprint string // stable cross-run identity: hash(ruleID + enclosingSymbol + normalizedSnippet)
+	Kind        FindingKind
+	Secret      *SecretFinding     // non-nil iff Kind == FindingKindSecret
+	Dependency  *DependencyFinding // non-nil iff Kind == FindingKindSCA
 }

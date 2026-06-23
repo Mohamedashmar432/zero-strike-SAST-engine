@@ -17,6 +17,8 @@ type ScanStats struct {
 	BySeverity    map[core.Severity]int
 	ByLanguage    map[core.Language]int
 	ByCategory    map[string]int
+	ByScanner     map[string]int           // "sast" | "secret" | "sca" → count
+	ByKind        map[core.FindingKind]int // FindingKindSAST | FindingKindSecret | FindingKindSCA → count
 }
 
 // Report is the full output of a completed scan.

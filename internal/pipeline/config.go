@@ -12,4 +12,7 @@ type ScanConfig struct {
 	WorkerCount  int             // 0 = runtime.NumCPU()
 	EnableGraphs bool
 	NoCache      bool
+	EnableSecrets bool
+	EnableSCA     bool
+	SCAOnError    string // "warn" (default) | "fail"
 }

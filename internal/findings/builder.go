@@ -11,6 +11,17 @@ import (
 	"github.com/zerostrike/scanner/internal/symboltable"
 )
 
+// DependencyInput carries the fields needed to build a DependencyFinding.
+type DependencyInput struct {
+	Ecosystem        string
+	Package          string
+	InstalledVersion string
+	VulnerableRange  string
+	FixedVersion     string
+	Manifest         string
+	Direct           bool
+}
+
 // BuildFinding converts a MatchResult into a core.Finding with a stable cross-run Fingerprint.
 func BuildFinding(result engine.MatchResult, mc *engine.MatchContext) core.Finding {
 	node := result.Node
@@ -51,6 +62,90 @@ func BuildFinding(result engine.MatchResult, mc *engine.MatchContext) core.Findi
 		CWE:         result.Rule.CWE,
 		OWASP:       result.Rule.OWASP,
 		References:  result.Rule.References,
+		Kind:        core.FindingKindSAST,
+	}
+}
+
+// BuildSecretFinding constructs a core.Finding for a detected secret.
+// rawSecret is hashed immediately and never stored in the returned Finding.
+func BuildSecretFinding(
+	detectorID, ruleID, ruleName, message, filePath string,
+	line int,
+	rawSecret []byte,
+	entropy float64,
+	severity core.Severity,
+) core.Finding {
+	// Fingerprint: sha256(detectorID + "|" + hex(sha256(rawSecret[:32])))[:16]
+	cap := len(rawSecret)
+	if cap > 32 {
+		cap = 32
+	}
+	secretHash := sha256.Sum256(rawSecret[:cap])
+	fp := sha256.Sum256([]byte(detectorID + "|" + hex.EncodeToString(secretHash[:])))
+	fingerprint := hex.EncodeToString(fp[:])[:16]
+
+	redacted := "****"
+	if len(rawSecret) >= 4 {
+		redacted = string(rawSecret[:4]) + "****"
+	}
+
+	return core.Finding{
+		ID:          uuid.New().String(),
+		RuleID:      ruleID,
+		RuleName:    ruleName,
+		Category:    "secret",
+		Severity:    severity,
+		Confidence:  core.ConfidenceHigh,
+		Message:     message,
+		Location:    core.Location{File: filePath, StartLine: line, EndLine: line},
+		Language:    core.LangUnknown,
+		Fingerprint: fingerprint,
+		Kind:        core.FindingKindSecret,
+		Secret: &core.SecretFinding{
+			DetectorID: detectorID,
+			Entropy:    entropy,
+			Redacted:   redacted,
+		},
+	}
+}
+
+// BuildDependencyFinding constructs a core.Finding for a vulnerable dependency.
+func BuildDependencyFinding(
+	ruleID, ruleName, message string,
+	dep DependencyInput,
+	advisoryIDs []string,
+	severity core.Severity,
+	confidence core.Confidence,
+) core.Finding {
+	primary := "none"
+	if len(advisoryIDs) > 0 {
+		primary = advisoryIDs[0]
+	}
+	fp := sha256.Sum256([]byte(dep.Ecosystem + "|" + dep.Package + "|" + primary))
+	fingerprint := hex.EncodeToString(fp[:])[:16]
+
+	return core.Finding{
+		ID:          uuid.New().String(),
+		RuleID:      ruleID,
+		RuleName:    ruleName,
+		Category:    "dependency",
+		Severity:    severity,
+		Confidence:  confidence,
+		Message:     message,
+		Location:    core.Location{File: dep.Manifest},
+		Language:    core.LangUnknown,
+		Fingerprint: fingerprint,
+		Kind:        core.FindingKindSCA,
+		Dependency: &core.DependencyFinding{
+			Ecosystem:        dep.Ecosystem,
+			Package:          dep.Package,
+			InstalledVersion: dep.InstalledVersion,
+			VulnerableRange:  dep.VulnerableRange,
+			FixedVersion:     dep.FixedVersion,
+			AdvisoryIDs:      advisoryIDs,
+			Manifest:         dep.Manifest,
+			Direct:           dep.Direct,
+		},
 	}
 }
 

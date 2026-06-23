@@ -1,6 +1,7 @@
 package walker
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 
@@ -84,11 +85,18 @@ func (w *fsWalker) walk(
 			continue
 		}
 
-		entries <- FileEntry{
+		entry := FileEntry{
 			Path:     fullPath,
 			Language: core.LangUnknown,
 			Size:     info.Size(),
 		}
+		if f, err := os.Open(fullPath); err == nil {
+			buf := make([]byte, 512)
+			n, _ := f.Read(buf)
+			f.Close()
+			entry.IsBinary = bytes.IndexByte(buf[:n], 0) >= 0
+		}
+		entries <- entry
 	}
 }
 
