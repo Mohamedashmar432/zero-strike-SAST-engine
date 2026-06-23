@@ -1,0 +1,43 @@
+package analyzer
+
+import (
+	"context"
+
+	"github.com/zerostrike/scanner/internal/core"
+	"github.com/zerostrike/scanner/internal/graph"
+	"github.com/zerostrike/scanner/internal/ir"
+	"github.com/zerostrike/scanner/internal/symboltable"
+)
+
+// Diagnostic is a non-finding observation from the analysis pass
+// (e.g., parse errors, skipped generated files, unsupported syntax).
+type Diagnostic struct {
+	Severity string // "error" | "warning" | "info"
+	Message  string
+	Location *core.Location
+}
+
+// TaintFlow tracks data from a taint source to a taint sink.
+// Sprint 8 will populate this from real DFG analysis.
+type TaintFlow struct {
+	Source core.Location
+	Sink   core.Location
+	Path   []core.Location
+}
+
+// AnalysisResult holds all analysis data for a single source file.
+type AnalysisResult struct {
+	File        string
+	IR          *ir.IRFile
+	Symbols     symboltable.SymbolTable
+	CFG         *graph.CFG       // nil unless --enable-graphs flag is set
+	DFG         *graph.DFG       // nil unless --enable-graphs flag is set
+	CallGraph   *graph.CallGraph // nil unless --enable-graphs flag is set
+	TaintFlows  []TaintFlow      // nil in Sprint 1
+	Diagnostics []Diagnostic
+}
+
+// Analyzer runs analysis passes over an IRFile to produce an AnalysisResult.
+type Analyzer interface {
+	Analyze(ctx context.Context, file *ir.IRFile) (*AnalysisResult, error)
+}

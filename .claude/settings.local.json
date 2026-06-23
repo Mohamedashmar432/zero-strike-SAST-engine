@@ -1,0 +1,10 @@
+{
+  "disabledMcpjsonServers": [
+    "chrome-devtools",
+    "tinyfish",
+    "memory",
+    "github",
+    "MongoDB",
+    "redis"
+  ]
+}

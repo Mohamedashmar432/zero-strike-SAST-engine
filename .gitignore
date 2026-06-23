@@ -1,0 +1,17 @@
+# Build output
+zerostrike
+zerostrike.exe
+dist/
+
+# Go
+*.test
+*.out
+coverage.html
+
+# Project state
+.zerostrike/cache/
+.zerostrike/findings/
+
+# OS
+.DS_Store
+Thumbs.db
