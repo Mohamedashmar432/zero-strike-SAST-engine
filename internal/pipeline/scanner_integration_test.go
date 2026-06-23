@@ -14,13 +14,20 @@ func TestScanPipeline_Python(t *testing.T) {
 		NoCache:     true,
 	}
 
-	result, err := pipeline.New(cfg).Run(context.Background())
+	pipe, err := pipeline.New(cfg)
+	if err != nil {
+		t.Fatalf("pipeline.New: %v", err)
+	}
+	result, err := pipe.Run(context.Background())
 	if err != nil {
 		t.Fatalf("scan failed: %v", err)
 	}
 
 	if result.FilesScanned == 0 {
 		t.Error("expected at least 1 file scanned, got 0")
+	}
+	if len(result.Findings) == 0 {
+		t.Error("expected at least 1 finding from python testdata, got 0")
 	}
 
 	t.Logf("Scanned: %d files, Skipped: %d files", result.FilesScanned, result.FilesSkipped)
@@ -35,7 +42,11 @@ func TestScanPipeline_EmptyDir(t *testing.T) {
 		NoCache:     true,
 	}
 
-	result, err := pipeline.New(cfg).Run(context.Background())
+	pipe, err := pipeline.New(cfg)
+	if err != nil {
+		t.Fatalf("pipeline.New: %v", err)
+	}
+	result, err := pipe.Run(context.Background())
 	if err != nil {
 		t.Fatalf("scan of empty dir failed: %v", err)
 	}

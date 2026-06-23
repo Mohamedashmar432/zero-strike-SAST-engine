@@ -3,14 +3,18 @@ package pipeline
 import (
 	"context"
 	"fmt"
+	"io/fs"
 	"os"
 	"sync"
 
 	"github.com/zerostrike/scanner/internal/analyzer"
 	"github.com/zerostrike/scanner/internal/core"
 	"github.com/zerostrike/scanner/internal/detector"
+	"github.com/zerostrike/scanner/internal/engine"
+	"github.com/zerostrike/scanner/internal/findings"
 	"github.com/zerostrike/scanner/internal/ir"
 	pythonparser "github.com/zerostrike/scanner/internal/parser/python"
+	"github.com/zerostrike/scanner/internal/rules"
 	"github.com/zerostrike/scanner/internal/walker"
 )
 
@@ -29,21 +33,63 @@ type scanDiagnostic struct {
 
 // ScanPipeline orchestrates the full scan lifecycle.
 type ScanPipeline struct {
-	config   ScanConfig
-	walker   walker.Walker
-	detector detector.Detector
+	config    ScanConfig
+	walker    walker.Walker
+	detector  detector.Detector
+	eng       engine.Engine
+	ruleIndex *engine.RuleIndex
+	collector findings.Collector
+	dedup     findings.Deduplicator
 }
 
-// New creates a ScanPipeline with the given config.
-func New(cfg ScanConfig) *ScanPipeline {
-	return &ScanPipeline{
-		config:   cfg,
-		walker:   walker.NewWalker(nil),
-		detector: detector.NewDetector(),
+// New creates a ScanPipeline. Returns an error if rules fail to load or validate.
+func New(cfg ScanConfig) (*ScanPipeline, error) {
+	fsys, dir := rulesFS(cfg), rulesDir(cfg)
+	allRules, err := rules.NewLoader(fsys).LoadDir(dir)
+	if err != nil {
+		return nil, fmt.Errorf("pipeline: load rules: %w", err)
 	}
+
+	v := rules.NewValidator()
+	for _, r := range allRules {
+		if errs := v.Validate(r); len(errs) > 0 {
+			return nil, fmt.Errorf("pipeline: invalid rule %s: %v", r.ID, errs)
+		}
+	}
+
+	idx := engine.BuildIndex(allRules)
+
+	return &ScanPipeline{
+		config:    cfg,
+		walker:    walker.NewWalker(nil),
+		detector:  detector.NewDetector(),
+		eng:       engine.New(),
+		ruleIndex: idx,
+		collector: findings.NewCollector(),
+		dedup:     findings.NewDeduplicator(),
+	}, nil
+}
+
+// rulesFS returns the fs.FS to load rules from.
+// If RulesDir is set, uses the OS filesystem; otherwise uses the embedded FS.
+func rulesFS(cfg ScanConfig) fs.FS {
+	if cfg.RulesDir != "" {
+		return os.DirFS(cfg.RulesDir)
+	}
+	return rules.EmbeddedFS
+}
+
+// rulesDir returns the directory argument for LoadDir.
+// ponytail: hardcoded to "data/python" for embedded — multi-language deferred to Sprint 4+
+func rulesDir(cfg ScanConfig) string {
+	if cfg.RulesDir != "" {
+		return "."
+	}
+	return "data/python"
 }
 
 // Run executes the scan and returns results.
+// It never makes network calls; upload is a separate stage.
 func (p *ScanPipeline) Run(ctx context.Context) (*ScanResult, error) {
 	fileCh, errCh := p.walker.Walk(p.config.RootPath)
 
@@ -53,7 +99,6 @@ func (p *ScanPipeline) Run(ctx context.Context) (*ScanResult, error) {
 		allFiles []walker.FileEntry
 	)
 
-	// Collect all files first (walker is non-blocking)
 	for entry := range fileCh {
 		allFiles = append(allFiles, entry)
 	}
@@ -61,7 +106,6 @@ func (p *ScanPipeline) Run(ctx context.Context) (*ScanResult, error) {
 		return nil, fmt.Errorf("walk failed: %w", err)
 	}
 
-	// Process files in worker pool
 	fileQueue := make(chan walker.FileEntry, len(allFiles))
 	for _, f := range allFiles {
 		fileQueue <- f
@@ -80,10 +124,11 @@ func (p *ScanPipeline) Run(ctx context.Context) (*ScanResult, error) {
 		}
 	}
 
+	result.Findings = p.dedup.Deduplicate(p.collector.All())
 	return &result, nil
 }
 
-// processFile handles a single file through the parse → IR pipeline.
+// processFile handles a single file through the parse → IR → analyze → match pipeline.
 func (p *ScanPipeline) processFile(ctx context.Context, entry walker.FileEntry, mu *sync.Mutex, result *ScanResult) error {
 	source, err := os.ReadFile(entry.Path)
 	if err != nil {
@@ -98,12 +143,17 @@ func (p *ScanPipeline) processFile(ctx context.Context, entry walker.FileEntry, 
 		return nil
 	}
 
-	irFile, err := p.buildIR(ctx, entry.Path, lang, source)
+	irFile, warnings, err := p.buildIR(ctx, entry.Path, lang, source)
 	if err != nil {
 		mu.Lock()
 		result.Diagnostics = append(result.Diagnostics, scanDiagnostic{File: entry.Path, Message: err.Error()})
 		mu.Unlock()
 		return nil
+	}
+	for _, w := range warnings {
+		mu.Lock()
+		result.Diagnostics = append(result.Diagnostics, scanDiagnostic{File: entry.Path, Message: w})
+		mu.Unlock()
 	}
 
 	analysisResult, err := analyzer.New().Analyze(ctx, irFile)
@@ -113,7 +163,25 @@ func (p *ScanPipeline) processFile(ctx context.Context, entry walker.FileEntry, 
 		mu.Unlock()
 		return nil
 	}
-	_ = analysisResult // rule matching comes in Sprint 3
+
+	mc := &engine.MatchContext{
+		Index:   p.ruleIndex,
+		File:    analysisResult,
+		Project: &engine.Project{Root: p.config.RootPath},
+	}
+	matchResults, err := p.eng.Match(ctx, mc)
+	if err != nil {
+		mu.Lock()
+		result.Diagnostics = append(result.Diagnostics, scanDiagnostic{File: entry.Path, Message: err.Error()})
+		mu.Unlock()
+		return nil
+	}
+
+	fileFindings := make([]core.Finding, 0, len(matchResults))
+	for _, mr := range matchResults {
+		fileFindings = append(fileFindings, findings.BuildFinding(mr, mc))
+	}
+	p.collector.Add(fileFindings)
 
 	mu.Lock()
 	result.FilesScanned++
@@ -121,23 +189,19 @@ func (p *ScanPipeline) processFile(ctx context.Context, entry walker.FileEntry, 
 	return nil
 }
 
-// Run executes the scan pipeline. It never makes network calls; upload is a separate stage.
-// buildIR parses source and builds an IRFile for the given language.
-func (p *ScanPipeline) buildIR(ctx context.Context, path string, lang core.Language, source []byte) (*ir.IRFile, error) {
+// buildIR parses source and builds an IRFile, returning any build warnings.
+func (p *ScanPipeline) buildIR(ctx context.Context, path string, lang core.Language, source []byte) (*ir.IRFile, []string, error) {
 	switch lang {
 	case core.LangPython:
 		parser := pythonparser.New()
 		parseResult, err := parser.Parse(ctx, source)
 		if err != nil {
-			return nil, fmt.Errorf("parse %s: %w", path, err)
+			return nil, nil, fmt.Errorf("parse %s: %w", path, err)
 		}
 		builder := pythonparser.NewIRBuilder()
 		irFile, warnings, buildErr := builder.Build(path, parseResult.Source)
-		for _, w := range warnings {
-			_ = w // warnings collected at caller; propagate via result.Diagnostics in Sprint 3
-		}
-		return irFile, buildErr
+		return irFile, warnings, buildErr
 	default:
-		return nil, fmt.Errorf("no parser for language %s", lang)
+		return nil, nil, fmt.Errorf("no parser for language %s", lang)
 	}
 }

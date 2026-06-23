@@ -1,13 +1,11 @@
 package findings
 
-import (
-	"github.com/zerostrike/scanner/internal/core"
-	"github.com/zerostrike/scanner/internal/engine"
-)
+import "github.com/zerostrike/scanner/internal/core"
 
-// Collector aggregates MatchResults from multiple files into Findings.
+// Collector aggregates Findings from multiple files into a single slice.
+// Implementations must be safe for concurrent Add calls.
 type Collector interface {
-	Add(results []engine.MatchResult)
+	Add(findings []core.Finding)
 	All() []core.Finding
 }
 
