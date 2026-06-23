@@ -104,13 +104,12 @@ func TestIntegration_YamlLoadFiresZSPY010(t *testing.T) {
 	}
 }
 
-// TestIntegration_AssertDoesNotFire documents the known ZS-PY-009 limitation:
-// assert is a statement in tree-sitter, not a call node, so the rule cannot fire.
-func TestIntegration_AssertDoesNotFire(t *testing.T) {
+// TestIntegration_AssertFiresZSPY009 verifies the Sprint 4 fix for KI-001:
+// assert_statement now maps to NodeKindAssert and ZS-PY-009 fires correctly.
+func TestIntegration_AssertFiresZSPY009(t *testing.T) {
 	_, idx := loadPythonRules(t)
 	results := matchSource(t, idx, "assert user.is_admin()\n")
-	if hasRule(results, "ZS-PY-009") {
-		t.Error("ZS-PY-009 fired — assert now parsed as call? Update known issue in plan.")
+	if !hasRule(results, "ZS-PY-009") {
+		t.Error("expected ZS-PY-009 to fire on assert statement")
 	}
-	// ponytail: expected non-firing — tree-sitter emits assert_statement not call
 }
