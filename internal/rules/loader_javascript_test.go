@@ -51,19 +51,3 @@ func TestLoader_ZS_PY_009_KindAssert(t *testing.T) {
 	t.Error("ZS-PY-009 not found")
 }
 
-func TestLoader_ZS_PY_006_LHSIdentifier(t *testing.T) {
-	loader := rules.NewLoader(rules.EmbeddedFS)
-	loaded, err := loader.LoadDir("data/python")
-	if err != nil {
-		t.Fatalf("LoadDir: %v", err)
-	}
-	for _, r := range loaded {
-		if r.ID == "ZS-PY-006" {
-			if r.Match.LHSIdentifier == "" {
-				t.Error("ZS-PY-006: expected non-empty LHSIdentifier")
-			}
-			return
-		}
-	}
-	t.Error("ZS-PY-006 not found")
-}

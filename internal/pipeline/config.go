@@ -15,4 +15,5 @@ type ScanConfig struct {
 	EnableSecrets bool
 	EnableSCA     bool
 	SCAOnError    string // "warn" (default) | "fail"
+	AllowFile     string // path to .zs-allow.yaml; "" = auto-discover from RootPath
 }

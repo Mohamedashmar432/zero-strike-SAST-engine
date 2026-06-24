@@ -1,6 +1,6 @@
 # Build output
-zerostrike
-zerostrike.exe
+/zerostrike
+/zerostrike.exe
 dist/
 
 # Go
@@ -16,4 +16,4 @@ coverage.html
 .DS_Store
 Thumbs.db
 
-docs/
+# docs/ is intentionally tracked (release notes, architecture docs)

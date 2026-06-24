@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"path/filepath"
 
 	"github.com/zerostrike/scanner/internal/core"
 	"github.com/zerostrike/scanner/internal/findings"
@@ -22,6 +23,7 @@ type ScanResult struct {
 	Diagnostics  []scanDiagnostic
 	FilesScanned int
 	FilesSkipped int
+	Suppressed   int // findings filtered by allowlist
 }
 
 type scanDiagnostic struct {
@@ -36,6 +38,7 @@ type ScanPipeline struct {
 	scanners  []scanner.Scanner
 	collector findings.Collector
 	dedup     findings.Deduplicator
+	allowList *findings.AllowList
 }
 
 // New creates a ScanPipeline. Returns an error if rules fail to load or validate.
@@ -65,12 +68,26 @@ func New(cfg ScanConfig) (*ScanPipeline, error) {
 		scanners = append(scanners, scascan.New(onError))
 	}
 
+	// Load allowlist: explicit path, or auto-discover .zs-allow.yaml at root.
+	var al *findings.AllowList
+	allowPath := cfg.AllowFile
+	if allowPath == "" {
+		allowPath = filepath.Join(cfg.RootPath, ".zs-allow.yaml")
+	}
+	if _, statErr := os.Stat(allowPath); statErr == nil {
+		al, err = findings.LoadAllowList(allowPath)
+		if err != nil {
+			return nil, fmt.Errorf("pipeline: load allowlist: %w", err)
+		}
+	}
+
 	return &ScanPipeline{
 		config:    cfg,
 		walker:    walker.NewWalker(nil),
 		scanners:  scanners,
 		collector: findings.NewCollector(),
 		dedup:     findings.NewDeduplicator(),
+		allowList: al,
 	}, nil
 }
 
@@ -135,6 +152,20 @@ func (p *ScanPipeline) Run(ctx context.Context) (*ScanResult, error) {
 		}
 	}
 
-	result.Findings = p.dedup.Deduplicate(p.collector.All())
+	all := p.dedup.Deduplicate(p.collector.All())
+
+	if p.allowList != nil {
+		kept := all[:0]
+		for _, f := range all {
+			if p.allowList.Suppressed(f) {
+				result.Suppressed++
+			} else {
+				kept = append(kept, f)
+			}
+		}
+		all = kept
+	}
+
+	result.Findings = all
 	return &result, nil
 }

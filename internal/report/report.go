@@ -19,6 +19,7 @@ type ScanStats struct {
 	ByCategory    map[string]int
 	ByScanner     map[string]int           // "sast" | "secret" | "sca" → count
 	ByKind        map[core.FindingKind]int // FindingKindSAST | FindingKindSecret | FindingKindSCA → count
+	Suppressed    int                      // findings filtered by allowlist
 }
 
 // Report is the full output of a completed scan.
