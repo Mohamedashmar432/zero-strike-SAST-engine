@@ -219,6 +219,44 @@ func TestWalk_RespectsGitignore(t *testing.T) {
 	}
 }
 
+func TestWalk_SkipsStaticDir(t *testing.T) {
+	root := makeTempDir(t)
+	writeFile(t, filepath.Join(root, "static", "jquery.min.js"), "eval('bad')")
+	writeFile(t, filepath.Join(root, "app.py"), "# kept")
+
+	w := walker.NewWalker(nil)
+	paths, errs := collectWalk(t, w, root)
+
+	if len(errs) != 0 {
+		t.Errorf("unexpected errors: %v", errs)
+	}
+	if len(paths) != 1 {
+		t.Fatalf("expected 1 file (app.py), got %d: %v", len(paths), paths)
+	}
+	if filepath.Base(paths[0]) != "app.py" {
+		t.Errorf("unexpected path: %q", paths[0])
+	}
+}
+
+func TestWalk_ExcludeDirOption(t *testing.T) {
+	root := makeTempDir(t)
+	writeFile(t, filepath.Join(root, "gen", "schema.go"), "// generated")
+	writeFile(t, filepath.Join(root, "main.go"), "// kept")
+
+	w := walker.NewWalker(&walker.Options{ExcludeDirs: []string{"gen"}})
+	paths, errs := collectWalk(t, w, root)
+
+	if len(errs) != 0 {
+		t.Errorf("unexpected errors: %v", errs)
+	}
+	if len(paths) != 1 {
+		t.Fatalf("expected 1 file (main.go), got %d: %v", len(paths), paths)
+	}
+	if filepath.Base(paths[0]) != "main.go" {
+		t.Errorf("unexpected path: %q", paths[0])
+	}
+}
+
 func TestWalk_SubdirectoryRecursion(t *testing.T) {
 	root := makeTempDir(t)
 	files := []string{

@@ -1,0 +1,23 @@
+id: ZS-PY-014
+name: tempfile.mktemp() Insecure Temp File
+version: "1.0.0"
+language: python
+category: race-condition
+severity: medium
+confidence: high
+cwe:
+  - CWE-377
+owasp:
+  - "A01:2021"
+description: |
+  tempfile.mktemp() returns a filename but does not create the file atomically.
+  The gap between name generation and file creation allows a race condition
+  (TOCTOU) that an attacker can exploit to create a symlink at that path.
+message: "tempfile.mktemp() is insecure — use tempfile.mkstemp() or tempfile.NamedTemporaryFile()"
+references:
+  - https://docs.python.org/3/library/tempfile.html#tempfile.mktemp
+tags: [race-condition, toctou, tempfile]
+match:
+  kind: call
+  callee: tempfile.mktemp
+fix_suggestion: "Replace tempfile.mktemp() with tempfile.mkstemp() which atomically creates and opens the file."

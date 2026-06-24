@@ -1,0 +1,22 @@
+id: ZS-PY-011
+name: Weak Cryptographic Hash (SHA1)
+version: "1.0.0"
+language: python
+category: cryptography
+severity: medium
+confidence: high
+cwe:
+  - CWE-327
+owasp:
+  - "A02:2021"
+description: |
+  SHA1 is cryptographically broken and should not be used for security-sensitive
+  operations such as password hashing, digital signatures, or data integrity checks.
+message: "Weak hash algorithm SHA1 detected — use SHA-256 or stronger"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+tags: [weak-crypto, sha1, hash]
+match:
+  kind: call
+  callee: hashlib.sha1
+fix_suggestion: "Replace hashlib.sha1() with hashlib.sha256() or use bcrypt/argon2 for passwords."

@@ -49,8 +49,8 @@ func TestLoader_TotalRuleCount(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadDir: %v", err)
 	}
-	if len(loaded) != 9 {
-		t.Errorf("expected 9 Python rules, got %d", len(loaded))
+	if len(loaded) < 14 {
+		t.Errorf("expected ≥14 Python rules, got %d", len(loaded))
 	}
 }
 

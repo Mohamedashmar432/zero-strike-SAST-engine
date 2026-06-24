@@ -23,16 +23,17 @@ import (
 
 func scanCmd() *cobra.Command {
 	var (
-		flagFormat    string
-		flagOutput    string
-		flagLang      []string
-		flagRules     string
-		flagNoCache   bool
-		flagWorkers   int
-		flagEnableSec bool
-		flagEnableSCA bool
-		flagSCAError  string
-		flagAllowFile string
+		flagFormat      string
+		flagOutput      string
+		flagLang        []string
+		flagRules       string
+		flagNoCache     bool
+		flagWorkers     int
+		flagEnableSec   bool
+		flagEnableSCA   bool
+		flagSCAError    string
+		flagAllowFile   string
+		flagExcludeDirs []string
 	)
 
 	cmd := &cobra.Command{
@@ -69,6 +70,7 @@ func scanCmd() *cobra.Command {
 				EnableSCA:     flagEnableSCA,
 				SCAOnError:    flagSCAError,
 				AllowFile:     flagAllowFile,
+				ExcludeDirs:   flagExcludeDirs,
 			}
 
 			pipe, err := pipeline.New(cfg)
@@ -179,6 +181,7 @@ func scanCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&flagEnableSCA, "enable-sca", false, "enable the SCA/OSV dependency scanner")
 	cmd.Flags().StringVar(&flagSCAError, "sca-on-error", "warn", "SCA on network error: warn|fail")
 	cmd.Flags().StringVar(&flagAllowFile, "allow-file", "", "path to allowlist YAML (default: <root>/.zs-allow.yaml)")
+	cmd.Flags().StringSliceVar(&flagExcludeDirs, "exclude-dir", nil, "directory names to skip, e.g. --exclude-dir gen --exclude-dir templates")
 
 	return cmd
 }

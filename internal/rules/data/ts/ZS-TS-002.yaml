@@ -1,0 +1,23 @@
+id: ZS-TS-002
+name: innerHTML Assignment (DOM XSS)
+version: "1.0.0"
+language: typescript
+category: xss
+severity: high
+confidence: medium
+cwe:
+  - CWE-79
+owasp:
+  - "A03:2021"
+description: |
+  Assigning to innerHTML directly inserts HTML into the DOM without sanitization.
+  If the value contains user-controlled data, this causes a Cross-Site Scripting
+  (XSS) vulnerability.
+message: "innerHTML assignment detected — sanitize input or use textContent / DOM APIs instead"
+references:
+  - https://owasp.org/www-community/attacks/xss/
+tags: [xss, innerHTML, dom-injection]
+match:
+  kind: assignment
+  lhs_identifier: "innerHTML"
+fix_suggestion: "Use textContent for plain text, or sanitize with DOMPurify before assigning to innerHTML."

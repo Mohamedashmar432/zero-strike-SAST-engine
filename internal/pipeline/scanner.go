@@ -84,7 +84,7 @@ func New(cfg ScanConfig) (*ScanPipeline, error) {
 
 	return &ScanPipeline{
 		config:    cfg,
-		walker:    walker.NewWalker(nil),
+		walker:    walker.NewWalker(&walker.Options{ExcludeDirs: cfg.ExcludeDirs}),
 		scanners:  scanners,
 		collector: findings.NewCollector(),
 		dedup:     findings.NewDeduplicator(),
@@ -99,7 +99,7 @@ func loadAllRules(cfg ScanConfig) ([]*rules.Rule, error) {
 		return loader.LoadDir(".")
 	}
 	var all []*rules.Rule
-	for _, dir := range []string{"data/python", "data/js"} {
+	for _, dir := range []string{"data/python", "data/js", "data/ts"} {
 		rs, err := loader.LoadDir(dir)
 		if err != nil {
 			return nil, fmt.Errorf("load rules from %s: %w", dir, err)

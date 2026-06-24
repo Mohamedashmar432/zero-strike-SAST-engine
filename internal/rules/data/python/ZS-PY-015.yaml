@@ -1,0 +1,23 @@
+id: ZS-PY-015
+name: urllib.request.urlopen() SSRF Entry Point
+version: "1.0.0"
+language: python
+category: ssrf
+severity: medium
+confidence: medium
+cwe:
+  - CWE-918
+owasp:
+  - "A10:2021"
+description: |
+  urllib.request.urlopen() fetches a URL that may be user-controlled, creating a
+  Server-Side Request Forgery (SSRF) risk. Attackers can use SSRF to reach internal
+  services, cloud metadata endpoints, or bypass network controls.
+message: "urllib.request.urlopen() detected — validate and allowlist URLs before use"
+references:
+  - https://owasp.org/Top10/A10_2021-Server-Side_Request_Forgery_%28SSRF%29/
+tags: [ssrf, urllib, request-forgery]
+match:
+  kind: call
+  callee: urllib.request.urlopen
+fix_suggestion: "Validate the URL against an allowlist. Reject internal/private IPs and non-http(s) schemes."

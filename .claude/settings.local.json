@@ -1,4 +1,10 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(go build *)",
+      "Bash(go test *)"
+    ]
+  },
   "disabledMcpjsonServers": [
     "chrome-devtools",
     "tinyfish",

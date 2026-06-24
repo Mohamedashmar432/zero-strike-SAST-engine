@@ -17,6 +17,7 @@ import (
 	"github.com/zerostrike/scanner/internal/ir"
 	jsparser "github.com/zerostrike/scanner/internal/parser/javascript"
 	pythonparser "github.com/zerostrike/scanner/internal/parser/python"
+	tsparser "github.com/zerostrike/scanner/internal/parser/typescript"
 	"github.com/zerostrike/scanner/internal/rules"
 	"github.com/zerostrike/scanner/internal/walker"
 )
@@ -151,6 +152,14 @@ func (s *SASTScanner) buildIR(ctx context.Context, path string, lang core.Langua
 		return irFile, warnings, buildErr
 	case core.LangJavaScript:
 		builder := jsparser.NewIRBuilder()
+		irFile, buildWarnings, buildErr := builder.Build(path, source)
+		warnings := make([]string, len(buildWarnings))
+		for i, w := range buildWarnings {
+			warnings[i] = w.Message
+		}
+		return irFile, warnings, buildErr
+	case core.LangTypeScript:
+		builder := tsparser.NewIRBuilder()
 		irFile, buildWarnings, buildErr := builder.Build(path, source)
 		warnings := make([]string, len(buildWarnings))
 		for i, w := range buildWarnings {

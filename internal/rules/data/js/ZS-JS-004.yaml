@@ -1,0 +1,23 @@
+id: ZS-JS-004
+name: Function() Constructor (Dynamic Code Execution)
+version: "1.0.0"
+language: javascript
+category: injection
+severity: high
+confidence: high
+cwe:
+  - CWE-95
+owasp:
+  - "A03:2021"
+description: |
+  The Function() constructor creates a function from a string at runtime,
+  equivalent to eval(). If the string contains user-controlled input, this
+  allows arbitrary code execution.
+message: "new Function() detected — dynamic code construction is equivalent to eval()"
+references:
+  - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/Function
+tags: [eval, dynamic-code, injection]
+match:
+  kind: call
+  callee: Function
+fix_suggestion: "Replace new Function(str) with a static function or JSON.parse() for data; never pass user input."

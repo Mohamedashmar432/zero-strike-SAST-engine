@@ -1,0 +1,23 @@
+id: ZS-PY-013
+name: os.popen() Command Execution
+version: "1.0.0"
+language: python
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-78
+owasp:
+  - "A03:2021"
+description: |
+  os.popen() opens a pipe to a shell command. If the command string includes
+  user-controlled input, this is a command injection vulnerability.
+  Use the subprocess module instead.
+message: "os.popen() detected — replace with subprocess.run() to avoid shell injection"
+references:
+  - https://docs.python.org/3/library/os.html#os.popen
+tags: [command-injection, os-popen]
+match:
+  kind: call
+  callee: os.popen
+fix_suggestion: "Replace os.popen() with subprocess.run([cmd], capture_output=True) to avoid shell expansion."

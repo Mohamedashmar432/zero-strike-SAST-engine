@@ -12,8 +12,8 @@ func TestLoader_JSRulesLoad(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadDir data/js: %v", err)
 	}
-	if len(loaded) != 3 {
-		t.Errorf("expected 3 JS rules, got %d", len(loaded))
+	if len(loaded) < 5 {
+		t.Errorf("expected ≥5 JS rules, got %d", len(loaded))
 	}
 
 	v := rules.NewValidator()
@@ -24,7 +24,31 @@ func TestLoader_JSRulesLoad(t *testing.T) {
 			t.Errorf("rule %s failed validation: %v", r.ID, errs)
 		}
 	}
-	for _, id := range []string{"ZS-JS-001", "ZS-JS-002", "ZS-JS-003"} {
+	for _, id := range []string{"ZS-JS-001", "ZS-JS-002", "ZS-JS-003", "ZS-JS-004", "ZS-JS-005"} {
+		if !ids[id] {
+			t.Errorf("expected rule %s to be loaded", id)
+		}
+	}
+}
+
+func TestLoader_TSRulesLoad(t *testing.T) {
+	loader := rules.NewLoader(rules.EmbeddedFS)
+	loaded, err := loader.LoadDir("data/ts")
+	if err != nil {
+		t.Fatalf("LoadDir data/ts: %v", err)
+	}
+	if len(loaded) < 3 {
+		t.Errorf("expected ≥3 TS rules, got %d", len(loaded))
+	}
+	v := rules.NewValidator()
+	ids := make(map[string]bool, len(loaded))
+	for _, r := range loaded {
+		ids[r.ID] = true
+		if errs := v.Validate(r); len(errs) > 0 {
+			t.Errorf("rule %s failed validation: %v", r.ID, errs)
+		}
+	}
+	for _, id := range []string{"ZS-TS-001", "ZS-TS-002", "ZS-TS-003"} {
 		if !ids[id] {
 			t.Errorf("expected rule %s to be loaded", id)
 		}

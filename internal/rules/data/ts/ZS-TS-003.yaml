@@ -1,0 +1,22 @@
+id: ZS-TS-003
+name: document.write() Usage (DOM XSS)
+version: "1.0.0"
+language: typescript
+category: xss
+severity: high
+confidence: medium
+cwe:
+  - CWE-79
+owasp:
+  - "A03:2021"
+description: |
+  document.write() writes directly to the HTML document stream without sanitization.
+  User-controlled input passed to document.write() leads to Cross-Site Scripting (XSS).
+message: "document.write() detected — use safe DOM manipulation APIs instead"
+references:
+  - https://developer.mozilla.org/en-US/docs/Web/API/Document/write
+tags: [xss, document-write, dom-injection]
+match:
+  kind: call
+  callee: document.write
+fix_suggestion: "Replace document.write() with safe DOM APIs such as createElement and appendChild."
