@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/zerostrike/scanner/internal/core"
 	"github.com/zerostrike/scanner/internal/findings"
@@ -131,24 +132,71 @@ func (p *ScanPipeline) Run(ctx context.Context) (*ScanResult, error) {
 	var result ScanResult
 	result.FilesScanned = len(allFiles)
 
-	for _, sc := range p.scanners {
-		var accepted []walker.FileEntry
-		for _, f := range allFiles {
-			if sc.Accepts(f) {
-				accepted = append(accepted, f)
+	workers := p.config.WorkerCount
+	if workers == 0 {
+		workers = runtime.NumCPU()
+	}
+
+	if workers == 1 || len(p.scanners) <= 1 {
+		for _, sc := range p.scanners {
+			var accepted []walker.FileEntry
+			for _, f := range allFiles {
+				if sc.Accepts(f) {
+					accepted = append(accepted, f)
+				}
+			}
+			scanFindings, diags, err := sc.Scan(ctx, accepted)
+			if err != nil {
+				return nil, fmt.Errorf("scanner %s: %w", sc.Name(), err)
+			}
+			p.collector.Add(scanFindings)
+			for _, d := range diags {
+				loc := ""
+				if d.Location != nil {
+					loc = d.Location.File
+				}
+				result.Diagnostics = append(result.Diagnostics, scanDiagnostic{File: loc, Message: d.Message})
 			}
 		}
-		scanFindings, diags, err := sc.Scan(ctx, accepted)
-		if err != nil {
-			return nil, fmt.Errorf("scanner %s: %w", sc.Name(), err)
+	} else {
+		// ponytail: run all scanners concurrently; goroutines = len(scanners) ≤ 3
+		type scannerResult struct {
+			name     string
+			findings []core.Finding
+			diags    []scanDiagnostic
+			err      error
 		}
-		p.collector.Add(scanFindings)
-		for _, d := range diags {
-			loc := ""
-			if d.Location != nil {
-				loc = d.Location.File
+		ch := make(chan scannerResult, len(p.scanners))
+		for _, sc := range p.scanners {
+			sc := sc
+			go func() {
+				var accepted []walker.FileEntry
+				for _, f := range allFiles {
+					if sc.Accepts(f) {
+						accepted = append(accepted, f)
+					}
+				}
+				scanFindings, diags, err := sc.Scan(ctx, accepted)
+				sr := scannerResult{name: sc.Name(), findings: scanFindings, err: err}
+				if err == nil {
+					for _, d := range diags {
+						loc := ""
+						if d.Location != nil {
+							loc = d.Location.File
+						}
+						sr.diags = append(sr.diags, scanDiagnostic{File: loc, Message: d.Message})
+					}
+				}
+				ch <- sr
+			}()
+		}
+		for range len(p.scanners) {
+			sr := <-ch
+			if sr.err != nil {
+				return nil, fmt.Errorf("scanner %s: %w", sr.name, sr.err)
 			}
-			result.Diagnostics = append(result.Diagnostics, scanDiagnostic{File: loc, Message: d.Message})
+			p.collector.Add(sr.findings)
+			result.Diagnostics = append(result.Diagnostics, sr.diags...)
 		}
 	}
 

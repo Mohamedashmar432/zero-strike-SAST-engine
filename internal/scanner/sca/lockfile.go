@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"path/filepath"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
 // Dependency is a resolved package version from a lock file.
@@ -24,6 +26,12 @@ func parseLockFile(path string, data []byte) []Dependency {
 	case base == "package-lock.json":
 		deps, _ := parsePackageLockJSON(path, data)
 		return deps
+	case base == "yarn.lock":
+		return parseYarnLock(path, data)
+	case base == "pnpm-lock.yaml":
+		return parsePnpmLock(path, data)
+	case base == "Pipfile.lock":
+		return parsePipfileLock(path, data)
 	case strings.HasPrefix(base, "requirements") && strings.HasSuffix(base, ".txt"):
 		return parseRequirementsTxt(path, data)
 	}
@@ -116,6 +124,128 @@ func parsePackageLockJSON(path string, data []byte) ([]Dependency, error) {
 		}
 	}
 	return deps, nil
+}
+
+// parseYarnLock parses yarn.lock v1 (classic) and v2 (Berry) formats.
+func parseYarnLock(path string, data []byte) []Dependency {
+	var deps []Dependency
+	sc := bufio.NewScanner(bytes.NewReader(data))
+	var currentPkg string
+	for sc.Scan() {
+		line := sc.Text()
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			currentPkg = ""
+			continue
+		}
+		if strings.HasPrefix(trimmed, "#") {
+			continue
+		}
+		// Non-indented line ending in ":" → new package block header
+		if !strings.HasPrefix(line, " ") && !strings.HasPrefix(line, "\t") && strings.HasSuffix(trimmed, ":") {
+			currentPkg = extractYarnPkgName(trimmed)
+			continue
+		}
+		// Version line: v1 → `version "x.y.z"`, v2 → `version: x.y.z`
+		if currentPkg != "" && currentPkg != "__metadata" && strings.HasPrefix(trimmed, "version") {
+			var ver string
+			switch {
+			case strings.HasPrefix(trimmed, `version "`) && strings.HasSuffix(trimmed, `"`):
+				ver = trimmed[len(`version "`): len(trimmed)-1]
+			case strings.HasPrefix(trimmed, "version: "):
+				ver = strings.Trim(strings.TrimPrefix(trimmed, "version: "), `"`)
+			}
+			if ver = strings.TrimSpace(ver); ver != "" {
+				deps = append(deps, Dependency{
+					Ecosystem: "npm",
+					Package:   currentPkg,
+					Version:   ver,
+					Manifest:  path,
+					Direct:    true,
+				})
+				currentPkg = "" // one version per block
+			}
+		}
+	}
+	return deps
+}
+
+// extractYarnPkgName derives a package name from a yarn.lock block header line.
+func extractYarnPkgName(header string) string {
+	name := strings.TrimSuffix(header, ":")
+	name = strings.Trim(name, `"`)
+	// comma-separated aliases ("pkg@^1, pkg@~1"): take first
+	if idx := strings.Index(name, ","); idx >= 0 {
+		name = strings.TrimSpace(strings.Trim(name[:idx], `"`))
+	}
+	// strip version specifier: last "@" (idx>0 preserves scoped @scope/name)
+	if idx := strings.LastIndex(name, "@"); idx > 0 {
+		name = name[:idx]
+	}
+	return strings.TrimSpace(name)
+}
+
+// parsePnpmLock parses pnpm-lock.yaml (v6 and v9 formats).
+func parsePnpmLock(path string, data []byte) []Dependency {
+	var lock struct {
+		Packages map[string]interface{} `yaml:"packages"`
+	}
+	if err := yaml.Unmarshal(data, &lock); err != nil {
+		return nil
+	}
+	deps := make([]Dependency, 0, len(lock.Packages))
+	for key := range lock.Packages {
+		// v6 key: /package@version  v9 key: package@version
+		k := strings.TrimPrefix(key, "/")
+		idx := strings.LastIndex(k, "@")
+		if idx <= 0 {
+			continue
+		}
+		name, ver := k[:idx], k[idx+1:]
+		if name == "" || ver == "" {
+			continue
+		}
+		deps = append(deps, Dependency{
+			Ecosystem: "npm",
+			Package:   name,
+			Version:   ver,
+			Manifest:  path,
+			Direct:    true,
+		})
+	}
+	return deps
+}
+
+// parsePipfileLock parses a Pipfile.lock (JSON) produced by pipenv.
+// "default" deps are marked Direct=true; "develop" deps Direct=false.
+func parsePipfileLock(path string, data []byte) []Dependency {
+	var lock struct {
+		Default map[string]struct {
+			Version string `json:"version"`
+		} `json:"default"`
+		Develop map[string]struct {
+			Version string `json:"version"`
+		} `json:"develop"`
+	}
+	if err := json.Unmarshal(data, &lock); err != nil {
+		return nil
+	}
+	deps := make([]Dependency, 0, len(lock.Default)+len(lock.Develop))
+	for pkg, info := range lock.Default {
+		ver := strings.TrimPrefix(info.Version, "==")
+		if ver == "" {
+			continue
+		}
+		deps = append(deps, Dependency{Ecosystem: "PyPI", Package: pkg, Version: ver, Manifest: path, Direct: true})
+	}
+	for pkg, info := range lock.Develop {
+		ver := strings.TrimPrefix(info.Version, "==")
+		if ver == "" {
+			continue
+		}
+		deps = append(deps, Dependency{Ecosystem: "PyPI", Package: pkg, Version: ver, Manifest: path, Direct: false})
+	}
+	return deps
 }
 
 // deduplicateDeps removes duplicate (ecosystem, package, version) entries.

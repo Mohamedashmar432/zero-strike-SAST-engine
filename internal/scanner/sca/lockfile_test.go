@@ -1,6 +1,8 @@
 package sca
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -98,5 +100,80 @@ func TestParsePackageLockJSON_V1(t *testing.T) {
 		if d.Version == "" {
 			t.Errorf("dep %s has empty version", d.Package)
 		}
+	}
+}
+
+func TestParseYarnLock(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("testdata", "yarn.lock"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	deps := parseYarnLock("yarn.lock", data)
+	if len(deps) != 2 {
+		t.Fatalf("expected 2 deps, got %d: %+v", len(deps), deps)
+	}
+	byName := map[string]string{}
+	for _, d := range deps {
+		byName[d.Package] = d.Version
+		if d.Ecosystem != "npm" {
+			t.Errorf("dep %s Ecosystem = %q, want npm", d.Package, d.Ecosystem)
+		}
+	}
+	if byName["lodash"] != "4.17.21" {
+		t.Errorf("lodash version = %q, want 4.17.21", byName["lodash"])
+	}
+	if byName["express"] != "4.18.2" {
+		t.Errorf("express version = %q, want 4.18.2", byName["express"])
+	}
+}
+
+func TestParsePnpmLock(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("testdata", "pnpm-lock.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	deps := parsePnpmLock("pnpm-lock.yaml", data)
+	if len(deps) != 2 {
+		t.Fatalf("expected 2 deps, got %d: %+v", len(deps), deps)
+	}
+	byName := map[string]string{}
+	for _, d := range deps {
+		byName[d.Package] = d.Version
+		if d.Ecosystem != "npm" {
+			t.Errorf("dep %s Ecosystem = %q, want npm", d.Package, d.Ecosystem)
+		}
+	}
+	if byName["lodash"] != "4.17.21" {
+		t.Errorf("lodash version = %q, want 4.17.21", byName["lodash"])
+	}
+	if byName["express"] != "4.18.2" {
+		t.Errorf("express version = %q, want 4.18.2", byName["express"])
+	}
+}
+
+func TestParsePipfileLock(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("testdata", "Pipfile.lock"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	deps := parsePipfileLock("Pipfile.lock", data)
+	if len(deps) != 3 {
+		t.Fatalf("expected 3 deps, got %d: %+v", len(deps), deps)
+	}
+	byName := map[string]Dependency{}
+	for _, d := range deps {
+		byName[d.Package] = d
+	}
+	if byName["requests"].Version != "2.28.0" {
+		t.Errorf("requests version = %q, want 2.28.0", byName["requests"].Version)
+	}
+	if byName["requests"].Ecosystem != "PyPI" {
+		t.Errorf("requests Ecosystem = %q, want PyPI", byName["requests"].Ecosystem)
+	}
+	if !byName["requests"].Direct {
+		t.Errorf("requests should be Direct=true")
+	}
+	if byName["pytest"].Direct {
+		t.Errorf("pytest (develop dep) should be Direct=false")
 	}
 }

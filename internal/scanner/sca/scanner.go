@@ -36,6 +36,9 @@ func (s *SCAScanner) Name() string { return "sca" }
 func (s *SCAScanner) Accepts(entry walker.FileEntry) bool {
 	base := filepath.Base(entry.Path)
 	return base == "package-lock.json" ||
+		base == "yarn.lock" ||
+		base == "pnpm-lock.yaml" ||
+		base == "Pipfile.lock" ||
 		(strings.HasPrefix(base, "requirements") && strings.HasSuffix(base, ".txt"))
 }
 

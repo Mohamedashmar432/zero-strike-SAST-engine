@@ -55,3 +55,35 @@ func TestScanPipeline_EmptyDir(t *testing.T) {
 		t.Errorf("expected 0 files scanned in empty dir, got %d", result.FilesScanned)
 	}
 }
+
+// TestScanPipeline_Workers_ConcurrentMatchesSequential verifies the concurrent
+// scanner path (WorkerCount>1) produces the same result as sequential (WorkerCount=1).
+func TestScanPipeline_Workers_ConcurrentMatchesSequential(t *testing.T) {
+	dir := t.TempDir()
+
+	run := func(workers int) *pipeline.ScanResult {
+		pipe, err := pipeline.New(pipeline.ScanConfig{
+			RootPath:    dir,
+			WorkerCount: workers,
+			NoCache:     true,
+		})
+		if err != nil {
+			t.Fatalf("pipeline.New(workers=%d): %v", workers, err)
+		}
+		result, err := pipe.Run(context.Background())
+		if err != nil {
+			t.Fatalf("Run(workers=%d): %v", workers, err)
+		}
+		return result
+	}
+
+	seq := run(1)
+	conc := run(4)
+
+	if seq.FilesScanned != conc.FilesScanned {
+		t.Errorf("FilesScanned: sequential=%d concurrent=%d", seq.FilesScanned, conc.FilesScanned)
+	}
+	if len(seq.Findings) != len(conc.Findings) {
+		t.Errorf("Findings: sequential=%d concurrent=%d", len(seq.Findings), len(conc.Findings))
+	}
+}
