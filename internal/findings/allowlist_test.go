@@ -72,6 +72,26 @@ func TestNotSuppressed_WrongFingerprint(t *testing.T) {
 	}
 }
 
+func TestAllowList_DoubleStarGlob_Match(t *testing.T) {
+	al := &findings.AllowList{
+		Suppressions: []findings.Suppression{{ID: "ZS-PY-001", Path: "src/**/*.py"}},
+	}
+	f := makeTestFinding("ZS-PY-001", "fp5", "src/auth/login.py")
+	if !al.Suppressed(f) {
+		t.Fatal("expected src/auth/login.py to match src/**/*.py")
+	}
+}
+
+func TestAllowList_DoubleStarGlob_NoMatch(t *testing.T) {
+	al := &findings.AllowList{
+		Suppressions: []findings.Suppression{{ID: "ZS-PY-001", Path: "src/**/*.py"}},
+	}
+	f := makeTestFinding("ZS-PY-001", "fp6", "other/app.py")
+	if al.Suppressed(f) {
+		t.Fatal("expected other/app.py to NOT match src/**/*.py")
+	}
+}
+
 func TestLoadAllowList(t *testing.T) {
 	yaml := `version: "1"
 suppressions:

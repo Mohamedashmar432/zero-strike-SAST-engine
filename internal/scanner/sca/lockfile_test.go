@@ -151,6 +151,36 @@ func TestParsePnpmLock(t *testing.T) {
 	}
 }
 
+func TestParseGoMod(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("testdata", "go.mod"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	deps := parseGoMod("go.mod", data)
+	if len(deps) != 3 {
+		t.Fatalf("expected 3 deps, got %d: %+v", len(deps), deps)
+	}
+	byName := map[string]Dependency{}
+	for _, d := range deps {
+		byName[d.Package] = d
+		if d.Ecosystem != "Go" {
+			t.Errorf("dep %s Ecosystem = %q, want Go", d.Package, d.Ecosystem)
+		}
+	}
+	if byName["github.com/sirupsen/logrus"].Version != "v1.9.3" {
+		t.Errorf("logrus version = %q, want v1.9.3", byName["github.com/sirupsen/logrus"].Version)
+	}
+	if !byName["github.com/sirupsen/logrus"].Direct {
+		t.Errorf("logrus should be Direct=true")
+	}
+	if !byName["github.com/spf13/cobra"].Direct {
+		t.Errorf("cobra should be Direct=true")
+	}
+	if byName["github.com/indirect-dep/lib"].Direct {
+		t.Errorf("indirect-dep/lib should be Direct=false")
+	}
+}
+
 func TestParsePipfileLock(t *testing.T) {
 	data, err := os.ReadFile(filepath.Join("testdata", "Pipfile.lock"))
 	if err != nil {

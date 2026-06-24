@@ -15,6 +15,7 @@ import (
 	"github.com/zerostrike/scanner/internal/core"
 	"github.com/zerostrike/scanner/internal/pipeline"
 	"github.com/zerostrike/scanner/internal/report"
+	htmlreport "github.com/zerostrike/scanner/internal/report/html"
 	jsonreport "github.com/zerostrike/scanner/internal/report/json"
 	sarifreport "github.com/zerostrike/scanner/internal/report/sarif"
 )
@@ -128,8 +129,10 @@ func scanCmd() *cobra.Command {
 				repObj = jsonreport.New()
 			case "sarif":
 				repObj = sarifreport.New()
+			case "html":
+				repObj = htmlreport.New()
 			default:
-				return fmt.Errorf("unsupported format %q (supported: json, sarif)", flagFormat)
+				return fmt.Errorf("unsupported format %q (supported: json, sarif, html)", flagFormat)
 			}
 
 			var out *os.File

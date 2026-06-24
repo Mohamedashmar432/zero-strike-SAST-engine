@@ -32,6 +32,8 @@ func parseLockFile(path string, data []byte) []Dependency {
 		return parsePnpmLock(path, data)
 	case base == "Pipfile.lock":
 		return parsePipfileLock(path, data)
+	case base == "go.mod":
+		return parseGoMod(path, data)
 	case strings.HasPrefix(base, "requirements") && strings.HasSuffix(base, ".txt"):
 		return parseRequirementsTxt(path, data)
 	}
@@ -246,6 +248,59 @@ func parsePipfileLock(path string, data []byte) []Dependency {
 		deps = append(deps, Dependency{Ecosystem: "PyPI", Package: pkg, Version: ver, Manifest: path, Direct: false})
 	}
 	return deps
+}
+
+// parseGoMod parses a go.mod file and extracts require directives.
+// Direct dependencies (no "// indirect" comment) are marked Direct=true.
+func parseGoMod(path string, data []byte) []Dependency {
+	var deps []Dependency
+	sc := bufio.NewScanner(bytes.NewReader(data))
+	inBlock := false
+	for sc.Scan() {
+		line := strings.TrimSpace(sc.Text())
+		if line == "" || strings.HasPrefix(line, "//") {
+			continue
+		}
+		if line == ")" {
+			inBlock = false
+			continue
+		}
+		if line == "require (" {
+			inBlock = true
+			continue
+		}
+		if inBlock {
+			if d := parseGoModRequireLine(line, path); d != nil {
+				deps = append(deps, *d)
+			}
+			continue
+		}
+		if rest, ok := strings.CutPrefix(line, "require "); ok {
+			if d := parseGoModRequireLine(rest, path); d != nil {
+				deps = append(deps, *d)
+			}
+		}
+	}
+	return deps
+}
+
+// parseGoModRequireLine parses a single require entry: "module v1.2.3 [// indirect]"
+func parseGoModRequireLine(line, manifest string) *Dependency {
+	indirect := strings.Contains(line, "// indirect")
+	if idx := strings.Index(line, "//"); idx >= 0 {
+		line = strings.TrimSpace(line[:idx])
+	}
+	parts := strings.Fields(line)
+	if len(parts) != 2 {
+		return nil
+	}
+	return &Dependency{
+		Ecosystem: "Go",
+		Package:   parts[0],
+		Version:   parts[1],
+		Manifest:  manifest,
+		Direct:    !indirect,
+	}
 }
 
 // deduplicateDeps removes duplicate (ecosystem, package, version) entries.

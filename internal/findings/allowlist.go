@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/bmatcuk/doublestar/v4"
 	"github.com/zerostrike/scanner/internal/core"
 	"gopkg.in/yaml.v3"
 )
@@ -37,10 +38,8 @@ func LoadAllowList(path string) (*AllowList, error) {
 //
 // Matching precedence:
 //  1. Fingerprint set → exact fingerprint match (ID/Path ignored).
-//  2. ID + Path set   → rule ID match AND filepath.Match(path, file).
+//  2. ID + Path set   → rule ID match AND doublestar.Match(path, file); ** globs supported.
 //  3. ID only         → all findings with that rule ID.
-//
-// ponytail: filepath.Match only — ** glob not supported; add doublestar lib if needed.
 func (al *AllowList) Suppressed(f core.Finding) bool {
 	for _, s := range al.Suppressions {
 		if s.Fingerprint != "" {
@@ -55,10 +54,10 @@ func (al *AllowList) Suppressed(f core.Finding) bool {
 			}
 			rel := filepath.ToSlash(f.Location.File)
 			pat := filepath.ToSlash(s.Path)
-			if ok, _ := filepath.Match(pat, filepath.Base(rel)); ok {
+			if ok, _ := doublestar.Match(pat, filepath.Base(rel)); ok {
 				return true
 			}
-			if ok, _ := filepath.Match(pat, rel); ok {
+			if ok, _ := doublestar.Match(pat, rel); ok {
 				return true
 			}
 		}
