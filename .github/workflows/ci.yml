@@ -47,3 +47,74 @@ jobs:
           cache: true
       - name: Test
         run: go test ./... -count=1
+
+  scan-e2e:
+    name: scan-e2e / ${{ matrix.name }}
+    needs: [lint, test]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            cgo: "1"
+            name: ubuntu-cgo
+          - os: ubuntu-latest
+            cgo: "0"
+            name: ubuntu-nocgo
+          - os: windows-latest
+            cgo: "0"
+            name: windows-nocgo
+    runs-on: ${{ matrix.os }}
+    env:
+      CGO_ENABLED: ${{ matrix.cgo }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install zerostrike
+        run: go install ./cmd/zerostrike/
+
+      - name: Checkout dvna
+        uses: actions/checkout@v4
+        with:
+          repository: appsecco/dvna
+          path: targets/dvna
+
+      - name: Checkout dvpwa
+        uses: actions/checkout@v4
+        with:
+          repository: anxolerd/dvpwa
+          path: targets/dvpwa
+
+      # exit 1 means findings found (expected on vulnerable apps) — not a CI failure.
+      # exit 2 means engine error — propagates and fails the job.
+      - name: Scan dvna (JSON)
+        shell: bash
+        run: zerostrike scan --enable-sca --enable-secrets --format json --output dvna-report.json targets/dvna || [ $? -eq 1 ]
+
+      - name: Scan dvna (HTML)
+        shell: bash
+        run: zerostrike scan --enable-sca --enable-secrets --format html --output dvna-report.html targets/dvna || [ $? -eq 1 ]
+
+      - name: Scan dvpwa (JSON)
+        shell: bash
+        run: zerostrike scan --enable-sca --enable-secrets --format json --output dvpwa-report.json targets/dvpwa || [ $? -eq 1 ]
+
+      - name: Scan dvpwa (HTML)
+        shell: bash
+        run: zerostrike scan --enable-sca --enable-secrets --format html --output dvpwa-report.html targets/dvpwa || [ $? -eq 1 ]
+
+      - name: Upload scan reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: scan-reports-${{ matrix.name }}
+          path: |
+            dvna-report.json
+            dvna-report.html
+            dvpwa-report.json
+            dvpwa-report.html

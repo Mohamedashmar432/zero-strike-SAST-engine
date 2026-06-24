@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 
 	"github.com/zerostrike/scanner/internal/analyzer"
@@ -88,16 +89,22 @@ func scanCmd() *cobra.Command {
 				FilesSkipped:  result.FilesSkipped,
 				TotalFindings: len(result.Findings),
 				Suppressed:    result.Suppressed,
+				BySeverity:    make(map[core.Severity]int),
+				ByLanguage:    make(map[core.Language]int),
+				ByCategory:    make(map[string]int),
 				ByScanner:     make(map[string]int),
 				ByKind:        make(map[core.FindingKind]int),
 			}
 
-			// Aggregate by scanner / kind
 			for _, f := range result.Findings {
 				stats.ByScanner[string(f.Kind)]++
 				stats.ByKind[f.Kind]++
-				if f.Location.File != "" {
-					// track by language
+				stats.BySeverity[f.Severity]++
+				if f.Language != "" && f.Language != core.LangUnknown {
+					stats.ByLanguage[f.Language]++
+				}
+				if f.Category != "" {
+					stats.ByCategory[f.Category]++
 				}
 			}
 
@@ -111,12 +118,15 @@ func scanCmd() *cobra.Command {
 				})
 			}
 
+			hostname, _ := os.Hostname()
 			absRoot, _ := filepath.Abs(rootPath)
 			rep := &report.Report{
+				ScanID:         uuid.New().String(),
 				ScannerVersion: version,
 				StartedAt:      start,
 				Duration:       elapsed,
 				RootPath:       absRoot,
+				Hostname:       hostname,
 				Findings:       result.Findings,
 				Stats:          stats,
 				Diagnostics:    diags,

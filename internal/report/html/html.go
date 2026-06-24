@@ -62,7 +62,8 @@ func buildTemplateData(rep *report.Report) templateData {
 var tmpl = template.Must(
 	template.New("report").
 		Funcs(template.FuncMap{
-			"fmtTime": func(t time.Time) string { return t.UTC().Format("2006-01-02 15:04:05 UTC") },
+			"fmtTime":     func(t time.Time) string { return t.UTC().Format("2006-01-02 15:04:05 UTC") },
+			"fmtDuration": func(d time.Duration) string { return d.Round(time.Millisecond).String() },
 		}).
 		Parse(htmlTmpl),
 )
@@ -105,7 +106,7 @@ td{padding:.6rem .75rem;font-size:.875rem;border-top:1px solid #dee2e6;vertical-
   <div><dt>Version</dt><dd>{{.Report.ScannerVersion}}</dd></div>
   <div><dt>Root</dt><dd>{{.Report.RootPath}}</dd></div>
   <div><dt>Started</dt><dd>{{fmtTime .Report.StartedAt}}</dd></div>
-  <div><dt>Duration</dt><dd>{{.Report.Duration}}</dd></div>{{if .Report.Branch}}
+  <div><dt>Duration</dt><dd>{{fmtDuration .Report.Duration}}</dd></div>{{if .Report.Branch}}
   <div><dt>Branch</dt><dd>{{.Report.Branch}}</dd></div>{{end}}{{if .Report.GitCommit}}
   <div><dt>Commit</dt><dd>{{.Report.GitCommit}}</dd></div>{{end}}
 </dl>
