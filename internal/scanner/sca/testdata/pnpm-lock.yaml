@@ -1,0 +1,11 @@
+lockfileVersion: '6.0'
+
+packages:
+
+  /express@4.18.2:
+    resolution: {integrity: sha512-stub}
+    dev: false
+
+  /lodash@4.17.21:
+    resolution: {integrity: sha512-stub}
+    dev: false

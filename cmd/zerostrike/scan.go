@@ -112,7 +112,7 @@ func scanCmd() *cobra.Command {
 
 			absRoot, _ := filepath.Abs(rootPath)
 			rep := &report.Report{
-				ScannerVersion: "v0.5.0-pre",
+				ScannerVersion: version,
 				StartedAt:      start,
 				Duration:       elapsed,
 				RootPath:       absRoot,
@@ -124,10 +124,12 @@ func scanCmd() *cobra.Command {
 			// Select reporter
 			var repObj report.Reporter
 			switch flagFormat {
+			case "json", "":
+				repObj = jsonreport.New()
 			case "sarif":
 				repObj = sarifreport.New()
 			default:
-				repObj = jsonreport.New()
+				return fmt.Errorf("unsupported format %q (supported: json, sarif)", flagFormat)
 			}
 
 			var out *os.File
