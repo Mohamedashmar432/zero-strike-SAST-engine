@@ -1,3 +1,5 @@
+//go:build cgo
+
 package engine_test
 
 import (

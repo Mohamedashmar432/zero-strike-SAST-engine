@@ -1,4 +1,4 @@
-.PHONY: build test lint benchmark clean
+.PHONY: build test test-short test-nocgo lint benchmark clean
 
 BINARY := zerostrike
 MODULE := github.com/zerostrike/scanner
@@ -11,6 +11,9 @@ test:
 
 test-short:
 	go test ./... -short
+
+test-nocgo:
+	CGO_ENABLED=0 go test ./... -count=1
 
 lint:
 	go vet ./...

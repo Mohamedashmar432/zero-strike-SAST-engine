@@ -16,6 +16,7 @@ import (
 	"github.com/zerostrike/scanner/internal/pipeline"
 	"github.com/zerostrike/scanner/internal/report"
 	jsonreport "github.com/zerostrike/scanner/internal/report/json"
+	sarifreport "github.com/zerostrike/scanner/internal/report/sarif"
 )
 
 func scanCmd() *cobra.Command {
@@ -123,10 +124,10 @@ func scanCmd() *cobra.Command {
 			// Select reporter
 			var repObj report.Reporter
 			switch flagFormat {
-			case "json", "":
-				repObj = jsonreport.New()
+			case "sarif":
+				repObj = sarifreport.New()
 			default:
-				repObj = jsonreport.New() // fall back to json
+				repObj = jsonreport.New()
 			}
 
 			var out *os.File

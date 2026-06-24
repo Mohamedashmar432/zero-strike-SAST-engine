@@ -1,3 +1,5 @@
+//go:build cgo
+
 package parser
 
 import "github.com/zerostrike/scanner/internal/core"

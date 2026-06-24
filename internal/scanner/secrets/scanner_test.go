@@ -89,6 +89,34 @@ func TestSecretsScanner_LowEntropyNotFlagged(t *testing.T) {
 	}
 }
 
+func TestSecretsScanner_APIKey_HighEntropy(t *testing.T) {
+	// High-entropy API key should be flagged by ZS-SEC-003
+	fs := scanContent("config.py", []byte(`api_key = "aB3xZ9kLmN2pQrStUvWxYz"`))
+	found := false
+	for _, f := range fs {
+		if f.RuleID == "ZS-SEC-003" {
+			found = true
+		}
+	}
+	if !found {
+		t.Error("high-entropy API key should be flagged by ZS-SEC-003")
+	}
+}
+
+func TestSecretsScanner_HardcodedPassword(t *testing.T) {
+	// Hardcoded password should be flagged by ZS-SEC-004
+	fs := scanContent("app.py", []byte(`password = "SuperSecret123!"`))
+	found := false
+	for _, f := range fs {
+		if f.RuleID == "ZS-SEC-004" {
+			found = true
+		}
+	}
+	if !found {
+		t.Error("hardcoded password should be flagged by ZS-SEC-004")
+	}
+}
+
 func TestSecretsScanner_Scan(t *testing.T) {
 	// Integration smoke test using a temp file — no CGo needed
 	sc := New()
