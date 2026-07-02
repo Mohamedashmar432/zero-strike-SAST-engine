@@ -79,6 +79,32 @@ func TestIRBuilder_PairKeywordArg(t *testing.T) {
 	}
 }
 
+// TestIRBuilder_VariableDeclaratorIsAssignment is a regression test for a
+// Sprint 12 QA finding: const/let/var declarations with an initializer
+// produce a variable_declarator node (fields name/value), not
+// assignment_expression (fields left/right) — see the identical JS test for
+// full context. TS shares this grammar shape with JS.
+func TestIRBuilder_VariableDeclaratorIsAssignment(t *testing.T) {
+	src := []byte("const password: string = \"hunter2\";\n")
+	builder := NewIRBuilder()
+	irFile, _, err := builder.Build("test.ts", src)
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
+	assignments := ir.FindByKind(irFile.Root, ir.NodeKindAssignment)
+	if len(assignments) != 1 {
+		t.Fatalf("expected 1 assignment node for 'const password: string = ...', got %d", len(assignments))
+	}
+	lhs, _ := assignments[0].Attrs["lhs"].(string)
+	rhs, _ := assignments[0].Attrs["rhs"].(string)
+	if lhs != "password" {
+		t.Errorf("lhs: got %q, want %q", lhs, "password")
+	}
+	if rhs != "\"hunter2\"" {
+		t.Errorf("rhs: got %q, want %q", rhs, "\"hunter2\"")
+	}
+}
+
 // TestIRBuilder_EmptyCatchBlock verifies Sprint 12: an empty catch body is
 // recorded as IsEmptyBody on the try node's except_handlers attr.
 func TestIRBuilder_EmptyCatchBlock(t *testing.T) {

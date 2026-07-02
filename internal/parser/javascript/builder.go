@@ -99,7 +99,7 @@ func mapKind(nodeType string) ir.NodeKind {
 		return ir.NodeKindClass
 	case "call_expression", "new_expression":
 		return ir.NodeKindCall
-	case "assignment_expression", "augmented_assignment_expression":
+	case "assignment_expression", "augmented_assignment_expression", "variable_declarator":
 		return ir.NodeKindAssignment
 	case "import_statement", "import_declaration":
 		return ir.NodeKindImport
@@ -153,6 +153,15 @@ func extractAttrs(n *ir.IRNode, node *sitter.Node, source []byte) {
 		}
 		if rhs := node.ChildByFieldName("right"); rhs != nil {
 			n.Attrs["rhs"] = rhs.Content(source)
+		}
+	case "variable_declarator":
+		// const/let/var x = ... — a declaration with an initializer, distinct
+		// from assignment_expression (plain reassignment) in this grammar.
+		if name := node.ChildByFieldName("name"); name != nil {
+			n.Attrs["lhs"] = name.Content(source)
+		}
+		if value := node.ChildByFieldName("value"); value != nil {
+			n.Attrs["rhs"] = value.Content(source)
 		}
 	case "pair":
 		if key := node.ChildByFieldName("key"); key != nil {
