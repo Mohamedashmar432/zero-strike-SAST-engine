@@ -9,9 +9,20 @@ import (
 
 // hardcodedSkipDirs lists directory names that are always excluded.
 var hardcodedSkipDirs = []string{
-	".git", ".zerostrike", "vendor", "node_modules",
-	"__pycache__", ".venv", "venv", "dist", "build",
-	"bin", "obj",
+	// VCS / tooling
+	".git", ".zerostrike",
+	// Dependencies / vendored code
+	"vendor", "node_modules",
+	// Python runtime artifacts and virtual envs
+	"__pycache__", ".venv", "venv",
+	// Static / generated / build output (common source of false positives)
+	"static", "assets", "public", "media",
+	"dist", "build", "bin", "obj",
+	// Test coverage and linter caches
+	"htmlcov", "coverage", ".tox", ".pytest_cache",
+	".mypy_cache", ".ruff_cache",
+	// Framework migration dirs
+	"migrations",
 }
 
 // hardcodedBinaryExts lists file extensions that are always treated as binary.
