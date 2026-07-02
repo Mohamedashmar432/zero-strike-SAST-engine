@@ -1,0 +1,26 @@
+id: ZS-PY-016
+name: Flask Debug Mode Enabled
+version: "1.0.0"
+language: python
+category: security-misconfiguration
+severity: high
+confidence: medium
+cwe:
+  - CWE-489
+owasp:
+  - "A02:2025"
+description: |
+  Running a Flask application with debug=True exposes the Werkzeug interactive
+  debugger, which allows arbitrary code execution if reachable in production.
+message: "app.run(debug=True) detected — never enable the debugger in production"
+references:
+  - https://owasp.org/Top10/2025/A02_2025-Security_Misconfiguration/
+tags: [misconfiguration, flask, debug-mode]
+match:
+  kind: call
+  callee: app.run
+  filters:
+    - kwarg:
+        name: debug
+        value_pattern: "^True$"
+fix_suggestion: "Set debug=False (the default) and use a proper reloader setup only in local development."

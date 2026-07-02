@@ -14,21 +14,21 @@ import (
 
 // ruleYAML is the wire format that maps YAML fields to Rule fields.
 type ruleYAML struct {
-	ID            string      `yaml:"id"`
-	Name          string      `yaml:"name"`
-	Version       string      `yaml:"version"`
-	Language      string      `yaml:"language"`
-	Category      string      `yaml:"category"`
-	Severity      string      `yaml:"severity"`
-	Confidence    string      `yaml:"confidence"`
-	Description   string      `yaml:"description"`
-	Message       string      `yaml:"message"`
-	Tags          []string    `yaml:"tags"`
-	CWE           []string    `yaml:"cwe"`
-	OWASP         []string    `yaml:"owasp"`
-	References    []string    `yaml:"references"`
-	Match         matchYAML   `yaml:"match"`
-	FixSuggestion string      `yaml:"fix_suggestion"`
+	ID            string    `yaml:"id"`
+	Name          string    `yaml:"name"`
+	Version       string    `yaml:"version"`
+	Language      string    `yaml:"language"`
+	Category      string    `yaml:"category"`
+	Severity      string    `yaml:"severity"`
+	Confidence    string    `yaml:"confidence"`
+	Description   string    `yaml:"description"`
+	Message       string    `yaml:"message"`
+	Tags          []string  `yaml:"tags"`
+	CWE           []string  `yaml:"cwe"`
+	OWASP         []string  `yaml:"owasp"`
+	References    []string  `yaml:"references"`
+	Match         matchYAML `yaml:"match"`
+	FixSuggestion string    `yaml:"fix_suggestion"`
 }
 
 type matchYAML struct {
@@ -37,13 +37,24 @@ type matchYAML struct {
 	Identifier    string       `yaml:"identifier"`
 	Literal       string       `yaml:"literal"`
 	LHSIdentifier string       `yaml:"lhs_identifier"`
+	RHSLiteral    string       `yaml:"rhs_literal"`
 	Filters       []filterYAML `yaml:"filters"`
 }
 
+type kwargYAML struct {
+	Name         string `yaml:"name"`
+	ValuePattern string `yaml:"value_pattern"`
+}
+
 type filterYAML struct {
-	Not           *matchYAML `yaml:"not"`
-	ArgumentCount *int       `yaml:"argument_count"`
-	HasAttribute  string     `yaml:"has_attribute"`
+	Not                       *matchYAML `yaml:"not"`
+	ArgumentCount             *int       `yaml:"argument_count"`
+	HasAttribute              string     `yaml:"has_attribute"`
+	TaintedArgument           bool       `yaml:"tainted_argument"`
+	Kwarg                     *kwargYAML `yaml:"kwarg"`
+	ArgumentIdentifierMatches string     `yaml:"argument_identifier_matches"`
+	HasBareExcept             bool       `yaml:"has_bare_except"`
+	HasEmptyExceptHandler     bool       `yaml:"has_empty_except_handler"`
 }
 
 type defaultLoader struct {
@@ -133,6 +144,7 @@ func (l *defaultLoader) parseYAML(source string, data []byte) ([]*Rule, error) {
 			Identifier:    ry.Match.Identifier,
 			Literal:       ry.Match.Literal,
 			LHSIdentifier: ry.Match.LHSIdentifier,
+			RHSLiteral:    ry.Match.RHSLiteral,
 			Filters:       convertFilters(ry.Match.Filters),
 		},
 	}
@@ -146,8 +158,15 @@ func convertFilters(fyamls []filterYAML) []Filter {
 	out := make([]Filter, 0, len(fyamls))
 	for _, f := range fyamls {
 		filter := Filter{
-			ArgumentCount: f.ArgumentCount,
-			HasAttribute:  f.HasAttribute,
+			ArgumentCount:             f.ArgumentCount,
+			HasAttribute:              f.HasAttribute,
+			TaintedArgument:           f.TaintedArgument,
+			ArgumentIdentifierMatches: f.ArgumentIdentifierMatches,
+			HasBareExcept:             f.HasBareExcept,
+			HasEmptyExceptHandler:     f.HasEmptyExceptHandler,
+		}
+		if f.Kwarg != nil {
+			filter.Kwarg = &KwargPattern{Name: f.Kwarg.Name, ValuePattern: f.Kwarg.ValuePattern}
 		}
 		if f.Not != nil {
 			mp := MatchPattern{

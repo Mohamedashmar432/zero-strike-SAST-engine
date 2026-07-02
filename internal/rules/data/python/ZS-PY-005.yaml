@@ -8,7 +8,7 @@ confidence: high
 cwe:
   - CWE-78
 owasp:
-  - "A03:2021"
+  - "A05:2025"
 description: |
   os.system() passes the command string directly to the shell, enabling command injection
   when the command includes any user-controlled data.

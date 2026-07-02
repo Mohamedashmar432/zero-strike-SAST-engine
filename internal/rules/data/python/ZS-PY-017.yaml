@@ -1,0 +1,24 @@
+id: ZS-PY-017
+name: Django DEBUG Enabled
+version: "1.0.0"
+language: python
+category: security-misconfiguration
+severity: high
+confidence: medium
+cwe:
+  - CWE-489
+owasp:
+  - "A02:2025"
+description: |
+  Django's DEBUG = True setting exposes detailed stack traces, source snippets,
+  and environment variables in error pages — a significant information
+  disclosure risk if left enabled in production.
+message: "DEBUG = True detected — disable debug mode in production settings"
+references:
+  - https://owasp.org/Top10/2025/A02_2025-Security_Misconfiguration/
+tags: [misconfiguration, django, debug-mode]
+match:
+  kind: assignment
+  lhs_identifier: "^DEBUG$"
+  rhs_literal: "^True$"
+fix_suggestion: "Set DEBUG = False in production settings and drive it from an environment variable."

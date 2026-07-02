@@ -8,7 +8,7 @@ confidence: high
 cwe:
   - CWE-502
 owasp:
-  - "A08:2021"
+  - "A08:2025"
 description: |
   yaml.load() with untrusted input can execute arbitrary Python code via custom YAML tags.
   Use yaml.safe_load() which only constructs standard Python objects.

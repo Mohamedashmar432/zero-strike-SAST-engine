@@ -8,16 +8,18 @@ confidence: medium
 cwe:
   - CWE-78
 owasp:
-  - "A03:2021"
+  - "A05:2025"
 description: |
-  subprocess.call() executes external commands and may be vulnerable to command
-  injection if arguments include user-controlled data. Prefer subprocess.run()
-  with a list argument and shell=False.
-message: "subprocess.call() detected — ensure arguments are not user-controlled; use shell=False"
+  subprocess.call() executes external commands and is flagged when the command
+  argument traces back to an untrusted source (intra-procedural taint tracking).
+  Prefer subprocess.run() with a list argument and shell=False.
+message: "subprocess.call() detected with a tainted argument — ensure it is not user-controlled; use shell=False"
 references:
   - https://docs.python.org/3/library/subprocess.html
 tags: [command-injection, subprocess]
 match:
   kind: call
   callee: subprocess.call
+  filters:
+    - tainted_argument: true
 fix_suggestion: "Use subprocess.run([cmd, arg1, arg2], shell=False) with a list to prevent shell injection."

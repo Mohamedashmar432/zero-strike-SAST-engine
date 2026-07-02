@@ -8,7 +8,7 @@ confidence: high
 cwe:
   - CWE-377
 owasp:
-  - "A01:2021"
+  - "A01:2025"
 description: |
   tempfile.mktemp() returns a filename but does not create the file atomically.
   The gap between name generation and file creation allows a race condition

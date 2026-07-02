@@ -1,0 +1,25 @@
+id: ZS-PY-024
+name: Empty except Handler Swallows Exception
+version: "1.0.0"
+language: python
+category: error-handling
+severity: medium
+confidence: high
+cwe:
+  - CWE-390
+owasp:
+  - "A10:2025"
+description: |
+  An except handler whose body is just "pass" silently swallows the exception
+  with no logging or recovery, hiding failures ("fail open" / mishandled
+  exceptional conditions). Fires once per try block containing at least one
+  such handler (not once per clause).
+message: "except clause with an empty (pass-only) body detected — log or handle the exception"
+references:
+  - https://cwe.mitre.org/data/definitions/390.html
+tags: [exception-handling, empty-handler, fail-open]
+match:
+  kind: try
+  filters:
+    - has_empty_except_handler: true
+fix_suggestion: "At minimum log the exception (logging.exception(...)) instead of silently passing."

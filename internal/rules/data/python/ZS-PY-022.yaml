@@ -1,0 +1,26 @@
+id: ZS-PY-022
+name: Sensitive Value Logged
+version: "1.0.0"
+language: python
+category: logging
+severity: medium
+confidence: low
+cwe:
+  - CWE-532
+owasp:
+  - "A09:2025"
+description: |
+  A variable whose name suggests sensitive data (password, secret, api_key,
+  token) is passed directly to logging.info(). This can leak credentials into
+  log files. Note: only logging.info() is covered — other levels
+  (debug/warning/error) and print() are not yet detected by this single rule.
+message: "Sensitive-looking value passed to logging.info() — avoid logging credentials"
+references:
+  - https://cwe.mitre.org/data/definitions/532.html
+tags: [logging, information-disclosure]
+match:
+  kind: call
+  callee: logging.info
+  filters:
+    - argument_identifier_matches: "(?i)(password|secret|api_key|token)"
+fix_suggestion: "Redact or omit sensitive values before logging; log an identifier instead of the secret itself."

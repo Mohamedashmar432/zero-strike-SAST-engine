@@ -50,7 +50,7 @@ func BuildIndex(rs []*rules.Rule) *RuleIndex {
 
 // MatchContext bundles everything the engine needs to match rules against one file.
 type MatchContext struct {
-	Index   *RuleIndex            // prebuilt at rule-load time, shared across files
+	Index   *RuleIndex // prebuilt at rule-load time, shared across files
 	File    *analyzer.AnalysisResult
 	Project *Project
 }
@@ -70,6 +70,7 @@ func (e *defaultEngine) Match(_ context.Context, mc *MatchContext) ([]MatchResul
 	if mc == nil || mc.Index == nil || mc.File == nil || mc.File.IR == nil {
 		return nil, nil
 	}
+	taintedVars := mc.File.TaintedVars
 	var out []MatchResult
 	ir.Walk(mc.File.IR.Root, func(n *ir.IRNode) bool {
 		candidates := mc.Index.byKind[n.Kind]
@@ -77,7 +78,7 @@ func (e *defaultEngine) Match(_ context.Context, mc *MatchContext) ([]MatchResul
 			candidates = append(candidates, mc.Index.byCallee[calleeText(n)]...)
 		}
 		for _, r := range candidates {
-			if matchNode(r.Match, n) {
+			if matchNode(r.Match, n, taintedVars) {
 				out = append(out, MatchResult{Rule: r, Node: n})
 			}
 		}
@@ -117,7 +118,7 @@ func attributeText(n *ir.IRNode) string {
 // matchNode checks whether a node satisfies the match pattern.
 // Callee matching is already handled by the index; matchNode covers
 // Identifier, Literal, and Filter constraints.
-func matchNode(pattern rules.MatchPattern, n *ir.IRNode) bool {
+func matchNode(pattern rules.MatchPattern, n *ir.IRNode, taintedVars map[string]bool) bool {
 	if ir.NodeKind(pattern.Kind) != n.Kind {
 		return false
 	}
@@ -137,15 +138,22 @@ func matchNode(pattern rules.MatchPattern, n *ir.IRNode) bool {
 			return false
 		}
 	}
+	if pattern.RHSLiteral != "" {
+		rhs, _ := n.Attrs["rhs"].(string)
+		matched, err := regexp.MatchString(pattern.RHSLiteral, rhs)
+		if err != nil || !matched {
+			return false
+		}
+	}
 	for _, f := range pattern.Filters {
-		if !evalFilter(f, n) {
+		if !evalFilter(f, n, taintedVars) {
 			return false
 		}
 	}
 	return true
 }
 
-func evalFilter(f rules.Filter, n *ir.IRNode) bool {
+func evalFilter(f rules.Filter, n *ir.IRNode, taintedVars map[string]bool) bool {
 	if f.ArgumentCount != nil {
 		ac, _ := n.Attrs["argument_count"].(int)
 		if ac != *f.ArgumentCount {
@@ -164,10 +172,86 @@ func evalFilter(f rules.Filter, n *ir.IRNode) bool {
 			return false
 		}
 	}
+	if f.TaintedArgument {
+		if !anyArgument(n, func(a *ir.IRNode) bool {
+			return a.Kind == ir.NodeKindIdentifier && taintedVars[a.Text]
+		}) {
+			return false
+		}
+	}
+	if f.Kwarg != nil {
+		if !anyArgument(n, func(a *ir.IRNode) bool {
+			if a.Kind != ir.NodeKindKeywordArg {
+				return false
+			}
+			name, _ := a.Attrs["kwarg_name"].(string)
+			if name != f.Kwarg.Name {
+				return false
+			}
+			value, _ := a.Attrs["kwarg_value"].(string)
+			matched, err := regexp.MatchString(f.Kwarg.ValuePattern, value)
+			return err == nil && matched
+		}) {
+			return false
+		}
+	}
+	if f.ArgumentIdentifierMatches != "" {
+		if !anyArgument(n, func(a *ir.IRNode) bool {
+			if a.Kind != ir.NodeKindIdentifier {
+				return false
+			}
+			matched, err := regexp.MatchString(f.ArgumentIdentifierMatches, a.Text)
+			return err == nil && matched
+		}) {
+			return false
+		}
+	}
+	if f.HasBareExcept {
+		if !anyExceptHandler(n, func(h ir.ExceptHandler) bool { return h.IsBare }) {
+			return false
+		}
+	}
+	if f.HasEmptyExceptHandler {
+		if !anyExceptHandler(n, func(h ir.ExceptHandler) bool { return h.IsEmptyBody }) {
+			return false
+		}
+	}
 	if f.Not != nil {
-		if matchNode(*f.Not, n) {
+		if matchNode(*f.Not, n, taintedVars) {
 			return false
 		}
 	}
 	return true
+}
+
+// anyExceptHandler reports whether any except clause recorded on a try_statement
+// node's Attrs["except_handlers"] satisfies pred.
+func anyExceptHandler(n *ir.IRNode, pred func(ir.ExceptHandler) bool) bool {
+	handlers, _ := n.Attrs["except_handlers"].([]ir.ExceptHandler)
+	for _, h := range handlers {
+		if pred(h) {
+			return true
+		}
+	}
+	return false
+}
+
+// anyArgument reports whether any node in a call's argument list (everything
+// after the callee/function child) satisfies pred. Returns false for non-call
+// nodes or calls with no argument list child.
+func anyArgument(n *ir.IRNode, pred func(*ir.IRNode) bool) bool {
+	if n.Kind != ir.NodeKindCall || len(n.Children) < 2 {
+		return false
+	}
+	for _, argRoot := range n.Children[1:] {
+		if pred(argRoot) {
+			return true
+		}
+		for _, d := range ir.Descendants(argRoot) {
+			if pred(d) {
+				return true
+			}
+		}
+	}
+	return false
 }

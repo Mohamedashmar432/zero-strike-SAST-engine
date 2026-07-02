@@ -8,12 +8,12 @@ confidence: high
 cwe:
   - CWE-95
 owasp:
-  - "A03:2021"
+  - "A05:2025"
 description: |
   eval() with untrusted input allows arbitrary code execution.
 message: "Dangerous call to eval() — replace with ast.literal_eval() for safe parsing"
 references:
-  - https://owasp.org/Top10/A03_2021-Injection/
+  - https://owasp.org/Top10/2025/A05_2025-Injection/
 tags: [rce, injection, eval]
 match:
   kind: call

@@ -8,16 +8,18 @@ confidence: medium
 cwe:
   - CWE-78
 owasp:
-  - "A03:2021"
+  - "A05:2025"
 description: |
-  os.popen() opens a pipe to a shell command. If the command string includes
-  user-controlled input, this is a command injection vulnerability.
+  os.popen() opens a pipe to a shell command and is flagged when the command
+  string traces back to an untrusted source (intra-procedural taint tracking).
   Use the subprocess module instead.
-message: "os.popen() detected — replace with subprocess.run() to avoid shell injection"
+message: "os.popen() detected with a tainted argument — replace with subprocess.run() to avoid shell injection"
 references:
   - https://docs.python.org/3/library/os.html#os.popen
 tags: [command-injection, os-popen]
 match:
   kind: call
   callee: os.popen
+  filters:
+    - tainted_argument: true
 fix_suggestion: "Replace os.popen() with subprocess.run([cmd], capture_output=True) to avoid shell expansion."

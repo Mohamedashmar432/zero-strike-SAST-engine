@@ -1,0 +1,25 @@
+id: ZS-PY-023
+name: Bare except Clause
+version: "1.0.0"
+language: python
+category: error-handling
+severity: medium
+confidence: high
+cwe:
+  - CWE-396
+owasp:
+  - "A10:2025"
+description: |
+  A bare "except:" clause catches every exception, including SystemExit and
+  KeyboardInterrupt, masking bugs and making failures silently swallow
+  conditions they shouldn't. Fires once per try block containing at least one
+  bare except clause (not once per clause).
+message: "Bare except: clause detected — catch specific exception types instead"
+references:
+  - https://cwe.mitre.org/data/definitions/396.html
+tags: [exception-handling, bare-except]
+match:
+  kind: try
+  filters:
+    - has_bare_except: true
+fix_suggestion: "Catch a specific exception type, e.g. except ValueError:, instead of a bare except:."

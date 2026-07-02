@@ -1,0 +1,29 @@
+id: ZS-PY-018
+name: TLS Certificate Verification Disabled (requests.get)
+version: "1.0.0"
+language: python
+category: security-misconfiguration
+severity: high
+confidence: high
+cwe:
+  - CWE-295
+owasp:
+  - "A02:2025"
+description: |
+  Calling requests.get() with verify=False disables TLS certificate validation,
+  exposing the request to man-in-the-middle attacks.
+  Note: only requests.get() is covered by this rule — requests.post/put/delete
+  with the same flag are not yet detected; add sibling rules if these show up
+  in practice (the engine currently requires one rule per exact callee).
+message: "requests.get(verify=False) detected — TLS certificate verification is disabled"
+references:
+  - https://owasp.org/Top10/2025/A02_2025-Security_Misconfiguration/
+tags: [misconfiguration, tls, requests]
+match:
+  kind: call
+  callee: requests.get
+  filters:
+    - kwarg:
+        name: verify
+        value_pattern: "^False$"
+fix_suggestion: "Remove verify=False. If a custom CA is required, pass verify='/path/to/ca-bundle.pem' instead."

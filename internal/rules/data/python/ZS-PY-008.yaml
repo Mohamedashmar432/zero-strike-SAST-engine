@@ -8,7 +8,7 @@ confidence: medium
 cwe:
   - CWE-22
 owasp:
-  - "A01:2021"
+  - "A01:2025"
 description: |
   Detects calls to open() which may accept a user-controlled path.
   Note: this rule is a syntactic approximation. Precision improves with taint analysis (Sprint 8).

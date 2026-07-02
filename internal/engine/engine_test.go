@@ -152,3 +152,206 @@ func TestMatch_NoCalleeRule(t *testing.T) {
 		t.Errorf("expected 1 match for no-callee call rule, got %d", len(results))
 	}
 }
+
+// TestMatch_TaintedArgument verifies the tainted_argument filter only fires
+// when a call argument identifier is present in the file's tainted-var set.
+func TestMatch_TaintedArgument(t *testing.T) {
+	rule := &rules.Rule{
+		ID: "ZS-TEST-TAINT",
+		Match: rules.MatchPattern{
+			Kind:    string(ir.NodeKindCall),
+			Callee:  "execute",
+			Filters: []rules.Filter{{TaintedArgument: true}},
+		},
+	}
+	idx := engine.BuildIndex([]*rules.Rule{rule})
+
+	taintedCall := &ir.IRNode{
+		Kind: ir.NodeKindCall,
+		Children: []*ir.IRNode{
+			{Kind: ir.NodeKindIdentifier, Text: "execute"},
+			{Kind: ir.NodeKindUnknown, Children: []*ir.IRNode{{Kind: ir.NodeKindIdentifier, Text: "query"}}},
+		},
+	}
+	root := &ir.IRNode{Kind: ir.NodeKindModule, Children: []*ir.IRNode{taintedCall}}
+	mc := &engine.MatchContext{
+		Index: idx,
+		File: &analyzer.AnalysisResult{
+			IR:          &ir.IRFile{Root: root},
+			TaintedVars: map[string]bool{"query": true},
+		},
+	}
+	results, err := engine.New().Match(context.Background(), mc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(results) != 1 {
+		t.Errorf("expected 1 match when argument is tainted, got %d", len(results))
+	}
+
+	// Same call, but the argument is not in the tainted set.
+	mc.File.TaintedVars = map[string]bool{}
+	results, err = engine.New().Match(context.Background(), mc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(results) != 0 {
+		t.Errorf("expected 0 matches when argument is not tainted, got %d", len(results))
+	}
+}
+
+// TestMatch_Kwarg verifies the kwarg filter matches a keyword argument by name+value.
+func TestMatch_Kwarg(t *testing.T) {
+	rule := &rules.Rule{
+		ID: "ZS-TEST-KWARG",
+		Match: rules.MatchPattern{
+			Kind:   string(ir.NodeKindCall),
+			Callee: "app.run",
+			Filters: []rules.Filter{{
+				Kwarg: &rules.KwargPattern{Name: "debug", ValuePattern: "^True$"},
+			}},
+		},
+	}
+	idx := engine.BuildIndex([]*rules.Rule{rule})
+
+	kwargCall := &ir.IRNode{
+		Kind: ir.NodeKindCall,
+		Children: []*ir.IRNode{
+			{Kind: ir.NodeKindAttribute, Children: []*ir.IRNode{
+				{Kind: ir.NodeKindIdentifier, Text: "app"},
+				{Kind: ir.NodeKindIdentifier, Text: "run"},
+			}},
+			{Kind: ir.NodeKindUnknown, Children: []*ir.IRNode{
+				{Kind: ir.NodeKindKeywordArg, Attrs: map[string]any{"kwarg_name": "debug", "kwarg_value": "True"}},
+			}},
+		},
+	}
+	root := &ir.IRNode{Kind: ir.NodeKindModule, Children: []*ir.IRNode{kwargCall}}
+	mc := &engine.MatchContext{Index: idx, File: &analyzer.AnalysisResult{IR: &ir.IRFile{Root: root}}}
+
+	results, err := engine.New().Match(context.Background(), mc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(results) != 1 {
+		t.Fatalf("expected 1 match for debug=True kwarg, got %d", len(results))
+	}
+
+	// debug=False must not match.
+	kwargCall.Children[1].Children[0].Attrs["kwarg_value"] = "False"
+	results, err = engine.New().Match(context.Background(), mc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(results) != 0 {
+		t.Errorf("expected 0 matches for debug=False, got %d", len(results))
+	}
+}
+
+// TestMatch_ArgumentIdentifierMatches verifies a positional argument identifier
+// can be matched by name via regex.
+func TestMatch_ArgumentIdentifierMatches(t *testing.T) {
+	rule := &rules.Rule{
+		ID: "ZS-TEST-ARGID",
+		Match: rules.MatchPattern{
+			Kind:    string(ir.NodeKindCall),
+			Callee:  "logging.info",
+			Filters: []rules.Filter{{ArgumentIdentifierMatches: "(?i)password"}},
+		},
+	}
+	idx := engine.BuildIndex([]*rules.Rule{rule})
+
+	call := &ir.IRNode{
+		Kind: ir.NodeKindCall,
+		Children: []*ir.IRNode{
+			{Kind: ir.NodeKindAttribute, Children: []*ir.IRNode{
+				{Kind: ir.NodeKindIdentifier, Text: "logging"},
+				{Kind: ir.NodeKindIdentifier, Text: "info"},
+			}},
+			{Kind: ir.NodeKindUnknown, Children: []*ir.IRNode{{Kind: ir.NodeKindIdentifier, Text: "password"}}},
+		},
+	}
+	root := &ir.IRNode{Kind: ir.NodeKindModule, Children: []*ir.IRNode{call}}
+	mc := &engine.MatchContext{Index: idx, File: &analyzer.AnalysisResult{IR: &ir.IRFile{Root: root}}}
+
+	results, err := engine.New().Match(context.Background(), mc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(results) != 1 {
+		t.Errorf("expected 1 match for password argument, got %d", len(results))
+	}
+}
+
+// TestMatch_RHSLiteral verifies RHSLiteral matches an assignment's right-hand side text.
+func TestMatch_RHSLiteral(t *testing.T) {
+	rule := &rules.Rule{
+		ID: "ZS-TEST-RHS",
+		Match: rules.MatchPattern{
+			Kind:          string(ir.NodeKindAssignment),
+			LHSIdentifier: "^DEBUG$",
+			RHSLiteral:    "^True$",
+		},
+	}
+	idx := engine.BuildIndex([]*rules.Rule{rule})
+
+	debugTrue := &ir.IRNode{Kind: ir.NodeKindAssignment, Attrs: map[string]any{"lhs": "DEBUG", "rhs": "True"}}
+	root := &ir.IRNode{Kind: ir.NodeKindModule, Children: []*ir.IRNode{debugTrue}}
+	mc := &engine.MatchContext{Index: idx, File: &analyzer.AnalysisResult{IR: &ir.IRFile{Root: root}}}
+
+	results, err := engine.New().Match(context.Background(), mc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(results) != 1 {
+		t.Fatalf("expected 1 match for DEBUG = True, got %d", len(results))
+	}
+
+	debugTrue.Attrs["rhs"] = "False"
+	results, err = engine.New().Match(context.Background(), mc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(results) != 0 {
+		t.Errorf("expected 0 matches for DEBUG = False, got %d", len(results))
+	}
+}
+
+// TestMatch_ExceptHandlerFilters verifies HasBareExcept and HasEmptyExceptHandler.
+func TestMatch_ExceptHandlerFilters(t *testing.T) {
+	bareRule := &rules.Rule{
+		ID:    "ZS-TEST-BAREEXCEPT",
+		Match: rules.MatchPattern{Kind: string(ir.NodeKindTry), Filters: []rules.Filter{{HasBareExcept: true}}},
+	}
+	emptyRule := &rules.Rule{
+		ID:    "ZS-TEST-EMPTYEXCEPT",
+		Match: rules.MatchPattern{Kind: string(ir.NodeKindTry), Filters: []rules.Filter{{HasEmptyExceptHandler: true}}},
+	}
+	idx := engine.BuildIndex([]*rules.Rule{bareRule, emptyRule})
+
+	tryNode := &ir.IRNode{
+		Kind: ir.NodeKindTry,
+		Attrs: map[string]any{"except_handlers": []ir.ExceptHandler{
+			{IsBare: true},
+		}},
+	}
+	root := &ir.IRNode{Kind: ir.NodeKindModule, Children: []*ir.IRNode{tryNode}}
+	mc := &engine.MatchContext{Index: idx, File: &analyzer.AnalysisResult{IR: &ir.IRFile{Root: root}}}
+
+	results, err := engine.New().Match(context.Background(), mc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(results) != 1 || results[0].Rule.ID != "ZS-TEST-BAREEXCEPT" {
+		t.Errorf("expected only ZS-TEST-BAREEXCEPT to fire on a bare except, got %d results", len(results))
+	}
+
+	tryNode.Attrs["except_handlers"] = []ir.ExceptHandler{{Types: []string{"ValueError"}, IsEmptyBody: true}}
+	results, err = engine.New().Match(context.Background(), mc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(results) != 1 || results[0].Rule.ID != "ZS-TEST-EMPTYEXCEPT" {
+		t.Errorf("expected only ZS-TEST-EMPTYEXCEPT to fire on an empty typed except, got %d results", len(results))
+	}
+}

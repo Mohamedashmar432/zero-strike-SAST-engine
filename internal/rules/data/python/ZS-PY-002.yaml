@@ -8,7 +8,7 @@ confidence: high
 cwe:
   - CWE-502
 owasp:
-  - "A08:2021"
+  - "A08:2025"
 description: |
   pickle.loads() on untrusted data allows arbitrary code execution during deserialization.
 message: "Insecure deserialization via pickle.loads() — use a safe format like JSON"

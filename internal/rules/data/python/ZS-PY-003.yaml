@@ -8,7 +8,7 @@ confidence: high
 cwe:
   - CWE-78
 owasp:
-  - "A03:2021"
+  - "A05:2025"
 description: |
   subprocess.run/call/Popen with shell=True passes the command through the shell,
   enabling command injection if any part of the command includes user input.

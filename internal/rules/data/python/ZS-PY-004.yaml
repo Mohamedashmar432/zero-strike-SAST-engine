@@ -8,16 +8,17 @@ confidence: medium
 cwe:
   - CWE-89
 owasp:
-  - "A03:2021"
+  - "A05:2025"
 description: |
-  Detects SQL query strings that use Python string formatting operations.
-  Note: this rule is a syntactic approximation. Precision improves with taint analysis (Sprint 8).
-  It may produce false positives when formatting is applied to constant strings.
+  Detects SQL query strings that use Python string formatting operations, where the
+  formatted value traces back to an untrusted source (intra-procedural taint tracking).
 message: "SQL query constructed with string formatting — use parameterized queries instead"
 references:
   - https://owasp.org/www-community/attacks/SQL_Injection
-tags: [sqli, injection, syntactic-approximation]
+tags: [sqli, injection]
 match:
   kind: call
   callee: execute
+  filters:
+    - tainted_argument: true
 fix_suggestion: "Use parameterized queries: cursor.execute(query, params) where params is a tuple."

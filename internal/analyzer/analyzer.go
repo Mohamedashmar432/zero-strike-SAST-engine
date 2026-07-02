@@ -3,6 +3,7 @@ package analyzer
 import (
 	"context"
 
+	"github.com/zerostrike/scanner/internal/analyzer/taint"
 	"github.com/zerostrike/scanner/internal/core"
 	"github.com/zerostrike/scanner/internal/graph"
 	"github.com/zerostrike/scanner/internal/ir"
@@ -20,9 +21,10 @@ func (a *defaultAnalyzer) Analyze(_ context.Context, file *ir.IRFile) (*Analysis
 	}
 	symbols := symboltable.NewBuilder().Build(file)
 	return &AnalysisResult{
-		File:    file.Path,
-		IR:      file,
-		Symbols: symbols,
+		File:        file.Path,
+		IR:          file,
+		Symbols:     symbols,
+		TaintedVars: taint.Build(file),
 	}, nil
 }
 
@@ -44,13 +46,17 @@ type TaintFlow struct {
 
 // AnalysisResult holds all analysis data for a single source file.
 type AnalysisResult struct {
-	File        string
-	IR          *ir.IRFile
-	Symbols     symboltable.SymbolTable
-	CFG         *graph.CFG       // nil unless --enable-graphs flag is set
-	DFG         *graph.DFG       // nil unless --enable-graphs flag is set
-	CallGraph   *graph.CallGraph // nil unless --enable-graphs flag is set
-	TaintFlows  []TaintFlow      // nil in Sprint 1
+	File       string
+	IR         *ir.IRFile
+	Symbols    symboltable.SymbolTable
+	CFG        *graph.CFG       // nil unless --enable-graphs flag is set
+	DFG        *graph.DFG       // nil unless --enable-graphs flag is set
+	CallGraph  *graph.CallGraph // nil unless --enable-graphs flag is set
+	TaintFlows []TaintFlow      // nil in Sprint 1
+	// TaintedVars holds variable names whose value may originate from an
+	// untrusted source (see internal/analyzer/taint). File-scoped, Python-only
+	// in practice — see package taint's doc comment for the tracking ceiling.
+	TaintedVars map[string]bool
 	Diagnostics []Diagnostic
 }
 

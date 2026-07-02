@@ -132,6 +132,8 @@ func mapKind(nodeType string) ir.NodeKind {
 		return ir.NodeKindBinaryOp
 	case "assert_statement":
 		return ir.NodeKindAssert
+	case "keyword_argument":
+		return ir.NodeKindKeywordArg
 	default:
 		return ir.NodeKindUnknown
 	}
@@ -170,5 +172,70 @@ func extractAttrs(n *ir.IRNode, node *sitter.Node, source []byte) {
 		if lhs := node.ChildByFieldName("left"); lhs != nil {
 			n.Attrs["lhs"] = lhs.Content(source)
 		}
+		if rhs := node.ChildByFieldName("right"); rhs != nil {
+			n.Attrs["rhs"] = rhs.Content(source)
+		}
+	case "keyword_argument":
+		if name := node.ChildByFieldName("name"); name != nil {
+			n.Attrs["kwarg_name"] = name.Content(source)
+		}
+		if value := node.ChildByFieldName("value"); value != nil {
+			n.Attrs["kwarg_value"] = value.Content(source)
+		}
+	case "try_statement":
+		var handlers []ir.ExceptHandler
+		for i := 0; i < int(node.ChildCount()); i++ {
+			child := node.Child(i)
+			if child.Type() == "except_clause" {
+				handlers = append(handlers, buildExceptHandler(child, source))
+			}
+		}
+		if len(handlers) > 0 {
+			n.Attrs["except_handlers"] = handlers
+		}
 	}
+}
+
+// buildExceptHandler extracts metadata from a single except_clause tree-sitter
+// node: whether it's a bare "except:", the exception type expression text(s)
+// if any, and whether the handler body is just "pass".
+func buildExceptHandler(clause *sitter.Node, source []byte) ir.ExceptHandler {
+	var h ir.ExceptHandler
+	var body *sitter.Node
+	sawAs := false
+	for i := 0; i < int(clause.ChildCount()); i++ {
+		c := clause.Child(i)
+		switch c.Type() {
+		case "except", ":", "*":
+			// keywords/punctuation — nothing to extract
+		case "as":
+			sawAs = true
+		case "block":
+			body = c
+		default:
+			if !sawAs {
+				h.Types = append(h.Types, c.Content(source))
+			}
+			// after "as", the remaining child is the alias identifier — not a type
+		}
+	}
+	h.IsBare = len(h.Types) == 0
+	h.IsEmptyBody = isEmptyPassBody(body)
+	return h
+}
+
+// isEmptyPassBody reports whether a block's only statement is "pass".
+func isEmptyPassBody(body *sitter.Node) bool {
+	if body == nil {
+		return false
+	}
+	var stmts []*sitter.Node
+	for i := 0; i < int(body.ChildCount()); i++ {
+		c := body.Child(i)
+		if c.Type() == "comment" {
+			continue
+		}
+		stmts = append(stmts, c)
+	}
+	return len(stmts) == 1 && stmts[0].Type() == "pass_statement"
 }

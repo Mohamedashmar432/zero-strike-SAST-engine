@@ -23,8 +23,17 @@ const (
 	NodeKindAttribute  NodeKind = "attribute"
 	NodeKindBinaryOp   NodeKind = "binary_op"
 	NodeKindAssert     NodeKind = "assert_statement"
+	NodeKindKeywordArg NodeKind = "keyword_argument"
 	NodeKindUnknown    NodeKind = "unknown"
 )
+
+// ExceptHandler describes a single except clause of a try statement.
+// Populated on the Try node's Attrs["except_handlers"] as []ExceptHandler.
+type ExceptHandler struct {
+	IsBare      bool     // true when the clause has no exception type (bare "except:")
+	Types       []string // exception type names/expressions, empty when IsBare
+	IsEmptyBody bool     // true when the handler body is just "pass"
+}
 
 // IRNode is a node in the ZeroStrike Intermediate Representation.
 // The NodeID is a stable UUID assigned at construction time,

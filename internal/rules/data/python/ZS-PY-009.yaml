@@ -8,7 +8,7 @@ confidence: high
 cwe:
   - CWE-617
 owasp:
-  - "A04:2021"
+  - "A06:2025"
 description: |
   assert statements are removed when Python runs with the -O (optimize) flag.
   Using assert for security checks (authentication, authorization, input validation)

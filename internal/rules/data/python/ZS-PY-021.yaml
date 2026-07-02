@@ -1,0 +1,26 @@
+id: ZS-PY-021
+name: JWT Signature Verification Disabled
+version: "1.0.0"
+language: python
+category: authentication
+severity: critical
+confidence: high
+cwe:
+  - CWE-347
+owasp:
+  - "A07:2025"
+description: |
+  jwt.decode() called with verify=False accepts a JWT without checking its
+  signature, allowing an attacker to forge arbitrary tokens.
+message: "jwt.decode(verify=False) detected — signature verification is disabled"
+references:
+  - https://cwe.mitre.org/data/definitions/347.html
+tags: [jwt, authentication, signature-bypass]
+match:
+  kind: call
+  callee: jwt.decode
+  filters:
+    - kwarg:
+        name: verify
+        value_pattern: "^False$"
+fix_suggestion: "Remove verify=False and always validate the JWT signature with the correct algorithm and key."
