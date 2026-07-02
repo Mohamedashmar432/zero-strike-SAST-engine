@@ -8,15 +8,17 @@ confidence: high
 cwe:
   - CWE-95
 owasp:
-  - "A03:2021"
+  - "A05:2025"
 description: |
-  eval() executes arbitrary JavaScript code from a string. If the string contains
-  user-controlled input, this is a direct code injection vulnerability.
-message: "eval() detected — avoid eval(); use JSON.parse() or safer alternatives"
+  eval() executes arbitrary JavaScript code from a string, flagged when the
+  string traces back to an untrusted source (intra-procedural taint tracking).
+message: "eval() detected with a tainted argument — avoid eval(); use JSON.parse() or safer alternatives"
 references:
   - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/eval
 tags: [eval, injection, dangerous-function]
 match:
   kind: call
   callee: eval
+  filters:
+    - tainted_argument: true
 fix_suggestion: "Replace eval() with a safer alternative such as JSON.parse() for data parsing."

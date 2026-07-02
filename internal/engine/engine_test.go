@@ -317,6 +317,51 @@ func TestMatch_RHSLiteral(t *testing.T) {
 	}
 }
 
+// TestMatch_TaintedRHS verifies the tainted_rhs filter fires for assignment-based
+// sinks (e.g. element.innerHTML = userInput) when the RHS identifier is tainted.
+func TestMatch_TaintedRHS(t *testing.T) {
+	rule := &rules.Rule{
+		ID: "ZS-TEST-TAINTEDRHS",
+		Match: rules.MatchPattern{
+			Kind:          string(ir.NodeKindAssignment),
+			LHSIdentifier: "innerHTML",
+			Filters:       []rules.Filter{{TaintedRHS: true}},
+		},
+	}
+	idx := engine.BuildIndex([]*rules.Rule{rule})
+
+	assignNode := &ir.IRNode{
+		Kind:     ir.NodeKindAssignment,
+		Attrs:    map[string]any{"lhs": "el.innerHTML"},
+		Children: []*ir.IRNode{{Kind: ir.NodeKindAttribute}, {Kind: ir.NodeKindIdentifier, Text: "userInput"}},
+	}
+	root := &ir.IRNode{Kind: ir.NodeKindModule, Children: []*ir.IRNode{assignNode}}
+	mc := &engine.MatchContext{
+		Index: idx,
+		File: &analyzer.AnalysisResult{
+			IR:          &ir.IRFile{Root: root},
+			TaintedVars: map[string]bool{"userInput": true},
+		},
+	}
+
+	results, err := engine.New().Match(context.Background(), mc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(results) != 1 {
+		t.Errorf("expected 1 match when RHS is tainted, got %d", len(results))
+	}
+
+	mc.File.TaintedVars = map[string]bool{}
+	results, err = engine.New().Match(context.Background(), mc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(results) != 0 {
+		t.Errorf("expected 0 matches when RHS is not tainted, got %d", len(results))
+	}
+}
+
 // TestMatch_ExceptHandlerFilters verifies HasBareExcept and HasEmptyExceptHandler.
 func TestMatch_ExceptHandlerFilters(t *testing.T) {
 	bareRule := &rules.Rule{

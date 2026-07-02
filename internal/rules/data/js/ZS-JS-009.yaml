@@ -1,0 +1,25 @@
+id: ZS-JS-009
+name: Sensitive Value Logged
+version: "1.0.0"
+language: javascript
+category: logging
+severity: medium
+confidence: low
+cwe:
+  - CWE-532
+owasp:
+  - "A09:2025"
+description: |
+  A variable whose name suggests sensitive data (password, secret, apiKey,
+  token) is passed directly to console.log(). This can leak credentials into
+  application logs or browser consoles.
+message: "Sensitive-looking value passed to console.log() — avoid logging credentials"
+references:
+  - https://cwe.mitre.org/data/definitions/532.html
+tags: [logging, information-disclosure]
+match:
+  kind: call
+  callee: console.log
+  filters:
+    - argument_identifier_matches: "(?i)(password|secret|apiKey|token)"
+fix_suggestion: "Redact or omit sensitive values before logging; log an identifier instead of the secret itself."

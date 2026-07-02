@@ -51,6 +51,7 @@ type filterYAML struct {
 	ArgumentCount             *int       `yaml:"argument_count"`
 	HasAttribute              string     `yaml:"has_attribute"`
 	TaintedArgument           bool       `yaml:"tainted_argument"`
+	TaintedRHS                bool       `yaml:"tainted_rhs"`
 	Kwarg                     *kwargYAML `yaml:"kwarg"`
 	ArgumentIdentifierMatches string     `yaml:"argument_identifier_matches"`
 	HasBareExcept             bool       `yaml:"has_bare_except"`
@@ -161,6 +162,7 @@ func convertFilters(fyamls []filterYAML) []Filter {
 			ArgumentCount:             f.ArgumentCount,
 			HasAttribute:              f.HasAttribute,
 			TaintedArgument:           f.TaintedArgument,
+			TaintedRHS:                f.TaintedRHS,
 			ArgumentIdentifierMatches: f.ArgumentIdentifierMatches,
 			HasBareExcept:             f.HasBareExcept,
 			HasEmptyExceptHandler:     f.HasEmptyExceptHandler,

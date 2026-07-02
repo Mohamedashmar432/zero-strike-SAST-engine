@@ -52,6 +52,32 @@ func TestBuild_PropagatesThroughReassignment(t *testing.T) {
 	}
 }
 
+func TestBuild_ExpressSourceTaintsVariable(t *testing.T) {
+	root := &ir.IRNode{
+		Kind: ir.NodeKindModule,
+		Children: []*ir.IRNode{
+			assignment("userInput", "req.query.name", ident("_")),
+		},
+	}
+	tainted := taint.Build(&ir.IRFile{Root: root})
+	if !tainted["userInput"] {
+		t.Error("expected userInput to be tainted from req.query source")
+	}
+}
+
+func TestBuild_LocationSourceTaintsVariable(t *testing.T) {
+	root := &ir.IRNode{
+		Kind: ir.NodeKindModule,
+		Children: []*ir.IRNode{
+			assignment("hash", "window.location.hash", ident("_")),
+		},
+	}
+	tainted := taint.Build(&ir.IRFile{Root: root})
+	if !tainted["hash"] {
+		t.Error("expected hash to be tainted from window.location source")
+	}
+}
+
 func TestBuild_UnrelatedAssignmentNotTainted(t *testing.T) {
 	root := &ir.IRNode{
 		Kind: ir.NodeKindModule,

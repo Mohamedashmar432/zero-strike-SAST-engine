@@ -1,0 +1,24 @@
+id: ZS-TS-005
+name: Empty catch Block Swallows Exception
+version: "1.0.0"
+language: typescript
+category: error-handling
+severity: medium
+confidence: high
+cwe:
+  - CWE-390
+owasp:
+  - "A10:2025"
+description: |
+  A catch block with an empty body silently swallows the exception with no
+  logging or recovery, hiding failures ("fail open" / mishandled exceptional
+  conditions). Fires once per try block containing at least one such handler.
+message: "Empty catch block detected — log or handle the exception instead of silently discarding it"
+references:
+  - https://cwe.mitre.org/data/definitions/390.html
+tags: [exception-handling, empty-handler, fail-open]
+match:
+  kind: try
+  filters:
+    - has_empty_except_handler: true
+fix_suggestion: "At minimum log the error (console.error(e)) instead of silently discarding it in the catch block."

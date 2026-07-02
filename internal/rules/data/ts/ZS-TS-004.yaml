@@ -1,0 +1,26 @@
+id: ZS-TS-004
+name: TLS Certificate Verification Disabled (rejectUnauthorized)
+version: "1.0.0"
+language: typescript
+category: security-misconfiguration
+severity: high
+confidence: high
+cwe:
+  - CWE-295
+owasp:
+  - "A02:2025"
+description: |
+  Passing { rejectUnauthorized: false } to an HTTPS/TLS options object disables
+  certificate validation, exposing the connection to man-in-the-middle attacks.
+message: "rejectUnauthorized: false detected — TLS certificate verification is disabled"
+references:
+  - https://owasp.org/Top10/2025/A02_2025-Security_Misconfiguration/
+tags: [misconfiguration, tls]
+match:
+  kind: call
+  callee: https.request
+  filters:
+    - kwarg:
+        name: rejectUnauthorized
+        value_pattern: "^false$"
+fix_suggestion: "Remove rejectUnauthorized: false. If a custom CA is required, pass it via the ca option instead."

@@ -8,16 +8,18 @@ confidence: medium
 cwe:
   - CWE-79
 owasp:
-  - "A03:2021"
+  - "A05:2025"
 description: |
-  Assigning to innerHTML directly inserts HTML into the DOM without sanitization.
-  If the value contains user-controlled data, this causes a Cross-Site Scripting
-  (XSS) vulnerability.
-message: "innerHTML assignment detected — sanitize input or use textContent / DOM APIs instead"
+  Assigning to innerHTML directly inserts HTML into the DOM without sanitization,
+  flagged when the assigned value traces back to an untrusted source
+  (intra-procedural taint tracking).
+message: "innerHTML assignment detected with a tainted value — sanitize input or use textContent / DOM APIs instead"
 references:
   - https://owasp.org/www-community/attacks/xss/
 tags: [xss, innerHTML, dom-injection]
 match:
   kind: assignment
   lhs_identifier: "innerHTML"
+  filters:
+    - tainted_rhs: true
 fix_suggestion: "Use textContent for plain text, or sanitize with DOMPurify before assigning to innerHTML."

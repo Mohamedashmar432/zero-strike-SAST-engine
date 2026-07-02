@@ -8,16 +8,18 @@ confidence: medium
 cwe:
   - CWE-79
 owasp:
-  - "A03:2021"
+  - "A05:2025"
 description: |
-  Assigning to outerHTML replaces the element and all its children with raw HTML.
-  If the value contains user-controlled data, this causes a Cross-Site Scripting
-  (XSS) vulnerability.
-message: "outerHTML assignment detected — sanitize input or use safe DOM APIs instead"
+  Assigning to outerHTML replaces the element and all its children with raw HTML,
+  flagged when the assigned value traces back to an untrusted source
+  (intra-procedural taint tracking).
+message: "outerHTML assignment detected with a tainted value — sanitize input or use safe DOM APIs instead"
 references:
   - https://owasp.org/www-community/attacks/xss/
 tags: [xss, outerHTML, dom-injection]
 match:
   kind: assignment
   lhs_identifier: "outerHTML"
+  filters:
+    - tainted_rhs: true
 fix_suggestion: "Use createElement/appendChild instead of outerHTML, or sanitize with DOMPurify before assignment."

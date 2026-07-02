@@ -1,7 +1,8 @@
 // Package taint performs a lightweight, file-scoped, intra-procedural taint
-// pass over Python IR. It exists to reduce false positives on injection rules
-// that previously fired on any call to a sink function, regardless of whether
-// the argument actually came from untrusted input.
+// pass over Python, JavaScript, and TypeScript IR. It exists to reduce false
+// positives on injection rules that previously fired on any call to a sink
+// function, regardless of whether the argument actually came from untrusted
+// input.
 package taint
 
 import (
@@ -11,9 +12,10 @@ import (
 )
 
 // sourcePattern matches right-hand-side expression text known to originate
-// from untrusted input in Python (Flask/Django request objects, stdlib
-// input sources).
-var sourcePattern = regexp.MustCompile(`request\.(args|form|GET|POST|values)|(^|\W)input\(|sys\.argv|os\.environ\.get`)
+// from untrusted input: Python (Flask/Django request objects, stdlib input
+// sources) and JavaScript/TypeScript (Express request objects, browser
+// location).
+var sourcePattern = regexp.MustCompile(`request\.(args|form|GET|POST|values)|(^|\W)input\(|sys\.argv|os\.environ\.get|req\.(query|body|params)|location\.(search|hash)|window\.location`)
 
 // Build walks file in source order and returns the set of variable names
 // whose value may originate from an untrusted source.

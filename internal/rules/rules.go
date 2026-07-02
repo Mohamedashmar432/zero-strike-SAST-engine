@@ -16,6 +16,11 @@ type Filter struct {
 	// TaintedArgument requires at least one of the call's argument identifiers
 	// to be present in the file's tainted-variable set (see internal/analyzer/taint).
 	TaintedArgument bool
+	// TaintedRHS requires an assignment node's right-hand-side subtree to contain
+	// an identifier present in the file's tainted-variable set. Use for
+	// assignment-based sinks (e.g. element.innerHTML = ...) where TaintedArgument
+	// (call-argument-only) doesn't apply.
+	TaintedRHS bool
 	// Kwarg requires a keyword argument matching Name whose value matches ValuePattern
 	// to appear anywhere in the call's argument list, e.g. debug=True.
 	Kwarg *KwargPattern

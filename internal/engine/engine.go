@@ -206,6 +206,11 @@ func evalFilter(f rules.Filter, n *ir.IRNode, taintedVars map[string]bool) bool 
 			return false
 		}
 	}
+	if f.TaintedRHS {
+		if !rhsIsTainted(n, taintedVars) {
+			return false
+		}
+	}
 	if f.HasBareExcept {
 		if !anyExceptHandler(n, func(h ir.ExceptHandler) bool { return h.IsBare }) {
 			return false
@@ -230,6 +235,25 @@ func anyExceptHandler(n *ir.IRNode, pred func(ir.ExceptHandler) bool) bool {
 	handlers, _ := n.Attrs["except_handlers"].([]ir.ExceptHandler)
 	for _, h := range handlers {
 		if pred(h) {
+			return true
+		}
+	}
+	return false
+}
+
+// rhsIsTainted reports whether an assignment node's right-hand-side subtree
+// (its last child — see the Python/JS/TS grammars' left, '=', right shape)
+// contains an identifier present in taintedVars.
+func rhsIsTainted(n *ir.IRNode, taintedVars map[string]bool) bool {
+	if n.Kind != ir.NodeKindAssignment || len(n.Children) == 0 {
+		return false
+	}
+	rhs := n.Children[len(n.Children)-1]
+	if rhs.Kind == ir.NodeKindIdentifier && taintedVars[rhs.Text] {
+		return true
+	}
+	for _, d := range ir.Descendants(rhs) {
+		if d.Kind == ir.NodeKindIdentifier && taintedVars[d.Text] {
 			return true
 		}
 	}

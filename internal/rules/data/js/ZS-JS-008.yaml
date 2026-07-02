@@ -1,0 +1,24 @@
+id: ZS-JS-008
+name: JWT Decoded Without Verification
+version: "1.0.0"
+language: javascript
+category: authentication
+severity: critical
+confidence: high
+cwe:
+  - CWE-347
+owasp:
+  - "A07:2025"
+description: |
+  jwt.decode() reads a JWT's payload without checking its signature at all —
+  unlike jwt.verify(), it will happily "decode" a token an attacker forged
+  with any payload they like. Using decode() where verify() belongs is a
+  common authentication-bypass mistake.
+message: "jwt.decode() detected — this does not verify the signature; use jwt.verify() for authentication"
+references:
+  - https://cwe.mitre.org/data/definitions/347.html
+tags: [jwt, authentication, signature-bypass]
+match:
+  kind: call
+  callee: jwt.decode
+fix_suggestion: "Use jwt.verify(token, secretOrPublicKey) instead of jwt.decode() wherever the result is trusted for authentication."

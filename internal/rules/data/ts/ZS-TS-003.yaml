@@ -8,15 +8,18 @@ confidence: medium
 cwe:
   - CWE-79
 owasp:
-  - "A03:2021"
+  - "A05:2025"
 description: |
-  document.write() writes directly to the HTML document stream without sanitization.
-  User-controlled input passed to document.write() leads to Cross-Site Scripting (XSS).
-message: "document.write() detected — use safe DOM manipulation APIs instead"
+  document.write() writes directly to the HTML document stream without sanitization,
+  flagged when the argument traces back to an untrusted source (intra-procedural
+  taint tracking).
+message: "document.write() detected with a tainted argument — use safe DOM manipulation APIs instead"
 references:
   - https://developer.mozilla.org/en-US/docs/Web/API/Document/write
 tags: [xss, document-write, dom-injection]
 match:
   kind: call
   callee: document.write
+  filters:
+    - tainted_argument: true
 fix_suggestion: "Replace document.write() with safe DOM APIs such as createElement and appendChild."

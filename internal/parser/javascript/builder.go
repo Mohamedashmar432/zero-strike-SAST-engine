@@ -123,6 +123,8 @@ func mapKind(nodeType string) ir.NodeKind {
 		return ir.NodeKindAttribute
 	case "binary_expression", "logical_expression":
 		return ir.NodeKindBinaryOp
+	case "pair":
+		return ir.NodeKindKeywordArg
 	default:
 		return ir.NodeKindUnknown
 	}
@@ -149,5 +151,44 @@ func extractAttrs(n *ir.IRNode, node *sitter.Node, source []byte) {
 		if lhs := node.ChildByFieldName("left"); lhs != nil {
 			n.Attrs["lhs"] = lhs.Content(source)
 		}
+		if rhs := node.ChildByFieldName("right"); rhs != nil {
+			n.Attrs["rhs"] = rhs.Content(source)
+		}
+	case "pair":
+		if key := node.ChildByFieldName("key"); key != nil {
+			n.Attrs["kwarg_name"] = key.Content(source)
+		}
+		if value := node.ChildByFieldName("value"); value != nil {
+			n.Attrs["kwarg_value"] = value.Content(source)
+		}
+	case "try_statement":
+		var handlers []ir.ExceptHandler
+		for i := 0; i < int(node.ChildCount()); i++ {
+			child := node.Child(i)
+			if child.Type() == "catch_clause" {
+				body := child.ChildByFieldName("body")
+				handlers = append(handlers, ir.ExceptHandler{IsEmptyBody: isEmptyBlockBody(body)})
+			}
+		}
+		if len(handlers) > 0 {
+			n.Attrs["except_handlers"] = handlers
+		}
 	}
+}
+
+// isEmptyBlockBody reports whether a statement_block (catch body) contains no
+// real statements — only braces and/or comments.
+func isEmptyBlockBody(body *sitter.Node) bool {
+	if body == nil {
+		return false
+	}
+	for i := 0; i < int(body.ChildCount()); i++ {
+		switch body.Child(i).Type() {
+		case "{", "}", "comment":
+			continue
+		default:
+			return false
+		}
+	}
+	return true
 }

@@ -12,8 +12,8 @@ func TestLoader_JSRulesLoad(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadDir data/js: %v", err)
 	}
-	if len(loaded) < 5 {
-		t.Errorf("expected ≥5 JS rules, got %d", len(loaded))
+	if len(loaded) < 10 {
+		t.Errorf("expected ≥10 JS rules, got %d", len(loaded))
 	}
 
 	v := rules.NewValidator()
@@ -37,8 +37,8 @@ func TestLoader_TSRulesLoad(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadDir data/ts: %v", err)
 	}
-	if len(loaded) < 3 {
-		t.Errorf("expected ≥3 TS rules, got %d", len(loaded))
+	if len(loaded) < 5 {
+		t.Errorf("expected ≥5 TS rules, got %d", len(loaded))
 	}
 	v := rules.NewValidator()
 	ids := make(map[string]bool, len(loaded))
@@ -74,4 +74,3 @@ func TestLoader_ZS_PY_009_KindAssert(t *testing.T) {
 	}
 	t.Error("ZS-PY-009 not found")
 }
-
