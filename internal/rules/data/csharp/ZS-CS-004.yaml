@@ -1,0 +1,25 @@
+id: ZS-CS-004
+name: Response.Write XSS Sink
+version: "1.0.0"
+language: csharp
+category: xss
+severity: high
+confidence: medium
+cwe:
+  - CWE-79
+owasp:
+  - "A05:2025"
+description: |
+  Response.Write() emits markup directly to the HTTP response, flagged when
+  the written value traces back to an untrusted source (intra-procedural
+  taint tracking) without encoding.
+message: "Response.Write() detected with a tainted value — HTML-encode user input before writing it to the response"
+references:
+  - https://owasp.org/www-community/attacks/xss/
+tags: [xss, response-write]
+match:
+  kind: call
+  callee: Response.Write
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Encode before writing: Response.Write(HttpUtility.HtmlEncode(value)), or use framework encoding helpers."

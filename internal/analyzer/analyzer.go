@@ -24,7 +24,7 @@ func (a *defaultAnalyzer) Analyze(_ context.Context, file *ir.IRFile) (*Analysis
 		File:        file.Path,
 		IR:          file,
 		Symbols:     symbols,
-		TaintedVars: taint.Build(file),
+		TaintedVars: taint.Build(file, symbols),
 	}, nil
 }
 
@@ -54,8 +54,9 @@ type AnalysisResult struct {
 	CallGraph  *graph.CallGraph // nil unless --enable-graphs flag is set
 	TaintFlows []TaintFlow      // nil in Sprint 1
 	// TaintedVars holds variable names whose value may originate from an
-	// untrusted source (see internal/analyzer/taint). File-scoped, Python-only
-	// in practice — see package taint's doc comment for the tracking ceiling.
+	// untrusted source (see internal/analyzer/taint). File-scoped, with
+	// per-language source/sanitizer patterns (Python/JS/TS/C#) and same-file
+	// function summaries — see package taint's doc comment for the ceiling.
 	TaintedVars map[string]bool
 	Diagnostics []Diagnostic
 }

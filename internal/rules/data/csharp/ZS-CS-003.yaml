@@ -1,0 +1,25 @@
+id: ZS-CS-003
+name: BinaryFormatter Insecure Deserialization
+version: "1.0.0"
+language: csharp
+category: deserialization
+severity: critical
+confidence: high
+cwe:
+  - CWE-502
+owasp:
+  - "A08:2025"
+description: |
+  BinaryFormatter is insecure by design and deprecated by Microsoft: any use
+  for deserializing data enables remote code execution. This rule flags the
+  instantiation itself (new BinaryFormatter()), matching Microsoft's guidance
+  that the type should not be used at all, regardless of the receiver
+  variable it is later called through.
+message: "BinaryFormatter usage detected — insecure deserialization enables RCE; use System.Text.Json or another safe serializer"
+references:
+  - https://learn.microsoft.com/en-us/dotnet/standard/serialization/binaryformatter-security-guide
+tags: [deserialization, rce, binaryformatter]
+match:
+  kind: call
+  callee: BinaryFormatter
+fix_suggestion: "Replace BinaryFormatter with System.Text.Json (JsonSerializer) or DataContractSerializer with a known-type allowlist."

@@ -1,0 +1,25 @@
+id: ZS-CS-002
+name: SqlCommand SQL Injection
+version: "1.0.0"
+language: csharp
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-89
+owasp:
+  - "A05:2025"
+description: |
+  A SqlCommand is constructed with a query string that traces back to an
+  untrusted source (intra-procedural taint tracking), indicating SQL built
+  by string concatenation instead of parameterization.
+message: "SqlCommand constructed with a tainted query string — use parameterized queries instead"
+references:
+  - https://owasp.org/www-community/attacks/SQL_Injection
+tags: [sqli, injection, sqlcommand]
+match:
+  kind: call
+  callee: SqlCommand
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Use parameterized queries: new SqlCommand(\"... WHERE Name = @name\", conn) with cmd.Parameters.AddWithValue(\"@name\", value)."

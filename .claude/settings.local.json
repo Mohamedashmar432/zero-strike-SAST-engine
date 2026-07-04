@@ -5,6 +5,9 @@
       "Bash(go test *)"
     ]
   },
+  "enabledMcpjsonServers": [
+    
+  ],
   "disabledMcpjsonServers": [
     "chrome-devtools",
     "tinyfish",
@@ -12,5 +15,6 @@
     "github",
     "MongoDB",
     "redis"
-  ]
+  ],
+  "enableAllProjectMcpServers": true
 }

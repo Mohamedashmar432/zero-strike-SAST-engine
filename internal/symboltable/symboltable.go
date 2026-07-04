@@ -164,6 +164,15 @@ func (b *SymbolBuilder) walkNode(node *ir.IRNode, table *symbolTable, current Sc
 		fs := Scope{ID: uuid.New().String(), ParentID: parentID, Type: ScopeFunction}
 		table.scopes = append(table.scopes, fs)
 		table.scopeRanges = append(table.scopeRanges, scopeRange{scope: fs, loc: node.Location})
+		// Declared parameter names (captured by the language builders in
+		// Attrs["parameters"]) are symbols in the function's own scope.
+		if params, ok := node.Attrs["parameters"].([]string); ok {
+			for _, p := range params {
+				if p != "" {
+					table.Define(Symbol{Name: p, Kind: SymbolParameter, Location: node.Location, Scope: fs})
+				}
+			}
+		}
 		next = fs
 
 	case ir.NodeKindClass:

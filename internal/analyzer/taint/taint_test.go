@@ -4,7 +4,9 @@ import (
 	"testing"
 
 	"github.com/zerostrike/scanner/internal/analyzer/taint"
+	"github.com/zerostrike/scanner/internal/core"
 	"github.com/zerostrike/scanner/internal/ir"
+	"github.com/zerostrike/scanner/internal/symboltable"
 )
 
 func assignment(lhs, rhs string, rhsNode *ir.IRNode) *ir.IRNode {
@@ -19,8 +21,14 @@ func ident(name string) *ir.IRNode {
 	return &ir.IRNode{Kind: ir.NodeKindIdentifier, Text: name}
 }
 
+// build runs taint.Build with a symbol table derived from the same file,
+// mirroring what analyzer.Analyze does.
+func build(file *ir.IRFile) map[string]bool {
+	return taint.Build(file, symboltable.NewBuilder().Build(file))
+}
+
 func TestBuild_NilFile(t *testing.T) {
-	if got := taint.Build(nil); len(got) != 0 {
+	if got := taint.Build(nil, nil); len(got) != 0 {
 		t.Errorf("expected empty set for nil file, got %v", got)
 	}
 }
@@ -32,7 +40,7 @@ func TestBuild_SourceExpressionTaintsVariable(t *testing.T) {
 			assignment("user_id", "request.args.get('id')", ident("_")),
 		},
 	}
-	tainted := taint.Build(&ir.IRFile{Root: root})
+	tainted := build(&ir.IRFile{Root: root})
 	if !tainted["user_id"] {
 		t.Error("expected user_id to be tainted from request.args source")
 	}
@@ -46,7 +54,7 @@ func TestBuild_PropagatesThroughReassignment(t *testing.T) {
 			assignment("query", "\"SELECT \" + user_id", ident("user_id")),
 		},
 	}
-	tainted := taint.Build(&ir.IRFile{Root: root})
+	tainted := build(&ir.IRFile{Root: root})
 	if !tainted["query"] {
 		t.Error("expected query to be tainted via propagation from user_id")
 	}
@@ -59,7 +67,7 @@ func TestBuild_ExpressSourceTaintsVariable(t *testing.T) {
 			assignment("userInput", "req.query.name", ident("_")),
 		},
 	}
-	tainted := taint.Build(&ir.IRFile{Root: root})
+	tainted := build(&ir.IRFile{Root: root, Language: core.LangJavaScript})
 	if !tainted["userInput"] {
 		t.Error("expected userInput to be tainted from req.query source")
 	}
@@ -72,9 +80,22 @@ func TestBuild_LocationSourceTaintsVariable(t *testing.T) {
 			assignment("hash", "window.location.hash", ident("_")),
 		},
 	}
-	tainted := taint.Build(&ir.IRFile{Root: root})
+	tainted := build(&ir.IRFile{Root: root, Language: core.LangTypeScript})
 	if !tainted["hash"] {
 		t.Error("expected hash to be tainted from window.location source")
+	}
+}
+
+func TestBuild_CSharpSourceTaintsVariable(t *testing.T) {
+	root := &ir.IRNode{
+		Kind: ir.NodeKindModule,
+		Children: []*ir.IRNode{
+			assignment("cmd", "Request.QueryString[\"cmd\"]", ident("_")),
+		},
+	}
+	tainted := build(&ir.IRFile{Root: root, Language: core.LangCSharp})
+	if !tainted["cmd"] {
+		t.Error("expected cmd to be tainted from Request.QueryString source")
 	}
 }
 
@@ -86,8 +107,203 @@ func TestBuild_UnrelatedAssignmentNotTainted(t *testing.T) {
 			assignment("greeting", "\"hello\"", &ir.IRNode{Kind: ir.NodeKindLiteral, Text: "hello"}),
 		},
 	}
-	tainted := taint.Build(&ir.IRFile{Root: root})
+	tainted := build(&ir.IRFile{Root: root})
 	if tainted["greeting"] {
 		t.Error("expected greeting (constant literal) to not be tainted")
+	}
+}
+
+// TestBuild_SanitizerClearsTaint: x = request...; x = html.escape(x) —
+// the sanitizer call clears x's taint even though its argument is tainted.
+func TestBuild_SanitizerClearsTaint(t *testing.T) {
+	root := &ir.IRNode{
+		Kind: ir.NodeKindModule,
+		Children: []*ir.IRNode{
+			assignment("x", "request.args.get('y')", ident("_")),
+			assignment("x", "html.escape(x)", &ir.IRNode{
+				Kind:     ir.NodeKindCall,
+				Children: []*ir.IRNode{ident("escape"), ident("x")},
+			}),
+		},
+	}
+	tainted := build(&ir.IRFile{Root: root, Language: core.LangPython})
+	if tainted["x"] {
+		t.Error("expected x to NOT be tainted after html.escape() sanitizer")
+	}
+}
+
+// TestBuild_ReassignmentToCleanLiteralClearsTaint is the regression test for
+// the never-clears bug: previously the tainted map was only ever set true,
+// so x stayed tainted after an unrelated clean reassignment.
+func TestBuild_ReassignmentToCleanLiteralClearsTaint(t *testing.T) {
+	root := &ir.IRNode{
+		Kind: ir.NodeKindModule,
+		Children: []*ir.IRNode{
+			assignment("x", "request.args.get('y')", ident("_")),
+			assignment("x", "\"literal\"", &ir.IRNode{Kind: ir.NodeKindLiteral, Text: "literal"}),
+		},
+	}
+	tainted := build(&ir.IRFile{Root: root, Language: core.LangPython})
+	if tainted["x"] {
+		t.Error("expected x to NOT be tainted after reassignment to a clean literal")
+	}
+}
+
+// TestBuild_AugmentedAssignmentPreservesTaint: x += "suffix" keeps x's prior
+// value flowing into the result, so prior taint survives the fresh verdict.
+func TestBuild_AugmentedAssignmentPreservesTaint(t *testing.T) {
+	aug := assignment("x", "\" suffix\"", &ir.IRNode{Kind: ir.NodeKindLiteral, Text: " suffix"})
+	aug.Attrs["augmented"] = true
+	root := &ir.IRNode{
+		Kind: ir.NodeKindModule,
+		Children: []*ir.IRNode{
+			assignment("x", "request.args.get('y')", ident("_")),
+			aug,
+		},
+	}
+	tainted := build(&ir.IRFile{Root: root, Language: core.LangPython})
+	if !tainted["x"] {
+		t.Error("expected x to stay tainted after augmented assignment with clean RHS")
+	}
+}
+
+// TestBuild_SameFilePassThroughFunctionTaints: a helper returning its own
+// parameter unchanged, called with a tainted argument, taints the variable
+// receiving its return value.
+func TestBuild_SameFilePassThroughFunctionTaints(t *testing.T) {
+	fn := &ir.IRNode{
+		Kind:  ir.NodeKindFunction,
+		Attrs: map[string]any{"function_name": "passthrough", "parameters": []string{"v"}},
+		Children: []*ir.IRNode{
+			{Kind: ir.NodeKindReturn, Attrs: map[string]any{"return_expr": "v"}},
+		},
+	}
+	root := &ir.IRNode{
+		Kind: ir.NodeKindModule,
+		Children: []*ir.IRNode{
+			fn,
+			assignment("x", "request.args.get('id')", ident("_")),
+			assignment("y", "passthrough(x)", &ir.IRNode{
+				Kind:     ir.NodeKindCall,
+				Children: []*ir.IRNode{ident("passthrough"), ident("x")},
+			}),
+		},
+	}
+	tainted := build(&ir.IRFile{Root: root, Language: core.LangPython})
+	if !tainted["y"] {
+		t.Error("expected y to be tainted via same-file pass-through function")
+	}
+}
+
+// TestBuild_SameFileAlwaysTaintedFunctionTaints: a helper whose return value
+// is itself a source taints its call sites even with no tainted arguments.
+// This is the case only the function-summary pass can catch (no tainted
+// identifier appears anywhere in the assignment's RHS).
+func TestBuild_SameFileAlwaysTaintedFunctionTaints(t *testing.T) {
+	fn := &ir.IRNode{
+		Kind:  ir.NodeKindFunction,
+		Attrs: map[string]any{"function_name": "get_user"},
+		Children: []*ir.IRNode{
+			{Kind: ir.NodeKindReturn, Attrs: map[string]any{"return_expr": "request.args.get('id')"}},
+		},
+	}
+	root := &ir.IRNode{
+		Kind: ir.NodeKindModule,
+		Children: []*ir.IRNode{
+			fn,
+			assignment("y", "get_user()", &ir.IRNode{
+				Kind:     ir.NodeKindCall,
+				Children: []*ir.IRNode{ident("get_user")},
+			}),
+		},
+	}
+	tainted := build(&ir.IRFile{Root: root, Language: core.LangPython})
+	if !tainted["y"] {
+		t.Error("expected y to be tainted via always-tainted same-file function")
+	}
+}
+
+// TestBuild_CleanHelperCallDoesNotTaint: calling a same-file helper that
+// neither passes a parameter through nor returns a source, with clean
+// arguments, must not taint the result.
+func TestBuild_CleanHelperCallDoesNotTaint(t *testing.T) {
+	fn := &ir.IRNode{
+		Kind:  ir.NodeKindFunction,
+		Attrs: map[string]any{"function_name": "constant", "parameters": []string{"v"}},
+		Children: []*ir.IRNode{
+			{Kind: ir.NodeKindReturn, Attrs: map[string]any{"return_expr": "42"}},
+		},
+	}
+	root := &ir.IRNode{
+		Kind: ir.NodeKindModule,
+		Children: []*ir.IRNode{
+			fn,
+			assignment("n", "constant(seed)", &ir.IRNode{
+				Kind:     ir.NodeKindCall,
+				Children: []*ir.IRNode{ident("constant"), ident("seed")},
+			}),
+		},
+	}
+	tainted := build(&ir.IRFile{Root: root, Language: core.LangPython})
+	if tainted["n"] {
+		t.Error("expected n to NOT be tainted by a clean helper call with clean args")
+	}
+}
+
+// TestBuild_CrossFunctionNameReuseNotContaminated: a same-named local in a
+// different function is not left tainted by the summary/propagation logic.
+// (Ceiling note: the map is file-scoped and flow-insensitive — the LAST
+// assignment to a name in source order decides its final verdict, so the
+// clean reassignment in g() clears f()'s taint. The inverse order would
+// still cross-contaminate; that residual ceiling is documented in taint.go.)
+func TestBuild_CrossFunctionNameReuseNotContaminated(t *testing.T) {
+	f := &ir.IRNode{
+		Kind:  ir.NodeKindFunction,
+		Attrs: map[string]any{"function_name": "f"},
+		Children: []*ir.IRNode{
+			assignment("x", "request.args.get('id')", ident("_")),
+		},
+	}
+	g := &ir.IRNode{
+		Kind:  ir.NodeKindFunction,
+		Attrs: map[string]any{"function_name": "g"},
+		Children: []*ir.IRNode{
+			assignment("x", "\"clean\"", &ir.IRNode{Kind: ir.NodeKindLiteral, Text: "clean"}),
+		},
+	}
+	root := &ir.IRNode{Kind: ir.NodeKindModule, Children: []*ir.IRNode{f, g}}
+	tainted := build(&ir.IRFile{Root: root, Language: core.LangPython})
+	if tainted["x"] {
+		t.Error("expected g's clean x to not be contaminated by f's tainted x")
+	}
+}
+
+// TestBuild_NilSymbolTableDisablesInterprocedural: without a symbol table
+// the summary step is skipped but direct source/propagation still works.
+func TestBuild_NilSymbolTableDisablesInterprocedural(t *testing.T) {
+	fn := &ir.IRNode{
+		Kind:  ir.NodeKindFunction,
+		Attrs: map[string]any{"function_name": "get_user"},
+		Children: []*ir.IRNode{
+			{Kind: ir.NodeKindReturn, Attrs: map[string]any{"return_expr": "request.args.get('id')"}},
+		},
+	}
+	root := &ir.IRNode{
+		Kind: ir.NodeKindModule,
+		Children: []*ir.IRNode{
+			fn,
+			assignment("direct", "request.args.get('id')", ident("_")),
+			assignment("y", "get_user()", &ir.IRNode{
+				Kind:     ir.NodeKindCall,
+				Children: []*ir.IRNode{ident("get_user")},
+			}),
+		},
+	}
+	tainted := taint.Build(&ir.IRFile{Root: root, Language: core.LangPython}, nil)
+	if !tainted["direct"] {
+		t.Error("expected direct source assignment to be tainted with nil symbols")
+	}
+	if tainted["y"] {
+		t.Error("expected interprocedural step to be disabled with nil symbols")
 	}
 }

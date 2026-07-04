@@ -84,6 +84,48 @@ func TestBuildFromIR(t *testing.T) {
 	}
 }
 
+// TestBuildFromIR_ParametersBecomeSymbols verifies that parameter names
+// captured by the builders in Attrs["parameters"] are defined as
+// SymbolParameter in the function's own scope (and not in the global scope).
+func TestBuildFromIR_ParametersBecomeSymbols(t *testing.T) {
+	funcNode := &ir.IRNode{
+		Kind:     ir.NodeKindFunction,
+		Location: core.Location{StartLine: 1, EndLine: 3},
+		Attrs: map[string]any{
+			"function_name": "greet",
+			"parameters":    []string{"name", "greeting"},
+		},
+		Children: []*ir.IRNode{
+			{Kind: ir.NodeKindBlock, Location: core.Location{StartLine: 2, EndLine: 3}},
+		},
+	}
+	root := &ir.IRNode{
+		Kind:     ir.NodeKindModule,
+		Location: core.Location{StartLine: 1, EndLine: 5},
+		Children: []*ir.IRNode{funcNode},
+	}
+	table := symboltable.NewBuilder().Build(&ir.IRFile{Language: core.LangPython, Path: "test.py", Root: root})
+
+	// Resolvable from inside the function body.
+	inner := table.ScopeAt(core.Location{StartLine: 2})
+	sym, ok := table.Resolve("name", inner.ID)
+	if !ok {
+		t.Fatal("expected parameter symbol 'name' to resolve inside the function")
+	}
+	if sym.Kind != symboltable.SymbolParameter {
+		t.Errorf("name kind = %q, want %q", sym.Kind, symboltable.SymbolParameter)
+	}
+	if sym.Scope.Type != symboltable.ScopeFunction {
+		t.Errorf("name scope type = %q, want function", sym.Scope.Type)
+	}
+
+	// Not resolvable from module scope (line 5 is outside the function).
+	outer := table.ScopeAt(core.Location{StartLine: 5})
+	if _, ok := table.Resolve("greeting", outer.ID); ok {
+		t.Error("expected parameter 'greeting' to NOT resolve from module scope")
+	}
+}
+
 // TestClassScope_MethodBodyExclusion verifies Python LEGB: class scope is not in the
 // lookup chain for method bodies. A class-level assignment must NOT be resolved from
 // inside a method.

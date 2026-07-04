@@ -10,6 +10,7 @@ import (
 
 	"github.com/zerostrike/scanner/internal/core"
 	"github.com/zerostrike/scanner/internal/findings"
+	"github.com/zerostrike/scanner/internal/langreg"
 	"github.com/zerostrike/scanner/internal/rules"
 	"github.com/zerostrike/scanner/internal/scanner"
 	"github.com/zerostrike/scanner/internal/scanner/sast"
@@ -42,8 +43,16 @@ type ScanPipeline struct {
 	allowList *findings.AllowList
 }
 
-// New creates a ScanPipeline. Returns an error if rules fail to load or validate.
+// New creates a ScanPipeline. Returns an error if rules fail to load or
+// validate, or if an explicitly requested language has no registered parser
+// (fail fast at startup instead of erroring per file mid-scan).
 func New(cfg ScanConfig) (*ScanPipeline, error) {
+	for _, lang := range cfg.Languages {
+		if _, ok := langreg.Get(lang); !ok {
+			return nil, fmt.Errorf("pipeline: unsupported language %s: no parser registered (CGo-less builds register no parsers)", lang)
+		}
+	}
+
 	allRules, err := loadAllRules(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("pipeline: load rules: %w", err)
@@ -99,7 +108,7 @@ func loadAllRules(cfg ScanConfig) ([]*rules.Rule, error) {
 		return loader.LoadDir(".")
 	}
 	var all []*rules.Rule
-	for _, dir := range []string{"data/python", "data/js", "data/ts"} {
+	for _, dir := range rules.RuleDirs {
 		rs, err := loader.LoadDir(dir)
 		if err != nil {
 			return nil, fmt.Errorf("load rules from %s: %w", dir, err)

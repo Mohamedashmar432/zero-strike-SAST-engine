@@ -1,0 +1,23 @@
+id: ZS-CS-005
+name: Weak Cryptographic Hash (MD5)
+version: "1.0.0"
+language: csharp
+category: cryptography
+severity: medium
+confidence: high
+cwe:
+  - CWE-327
+owasp:
+  - "A04:2025"
+description: |
+  MD5 is cryptographically broken and should not be used for
+  security-sensitive operations such as password hashing, digital signatures,
+  or data integrity checks.
+message: "Weak hash algorithm MD5 detected — use SHA-256 or stronger"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+tags: [weak-crypto, md5, hash]
+match:
+  kind: call
+  callee: MD5.Create
+fix_suggestion: "Replace MD5.Create() with SHA256.Create(), or use a password KDF (PBKDF2/bcrypt/argon2) for passwords."

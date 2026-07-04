@@ -6,12 +6,16 @@ import (
 	"context"
 	"testing"
 
+	"github.com/zerostrike/scanner/internal/core"
 	"github.com/zerostrike/scanner/internal/pipeline"
 )
 
 func TestScanPipeline_Python(t *testing.T) {
 	cfg := pipeline.ScanConfig{
-		RootPath:    "../../testdata/python",
+		RootPath: "../../testdata/python",
+		// Explicit language exercises the fail-fast registry validation's
+		// positive path under CGo builds (python is registered).
+		Languages:   []core.Language{core.LangPython},
 		WorkerCount: 1,
 		NoCache:     true,
 	}

@@ -21,22 +21,14 @@ type IRBuilder struct{}
 // NewIRBuilder creates a new IRBuilder.
 func NewIRBuilder() *IRBuilder { return &IRBuilder{} }
 
-// BuildWarning is a lightweight diagnostic emitted when the builder encounters
-// a tree-sitter ERROR node.
-type BuildWarning struct {
-	File    string
-	Message string
-	Line    int
-}
-
 // Build parses source and walks the resulting CST to produce an IRFile.
-func (b *IRBuilder) Build(path string, source []byte) (*ir.IRFile, []BuildWarning, error) {
+func (b *IRBuilder) Build(path string, source []byte) (*ir.IRFile, []ir.BuildWarning, error) {
 	p := New()
 	result, err := p.Parse(context.Background(), source)
 	if err != nil {
 		return nil, nil, fmt.Errorf("ts builder: %w", err)
 	}
-	var warnings []BuildWarning
+	var warnings []ir.BuildWarning
 	root := b.buildNode(result.RootNode, source, nil, path, &warnings)
 	return &ir.IRFile{
 		Language: core.LangTypeScript,
@@ -45,13 +37,13 @@ func (b *IRBuilder) Build(path string, source []byte) (*ir.IRFile, []BuildWarnin
 	}, warnings, nil
 }
 
-func (b *IRBuilder) buildNode(node *sitter.Node, source []byte, parent *ir.IRNode, path string, warnings *[]BuildWarning) *ir.IRNode {
+func (b *IRBuilder) buildNode(node *sitter.Node, source []byte, parent *ir.IRNode, path string, warnings *[]ir.BuildWarning) *ir.IRNode {
 	if node == nil {
 		return nil
 	}
 	if node.IsError() || node.Type() == "ERROR" {
 		start := node.StartPoint()
-		*warnings = append(*warnings, BuildWarning{
+		*warnings = append(*warnings, ir.BuildWarning{
 			File:    path,
 			Message: fmt.Sprintf("syntax error at %s:%d — subtree skipped", path, int(start.Row)+1),
 			Line:    int(start.Row) + 1,
@@ -80,7 +72,7 @@ func (b *IRBuilder) buildNode(node *sitter.Node, source []byte, parent *ir.IRNod
 	return irNode
 }
 
-func (b *IRBuilder) buildChildren(node *sitter.Node, source []byte, parent *ir.IRNode, path string, warnings *[]BuildWarning) []*ir.IRNode {
+func (b *IRBuilder) buildChildren(node *sitter.Node, source []byte, parent *ir.IRNode, path string, warnings *[]ir.BuildWarning) []*ir.IRNode {
 	count := int(node.ChildCount())
 	children := make([]*ir.IRNode, 0, count)
 	for i := 0; i < count; i++ {
@@ -160,12 +152,31 @@ func extractAttrs(n *ir.IRNode, node *sitter.Node, source []byte) {
 				break
 			}
 		}
+	case "function_declaration", "function_expression", "arrow_function", "method_definition":
+		if params := extractParameters(node, source); len(params) > 0 {
+			n.Attrs["parameters"] = params
+		}
+	case "return_statement":
+		// Capture the returned expression's text for the taint
+		// function-summary pass (see internal/analyzer/taint).
+		for i := 0; i < int(node.ChildCount()); i++ {
+			c := node.Child(i)
+			if t := c.Type(); t != "return" && t != ";" {
+				n.Attrs["return_expr"] = c.Content(source)
+				break
+			}
+		}
 	case "assignment_expression", "augmented_assignment_expression":
 		if lhs := node.ChildByFieldName("left"); lhs != nil {
 			n.Attrs["lhs"] = lhs.Content(source)
 		}
 		if rhs := node.ChildByFieldName("right"); rhs != nil {
 			n.Attrs["rhs"] = rhs.Content(source)
+		}
+		if node.Type() == "augmented_assignment_expression" {
+			// x += y keeps x's previous value flowing into the result;
+			// the taint pass treats it as taint-preserving.
+			n.Attrs["augmented"] = true
 		}
 	case "variable_declarator":
 		// const/let/var x = ... — a declaration with an initializer, distinct
@@ -196,6 +207,53 @@ func extractAttrs(n *ir.IRNode, node *sitter.Node, source []byte) {
 			n.Attrs["except_handlers"] = handlers
 		}
 	}
+}
+
+// extractParameters collects the declared parameter names of a function-like
+// node into a string slice. The TypeScript grammar wraps each parameter in a
+// required_parameter/optional_parameter node with a "pattern" field; plain
+// identifiers and JS-style defaulted/rest parameters are handled as well.
+// Destructuring patterns are skipped.
+func extractParameters(node *sitter.Node, source []byte) []string {
+	params := node.ChildByFieldName("parameters")
+	if params == nil {
+		// Single-parameter arrow function: x => ...
+		if p := node.ChildByFieldName("parameter"); p != nil && p.Type() == "identifier" {
+			return []string{p.Content(source)}
+		}
+		return nil
+	}
+	var out []string
+	for i := 0; i < int(params.ChildCount()); i++ {
+		p := params.Child(i)
+		switch p.Type() {
+		case "identifier":
+			out = append(out, p.Content(source))
+		case "required_parameter", "optional_parameter":
+			if pat := p.ChildByFieldName("pattern"); pat != nil && pat.Type() == "identifier" {
+				out = append(out, pat.Content(source))
+				continue
+			}
+			for j := 0; j < int(p.ChildCount()); j++ {
+				if c := p.Child(j); c.Type() == "identifier" {
+					out = append(out, c.Content(source))
+					break
+				}
+			}
+		case "assignment_pattern":
+			if left := p.ChildByFieldName("left"); left != nil && left.Type() == "identifier" {
+				out = append(out, left.Content(source))
+			}
+		case "rest_pattern":
+			for j := 0; j < int(p.ChildCount()); j++ {
+				if c := p.Child(j); c.Type() == "identifier" {
+					out = append(out, c.Content(source))
+					break
+				}
+			}
+		}
+	}
+	return out
 }
 
 // isEmptyBlockBody reports whether a statement_block (catch body) contains no

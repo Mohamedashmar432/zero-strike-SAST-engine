@@ -18,24 +18,16 @@ type IRBuilder struct{}
 // NewIRBuilder creates a new IRBuilder.
 func NewIRBuilder() *IRBuilder { return &IRBuilder{} }
 
-// BuildWarning is a lightweight diagnostic emitted when the builder encounters a
-// tree-sitter ERROR node. It does not stop analysis of the surrounding file.
-type BuildWarning struct {
-	File    string
-	Message string
-	Line    int
-}
-
 // Build parses source and walks the resulting CST to produce an IRFile.
 // Warnings are returned for any tree-sitter ERROR nodes encountered; the rest of
 // the file is still analyzed. Build never panics on malformed input.
-func (b *IRBuilder) Build(path string, source []byte) (*ir.IRFile, []BuildWarning, error) {
+func (b *IRBuilder) Build(path string, source []byte) (*ir.IRFile, []ir.BuildWarning, error) {
 	p := New()
 	result, err := p.Parse(context.Background(), source)
 	if err != nil {
 		return nil, nil, fmt.Errorf("python builder: %w", err)
 	}
-	var warnings []BuildWarning
+	var warnings []ir.BuildWarning
 	root := b.buildNode(result.RootNode, source, nil, path, &warnings)
 	return &ir.IRFile{
 		Language: core.LangPython,
@@ -45,14 +37,14 @@ func (b *IRBuilder) Build(path string, source []byte) (*ir.IRFile, []BuildWarnin
 }
 
 // buildNode converts a single tree-sitter node into an IRNode, recursing into children.
-func (b *IRBuilder) buildNode(node *sitter.Node, source []byte, parent *ir.IRNode, path string, warnings *[]BuildWarning) *ir.IRNode {
+func (b *IRBuilder) buildNode(node *sitter.Node, source []byte, parent *ir.IRNode, path string, warnings *[]ir.BuildWarning) *ir.IRNode {
 	if node == nil {
 		return nil
 	}
 	if node.IsError() || node.Type() == "ERROR" {
 		// Skip ERROR subtree; emit a warning so the caller knows something was skipped.
 		start := node.StartPoint()
-		*warnings = append(*warnings, BuildWarning{
+		*warnings = append(*warnings, ir.BuildWarning{
 			File:    path,
 			Message: fmt.Sprintf("syntax error at %s:%d — subtree skipped", path, int(start.Row)+1),
 			Line:    int(start.Row) + 1,
@@ -83,7 +75,7 @@ func (b *IRBuilder) buildNode(node *sitter.Node, source []byte, parent *ir.IRNod
 }
 
 // buildChildren iterates over all children and collects non-nil IRNodes.
-func (b *IRBuilder) buildChildren(node *sitter.Node, source []byte, parent *ir.IRNode, path string, warnings *[]BuildWarning) []*ir.IRNode {
+func (b *IRBuilder) buildChildren(node *sitter.Node, source []byte, parent *ir.IRNode, path string, warnings *[]ir.BuildWarning) []*ir.IRNode {
 	count := int(node.ChildCount())
 	children := make([]*ir.IRNode, 0, count)
 	for i := 0; i < count; i++ {
@@ -168,12 +160,30 @@ func extractAttrs(n *ir.IRNode, node *sitter.Node, source []byte) {
 				break
 			}
 		}
+		if params := extractParameters(node, source); len(params) > 0 {
+			n.Attrs["parameters"] = params
+		}
 	case "assignment", "augmented_assignment":
 		if lhs := node.ChildByFieldName("left"); lhs != nil {
 			n.Attrs["lhs"] = lhs.Content(source)
 		}
 		if rhs := node.ChildByFieldName("right"); rhs != nil {
 			n.Attrs["rhs"] = rhs.Content(source)
+		}
+		if node.Type() == "augmented_assignment" {
+			// x += y keeps x's previous value flowing into the result;
+			// the taint pass treats it as taint-preserving.
+			n.Attrs["augmented"] = true
+		}
+	case "return_statement":
+		// Capture the returned expression's text for the taint
+		// function-summary pass (see internal/analyzer/taint).
+		for i := 0; i < int(node.ChildCount()); i++ {
+			c := node.Child(i)
+			if t := c.Type(); t != "return" && t != ";" {
+				n.Attrs["return_expr"] = c.Content(source)
+				break
+			}
 		}
 	case "keyword_argument":
 		if name := node.ChildByFieldName("name"); name != nil {
@@ -194,6 +204,36 @@ func extractAttrs(n *ir.IRNode, node *sitter.Node, source []byte) {
 			n.Attrs["except_handlers"] = handlers
 		}
 	}
+}
+
+// extractParameters collects the declared parameter names of a
+// function_definition into a string slice (positional, defaulted, typed,
+// *args and **kwargs names — destructuring/tuple params are skipped).
+func extractParameters(node *sitter.Node, source []byte) []string {
+	params := node.ChildByFieldName("parameters")
+	if params == nil {
+		return nil
+	}
+	var out []string
+	for i := 0; i < int(params.ChildCount()); i++ {
+		p := params.Child(i)
+		switch p.Type() {
+		case "identifier":
+			out = append(out, p.Content(source))
+		case "default_parameter", "typed_default_parameter":
+			if name := p.ChildByFieldName("name"); name != nil {
+				out = append(out, name.Content(source))
+			}
+		case "typed_parameter", "list_splat_pattern", "dictionary_splat_pattern":
+			for j := 0; j < int(p.ChildCount()); j++ {
+				if c := p.Child(j); c.Type() == "identifier" {
+					out = append(out, c.Content(source))
+					break
+				}
+			}
+		}
+	}
+	return out
 }
 
 // buildExceptHandler extracts metadata from a single except_clause tree-sitter

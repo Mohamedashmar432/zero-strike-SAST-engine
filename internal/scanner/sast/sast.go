@@ -15,11 +15,18 @@ import (
 	"github.com/zerostrike/scanner/internal/engine"
 	"github.com/zerostrike/scanner/internal/findings"
 	"github.com/zerostrike/scanner/internal/ir"
-	jsparser "github.com/zerostrike/scanner/internal/parser/javascript"
-	pythonparser "github.com/zerostrike/scanner/internal/parser/python"
-	tsparser "github.com/zerostrike/scanner/internal/parser/typescript"
+	"github.com/zerostrike/scanner/internal/langreg"
 	"github.com/zerostrike/scanner/internal/rules"
 	"github.com/zerostrike/scanner/internal/walker"
+
+	// Blank imports run each language package's init() registration with
+	// langreg. Linking the (CGo) SAST scanner links its languages, so every
+	// consumer — the CLI binary and test binaries alike — gets a populated
+	// registry without wiring it up itself.
+	_ "github.com/zerostrike/scanner/internal/parser/csharp"
+	_ "github.com/zerostrike/scanner/internal/parser/javascript"
+	_ "github.com/zerostrike/scanner/internal/parser/python"
+	_ "github.com/zerostrike/scanner/internal/parser/typescript"
 )
 
 // SASTScanner runs rule-based pattern matching over AST IR.
@@ -135,38 +142,19 @@ func (s *SASTScanner) processFile(ctx context.Context, entry walker.FileEntry) (
 	return fileFindings, diags
 }
 
+// buildIR dispatches to the registered language builder. The ctx parameter is
+// currently unused (builders parse with context.Background() internally); it
+// is kept to avoid call-site churn and for a future context-aware Build.
 func (s *SASTScanner) buildIR(ctx context.Context, path string, lang core.Language, source []byte) (*ir.IRFile, []string, error) {
-	switch lang {
-	case core.LangPython:
-		parser := pythonparser.New()
-		parseResult, err := parser.Parse(ctx, source)
-		if err != nil {
-			return nil, nil, fmt.Errorf("parse %s: %w", path, err)
-		}
-		builder := pythonparser.NewIRBuilder()
-		irFile, buildWarnings, buildErr := builder.Build(path, parseResult.Source)
-		warnings := make([]string, len(buildWarnings))
-		for i, w := range buildWarnings {
-			warnings[i] = w.Message
-		}
-		return irFile, warnings, buildErr
-	case core.LangJavaScript:
-		builder := jsparser.NewIRBuilder()
-		irFile, buildWarnings, buildErr := builder.Build(path, source)
-		warnings := make([]string, len(buildWarnings))
-		for i, w := range buildWarnings {
-			warnings[i] = w.Message
-		}
-		return irFile, warnings, buildErr
-	case core.LangTypeScript:
-		builder := tsparser.NewIRBuilder()
-		irFile, buildWarnings, buildErr := builder.Build(path, source)
-		warnings := make([]string, len(buildWarnings))
-		for i, w := range buildWarnings {
-			warnings[i] = w.Message
-		}
-		return irFile, warnings, buildErr
-	default:
-		return nil, nil, fmt.Errorf("no parser for language %s", lang)
+	_ = ctx
+	entry, ok := langreg.Get(lang)
+	if !ok {
+		return nil, nil, fmt.Errorf("no parser registered for language %s", lang)
 	}
+	irFile, buildWarnings, buildErr := entry.NewBuilder().Build(path, source)
+	warnings := make([]string, len(buildWarnings))
+	for i, w := range buildWarnings {
+		warnings[i] = w.Message
+	}
+	return irFile, warnings, buildErr
 }
