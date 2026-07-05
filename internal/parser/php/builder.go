@@ -77,6 +77,13 @@ func (b *IRBuilder) buildNode(node *sitter.Node, source []byte, parent *ir.IRNod
 	}
 	extractAttrs(irNode, node, source)
 	irNode.Children = b.buildChildren(node, source, irNode, path, warnings)
+	// variable_name and dynamic_variable_name have internal children ($ token
+	// + name subtree). Set Text to the full source span so that taint tracking
+	// and argument matching can identify them by their variable name (e.g.
+	// "$cmd", "$_GET") rather than finding an empty Text.
+	if irNode.Kind == ir.NodeKindIdentifier && irNode.Text == "" {
+		irNode.Text = node.Content(source)
+	}
 	return irNode
 }
 
