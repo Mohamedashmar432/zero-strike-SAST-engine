@@ -1,0 +1,14 @@
+version: "1"
+cases:
+  - file: cases/npm-vuln/package-lock.json
+    ecosystem: npm
+    expect: [{dependency: {package: lodash, ecosystem: npm}}]
+  - file: cases/npm-clean/package-lock.json
+    ecosystem: npm
+    expect: []
+  - file: cases/go-vuln/go.mod
+    ecosystem: go
+    expect: [{dependency: {package: "github.com/dgrijalva/jwt-go", ecosystem: Go}}]
+  - file: cases/go-clean/go.mod
+    ecosystem: go
+    expect: []

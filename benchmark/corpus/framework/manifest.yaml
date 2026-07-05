@@ -1,0 +1,20 @@
+version: "1"
+cases:
+  - file: cases/django/vuln_debug.env
+    expect: [{rule_id: ZS-CFG-001, min_count: 1}]
+  - file: cases/django/clean_debug.env
+    expect: []
+  - file: cases/express/vuln_missing_helmet.js
+    expect: [{rule_id: ZS-CFG-002, min_count: 1}]
+  - file: cases/express/clean_with_helmet.js
+    expect: []
+  - file: cases/cors/vuln_wildcard.yaml
+    expect: [{rule_id: ZS-CFG-003, min_count: 1}]
+  - file: cases/cors/clean_restricted.yaml
+    expect: []
+  - file: cases/laravel/vuln_app_debug.env
+    expect: [{rule_id: ZS-CFG-004, min_count: 1}]
+  - file: cases/laravel/clean_app_debug.env
+    expect: []
+  - file: cases/laravel/clean_local_debug.env
+    expect: []

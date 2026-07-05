@@ -52,6 +52,22 @@ func TestSuppressedByIDAndPath(t *testing.T) {
 	}
 }
 
+func TestSuppressedByRuleID_FrameworkFinding(t *testing.T) {
+	al := &findings.AllowList{
+		Suppressions: []findings.Suppression{{ID: "ZS-CFG-001"}},
+	}
+	f := core.Finding{
+		RuleID:      "ZS-CFG-001",
+		Fingerprint: "fp-cfg-1",
+		Kind:        core.FindingKindConfig,
+		Location:    core.Location{File: ".env"},
+		Config:      &core.ConfigFinding{Framework: "django", ConfigFile: ".env", Key: "DEBUG"},
+	}
+	if !al.Suppressed(f) {
+		t.Fatal("expected framework-misconfig finding to be suppressed by rule ID, same as SAST/secrets/SCA")
+	}
+}
+
 func TestNotSuppressed_WrongRule(t *testing.T) {
 	al := &findings.AllowList{
 		Suppressions: []findings.Suppression{{ID: "ZS-SEC-003"}},

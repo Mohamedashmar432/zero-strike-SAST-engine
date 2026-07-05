@@ -57,6 +57,7 @@ func scanCmd() *cobra.Command {
 		flagWorkers     int
 		flagEnableSec   bool
 		flagEnableSCA   bool
+		flagEnableFW    bool
 		flagSCAError    string
 		flagAllowFile   string
 		flagExcludeDirs []string
@@ -70,18 +71,19 @@ func scanCmd() *cobra.Command {
 			rootPath := args[0]
 
 			cfg := pipeline.ScanConfig{
-				RootPath:      rootPath,
-				Languages:     parseLanguages(flagLang),
-				OutputFormat:  flagFormat,
-				OutputFile:    flagOutput,
-				RulesDir:      flagRules,
-				WorkerCount:   flagWorkers,
-				NoCache:       flagNoCache,
-				EnableSecrets: flagEnableSec,
-				EnableSCA:     flagEnableSCA,
-				SCAOnError:    flagSCAError,
-				AllowFile:     flagAllowFile,
-				ExcludeDirs:   flagExcludeDirs,
+				RootPath:              rootPath,
+				Languages:             parseLanguages(flagLang),
+				OutputFormat:          flagFormat,
+				OutputFile:            flagOutput,
+				RulesDir:              flagRules,
+				WorkerCount:           flagWorkers,
+				NoCache:               flagNoCache,
+				EnableSecrets:         flagEnableSec,
+				EnableSCA:             flagEnableSCA,
+				EnableFrameworkChecks: flagEnableFW,
+				SCAOnError:            flagSCAError,
+				AllowFile:             flagAllowFile,
+				ExcludeDirs:           flagExcludeDirs,
 			}
 
 			pipe, err := pipeline.New(cfg)
@@ -190,6 +192,7 @@ func scanCmd() *cobra.Command {
 	cmd.Flags().IntVar(&flagWorkers, "workers", 0, "worker count (default: NumCPU)")
 	cmd.Flags().BoolVar(&flagEnableSec, "enable-secrets", false, "enable the Secrets scanner")
 	cmd.Flags().BoolVar(&flagEnableSCA, "enable-sca", false, "enable the SCA/OSV dependency scanner")
+	cmd.Flags().BoolVar(&flagEnableFW, "enable-framework-checks", false, "enable the framework misconfiguration scanner")
 	cmd.Flags().StringVar(&flagSCAError, "sca-on-error", "warn", "SCA on network error: warn|fail")
 	cmd.Flags().StringVar(&flagAllowFile, "allow-file", "", "path to allowlist YAML (default: <root>/.zs-allow.yaml)")
 	cmd.Flags().StringSliceVar(&flagExcludeDirs, "exclude-dir", nil, "directory names to skip, e.g. --exclude-dir gen --exclude-dir templates")

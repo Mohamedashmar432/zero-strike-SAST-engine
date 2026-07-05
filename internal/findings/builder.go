@@ -149,6 +149,54 @@ func BuildDependencyFinding(
 	}
 }
 
+// ConfigInput carries the fields needed to build a ConfigFinding.
+type ConfigInput struct {
+	Framework  string
+	ConfigFile string
+	Key        string
+	Value      string // matched text, for message/evidence only — never a credential, no redaction needed
+}
+
+// BuildConfigFinding constructs a core.Finding for a detected framework misconfiguration.
+func BuildConfigFinding(
+	ruleID, ruleName, message, category string,
+	input ConfigInput,
+	loc core.Location,
+	severity core.Severity,
+	confidence core.Confidence,
+	cwe, owasp []string,
+) core.Finding {
+	fp := sha256.Sum256([]byte(ruleID + "|" + input.ConfigFile + "|" + input.Key))
+	fingerprint := hex.EncodeToString(fp[:])[:16]
+
+	var evidence []core.Evidence
+	if input.Value != "" {
+		evidence = []core.Evidence{{Snippet: input.Value, StartLine: loc.StartLine, EndLine: loc.EndLine}}
+	}
+
+	return core.Finding{
+		ID:          uuid.New().String(),
+		RuleID:      ruleID,
+		RuleName:    ruleName,
+		Category:    category,
+		Severity:    severity,
+		Confidence:  confidence,
+		Message:     message,
+		Location:    loc,
+		Language:    core.LangUnknown,
+		Evidence:    evidence,
+		CWE:         cwe,
+		OWASP:       owasp,
+		Fingerprint: fingerprint,
+		Kind:        core.FindingKindConfig,
+		Config: &core.ConfigFinding{
+			Framework:  input.Framework,
+			ConfigFile: input.ConfigFile,
+			Key:        input.Key,
+		},
+	}
+}
+
 // computeFingerprint returns a 16-char hex fingerprint stable across line-number changes.
 // Hash input: ruleID + "|" + enclosingSymbol + "|" + normalizedSnippet.
 func computeFingerprint(ruleID, enclosingSym, snippet string) string {

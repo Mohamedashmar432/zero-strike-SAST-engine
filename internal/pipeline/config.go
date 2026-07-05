@@ -4,17 +4,18 @@ import "github.com/zerostrike/scanner/internal/core"
 
 // ScanConfig holds all configuration for a single scan run.
 type ScanConfig struct {
-	RootPath     string
-	Languages    []core.Language // empty = detect all
-	OutputFormat string          // "json" | "sarif" | "html"
-	OutputFile   string          // "" = stdout
-	RulesDir     string          // "" = use embedded rules
-	WorkerCount  int             // 0 = runtime.NumCPU()
-	EnableGraphs bool
-	NoCache      bool
-	EnableSecrets bool
-	EnableSCA     bool
-	SCAOnError    string // "warn" (default) | "fail"
-	AllowFile     string   // path to .zs-allow.yaml; "" = auto-discover from RootPath
-	ExcludeDirs   []string // extra directory names to skip (merged with hardcoded defaults)
+	RootPath              string
+	Languages             []core.Language // empty = detect all
+	OutputFormat          string          // "json" | "sarif" | "html"
+	OutputFile            string          // "" = stdout
+	RulesDir              string          // "" = use embedded rules
+	WorkerCount           int             // 0 = runtime.NumCPU()
+	EnableGraphs          bool
+	NoCache               bool
+	EnableSecrets         bool
+	EnableSCA             bool
+	SCAOnError            string // "warn" (default) | "fail"
+	EnableFrameworkChecks bool
+	AllowFile             string   // path to .zs-allow.yaml; "" = auto-discover from RootPath
+	ExcludeDirs           []string // extra directory names to skip (merged with hardcoded defaults)
 }

@@ -1,0 +1,23 @@
+version: "1"
+cases:
+  - file: cases/vuln_process_start.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-001, min_count: 1}]
+  - file: cases/vuln_sqli.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-002, min_count: 1}]
+  - file: cases/vuln_deserialization.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-003, min_count: 1}]
+  - file: cases/vuln_xss.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-004, min_count: 1}]
+  - file: cases/vuln_crypto.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-005, min_count: 1}]
+  - file: cases/vuln_hardcoded_secret.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-006, min_count: 2}]
+  - file: cases/clean.cs
+    language: csharp
+    expect: []

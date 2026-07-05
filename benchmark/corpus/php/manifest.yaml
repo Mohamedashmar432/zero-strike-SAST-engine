@@ -1,0 +1,20 @@
+version: "1"
+cases:
+  - file: cases/vuln_cmdi.php
+    language: php
+    expect: [{rule_id: ZS-PHP-001, min_count: 1}]
+  - file: cases/vuln_sqli.php
+    language: php
+    expect: [{rule_id: ZS-PHP-002, min_count: 1}]
+  - file: cases/vuln_deserialize.php
+    language: php
+    expect: [{rule_id: ZS-PHP-003, min_count: 1}]
+  - file: cases/vuln_xss.php
+    language: php
+    expect: [{rule_id: ZS-PHP-004, min_count: 1}]
+  - file: cases/vuln_secret.php
+    language: php
+    expect: [{rule_id: ZS-PHP-005, min_count: 1}]
+  - file: cases/clean.php
+    language: php
+    expect: []

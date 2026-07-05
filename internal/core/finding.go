@@ -27,6 +27,7 @@ const (
 	FindingKindSAST   FindingKind = "sast"
 	FindingKindSecret FindingKind = "secret"
 	FindingKindSCA    FindingKind = "sca"
+	FindingKindConfig FindingKind = "config"
 )
 
 // SecretFinding carries metadata for a detected secret.
@@ -46,6 +47,13 @@ type DependencyFinding struct {
 	AdvisoryIDs      []string // CVE-…, GHSA-…, PYSEC-…, OSV-…
 	Manifest         string   // path to the lock file
 	Direct           bool
+}
+
+// ConfigFinding carries metadata for a detected framework misconfiguration.
+type ConfigFinding struct {
+	Framework  string // "django" | "express" | "cors" | "laravel"
+	ConfigFile string
+	Key        string
 }
 
 // Evidence is a code snippet associated with a finding.
@@ -75,4 +83,5 @@ type Finding struct {
 	Kind        FindingKind
 	Secret      *SecretFinding     // non-nil iff Kind == FindingKindSecret
 	Dependency  *DependencyFinding // non-nil iff Kind == FindingKindSCA
+	Config      *ConfigFinding     // non-nil iff Kind == FindingKindConfig
 }

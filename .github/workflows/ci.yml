@@ -90,6 +90,34 @@ jobs:
           repository: anxolerd/dvpwa
           path: targets/dvpwa
 
+      - name: Checkout DVWA
+        uses: actions/checkout@v4
+        with:
+          repository: digininja/DVWA
+          ref: master
+          path: targets/dvwa
+
+      - name: Checkout damn-vulnerable-golang
+        uses: actions/checkout@v4
+        with:
+          repository: TheHackerDev/damn-vulnerable-golang
+          ref: main
+          path: targets/dv-golang
+
+      - name: Checkout Vulnerable-Flask-App
+        uses: actions/checkout@v4
+        with:
+          repository: we45/Vulnerable-Flask-App
+          ref: master
+          path: targets/vulnerable-flask-app
+
+      - name: Checkout Damm-Vulnerable-dotNet-Application
+        uses: actions/checkout@v4
+        with:
+          repository: Nova-8/Damm-Vulnerable-dotNet-Application
+          ref: master
+          path: targets/dv-dotnet
+
       # exit 1 means findings found (expected on vulnerable apps) — not a CI failure.
       # exit 2 means engine error — propagates and fails the job.
       - name: Scan dvna (JSON)
@@ -108,9 +136,43 @@ jobs:
         shell: bash
         run: zerostrike scan --enable-sca --enable-secrets --format html --output dvpwa-report.html targets/dvpwa || [ $? -eq 1 ]
 
-      # C#/Go/PHP have no external vulnerable-app target; the in-repo
-      # fixtures cover each language end-to-end (findings expected on CGo
-      # builds only).
+      # External vulnerable-app targets, one per language onboarded so far
+      # that didn't already have one (PHP, Go, Python, C#) — findings
+      # expected only on CGo builds, same constraint as the in-repo fixtures.
+      - name: Scan DVWA (JSON)
+        shell: bash
+        run: zerostrike scan --enable-sca --enable-secrets --format json --output dvwa-report.json targets/dvwa || [ $? -eq 1 ]
+
+      - name: Scan DVWA (HTML)
+        shell: bash
+        run: zerostrike scan --enable-sca --enable-secrets --format html --output dvwa-report.html targets/dvwa || [ $? -eq 1 ]
+
+      - name: Scan damn-vulnerable-golang (JSON)
+        shell: bash
+        run: zerostrike scan --enable-sca --enable-secrets --format json --output dv-golang-report.json targets/dv-golang || [ $? -eq 1 ]
+
+      - name: Scan damn-vulnerable-golang (HTML)
+        shell: bash
+        run: zerostrike scan --enable-sca --enable-secrets --format html --output dv-golang-report.html targets/dv-golang || [ $? -eq 1 ]
+
+      - name: Scan Vulnerable-Flask-App (JSON)
+        shell: bash
+        run: zerostrike scan --enable-sca --enable-secrets --format json --output vulnerable-flask-app-report.json targets/vulnerable-flask-app || [ $? -eq 1 ]
+
+      - name: Scan Vulnerable-Flask-App (HTML)
+        shell: bash
+        run: zerostrike scan --enable-sca --enable-secrets --format html --output vulnerable-flask-app-report.html targets/vulnerable-flask-app || [ $? -eq 1 ]
+
+      - name: Scan Damm-Vulnerable-dotNet-Application (JSON)
+        shell: bash
+        run: zerostrike scan --enable-sca --enable-secrets --format json --output dv-dotnet-report.json targets/dv-dotnet || [ $? -eq 1 ]
+
+      - name: Scan Damm-Vulnerable-dotNet-Application (HTML)
+        shell: bash
+        run: zerostrike scan --enable-sca --enable-secrets --format html --output dv-dotnet-report.html targets/dv-dotnet || [ $? -eq 1 ]
+
+      # In-repo fixtures also stay, for deterministic per-rule coverage that
+      # doesn't drift if an external target repo gets patched upstream.
       - name: Scan C# fixtures (JSON)
         shell: bash
         run: zerostrike scan --format json --output csharp-report.json testdata/csharp || [ $? -eq 1 ]
@@ -123,6 +185,12 @@ jobs:
         shell: bash
         run: zerostrike scan --format json --output php-report.json testdata/php || [ $? -eq 1 ]
 
+      # Framework misconfiguration fixtures are pure-Go (no CGo needed),
+      # so findings are expected on every matrix leg, not just CGo builds.
+      - name: Scan framework misconfiguration fixtures (JSON)
+        shell: bash
+        run: zerostrike scan --enable-framework-checks --format json --output framework-report.json testdata/framework || [ $? -eq 1 ]
+
       - name: Upload scan reports
         uses: actions/upload-artifact@v4
         if: always()
@@ -133,6 +201,45 @@ jobs:
             dvna-report.html
             dvpwa-report.json
             dvpwa-report.html
+            dvwa-report.json
+            dvwa-report.html
+            dv-golang-report.json
+            dv-golang-report.html
+            vulnerable-flask-app-report.json
+            vulnerable-flask-app-report.html
+            dv-dotnet-report.json
+            dv-dotnet-report.html
             csharp-report.json
             go-report.json
             php-report.json
+            framework-report.json
+
+  # Runs only on the CGo leg: no-CGo builds register no tree-sitter parsers
+  # (see internal/pipeline/scanner.go's New()), so SAST recall would show as
+  # a spurious 0% on the other two legs. Secrets/SCA/framework corpus cases
+  # are pure-Go and are still covered correctly by this one leg.
+  accuracy:
+    name: accuracy
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    env:
+      CGO_ENABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Run accuracy benchmark
+        run: go run ./cmd/zerostrike-bench --corpus benchmark/corpus --min-recall 0.90 --max-fp 0 --json-out benchmark-report.json --md-out accuracy-report.md
+
+      - name: Upload accuracy report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: accuracy-report
+          path: |
+            benchmark-report.json
+            accuracy-report.md

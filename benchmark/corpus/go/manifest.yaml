@@ -1,0 +1,24 @@
+version: "1"
+# Fixture files live under testdata/, not cases/, so `go build ./...` /
+# `go vet ./...` skip them (Go tooling ignores any "testdata" path segment) —
+# otherwise these .go fixtures would be compiled as real packages and
+# collide (multiple "package main"/"func main").
+cases:
+  - file: testdata/vuln_cmdi.go
+    language: go
+    expect: [{rule_id: ZS-GO-001, min_count: 1}]
+  - file: testdata/vuln_sqli.go
+    language: go
+    expect: [{rule_id: ZS-GO-002, min_count: 1}]
+  - file: testdata/vuln_traversal.go
+    language: go
+    expect: [{rule_id: ZS-GO-003, min_count: 1}]
+  - file: testdata/vuln_crypto.go
+    language: go
+    expect: [{rule_id: ZS-GO-004, min_count: 1}]
+  - file: testdata/vuln_secret.go
+    language: go
+    expect: [{rule_id: ZS-GO-005, min_count: 1}]
+  - file: testdata/clean.go
+    language: go
+    expect: []

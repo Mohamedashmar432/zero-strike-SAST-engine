@@ -13,6 +13,7 @@ import (
 	"github.com/zerostrike/scanner/internal/langreg"
 	"github.com/zerostrike/scanner/internal/rules"
 	"github.com/zerostrike/scanner/internal/scanner"
+	"github.com/zerostrike/scanner/internal/scanner/framework"
 	"github.com/zerostrike/scanner/internal/scanner/sast"
 	scascan "github.com/zerostrike/scanner/internal/scanner/sca"
 	"github.com/zerostrike/scanner/internal/scanner/secrets"
@@ -76,6 +77,9 @@ func New(cfg ScanConfig) (*ScanPipeline, error) {
 			onError = "warn"
 		}
 		scanners = append(scanners, scascan.New(onError))
+	}
+	if cfg.EnableFrameworkChecks {
+		scanners = append(scanners, framework.New())
 	}
 
 	// Load allowlist: explicit path, or auto-discover .zs-allow.yaml at root.
@@ -168,7 +172,7 @@ func (p *ScanPipeline) Run(ctx context.Context) (*ScanResult, error) {
 			}
 		}
 	} else {
-		// ponytail: run all scanners concurrently; goroutines = len(scanners) ≤ 3
+		// ponytail: run all scanners concurrently; one goroutine per registered scanner
 		type scannerResult struct {
 			name     string
 			findings []core.Finding
