@@ -21,6 +21,32 @@ import (
 	sarifreport "github.com/zerostrike/scanner/internal/report/sarif"
 )
 
+// parseLanguages maps --lang flag values to core.Language. Unrecognized
+// values are silently dropped here (pipeline.New validates the result
+// against langreg and fails fast on anything actually unsupported) — but
+// every langreg-registered language must have a case here, or its --lang
+// flag silently falls back to auto-detect instead of restricting the scan.
+func parseLanguages(raw []string) []core.Language {
+	var langs []core.Language
+	for _, l := range raw {
+		switch strings.ToLower(l) {
+		case "python":
+			langs = append(langs, core.LangPython)
+		case "javascript", "js":
+			langs = append(langs, core.LangJavaScript)
+		case "typescript", "ts":
+			langs = append(langs, core.LangTypeScript)
+		case "csharp", "cs":
+			langs = append(langs, core.LangCSharp)
+		case "go":
+			langs = append(langs, core.LangGo)
+		case "php":
+			langs = append(langs, core.LangPHP)
+		}
+	}
+	return langs
+}
+
 func scanCmd() *cobra.Command {
 	var (
 		flagFormat      string
@@ -43,24 +69,9 @@ func scanCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			rootPath := args[0]
 
-			// Parse languages
-			var langs []core.Language
-			for _, l := range flagLang {
-				switch strings.ToLower(l) {
-				case "python":
-					langs = append(langs, core.LangPython)
-				case "javascript", "js":
-					langs = append(langs, core.LangJavaScript)
-				case "typescript", "ts":
-					langs = append(langs, core.LangTypeScript)
-				case "csharp", "cs":
-					langs = append(langs, core.LangCSharp)
-				}
-			}
-
 			cfg := pipeline.ScanConfig{
 				RootPath:      rootPath,
-				Languages:     langs,
+				Languages:     parseLanguages(flagLang),
 				OutputFormat:  flagFormat,
 				OutputFile:    flagOutput,
 				RulesDir:      flagRules,
