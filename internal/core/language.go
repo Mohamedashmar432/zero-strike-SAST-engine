@@ -8,6 +8,8 @@ const (
 	LangJavaScript Language = "javascript"
 	LangTypeScript Language = "typescript"
 	LangCSharp     Language = "csharp"
+	LangGo         Language = "go"
+	LangPHP        Language = "php"
 	LangUnknown    Language = "unknown"
 )
 

@@ -1,0 +1,29 @@
+id: ZS-PHP-002
+name: mysqli_query SQL Injection
+version: "1.0.0"
+language: php
+category: injection
+severity: high
+confidence: high
+cwe:
+  - CWE-89
+owasp:
+  - "A05:2025"
+description: |
+  mysqli_query() is called with a query string that traces back to an
+  untrusted source (intra-procedural taint tracking), indicating SQL built
+  by string concatenation instead of a prepared statement.
+
+  The object-oriented mysqli/PDO query forms ($mysqli->query(...),
+  $pdo->query(...)) are equivalent sinks left as a companion-rule
+  follow-up, not required for this sprint's exit criteria.
+message: "mysqli_query() called with a tainted query string — use a prepared statement instead"
+references:
+  - https://owasp.org/www-community/attacks/SQL_Injection
+tags: [sqli, injection, mysqli]
+match:
+  kind: call
+  callee: mysqli_query
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Use mysqli_prepare()/bind_param() or PDO prepared statements instead of concatenating user input into the query string."

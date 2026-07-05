@@ -11,12 +11,14 @@ import (
 	// internal/langreg (init()-time registration; CGo builds only —
 	// under CGO_ENABLED=0 these packages are importable but empty).
 	_ "github.com/zerostrike/scanner/internal/parser/csharp"
+	_ "github.com/zerostrike/scanner/internal/parser/golang"
 	_ "github.com/zerostrike/scanner/internal/parser/javascript"
+	_ "github.com/zerostrike/scanner/internal/parser/php"
 	_ "github.com/zerostrike/scanner/internal/parser/python"
 	_ "github.com/zerostrike/scanner/internal/parser/typescript"
 )
 
-var version = "v0.10.0"
+var version = "v0.11.0"
 
 func main() {
 	root := &cobra.Command{

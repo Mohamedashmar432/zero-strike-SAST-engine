@@ -1,0 +1,25 @@
+id: ZS-PHP-004
+name: echo XSS Sink
+version: "1.0.0"
+language: php
+category: xss
+severity: high
+confidence: medium
+cwe:
+  - CWE-79
+owasp:
+  - "A05:2025"
+description: |
+  echo outputs a value that traces back to an untrusted source (intra-
+  procedural taint tracking) without passing through htmlspecialchars()/
+  htmlentities() first, allowing stored/reflected XSS.
+message: "echo of a tainted value detected — escape output with htmlspecialchars() before printing"
+references:
+  - https://owasp.org/www-community/attacks/xss/
+tags: [xss, injection, echo]
+match:
+  kind: call
+  callee: echo
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Wrap the value in htmlspecialchars($value, ENT_QUOTES, 'UTF-8') before echoing it."

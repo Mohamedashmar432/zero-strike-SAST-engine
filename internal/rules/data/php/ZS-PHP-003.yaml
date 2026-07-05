@@ -1,0 +1,25 @@
+id: ZS-PHP-003
+name: unserialize() Insecure Deserialization
+version: "1.0.0"
+language: php
+category: deserialization
+severity: high
+confidence: high
+cwe:
+  - CWE-502
+owasp:
+  - "A08:2025"
+description: |
+  unserialize() on attacker-influenced data can instantiate arbitrary PHP
+  objects and trigger their magic methods (__wakeup/__destruct), a classic
+  PHP object-injection vector — any use on untrusted data is the risk, not
+  just an obviously-tainted argument (mirrors ZS-CS-003's BinaryFormatter
+  treatment).
+message: "unserialize() detected — do not unserialize untrusted data"
+references:
+  - https://owasp.org/www-community/vulnerabilities/PHP_Object_Injection
+tags: [deserialization, unserialize]
+match:
+  kind: call
+  callee: unserialize
+fix_suggestion: "Use json_decode() for untrusted data, or pass unserialize()'s allowed_classes option set to false/an explicit allowlist."

@@ -1,0 +1,24 @@
+id: ZS-PHP-005
+name: Hardcoded Credential
+version: "1.0.0"
+language: php
+category: authentication
+severity: high
+confidence: medium
+cwe:
+  - CWE-798
+owasp:
+  - "A07:2025"
+description: |
+  A variable named like a credential (password, secret, api key, token) is
+  assigned a string literal directly in source code, rather than loaded from
+  configuration, an environment variable, or a secrets manager.
+message: "Hardcoded credential detected — load secrets from configuration or a secrets manager"
+references:
+  - https://cwe.mitre.org/data/definitions/798.html
+tags: [hardcoded-credential, authentication]
+match:
+  kind: assignment
+  lhs_identifier: "(?i)\\$(password|secret|api[_-]?key|apikey|token)"
+  rhs_literal: "^[\"'].+[\"']$"
+fix_suggestion: "Replace the literal with getenv(), an environment-backed config loader, or a secrets manager lookup."

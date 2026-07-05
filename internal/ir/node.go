@@ -24,6 +24,9 @@ const (
 	NodeKindBinaryOp   NodeKind = "binary_op"
 	NodeKindAssert     NodeKind = "assert_statement"
 	NodeKindKeywordArg NodeKind = "keyword_argument"
+	NodeKindSwitch     NodeKind = "switch"
+	NodeKindSelect     NodeKind = "select"
+	NodeKindDefer      NodeKind = "defer"
 	NodeKindUnknown    NodeKind = "unknown"
 )
 

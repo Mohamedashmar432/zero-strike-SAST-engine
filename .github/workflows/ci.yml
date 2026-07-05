@@ -108,11 +108,20 @@ jobs:
         shell: bash
         run: zerostrike scan --enable-sca --enable-secrets --format html --output dvpwa-report.html targets/dvpwa || [ $? -eq 1 ]
 
-      # C# has no external vulnerable-app target; the in-repo fixtures cover
-      # the language end-to-end (findings expected on CGo builds only).
+      # C#/Go/PHP have no external vulnerable-app target; the in-repo
+      # fixtures cover each language end-to-end (findings expected on CGo
+      # builds only).
       - name: Scan C# fixtures (JSON)
         shell: bash
         run: zerostrike scan --format json --output csharp-report.json testdata/csharp || [ $? -eq 1 ]
+
+      - name: Scan Go fixtures (JSON)
+        shell: bash
+        run: zerostrike scan --format json --output go-report.json testdata/go || [ $? -eq 1 ]
+
+      - name: Scan PHP fixtures (JSON)
+        shell: bash
+        run: zerostrike scan --format json --output php-report.json testdata/php || [ $? -eq 1 ]
 
       - name: Upload scan reports
         uses: actions/upload-artifact@v4
@@ -125,3 +134,5 @@ jobs:
             dvpwa-report.json
             dvpwa-report.html
             csharp-report.json
+            go-report.json
+            php-report.json

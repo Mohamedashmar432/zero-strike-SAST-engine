@@ -22,6 +22,8 @@ var extMap = map[string]core.Language{
 	".mts": core.LangTypeScript,
 	".cts": core.LangTypeScript,
 	".cs":  core.LangCSharp,
+	".go":  core.LangGo,
+	".php": core.LangPHP,
 }
 
 // shebangMap maps known shebang interpreter strings to their language.

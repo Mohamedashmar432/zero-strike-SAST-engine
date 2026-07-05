@@ -99,6 +99,32 @@ func TestBuild_CSharpSourceTaintsVariable(t *testing.T) {
 	}
 }
 
+func TestBuild_GoSourceTaintsVariable(t *testing.T) {
+	root := &ir.IRNode{
+		Kind: ir.NodeKindModule,
+		Children: []*ir.IRNode{
+			assignment("cmd", "os.Args[1]", ident("_")),
+		},
+	}
+	tainted := build(&ir.IRFile{Root: root, Language: core.LangGo})
+	if !tainted["cmd"] {
+		t.Error("expected cmd to be tainted from os.Args source")
+	}
+}
+
+func TestBuild_PHPSourceTaintsVariable(t *testing.T) {
+	root := &ir.IRNode{
+		Kind: ir.NodeKindModule,
+		Children: []*ir.IRNode{
+			assignment("$id", "$_GET['id']", ident("_")),
+		},
+	}
+	tainted := build(&ir.IRFile{Root: root, Language: core.LangPHP})
+	if !tainted["$id"] {
+		t.Error("expected $id to be tainted from $_GET source")
+	}
+}
+
 func TestBuild_UnrelatedAssignmentNotTainted(t *testing.T) {
 	root := &ir.IRNode{
 		Kind: ir.NodeKindModule,

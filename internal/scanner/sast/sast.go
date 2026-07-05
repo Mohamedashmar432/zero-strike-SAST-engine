@@ -24,7 +24,9 @@ import (
 	// consumer — the CLI binary and test binaries alike — gets a populated
 	// registry without wiring it up itself.
 	_ "github.com/zerostrike/scanner/internal/parser/csharp"
+	_ "github.com/zerostrike/scanner/internal/parser/golang"
 	_ "github.com/zerostrike/scanner/internal/parser/javascript"
+	_ "github.com/zerostrike/scanner/internal/parser/php"
 	_ "github.com/zerostrike/scanner/internal/parser/python"
 	_ "github.com/zerostrike/scanner/internal/parser/typescript"
 )

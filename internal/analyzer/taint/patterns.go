@@ -55,11 +55,36 @@ var csharpPatterns = languagePatterns{
 	},
 }
 
+var goPatterns = languagePatterns{
+	Sources: []*regexp.Regexp{
+		regexp.MustCompile(`os\.Args`),
+		regexp.MustCompile(`r\.(URL\.Query\(\)|FormValue\(|PostFormValue\()`),
+		regexp.MustCompile(`os\.Getenv\(`),
+	},
+	Sanitizers: []*regexp.Regexp{
+		regexp.MustCompile(`html\.EscapeString\(`),
+		regexp.MustCompile(`template\.HTMLEscapeString\(`),
+	},
+}
+
+var phpPatterns = languagePatterns{
+	Sources: []*regexp.Regexp{
+		regexp.MustCompile(`\$_(GET|POST|REQUEST|COOKIE|SERVER)\b`),
+	},
+	Sanitizers: []*regexp.Regexp{
+		regexp.MustCompile(`htmlspecialchars\(`),
+		regexp.MustCompile(`htmlentities\(`),
+		regexp.MustCompile(`escapeshellarg\(`),
+	},
+}
+
 var patterns = map[core.Language]languagePatterns{
 	core.LangPython:     pythonPatterns,
 	core.LangJavaScript: jsPatterns,
 	core.LangTypeScript: jsPatterns,
 	core.LangCSharp:     csharpPatterns,
+	core.LangGo:         goPatterns,
+	core.LangPHP:        phpPatterns,
 }
 
 // fallbackPatterns preserves the pre-split behavior (one combined

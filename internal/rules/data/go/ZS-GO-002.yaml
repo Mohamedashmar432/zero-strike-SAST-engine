@@ -1,0 +1,32 @@
+id: ZS-GO-002
+name: db.Query SQL Injection
+version: "1.0.0"
+language: go
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-89
+owasp:
+  - "A05:2025"
+description: |
+  A database query is executed with a query string that traces back to an
+  untrusted source (intra-procedural taint tracking), indicating SQL built
+  by string concatenation/Sprintf instead of a parameterized placeholder.
+
+  Known limitation: this rule matches the callee text "db.Query" literally
+  (the callee is a receiver-variable method call, not a package-qualified
+  function, so it can't be matched structurally) — it only fires when the
+  *sql.DB/*sql.Tx variable is conventionally named "db". A companion rule
+  for other common receiver names (tx, conn) is a follow-up, not required
+  for this sprint's exit criteria.
+message: "db.Query() called with a tainted query string — use a parameterized query instead"
+references:
+  - https://owasp.org/www-community/attacks/SQL_Injection
+tags: [sqli, injection, database-sql]
+match:
+  kind: call
+  callee: db.Query
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Use a parameterized query: db.Query(\"SELECT * FROM users WHERE id = ?\", id) instead of building the query string with the tainted value."

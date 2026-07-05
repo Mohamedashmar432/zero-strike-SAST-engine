@@ -1,0 +1,23 @@
+id: ZS-GO-004
+name: Weak Cryptographic Hash (MD5)
+version: "1.0.0"
+language: go
+category: cryptography
+severity: medium
+confidence: high
+cwe:
+  - CWE-327
+owasp:
+  - "A04:2025"
+description: |
+  MD5 is cryptographically broken and should not be used for
+  security-sensitive operations such as password hashing, digital signatures,
+  or data integrity checks.
+message: "Weak hash algorithm MD5 detected — use SHA-256 or stronger"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+tags: [weak-crypto, md5, hash]
+match:
+  kind: call
+  callee: md5.New
+fix_suggestion: "Replace md5.New() with sha256.New(), or use a password KDF (bcrypt/scrypt/argon2) for passwords."
