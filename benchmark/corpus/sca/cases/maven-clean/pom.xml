@@ -6,9 +6,9 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-core</artifactId>
-      <version>2.20.0</version>
+      <groupId>com.example</groupId>
+      <artifactId>zerostrike-benchmark-nonexistent-pkg</artifactId>
+      <version>1.0.0</version>
     </dependency>
   </dependencies>
 </project>
