@@ -1,0 +1,25 @@
+id: ZS-JAVA-006
+name: File Path Traversal
+version: "1.0.0"
+language: java
+category: path-traversal
+severity: high
+confidence: medium
+cwe:
+  - CWE-22
+owasp:
+  - "A01:2025"
+description: |
+  A java.io.File is constructed with a path that traces back to an untrusted
+  source (intra-procedural taint tracking), which can allow reading or
+  writing files outside the intended directory.
+message: "new File() called with a tainted path — validate and confine the path before use"
+references:
+  - https://owasp.org/www-community/attacks/Path_Traversal
+tags: [path-traversal, file-access]
+match:
+  kind: call
+  callee: File
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Resolve the path with File.getCanonicalPath() and confirm it stays within the allowed base directory before use, or reject paths containing '..'."

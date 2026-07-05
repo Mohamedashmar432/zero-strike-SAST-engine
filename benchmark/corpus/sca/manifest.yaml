@@ -12,3 +12,9 @@ cases:
   - file: cases/go-clean/go.mod
     ecosystem: go
     expect: []
+  - file: cases/maven-vuln/pom.xml
+    ecosystem: maven
+    expect: [{dependency: {package: "org.apache.logging.log4j:log4j-core", ecosystem: Maven}}]
+  - file: cases/maven-clean/pom.xml
+    ecosystem: maven
+    expect: []

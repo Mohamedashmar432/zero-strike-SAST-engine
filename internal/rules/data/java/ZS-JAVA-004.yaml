@@ -1,0 +1,25 @@
+id: ZS-JAVA-004
+name: Weak Cryptographic Key Spec (DES)
+version: "1.0.0"
+language: java
+category: cryptography
+severity: medium
+confidence: high
+cwe:
+  - CWE-327
+owasp:
+  - "A04:2025"
+description: |
+  DESKeySpec constructs a key for the DES cipher, which is cryptographically
+  broken (56-bit effective key length) and should not be used for
+  security-sensitive encryption. This rule flags the constructor itself,
+  matching how ZS-GO-004/ZS-CS-005 flag their languages' equivalent MD5 APIs
+  unconditionally.
+message: "DESKeySpec usage detected — DES is cryptographically broken; use AES-256 (AESKeySpec via KeyGenerator) instead"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+tags: [weak-crypto, des]
+match:
+  kind: call
+  callee: DESKeySpec
+fix_suggestion: "Replace DESKeySpec/DES with a KeyGenerator for AES-256, or a vetted higher-level library (e.g. Google Tink)."

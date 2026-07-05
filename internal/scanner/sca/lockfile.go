@@ -4,7 +4,9 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"encoding/xml"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -34,6 +36,8 @@ func parseLockFile(path string, data []byte) []Dependency {
 		return parsePipfileLock(path, data)
 	case base == "go.mod":
 		return parseGoMod(path, data)
+	case base == "pom.xml":
+		return parsePomXML(path, data)
 	case strings.HasPrefix(base, "requirements") && strings.HasSuffix(base, ".txt"):
 		return parseRequirementsTxt(path, data)
 	}
@@ -153,7 +157,7 @@ func parseYarnLock(path string, data []byte) []Dependency {
 			var ver string
 			switch {
 			case strings.HasPrefix(trimmed, `version "`) && strings.HasSuffix(trimmed, `"`):
-				ver = trimmed[len(`version "`): len(trimmed)-1]
+				ver = trimmed[len(`version "`) : len(trimmed)-1]
 			case strings.HasPrefix(trimmed, "version: "):
 				ver = strings.Trim(strings.TrimPrefix(trimmed, "version: "), `"`)
 			}
@@ -301,6 +305,110 @@ func parseGoModRequireLine(line, manifest string) *Dependency {
 		Manifest:  manifest,
 		Direct:    !indirect,
 	}
+}
+
+// mavenPOM is the subset of a Maven pom.xml this parser cares about.
+type mavenPOM struct {
+	Properties struct {
+		Entries []mavenProperty `xml:",any"`
+	} `xml:"properties"`
+	Dependencies struct {
+		Dependency []mavenDependency `xml:"dependency"`
+	} `xml:"dependencies"`
+	DependencyManagement struct {
+		Dependencies struct {
+			Dependency []mavenDependency `xml:"dependency"`
+		} `xml:"dependencies"`
+	} `xml:"dependencyManagement"`
+}
+
+// mavenProperty captures one <properties> child element by its tag name
+// (e.g. <foo.version>1.2.3</foo.version>), used to resolve ${foo.version}
+// placeholders in dependency versions.
+type mavenProperty struct {
+	XMLName xml.Name
+	Value   string `xml:",chardata"`
+}
+
+type mavenDependency struct {
+	GroupID    string `xml:"groupId"`
+	ArtifactID string `xml:"artifactId"`
+	Version    string `xml:"version"`
+}
+
+// parsePomXML parses a Maven pom.xml, extracting <dependencies> as direct
+// and <dependencyManagement> as indirect/managed — mirroring parseGoMod's
+// direct/indirect split. Package names are groupId:artifactId, matching
+// OSV's Maven ecosystem convention.
+func parsePomXML(path string, data []byte) []Dependency {
+	var pom mavenPOM
+	if err := xml.Unmarshal(data, &pom); err != nil {
+		return nil
+	}
+	props := make(map[string]string, len(pom.Properties.Entries))
+	for _, p := range pom.Properties.Entries {
+		props[p.XMLName.Local] = strings.TrimSpace(p.Value)
+	}
+	var deps []Dependency
+	for _, d := range pom.Dependencies.Dependency {
+		if dep := buildMavenDependency(d, props, path, true); dep != nil {
+			deps = append(deps, *dep)
+		}
+	}
+	for _, d := range pom.DependencyManagement.Dependencies.Dependency {
+		if dep := buildMavenDependency(d, props, path, false); dep != nil {
+			deps = append(deps, *dep)
+		}
+	}
+	return deps
+}
+
+func buildMavenDependency(d mavenDependency, props map[string]string, path string, direct bool) *Dependency {
+	groupID := strings.TrimSpace(d.GroupID)
+	artifactID := strings.TrimSpace(d.ArtifactID)
+	if groupID == "" || artifactID == "" {
+		return nil
+	}
+	version := resolveMavenVersion(strings.TrimSpace(d.Version), props)
+	if version == "" {
+		return nil
+	}
+	return &Dependency{
+		Ecosystem: "Maven",
+		Package:   groupID + ":" + artifactID,
+		Version:   version,
+		Manifest:  path,
+		Direct:    direct,
+	}
+}
+
+var (
+	mavenPropertyPattern     = regexp.MustCompile(`\$\{([^}]+)\}`)
+	mavenRangeVersionPattern = regexp.MustCompile(`[0-9][0-9A-Za-z.\-]*`)
+)
+
+// resolveMavenVersion substitutes a ${property} placeholder from this pom's
+// own <properties> block (no parent-POM or multi-module reactor inheritance
+// — out of scope for this sprint's narrow exit criteria) and reduces a
+// Maven version range ([1.0,2.0), [1.5,)) to its first concrete version
+// bound, since OSV's API takes an exact version, not a range. Returns ""
+// when the version can't be resolved, matching parseRequirementsTxt's
+// "skip unpinned" convention.
+func resolveMavenVersion(raw string, props map[string]string) string {
+	if raw == "" {
+		return ""
+	}
+	if m := mavenPropertyPattern.FindStringSubmatch(raw); m != nil {
+		resolved, ok := props[strings.TrimSpace(m[1])]
+		if !ok {
+			return ""
+		}
+		raw = resolved
+	}
+	if strings.ContainsAny(raw, "[](),") {
+		return mavenRangeVersionPattern.FindString(raw)
+	}
+	return raw
 }
 
 // deduplicateDeps removes duplicate (ecosystem, package, version) entries.

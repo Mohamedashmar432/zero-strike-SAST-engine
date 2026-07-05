@@ -181,6 +181,50 @@ func TestParseGoMod(t *testing.T) {
 	}
 }
 
+func TestParsePomXML(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("testdata", "pom.xml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	deps := parsePomXML("pom.xml", data)
+	if len(deps) != 3 {
+		t.Fatalf("expected 3 deps, got %d: %+v", len(deps), deps)
+	}
+	byName := map[string]Dependency{}
+	for _, d := range deps {
+		byName[d.Package] = d
+		if d.Ecosystem != "Maven" {
+			t.Errorf("dep %s Ecosystem = %q, want Maven", d.Package, d.Ecosystem)
+		}
+	}
+	if byName["org.apache.commons:commons-lang3"].Version != "3.12.0" {
+		t.Errorf("commons-lang3 version = %q, want 3.12.0", byName["org.apache.commons:commons-lang3"].Version)
+	}
+	if !byName["org.apache.commons:commons-lang3"].Direct {
+		t.Errorf("commons-lang3 should be Direct=true")
+	}
+	if byName["com.fasterxml.jackson.core:jackson-databind"].Version != "2.15.2" {
+		t.Errorf("jackson-databind version = %q, want 2.15.2 (resolved from ${jackson.version})", byName["com.fasterxml.jackson.core:jackson-databind"].Version)
+	}
+	if byName["org.springframework:spring-core"].Direct {
+		t.Errorf("spring-core (dependencyManagement) should be Direct=false")
+	}
+}
+
+func TestResolveMavenVersion_Range(t *testing.T) {
+	got := resolveMavenVersion("[1.5,2.0)", nil)
+	if got != "1.5" {
+		t.Errorf("resolveMavenVersion(range) = %q, want 1.5", got)
+	}
+}
+
+func TestResolveMavenVersion_UnresolvedProperty(t *testing.T) {
+	got := resolveMavenVersion("${missing.version}", map[string]string{})
+	if got != "" {
+		t.Errorf("resolveMavenVersion(unresolved property) = %q, want empty", got)
+	}
+}
+
 func TestParsePipfileLock(t *testing.T) {
 	data, err := os.ReadFile(filepath.Join("testdata", "Pipfile.lock"))
 	if err != nil {

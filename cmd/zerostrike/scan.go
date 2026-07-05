@@ -42,6 +42,8 @@ func parseLanguages(raw []string) []core.Language {
 			langs = append(langs, core.LangGo)
 		case "php":
 			langs = append(langs, core.LangPHP)
+		case "java":
+			langs = append(langs, core.LangJava)
 		}
 	}
 	return langs

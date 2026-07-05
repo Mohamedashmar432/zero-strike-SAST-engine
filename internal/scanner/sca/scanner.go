@@ -40,6 +40,7 @@ func (s *SCAScanner) Accepts(entry walker.FileEntry) bool {
 		base == "pnpm-lock.yaml" ||
 		base == "Pipfile.lock" ||
 		base == "go.mod" ||
+		base == "pom.xml" ||
 		(strings.HasPrefix(base, "requirements") && strings.HasSuffix(base, ".txt"))
 }
 

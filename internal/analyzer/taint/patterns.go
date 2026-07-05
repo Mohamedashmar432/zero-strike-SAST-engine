@@ -78,6 +78,18 @@ var phpPatterns = languagePatterns{
 	},
 }
 
+var javaPatterns = languagePatterns{
+	Sources: []*regexp.Regexp{
+		regexp.MustCompile(`request\.getParameter\(`),
+		regexp.MustCompile(`request\.getHeader\(`),
+		regexp.MustCompile(`System\.getenv\(`),
+	},
+	Sanitizers: []*regexp.Regexp{
+		regexp.MustCompile(`StringEscapeUtils\.escapeHtml4\(`),
+		regexp.MustCompile(`Encode\.forHtml\(`),
+	},
+}
+
 var patterns = map[core.Language]languagePatterns{
 	core.LangPython:     pythonPatterns,
 	core.LangJavaScript: jsPatterns,
@@ -85,6 +97,7 @@ var patterns = map[core.Language]languagePatterns{
 	core.LangCSharp:     csharpPatterns,
 	core.LangGo:         goPatterns,
 	core.LangPHP:        phpPatterns,
+	core.LangJava:       javaPatterns,
 }
 
 // fallbackPatterns preserves the pre-split behavior (one combined

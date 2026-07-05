@@ -1,0 +1,33 @@
+id: ZS-JAVA-001
+name: JDBC Statement SQL Injection
+version: "1.0.0"
+language: java
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-89
+owasp:
+  - "A05:2025"
+description: |
+  Statement.executeQuery()/executeUpdate() is called with a query string that
+  traces back to an untrusted source (intra-procedural taint tracking),
+  indicating SQL built by string concatenation instead of a PreparedStatement
+  placeholder.
+
+  Known limitation: like ZS-GO-002 (db.Query), the callee is a
+  receiver-variable method call rather than a package-qualified function, so
+  it can't be matched structurally — this rule only fires when the
+  java.sql.Statement variable is conventionally named "stmt". A companion
+  rule for other receiver names is a follow-up, not required for this
+  sprint's exit criteria.
+message: "stmt.executeQuery() called with a tainted query string — use a PreparedStatement with bind parameters instead"
+references:
+  - https://owasp.org/www-community/attacks/SQL_Injection
+tags: [sqli, injection, jdbc]
+match:
+  kind: call
+  callee: stmt.executeQuery
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Replace Statement with PreparedStatement and bind the tainted value via setString()/setInt() instead of concatenating it into the query text."

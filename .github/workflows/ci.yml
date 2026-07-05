@@ -185,6 +185,10 @@ jobs:
         shell: bash
         run: zerostrike scan --format json --output php-report.json testdata/php || [ $? -eq 1 ]
 
+      - name: Scan Java fixtures (JSON)
+        shell: bash
+        run: zerostrike scan --format json --output java-report.json testdata/java || [ $? -eq 1 ]
+
       # Framework misconfiguration fixtures are pure-Go (no CGo needed),
       # so findings are expected on every matrix leg, not just CGo builds.
       - name: Scan framework misconfiguration fixtures (JSON)
@@ -212,6 +216,7 @@ jobs:
             csharp-report.json
             go-report.json
             php-report.json
+            java-report.json
             framework-report.json
 
   # Runs only on the CGo leg: no-CGo builds register no tree-sitter parsers

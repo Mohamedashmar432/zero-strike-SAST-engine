@@ -9,9 +9,9 @@ be diffed release over release.
 
 ```
 corpus/
-  python/  js/  ts/  csharp/  go/  php/   manifest.yaml + cases/*   (SAST)
+  python/  js/  ts/  csharp/  go/  php/  java/   manifest.yaml + cases/*   (SAST)
   secrets/                    manifest.yaml + cases/*.txt
-  sca/                        manifest.yaml + cases/{npm,go}-{vuln,clean}/
+  sca/                        manifest.yaml + cases/{npm,go,maven}-{vuln,clean}/
   framework/                  manifest.yaml + cases/{django,express,cors,laravel}/
 ```
 
@@ -68,8 +68,16 @@ case is self-describing.
 - **No TypeScript fixtures existed before this sprint** — `corpus/ts/`
   cases were written fresh, mirroring the exact source/sink shape proven
   by `internal/engine/integration_javascript_test.go`'s TS cases.
-- **SCA covers npm and Go only** — pip/Maven/Gemfile ecosystem cases are
-  a Sprint 18 (SCA ecosystem expansion) follow-up.
+- **SCA covers npm, Go, and Maven** — Ruby/Bundler (`Gemfile.lock`) is
+  deferred until Ruby source scanning also ships (see
+  `docs/roadmap/ARCHITECTURE-DECISIONS.md` #5); pip beyond `Pipfile.lock`
+  (bare `requirements.txt` pinned deps are already covered) is not planned.
+- **Maven version ranges are approximated, not fully resolved**: a range
+  like `[1.5,2.0)` is reduced to its first concrete bound (`1.5`) rather
+  than resolved against what would actually be installed, and parent-POM/
+  multi-module `${property}` inheritance is not followed — only a pom's own
+  `<properties>` block. See `resolveMavenVersion` in
+  `internal/scanner/sca/lockfile.go`.
 - **SCA cases depend on the live OSV API** (same as `scan-e2e`'s
   dvna/dvpwa scans). A transient OSV outage can make SCA recall look like
   a regression when it isn't — see `docs/roadmap/ARCHITECTURE-DECISIONS.md`

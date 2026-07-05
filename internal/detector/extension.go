@@ -11,19 +11,20 @@ import (
 // extMap maps lowercase file extensions (including the leading dot) to
 // their canonical language. It is package-level and never mutated.
 var extMap = map[string]core.Language{
-	".py":  core.LangPython,
-	".pyw": core.LangPython,
-	".js":  core.LangJavaScript,
-	".mjs": core.LangJavaScript,
-	".cjs": core.LangJavaScript,
-	".jsx": core.LangJavaScript,
-	".ts":  core.LangTypeScript,
-	".tsx": core.LangTypeScript,
-	".mts": core.LangTypeScript,
-	".cts": core.LangTypeScript,
-	".cs":  core.LangCSharp,
-	".go":  core.LangGo,
-	".php": core.LangPHP,
+	".py":   core.LangPython,
+	".pyw":  core.LangPython,
+	".js":   core.LangJavaScript,
+	".mjs":  core.LangJavaScript,
+	".cjs":  core.LangJavaScript,
+	".jsx":  core.LangJavaScript,
+	".ts":   core.LangTypeScript,
+	".tsx":  core.LangTypeScript,
+	".mts":  core.LangTypeScript,
+	".cts":  core.LangTypeScript,
+	".cs":   core.LangCSharp,
+	".go":   core.LangGo,
+	".php":  core.LangPHP,
+	".java": core.LangJava,
 }
 
 // shebangMap maps known shebang interpreter strings to their language.

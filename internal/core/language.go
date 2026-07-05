@@ -10,6 +10,7 @@ const (
 	LangCSharp     Language = "csharp"
 	LangGo         Language = "go"
 	LangPHP        Language = "php"
+	LangJava       Language = "java"
 	LangUnknown    Language = "unknown"
 )
 

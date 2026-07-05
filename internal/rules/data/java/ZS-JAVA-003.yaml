@@ -1,0 +1,29 @@
+id: ZS-JAVA-003
+name: DocumentBuilderFactory XXE
+version: "1.0.0"
+language: java
+category: xxe
+severity: high
+confidence: medium
+cwe:
+  - CWE-611
+owasp:
+  - "A05:2025"
+description: |
+  DocumentBuilderFactory.newInstance() is vulnerable to XML External Entity
+  (XXE) injection by default: external entity and DOCTYPE processing are
+  enabled unless explicitly disabled via setFeature(). This rule flags the
+  factory instantiation itself.
+
+  Known limitation: the engine cannot yet see whether a later setFeature()
+  call on the same factory disables external entities, so already-hardened
+  code also triggers this finding — the same false-positive-over-false-
+  negative tradeoff already accepted by ZS-CFG-002 (Express/helmet).
+message: "DocumentBuilderFactory.newInstance() detected — disable external entity/DOCTYPE processing to prevent XXE"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html
+tags: [xxe, xml]
+match:
+  kind: call
+  callee: DocumentBuilderFactory.newInstance
+fix_suggestion: "Call setFeature(\"http://apache.org/xml/features/disallow-doctype-decl\", true) on the factory before parsing, or use a hardened XML parser configuration."

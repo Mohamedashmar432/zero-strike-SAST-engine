@@ -1,0 +1,30 @@
+id: ZS-JAVA-002
+name: ObjectInputStream Unsafe Deserialization
+version: "1.0.0"
+language: java
+category: deserialization
+severity: critical
+confidence: high
+cwe:
+  - CWE-502
+owasp:
+  - "A08:2025"
+description: |
+  ObjectInputStream.readObject() deserializes a byte stream into live Java
+  objects with no built-in type allowlist, enabling remote code execution
+  when the stream comes from an untrusted source. This rule flags the call
+  itself, matching how ZS-CS-003 (BinaryFormatter) flags C#'s equivalent
+  unconditionally rather than requiring the input stream's origin to be
+  proven tainted.
+
+  Known limitation: matches the conventional receiver name "ois" (the
+  ObjectInputStream variable) — a companion rule for other receiver names is
+  a follow-up, not required for this sprint's exit criteria.
+message: "ObjectInputStream.readObject() detected — insecure deserialization enables RCE; validate/allowlist types or use a safer serialization format"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html
+tags: [deserialization, rce]
+match:
+  kind: call
+  callee: ois.readObject
+fix_suggestion: "Avoid deserializing untrusted data with ObjectInputStream; if unavoidable, use an ObjectInputFilter to allowlist expected classes, or switch to JSON/Protobuf."

@@ -1,0 +1,23 @@
+version: "1"
+cases:
+  - file: cases/vuln_sqli.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-001, min_count: 1}]
+  - file: cases/vuln_deserialization.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-002, min_count: 1}]
+  - file: cases/vuln_xxe.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-003, min_count: 1}]
+  - file: cases/vuln_crypto.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-004, min_count: 1}]
+  - file: cases/vuln_secret.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-005, min_count: 1}]
+  - file: cases/vuln_traversal.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-006, min_count: 1}]
+  - file: cases/clean.java
+    language: java
+    expect: []
