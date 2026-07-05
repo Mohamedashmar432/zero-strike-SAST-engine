@@ -72,12 +72,20 @@ func (e *defaultEngine) Match(_ context.Context, mc *MatchContext) ([]MatchResul
 	}
 	taintedVars := mc.File.TaintedVars
 	var out []MatchResult
+	fileLang := mc.File.IR.Language
 	ir.Walk(mc.File.IR.Root, func(n *ir.IRNode) bool {
 		candidates := mc.Index.byKind[n.Kind]
 		if n.Kind == ir.NodeKindCall {
 			candidates = append(candidates, mc.Index.byCallee[calleeText(n)]...)
 		}
 		for _, r := range candidates {
+			// A rule only applies to files of its own declared language — the
+			// IR shape (assignment/call/try nodes) is language-agnostic, so
+			// e.g. a Python "hardcoded credential" rule would otherwise also
+			// match an identical-looking assignment in a Go or C# file.
+			if r.Language != fileLang {
+				continue
+			}
 			if matchNode(r.Match, n, taintedVars) {
 				out = append(out, MatchResult{Rule: r, Node: n})
 			}

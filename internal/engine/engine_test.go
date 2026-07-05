@@ -24,7 +24,8 @@ func TestMatch_BasicCall(t *testing.T) {
 	root := &ir.IRNode{Kind: ir.NodeKindModule, Children: []*ir.IRNode{callNode}}
 
 	rule := &rules.Rule{
-		ID: "ZS-TEST-001",
+		ID:       "ZS-TEST-001",
+		Language: core.LangPython,
 		Match: rules.MatchPattern{
 			Kind:   string(ir.NodeKindCall),
 			Callee: "eval",
@@ -53,6 +54,53 @@ func TestMatch_BasicCall(t *testing.T) {
 	}
 }
 
+// TestMatch_DoesNotCrossLanguageBoundary verifies a rule declared for one
+// language never fires against a file of a different language, even when
+// the IR shape (assignment node, identifier/literal pattern) is identical
+// across languages — e.g. a Python "hardcoded credential" rule must not
+// match the same-shaped assignment in a Go or C# file.
+func TestMatch_DoesNotCrossLanguageBoundary(t *testing.T) {
+	pyRule := &rules.Rule{
+		ID:       "ZS-PY-TEST-CRED",
+		Language: core.LangPython,
+		Match: rules.MatchPattern{
+			Kind:          string(ir.NodeKindAssignment),
+			LHSIdentifier: "(?i)(password|secret)",
+			RHSLiteral:    `^".+"$`,
+		},
+	}
+	idx := engine.BuildIndex([]*rules.Rule{pyRule})
+
+	assignNode := &ir.IRNode{
+		Kind:  ir.NodeKindAssignment,
+		Attrs: map[string]any{"lhs": "password", "rhs": `"hunter2"`},
+	}
+	root := &ir.IRNode{Kind: ir.NodeKindModule, Children: []*ir.IRNode{assignNode}}
+
+	// Same IR shape, but the file is Go, not Python.
+	mc := &engine.MatchContext{
+		Index: idx,
+		File:  &analyzer.AnalysisResult{IR: &ir.IRFile{Language: core.LangGo, Path: "main.go", Root: root}},
+	}
+	results, err := engine.New().Match(context.Background(), mc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(results) != 0 {
+		t.Fatalf("Python rule ZS-PY-TEST-CRED matched a Go file — cross-language contamination, got %d results", len(results))
+	}
+
+	// Same rule, same-shaped node, but now the file really is Python — should match.
+	mc.File.IR.Language = core.LangPython
+	results, err = engine.New().Match(context.Background(), mc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(results) != 1 {
+		t.Fatalf("expected the rule to match its own language's file, got %d results", len(results))
+	}
+}
+
 // TestMatch_NilIndex returns empty results without panic.
 func TestMatch_NilIndex(t *testing.T) {
 	mc := &engine.MatchContext{
@@ -77,7 +125,8 @@ func TestBuildIndex_200Rules(t *testing.T) {
 	ruleList := make([]*rules.Rule, numRules)
 	for i := range ruleList {
 		ruleList[i] = &rules.Rule{
-			ID: fmt.Sprintf("ZS-BENCH-%03d", i),
+			ID:       fmt.Sprintf("ZS-BENCH-%03d", i),
+			Language: core.LangPython,
 			Match: rules.MatchPattern{
 				Kind:   string(ir.NodeKindCall),
 				Callee: fmt.Sprintf("func_%d", i),
