@@ -13,6 +13,7 @@ type NoopCache struct{}
 var (
 	_ Cache        = NoopCache{}
 	_ FindingStore = NoopCache{}
+	_ FindingCache = NoopCache{}
 )
 
 func (NoopCache) Get(filePath string) (Entry, bool) { return Entry{}, false }
@@ -21,6 +22,10 @@ func (NoopCache) Remove(filePath string) error      { return nil }
 func (NoopCache) Close() error                      { return nil }
 
 func (NoopCache) PutFindings(filePath string, findings []core.Finding) error {
+	return nil
+}
+
+func (NoopCache) PutRecord(entry Entry, findings []core.Finding) error {
 	return nil
 }
 

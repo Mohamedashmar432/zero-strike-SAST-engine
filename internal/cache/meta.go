@@ -29,11 +29,8 @@ type Meta struct {
 // opened together so their shared invalidation logic (see Open) applies
 // consistently to both.
 type Manager struct {
-	Findings interface {
-		Cache
-		FindingStore
-	}
-	AST ASTCache
+	Findings FindingCache
+	AST      ASTCache
 }
 
 // Open opens (or initializes) the cache rooted at rootPath (typically

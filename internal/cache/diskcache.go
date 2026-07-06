@@ -42,12 +42,21 @@ type diskCacheRecord struct {
 // complete diskCacheRecord, never a torn write mixing an old Entry with new
 // Findings or vice versa - without needing a mutex. It does NOT make the
 // pair of calls (Set then PutFindings) atomic as a unit: a crash between
-// the two can leave a record with a fresh Entry but stale/absent Findings.
-// That is an accepted, documented trade-off rather than an oversight - the
-// alternative (a single combined SetWithFindings-style call) isn't what
-// either the Cache or FindingStore interface asks for, and the read-modify-
-// write already guarantees the file itself is never corrupted, only
-// possibly incomplete, which a subsequent PutFindings call self-heals.
+// the two leaves a record with a fresh Entry (whose SHA256 matches the
+// file's current content) but stale Findings from whatever the file
+// produced last time it was successfully cached - a "hit" that looks valid
+// by content hash but returns wrong findings, which is worse than a miss.
+// This does NOT reliably self-heal on an unchanged file: once such a record
+// exists, a later Get sees a hash match and there is no reason for anything
+// to call PutFindings again for that file until its content next changes.
+//
+// PutRecord exists specifically to avoid this: it writes the Entry and
+// Findings together as one atomic write, with no read first, so the
+// inconsistent-pairing window described above cannot occur. Callers that
+// have both an Entry and its Findings available at once (the normal case
+// right after scanning a file) should use PutRecord, not Set+PutFindings.
+// Set and PutFindings remain for Cache/FindingStore interface compliance
+// and for updating only one half of a record on its own.
 type DiskCache struct {
 	root string
 }
@@ -55,6 +64,7 @@ type DiskCache struct {
 var (
 	_ Cache        = (*DiskCache)(nil)
 	_ FindingStore = (*DiskCache)(nil)
+	_ FindingCache = (*DiskCache)(nil)
 )
 
 // NewDiskCache creates root (if needed) and returns a DiskCache rooted there.
@@ -144,6 +154,17 @@ func (c *DiskCache) GetFindings(filePath string) ([]core.Finding, error) {
 		return nil, nil
 	}
 	return rec.Findings, nil
+}
+
+// PutRecord stores entry and findings together as a single atomic write,
+// with no preceding read — unlike Set and PutFindings, which each do a
+// read-modify-write against whatever record (if any) already exists for
+// entry.FilePath. This is the primary write path for a caller that always
+// has both an Entry and its Findings at once (the normal case at the end of
+// scanning one file): it cannot leave a record pairing a fresh Entry with
+// stale or absent Findings, because the two are never written separately.
+func (c *DiskCache) PutRecord(entry Entry, findings []core.Finding) error {
+	return c.writeRecord(entry.FilePath, diskCacheRecord{Entry: entry, Findings: findings})
 }
 
 // atomicWriteFile writes data to finalPath by first writing to a temp file

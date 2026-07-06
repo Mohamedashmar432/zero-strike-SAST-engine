@@ -15,3 +15,21 @@ type FindingStore interface {
 	PutFindings(filePath string, findings []core.Finding) error
 	GetFindings(filePath string) ([]core.Finding, error)
 }
+
+// FindingCache is a Cache and FindingStore combined, plus PutRecord — the
+// shape a caller wiring finding caching into the scan path actually needs.
+// An Entry and the Findings it produced are always available together at
+// the point a file finishes scanning, so PutRecord is the primary write
+// path: it stores both as a single atomic write, with no read-modify-write
+// step, so it can never leave a record pairing a fresh Entry with stale or
+// absent Findings the way calling Set and PutFindings independently can
+// (see DiskCache's doc comment for that failure mode). Set/PutFindings
+// remain on Cache/FindingStore for interface compliance and for the rare
+// case where only one half of a record is being updated on its own; new
+// callers that have both an Entry and its Findings at once should prefer
+// PutRecord.
+type FindingCache interface {
+	Cache
+	FindingStore
+	PutRecord(entry Entry, findings []core.Finding) error
+}

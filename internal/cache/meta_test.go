@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -185,5 +186,56 @@ func TestOpen_MatchingMetaWipesNothing(t *testing.T) {
 	}
 	if _, ok := m2.AST.GetIR(fp, hash); !ok {
 		t.Fatal("expected IR to survive a re-Open with identical Meta")
+	}
+}
+
+// TestOpen_CorruptMetaWipesEverything locks in Open's documented handling
+// of a meta.json that exists but can't be parsed: treated the same as a
+// FormatVersion mismatch (wipe everything), not as "no prior meta" and not
+// as a hard error. Without this test, a future refactor of readPriorMeta
+// could silently change corrupt-file handling to "treat as first run"
+// (leaving prior, unverifiable cache data in place) without any test
+// failing.
+func TestOpen_CorruptMetaWipesEverything(t *testing.T) {
+	root := t.TempDir()
+	base := baseMeta()
+
+	m1, err := Open(root, base)
+	if err != nil {
+		t.Fatalf("Open (1st): %v", err)
+	}
+	fp, hash := seedManager(t, m1)
+
+	// Simulate a truncated/corrupted meta.json from an out-of-band edit or
+	// a crash mid-write outside this package's own atomic write path.
+	metaPath := filepath.Join(root, metaFileName)
+	if err := os.WriteFile(metaPath, []byte("{not valid json"), 0o644); err != nil {
+		t.Fatalf("corrupt meta.json: %v", err)
+	}
+
+	m2, err := Open(root, base)
+	if err != nil {
+		t.Fatalf("Open with corrupt meta.json returned an error, want a safe wipe-and-recover: %v", err)
+	}
+
+	if _, ok := m2.Findings.Get(fp); ok {
+		t.Fatal("expected findings to be wiped when meta.json was corrupt")
+	}
+	if _, ok := m2.AST.GetIR(fp, hash); ok {
+		t.Fatal("expected IR to be wiped when meta.json was corrupt")
+	}
+
+	// meta.json must end up valid again so a subsequent Open doesn't keep
+	// re-triggering a full wipe forever.
+	data, err := os.ReadFile(metaPath)
+	if err != nil {
+		t.Fatalf("read meta.json after recovery: %v", err)
+	}
+	var recovered Meta
+	if err := json.Unmarshal(data, &recovered); err != nil {
+		t.Fatalf("meta.json after recovery is still not valid JSON: %v", err)
+	}
+	if recovered != base {
+		t.Fatalf("recovered meta.json = %+v, want %+v", recovered, base)
 	}
 }

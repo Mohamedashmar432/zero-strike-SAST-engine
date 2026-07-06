@@ -6,21 +6,18 @@ import (
 )
 
 // TestNoopCache_SatisfiesBothInterfaces is a compile-time check (it will
-// fail to build, not fail at runtime, if NoopCache stops satisfying either
-// interface) that a single NoopCache value can be used wherever a Cache, a
-// FindingStore, or a combined Cache+FindingStore is expected - the same
-// shape DiskCache provides, and the shape cache.Manager.Findings requires.
+// fail to build, not fail at runtime, if NoopCache stops satisfying any of
+// these) that a single NoopCache value can be used wherever a Cache, a
+// FindingStore, or a FindingCache is expected - the same shape DiskCache
+// provides, and the shape cache.Manager.Findings requires.
 func TestNoopCache_SatisfiesBothInterfaces(t *testing.T) {
 	var asCache Cache = NoopCache{}
 	var asFindingStore FindingStore = NoopCache{}
-	var asBoth interface {
-		Cache
-		FindingStore
-	} = NoopCache{}
+	var asFindingCache FindingCache = NoopCache{}
 
 	_ = asCache
 	_ = asFindingStore
-	_ = asBoth
+	_ = asFindingCache
 }
 
 func TestNoopCache_Behavior(t *testing.T) {
