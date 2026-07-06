@@ -72,6 +72,21 @@ var SeverityOrder = []core.Severity{
 	core.SeverityInfo,
 }
 
+// IsGrouped reports whether by should produce grouped output. GroupByNone
+// and any unrecognized value are treated as "not grouped" — this must stay
+// consistent with GroupFindings' own default case, so reporters that branch
+// on "should I emit Groups or a flat Findings list" get the same answer
+// GroupFindings would give for the same value, rather than each reporter
+// re-deriving (and risking drifting from) that equivalence independently.
+func IsGrouped(by GroupBy) bool {
+	switch by {
+	case GroupByFile, GroupByRule, GroupBySeverity, GroupByLanguage:
+		return true
+	default:
+		return false
+	}
+}
+
 // GroupFindings partitions findings according to by. For GroupByNone (or any
 // unrecognized value), it returns a single group containing all findings,
 // even when findings is empty. The other four modes return one group per

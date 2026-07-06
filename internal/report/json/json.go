@@ -39,7 +39,7 @@ func (r *jsonReporter) Render(rep *report.Report, dest io.Writer) error {
 	enc := json.NewEncoder(dest)
 	enc.SetIndent("", "  ")
 
-	if rep.GroupBy == report.GroupByNone {
+	if !report.IsGrouped(rep.GroupBy) {
 		return enc.Encode(rep)
 	}
 

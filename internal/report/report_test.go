@@ -122,6 +122,21 @@ func TestGroupFindings_Language(t *testing.T) {
 	}
 }
 
+func TestIsGrouped(t *testing.T) {
+	grouped := []report.GroupBy{report.GroupByFile, report.GroupByRule, report.GroupBySeverity, report.GroupByLanguage}
+	for _, by := range grouped {
+		if !report.IsGrouped(by) {
+			t.Errorf("IsGrouped(%q) = false, want true", by)
+		}
+	}
+	notGrouped := []report.GroupBy{report.GroupByNone, report.GroupBy("bogus")}
+	for _, by := range notGrouped {
+		if report.IsGrouped(by) {
+			t.Errorf("IsGrouped(%q) = true, want false", by)
+		}
+	}
+}
+
 func TestGroupFindings_EmptyInput(t *testing.T) {
 	for _, by := range []report.GroupBy{report.GroupByNone, report.GroupByFile, report.GroupByRule, report.GroupBySeverity, report.GroupByLanguage} {
 		groups := report.GroupFindings(nil, by)

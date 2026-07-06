@@ -79,6 +79,35 @@ func TestJSONReporter_EmptyFindings(t *testing.T) {
 	}
 }
 
+func TestJSONReporter_Render_UnrecognizedGroupBy(t *testing.T) {
+	// An unrecognized GroupBy value must be treated the same as GroupByNone
+	// (per report.IsGrouped/report.GroupFindings' documented equivalence) —
+	// flat top-level Findings, no Groups wrapper.
+	rep := &report.Report{
+		ScannerVersion: "v0.5.0",
+		GroupBy:        report.GroupBy("bogus"),
+		Findings: []core.Finding{
+			{RuleID: "ZS-PY-001", Message: "eval usage", Severity: core.SeverityHigh},
+		},
+	}
+
+	var buf bytes.Buffer
+	if err := jsonreport.New().Render(rep, &buf); err != nil {
+		t.Fatalf("Render: %v", err)
+	}
+
+	var m map[string]json.RawMessage
+	if err := json.Unmarshal(buf.Bytes(), &m); err != nil {
+		t.Fatalf("unmarshal: %v\nraw: %s", err, buf.String())
+	}
+	if _, ok := m["Findings"]; !ok {
+		t.Error(`expected top-level "Findings" key for an unrecognized GroupBy value`)
+	}
+	if _, ok := m["Groups"]; ok {
+		t.Error(`unexpected top-level "Groups" key for an unrecognized GroupBy value`)
+	}
+}
+
 func TestJSONReporter_Render_Grouped(t *testing.T) {
 	rep := &report.Report{
 		ScannerVersion: "v0.5.0",
