@@ -9,8 +9,12 @@ dist/
 coverage.html
 
 # Project state
-.zerostrike/cache/
-.zerostrike/findings/
+# .zerostrike/ is created under whatever directory is scanned (the repo
+# root when running `zerostrike scan .`, but also e.g. benchmark/corpus/*
+# when the benchmark tool scans each corpus case as its own root) - a
+# pattern with a slash in the middle is anchored to this file's directory
+# in gitignore syntax, so it must be **/-prefixed to match at any depth.
+**/.zerostrike/
 
 # OS
 .DS_Store
