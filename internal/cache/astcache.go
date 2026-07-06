@@ -1,7 +1,9 @@
 package cache
 
-// ASTCache stores serialized IRFile objects to skip re-parsing unchanged files.
-// It is intentionally unimplemented until Sprint 20's cache-wiring tasks.
+// ASTCache stores serialized IRFile objects to skip re-parsing unchanged
+// files. Implemented by DiskASTCache (internal/cache/diskastcache.go) and
+// NoopASTCache (internal/cache/noop.go), wired into
+// internal/scanner/sast/sast.go's processFile.
 //
 // C8 design constraints (as actually implemented in internal/ir/serialize.go
 // — this comment previously sketched a gob/typed-Attrs design before that
