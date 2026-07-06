@@ -18,8 +18,7 @@ rationale: |
   verify=False, especially ones carrying credentials, tokens, or sensitive
   payloads.
 description: |
-  Calling requests.get() with verify=False disables TLS certificate validation,
-  exposing the request to man-in-the-middle attacks.
+  Calling requests.get() with verify=False disables TLS certificate validation.
   Note: only requests.get() is covered by this rule — requests.post/put/delete
   with the same flag are not yet detected; add sibling rules if these show up
   in practice (the engine currently requires one rule per exact callee).

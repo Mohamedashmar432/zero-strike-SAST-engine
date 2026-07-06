@@ -19,9 +19,9 @@ rationale: |
   primary datastore.
 description: |
   A variable whose name suggests sensitive data (password, secret, api_key,
-  token) is passed directly to logging.info(). This can leak credentials into
-  log files. Note: only logging.info() is covered — other levels
-  (debug/warning/error) and print() are not yet detected by this single rule.
+  token) is passed directly to logging.info(). Note: only logging.info() is
+  covered — other levels (debug/warning/error) and print() are not yet
+  detected by this single rule.
 message: "Sensitive-looking value passed to logging.info() — avoid logging credentials"
 references:
   - https://cwe.mitre.org/data/definitions/532.html
