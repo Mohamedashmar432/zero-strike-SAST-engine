@@ -93,6 +93,10 @@ func scanCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			rootPath := args[0]
 
+			// Validated early so a bad --group-by fails before the scan runs.
+			// --format is still validated late, after the scan, in the reporter
+			// switch below — that's pre-existing and out of this flag's scope,
+			// not an oversight to "fix" by moving one to match the other.
 			groupBy, err := parseGroupBy(flagGroupBy)
 			if err != nil {
 				return err
