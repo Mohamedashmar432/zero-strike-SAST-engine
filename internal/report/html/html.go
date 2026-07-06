@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zerostrike/scanner/internal/core"
 	"github.com/zerostrike/scanner/internal/report"
 )
 
@@ -22,33 +21,28 @@ func (r *htmlReporter) Render(rep *report.Report, dest io.Writer) error {
 }
 
 type templateData struct {
-	Report *report.Report
-	Groups []severityGroup
+	Report  *report.Report
+	Groups  []report.Group
+	GroupBy report.GroupBy
 }
 
-type severityGroup struct {
-	Label    string
-	Class    string
-	Findings []core.Finding
+// effectiveGroupBy resolves the grouping mode HTML should render with. HTML
+// has no flat/ungrouped mode, so anything GroupFindings would treat as
+// "not grouped" falls back to severity, HTML's default.
+func effectiveGroupBy(by report.GroupBy) report.GroupBy {
+	if !report.IsGrouped(by) {
+		return report.GroupBySeverity
+	}
+	return by
 }
 
 func buildTemplateData(rep *report.Report) templateData {
-	by := make(map[core.Severity][]core.Finding)
-	for _, f := range rep.Findings {
-		by[f.Severity] = append(by[f.Severity], f)
+	mode := effectiveGroupBy(rep.GroupBy)
+	return templateData{
+		Report:  rep,
+		Groups:  report.GroupFindings(rep.Findings, mode),
+		GroupBy: mode,
 	}
-	var groups []severityGroup
-	for _, sev := range report.SeverityOrder {
-		if fs := by[sev]; len(fs) > 0 {
-			s := string(sev)
-			groups = append(groups, severityGroup{
-				Label:    strings.ToUpper(s[:1]) + s[1:],
-				Class:    s,
-				Findings: fs,
-			})
-		}
-	}
-	return templateData{Report: rep, Groups: groups}
 }
 
 var tmpl = template.Must(
@@ -56,6 +50,12 @@ var tmpl = template.Must(
 		Funcs(template.FuncMap{
 			"fmtTime":     func(t time.Time) string { return t.UTC().Format("2006-01-02 15:04:05 UTC") },
 			"fmtDuration": func(d time.Duration) string { return d.Round(time.Millisecond).String() },
+			"displayLabel": func(mode report.GroupBy, label string) string {
+				if mode == report.GroupBySeverity && label != "" {
+					return strings.ToUpper(label[:1]) + label[1:]
+				}
+				return label
+			},
 		}).
 		Parse(htmlTmpl),
 )
@@ -82,12 +82,13 @@ thead{background:#f1f3f5}
 th{padding:.6rem .75rem;text-align:left;font-size:.8rem;text-transform:uppercase;letter-spacing:.04em;color:#495057}
 td{padding:.6rem .75rem;font-size:.875rem;border-top:1px solid #dee2e6;vertical-align:top}
 .badge{display:inline-block;padding:.2em .5em;border-radius:4px;font-size:.75rem;font-weight:600;text-transform:uppercase}
-.critical .badge{background:#ffe0e0;color:#c0392b}
-.high .badge{background:#fff3cd;color:#e65100}
-.medium .badge{background:#fffde7;color:#795548}
-.low .badge{background:#e3f2fd;color:#1565c0}
-.info .badge{background:#f0f0f0;color:#555}
+.badge.critical{background:#ffe0e0;color:#c0392b}
+.badge.high{background:#fff3cd;color:#e65100}
+.badge.medium{background:#fffde7;color:#795548}
+.badge.low{background:#e3f2fd;color:#1565c0}
+.badge.info{background:#f0f0f0;color:#555}
 .loc{font-family:monospace;font-size:.8rem;color:#6c757d}
+.sub{font-family:monospace;font-size:.8rem;color:#6c757d;display:block;margin-top:.2em}
 .empty{color:#6c757d;font-style:italic;padding:2rem;text-align:center}
 </style>
 </head>
@@ -107,15 +108,15 @@ td{padding:.6rem .75rem;font-size:.875rem;border-top:1px solid #dee2e6;vertical-
   <div class="stat-card"><div class="n">{{.Report.Stats.TotalFindings}}</div><div class="l">Total Findings</div></div>
   <div class="stat-card"><div class="n">{{.Report.Stats.Suppressed}}</div><div class="l">Suppressed</div></div>
 </div>
-{{if .Groups}}{{range .Groups}}
-<h2>{{.Label}} ({{len .Findings}})</h2>
-<table class="{{.Class}}">
+{{if .Groups}}{{$mode := .GroupBy}}{{range .Groups}}
+<h2>{{displayLabel $mode .Label}} ({{len .Findings}})</h2>
+<table>
   <thead><tr><th>Rule ID</th><th>Severity</th><th>Message</th><th>Location</th></tr></thead>
   <tbody>{{range .Findings}}
   <tr>
     <td>{{.RuleID}}</td>
-    <td><span class="badge">{{.Severity}}</span></td>
-    <td>{{.Message}}</td>
+    <td><span class="badge {{.Severity}}">{{.Severity}}</span></td>
+    <td>{{.Message}}{{if .Rationale}}<span class="sub">{{.Rationale}}</span>{{end}}{{if .Remediation}}<span class="sub">Fix: {{.Remediation}}</span>{{end}}{{if .TaintContext}}<span class="sub">Tainted: {{.TaintContext.SourceVar}}{{if .TaintContext.SourceExpr}} &#8592; {{.TaintContext.SourceExpr}}{{end}} &#8594; {{.TaintContext.Sink}}</span>{{end}}</td>
     <td class="loc">{{.Location.File}}:{{.Location.StartLine}}</td>
   </tr>{{end}}
   </tbody>
