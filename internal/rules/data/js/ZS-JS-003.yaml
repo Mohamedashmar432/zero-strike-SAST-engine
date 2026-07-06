@@ -9,10 +9,18 @@ cwe:
   - CWE-79
 owasp:
   - "A05:2025"
+rationale: |
+  document.write() injects its argument directly into the page's HTML
+  parser stream, so attacker-controlled input containing <script> tags or
+  event handlers executes immediately in the page's origin — and if called
+  after the document has finished loading, it first erases the entire
+  existing page content, compounding the impact. This is commonly
+  exploitable via third-party ad/analytics snippets, URL parameters, or
+  referrer values that get echoed into a document.write() call, giving the
+  attacker full script execution in the victim's session.
 description: |
-  document.write() writes directly to the HTML document stream without sanitization,
-  flagged when the argument traces back to an untrusted source (intra-procedural
-  taint tracking).
+  Detects calls to document.write() where the argument traces back to an
+  untrusted source (intra-procedural taint tracking).
 message: "document.write() detected with a tainted argument — use safe DOM manipulation APIs instead"
 references:
   - https://developer.mozilla.org/en-US/docs/Web/API/Document/write

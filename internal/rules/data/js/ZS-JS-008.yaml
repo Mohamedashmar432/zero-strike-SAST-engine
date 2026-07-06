@@ -9,11 +9,19 @@ cwe:
   - CWE-347
 owasp:
   - "A07:2025"
+rationale: |
+  jwt.decode() reads and returns a JWT's payload without checking its
+  cryptographic signature, so it will happily parse a token an attacker
+  crafted from scratch with any claims they choose — user ID, role, or
+  admin flag included. This is exploitable anywhere the decoded payload
+  feeds an authentication or authorization decision, letting an attacker
+  forge a token claiming to be any user or an administrator without ever
+  needing a valid signing key.
 description: |
-  jwt.decode() reads a JWT's payload without checking its signature at all —
-  unlike jwt.verify(), it will happily "decode" a token an attacker forged
-  with any payload they like. Using decode() where verify() belongs is a
-  common authentication-bypass mistake.
+  Detects calls to jwt.decode(). The rule matches any call to this function
+  regardless of context, so it does not check whether a corresponding
+  jwt.verify() call exists elsewhere or whether the decoded value is used
+  for any security-relevant decision.
 message: "jwt.decode() detected — this does not verify the signature; use jwt.verify() for authentication"
 references:
   - https://cwe.mitre.org/data/definitions/347.html

@@ -9,9 +9,19 @@ cwe:
   - CWE-295
 owasp:
   - "A02:2025"
+rationale: |
+  Setting rejectUnauthorized: false disables Node's TLS certificate chain
+  and hostname validation for the connection — this is a runtime HTTPS
+  option that TypeScript's type system permits without warning, so the
+  application will accept a certificate from any party, including an
+  attacker performing a man-in-the-middle attack. This is exploitable on
+  any network path the attacker can intercept (public Wi-Fi, compromised
+  routers, malicious proxies), letting them read or tamper with credentials
+  and session tokens sent over the connection.
 description: |
-  Passing { rejectUnauthorized: false } to an HTTPS/TLS options object disables
-  certificate validation, exposing the connection to man-in-the-middle attacks.
+  Detects calls to https.request() where the options object sets
+  rejectUnauthorized: false, disabling TLS certificate validation for the
+  connection.
 message: "rejectUnauthorized: false detected — TLS certificate verification is disabled"
 references:
   - https://owasp.org/Top10/2025/A02_2025-Security_Misconfiguration/

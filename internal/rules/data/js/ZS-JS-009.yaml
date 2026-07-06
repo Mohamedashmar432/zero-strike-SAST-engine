@@ -9,10 +9,18 @@ cwe:
   - CWE-532
 owasp:
   - "A09:2025"
+rationale: |
+  Passing a credential-shaped value straight to console.log() writes it in
+  plaintext into wherever that log output lands — server log files, log
+  aggregation services, CI build output, or the browser's DevTools console
+  — any of which may be readable by parties who should never see the raw
+  secret. An attacker with access to those logs, whether through a
+  misconfigured log viewer, a compromised aggregation service, or remote
+  access to a developer's browser, can extract the credential and reuse it
+  to authenticate as the application or the affected user.
 description: |
   A variable whose name suggests sensitive data (password, secret, apiKey,
-  token) is passed directly to console.log(). This can leak credentials into
-  application logs or browser consoles.
+  token) is passed directly to console.log().
 message: "Sensitive-looking value passed to console.log() — avoid logging credentials"
 references:
   - https://cwe.mitre.org/data/definitions/532.html

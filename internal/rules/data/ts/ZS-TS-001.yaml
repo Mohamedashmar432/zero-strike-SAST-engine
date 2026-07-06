@@ -9,10 +9,18 @@ cwe:
   - CWE-95
 owasp:
   - "A05:2025"
+rationale: |
+  eval() compiles and executes its string argument as JavaScript with the
+  full privileges of the calling context — TypeScript's type system offers
+  no protection here because it disappears at compile time, so
+  attacker-controlled input reaching eval() at runtime grants arbitrary code
+  execution just as in plain JavaScript. This is exploitable wherever data
+  from URL parameters, postMessage handlers, WebSocket payloads, or JSON
+  API responses is passed into eval(), whether directly or after string
+  concatenation.
 description: |
-  eval() executes arbitrary TypeScript/JavaScript code from a string, flagged
-  when the string traces back to an untrusted source (intra-procedural taint
-  tracking).
+  Detects calls to eval() where the string argument traces back to an
+  untrusted source, using intra-procedural taint tracking.
 message: "eval() detected with a tainted argument — avoid eval(); use JSON.parse() or safer alternatives"
 references:
   - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/eval

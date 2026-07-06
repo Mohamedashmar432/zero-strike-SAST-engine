@@ -9,6 +9,15 @@ cwe:
   - CWE-798
 owasp:
   - "A07:2025"
+rationale: |
+  A credential embedded as a string literal in source code ships wherever
+  the code ships — an attacker can read it straight out of a client-side
+  JavaScript bundle via browser devtools, or extract it from server-side
+  code through source control history, build artifacts, or a compromised
+  CI pipeline. Once extracted, the attacker gains standing access to
+  whatever the credential protects (a database, an internal API, a
+  third-party service) that persists until the secret is rotated,
+  independent of any other vulnerability in the running application.
 description: |
   A variable named like a credential (password, secret, apiKey, token) is
   assigned a string literal directly in source code, rather than loaded from

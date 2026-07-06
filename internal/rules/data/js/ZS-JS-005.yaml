@@ -9,10 +9,20 @@ cwe:
   - CWE-79
 owasp:
   - "A05:2025"
+rationale: |
+  Assigning to outerHTML replaces the entire target element — and
+  everything nested inside it — with HTML parsed from the assigned string,
+  so attacker-controlled data reaching it lets an attacker inject <script>
+  tags, event handlers, or forged UI elements that execute in the page's
+  origin. Because outerHTML also detaches the original element node from
+  the DOM, any event listeners attached directly to it are silently lost,
+  but the script-injection risk is identical to innerHTML; this is
+  exploitable wherever URL parameters, postMessage data, or user-supplied
+  content is rendered into the DOM this way, enabling cookie theft or
+  session hijacking.
 description: |
-  Assigning to outerHTML replaces the element and all its children with raw HTML,
-  flagged when the assigned value traces back to an untrusted source
-  (intra-procedural taint tracking).
+  Detects assignments to outerHTML where the assigned value traces back to
+  an untrusted source (intra-procedural taint tracking).
 message: "outerHTML assignment detected with a tainted value — sanitize input or use safe DOM APIs instead"
 references:
   - https://owasp.org/www-community/attacks/xss/

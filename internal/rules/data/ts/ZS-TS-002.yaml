@@ -9,10 +9,18 @@ cwe:
   - CWE-79
 owasp:
   - "A05:2025"
+rationale: |
+  Assigning attacker-controlled data to innerHTML causes the browser to
+  parse it as HTML and execute any embedded <script> tag, event handler, or
+  javascript: URI it contains; TypeScript's type checker treats the
+  assigned value as a plain string and provides no protection against this
+  at compile time. This is exploitable wherever untrusted data such as URL
+  query parameters, hash fragments, or user-supplied profile/comment fields
+  is rendered back into the page without sanitization, enabling cookie
+  theft, session hijacking, or page defacement.
 description: |
-  Assigning to innerHTML directly inserts HTML into the DOM without sanitization,
-  flagged when the assigned value traces back to an untrusted source
-  (intra-procedural taint tracking).
+  Detects assignments to innerHTML where the assigned value traces back to
+  an untrusted source (intra-procedural taint tracking).
 message: "innerHTML assignment detected with a tainted value — sanitize input or use textContent / DOM APIs instead"
 references:
   - https://owasp.org/www-community/attacks/xss/

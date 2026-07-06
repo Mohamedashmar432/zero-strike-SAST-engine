@@ -9,10 +9,19 @@ cwe:
   - CWE-390
 owasp:
   - "A10:2025"
+rationale: |
+  Silently discarding an exception with no logging or handling means a
+  failed security check — a broken signature verification, a failed
+  authorization lookup, an exhausted validation — disappears without a
+  trace, and execution continues as if it had succeeded (fail-open
+  behavior); TypeScript's static typing has no bearing on this runtime
+  control-flow gap. An attacker who can trigger the underlying error
+  condition, for example by sending malformed input that throws during a
+  validation or auth step, can rely on the empty handler to swallow the
+  failure and let the request proceed as if it had passed.
 description: |
-  A catch block with an empty body silently swallows the exception with no
-  logging or recovery, hiding failures ("fail open" / mishandled exceptional
-  conditions). Fires once per try block containing at least one such handler.
+  Detects a catch block with an empty body (no statements). Fires once per
+  try block containing at least one such handler.
 message: "Empty catch block detected — log or handle the exception instead of silently discarding it"
 references:
   - https://cwe.mitre.org/data/definitions/390.html
