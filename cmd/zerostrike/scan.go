@@ -19,6 +19,7 @@ import (
 	htmlreport "github.com/zerostrike/scanner/internal/report/html"
 	jsonreport "github.com/zerostrike/scanner/internal/report/json"
 	sarifreport "github.com/zerostrike/scanner/internal/report/sarif"
+	"github.com/zerostrike/scanner/internal/version"
 )
 
 // parseLanguages maps --lang flag values to core.Language. Unrecognized
@@ -169,7 +170,7 @@ func scanCmd() *cobra.Command {
 			absRoot, _ := filepath.Abs(rootPath)
 			rep := &report.Report{
 				ScanID:         uuid.New().String(),
-				ScannerVersion: version,
+				ScannerVersion: version.Version,
 				StartedAt:      start,
 				Duration:       elapsed,
 				RootPath:       absRoot,

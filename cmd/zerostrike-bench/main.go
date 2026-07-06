@@ -23,9 +23,8 @@ import (
 	_ "github.com/zerostrike/scanner/internal/parser/php"
 	_ "github.com/zerostrike/scanner/internal/parser/python"
 	_ "github.com/zerostrike/scanner/internal/parser/typescript"
+	"github.com/zerostrike/scanner/internal/version"
 )
-
-var version = "v0.13.0"
 
 func main() {
 	var (
@@ -69,7 +68,7 @@ func main() {
 		}
 	}
 	if mdOut != "" {
-		if err := os.WriteFile(mdOut, []byte(summary.Markdown(version)), 0o644); err != nil {
+		if err := os.WriteFile(mdOut, []byte(summary.Markdown(version.Version)), 0o644); err != nil {
 			fmt.Fprintln(os.Stderr, "zerostrike-bench: write markdown:", err)
 			os.Exit(2)
 		}
