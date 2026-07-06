@@ -12,8 +12,8 @@ func TestLoader_JavaRulesLoad(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadDir data/java: %v", err)
 	}
-	if len(loaded) < 6 {
-		t.Errorf("expected ≥6 Java rules, got %d", len(loaded))
+	if len(loaded) < 9 {
+		t.Errorf("expected ≥9 Java rules, got %d", len(loaded))
 	}
 
 	v := rules.NewValidator()
@@ -27,7 +27,7 @@ func TestLoader_JavaRulesLoad(t *testing.T) {
 			t.Errorf("rule %s: expected language java, got %q", r.ID, r.Language)
 		}
 	}
-	for _, id := range []string{"ZS-JAVA-001", "ZS-JAVA-002", "ZS-JAVA-003", "ZS-JAVA-004", "ZS-JAVA-005", "ZS-JAVA-006"} {
+	for _, id := range []string{"ZS-JAVA-001", "ZS-JAVA-002", "ZS-JAVA-003", "ZS-JAVA-004", "ZS-JAVA-005", "ZS-JAVA-006", "ZS-JAVA-007", "ZS-JAVA-008", "ZS-JAVA-009"} {
 		if !ids[id] {
 			t.Errorf("expected rule %s to be loaded", id)
 		}

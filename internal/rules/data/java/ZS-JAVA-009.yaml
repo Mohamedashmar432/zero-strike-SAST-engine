@@ -1,0 +1,31 @@
+id: ZS-JAVA-009
+name: StAX XMLInputFactory XXE
+version: "1.0.0"
+language: java
+category: xxe
+severity: high
+confidence: medium
+cwe:
+  - CWE-611
+owasp:
+  - "A05:2025"
+description: |
+  XMLInputFactory (the StAX streaming XML API) is vulnerable to XML
+  External Entity (XXE) injection by default, the same way
+  DocumentBuilderFactory is (see ZS-JAVA-003) — external entity and DTD
+  processing are enabled unless explicitly disabled via setProperty(). This
+  is StAX's equivalent of ZS-JAVA-003's DOM-parser check; ship as a sibling
+  rule rather than a multi-callee extension to ZS-JAVA-003, since the match
+  schema is one callee per rule by design.
+
+  Known limitation: same as ZS-JAVA-003 — the engine cannot yet see whether
+  a later setProperty() call disables external entities/DTDs, so
+  already-hardened code also triggers this finding.
+message: "XMLInputFactory.newInstance() detected — disable external entity/DTD processing to prevent XXE"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html
+tags: [xxe, xml, stax]
+match:
+  kind: call
+  callee: XMLInputFactory.newInstance
+fix_suggestion: "Call setProperty(XMLInputFactory.SUPPORT_DTD, false) and setProperty(\"javax.xml.stream.isSupportingExternalEntities\", false) on the factory before parsing."

@@ -1,0 +1,25 @@
+id: ZS-JAVA-007
+name: NoOpPasswordEncoder Usage
+version: "1.0.0"
+language: java
+category: authentication
+severity: high
+confidence: high
+cwe:
+  - CWE-256
+owasp:
+  - "A07:2025"
+description: |
+  Spring Security's NoOpPasswordEncoder stores and compares passwords in
+  plaintext — it exists only for legacy migration/testing and must never be
+  used in a production authentication configuration. This rule flags the
+  factory call itself, matching how ZS-JAVA-003/ZS-JAVA-004 flag their
+  respective factory/constructor calls unconditionally.
+message: "NoOpPasswordEncoder.getInstance() detected — passwords are stored/compared in plaintext"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+tags: [authentication, plaintext-password]
+match:
+  kind: call
+  callee: NoOpPasswordEncoder.getInstance
+fix_suggestion: "Use BCryptPasswordEncoder (or another adaptive, salted hashing PasswordEncoder from Spring Security) instead of NoOpPasswordEncoder."

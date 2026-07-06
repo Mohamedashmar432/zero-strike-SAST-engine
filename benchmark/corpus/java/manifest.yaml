@@ -18,6 +18,15 @@ cases:
   - file: cases/vuln_traversal.java
     language: java
     expect: [{rule_id: ZS-JAVA-006, min_count: 1}]
+  - file: cases/vuln_noop_password_encoder.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-007, min_count: 1}]
+  - file: cases/vuln_weak_jwt_secret.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-008, min_count: 1}]
+  - file: cases/vuln_stax_xxe.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-009, min_count: 1}]
   - file: cases/clean.java
     language: java
     expect: []

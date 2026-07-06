@@ -1,0 +1,29 @@
+id: ZS-JAVA-008
+name: Weak JWT/HMAC Signing Secret
+version: "1.0.0"
+language: java
+category: cryptography
+severity: high
+confidence: medium
+cwe:
+  - CWE-326
+  - CWE-798
+owasp:
+  - "A04:2025"
+description: |
+  A variable named like a JWT or HMAC signing key/secret (jwtSecret,
+  hmacKey, signingKey, etc.) is assigned a short string literal directly in
+  source code. Short, hardcoded signing secrets are both guessable/
+  brute-forceable and impossible to rotate without a code change. This is
+  narrower than ZS-JAVA-005 (any hardcoded credential): it specifically
+  targets signing-key material and flags only short literals (≤16 chars),
+  which are the ones realistically brute-forceable against HMAC.
+message: "Short, hardcoded JWT/HMAC signing secret detected — use a long, randomly generated secret loaded from configuration or a secrets manager"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html
+tags: [weak-crypto, jwt, hardcoded-credential]
+match:
+  kind: assignment
+  lhs_identifier: "(?i)(hmac.*key|jwt.*(secret|key)|signing.*key)"
+  rhs_literal: "^\"[^\"]{1,16}\"$"
+fix_suggestion: "Generate a long (≥256-bit) random secret at deploy time and load it from configuration or a secrets manager — never hardcode signing key material."
