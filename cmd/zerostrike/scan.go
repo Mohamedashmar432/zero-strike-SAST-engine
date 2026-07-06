@@ -72,19 +72,20 @@ func parseGroupBy(raw string) (report.GroupBy, error) {
 
 func scanCmd() *cobra.Command {
 	var (
-		flagFormat      string
-		flagOutput      string
-		flagLang        []string
-		flagRules       string
-		flagNoCache     bool
-		flagWorkers     int
-		flagEnableSec   bool
-		flagEnableSCA   bool
-		flagEnableFW    bool
-		flagSCAError    string
-		flagAllowFile   string
-		flagExcludeDirs []string
-		flagGroupBy     string
+		flagFormat       string
+		flagOutput       string
+		flagLang         []string
+		flagRules        string
+		flagNoCache      bool
+		flagWorkers      int
+		flagEnableSec    bool
+		flagEnableSCA    bool
+		flagEnableFW     bool
+		flagEnableGraphs bool
+		flagSCAError     string
+		flagAllowFile    string
+		flagExcludeDirs  []string
+		flagGroupBy      string
 	)
 
 	cmd := &cobra.Command{
@@ -114,6 +115,7 @@ func scanCmd() *cobra.Command {
 				EnableSecrets:         flagEnableSec,
 				EnableSCA:             flagEnableSCA,
 				EnableFrameworkChecks: flagEnableFW,
+				EnableGraphs:          flagEnableGraphs,
 				SCAOnError:            flagSCAError,
 				AllowFile:             flagAllowFile,
 				ExcludeDirs:           flagExcludeDirs,
@@ -227,6 +229,7 @@ func scanCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&flagEnableSec, "enable-secrets", false, "enable the Secrets scanner")
 	cmd.Flags().BoolVar(&flagEnableSCA, "enable-sca", false, "enable the SCA/OSV dependency scanner")
 	cmd.Flags().BoolVar(&flagEnableFW, "enable-framework-checks", false, "enable the framework misconfiguration scanner")
+	cmd.Flags().BoolVar(&flagEnableGraphs, "enable-graphs", false, "enable CFG/DFG analysis for path-sensitive taint reporting")
 	cmd.Flags().StringVar(&flagSCAError, "sca-on-error", "warn", "SCA on network error: warn|fail")
 	cmd.Flags().StringVar(&flagAllowFile, "allow-file", "", "path to allowlist YAML (default: <root>/.zs-allow.yaml)")
 	cmd.Flags().StringSliceVar(&flagExcludeDirs, "exclude-dir", nil, "directory names to skip, e.g. --exclude-dir gen --exclude-dir templates")
