@@ -49,6 +49,26 @@ func parseLanguages(raw []string) []core.Language {
 	return langs
 }
 
+// parseGroupBy maps a --group-by flag value to a report.GroupBy. It is
+// validated up front (before the pipeline runs) so an invalid value fails
+// fast instead of only surfacing after a potentially expensive scan.
+func parseGroupBy(raw string) (report.GroupBy, error) {
+	switch raw {
+	case "", "none":
+		return report.GroupByNone, nil
+	case "file":
+		return report.GroupByFile, nil
+	case "rule":
+		return report.GroupByRule, nil
+	case "severity":
+		return report.GroupBySeverity, nil
+	case "language":
+		return report.GroupByLanguage, nil
+	default:
+		return "", fmt.Errorf("unsupported --group-by %q (supported: file, rule, severity, language)", raw)
+	}
+}
+
 func scanCmd() *cobra.Command {
 	var (
 		flagFormat      string
@@ -63,6 +83,7 @@ func scanCmd() *cobra.Command {
 		flagSCAError    string
 		flagAllowFile   string
 		flagExcludeDirs []string
+		flagGroupBy     string
 	)
 
 	cmd := &cobra.Command{
@@ -71,6 +92,11 @@ func scanCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			rootPath := args[0]
+
+			groupBy, err := parseGroupBy(flagGroupBy)
+			if err != nil {
+				return err
+			}
 
 			cfg := pipeline.ScanConfig{
 				RootPath:              rootPath,
@@ -147,6 +173,7 @@ func scanCmd() *cobra.Command {
 				Findings:       result.Findings,
 				Stats:          stats,
 				Diagnostics:    diags,
+				GroupBy:        groupBy,
 			}
 
 			// Select reporter
@@ -198,6 +225,7 @@ func scanCmd() *cobra.Command {
 	cmd.Flags().StringVar(&flagSCAError, "sca-on-error", "warn", "SCA on network error: warn|fail")
 	cmd.Flags().StringVar(&flagAllowFile, "allow-file", "", "path to allowlist YAML (default: <root>/.zs-allow.yaml)")
 	cmd.Flags().StringSliceVar(&flagExcludeDirs, "exclude-dir", nil, "directory names to skip, e.g. --exclude-dir gen --exclude-dir templates")
+	cmd.Flags().StringVar(&flagGroupBy, "group-by", "", "group findings in the report: file|rule|severity|language (default: no grouping for json, severity for html; ignored by sarif)")
 
 	return cmd
 }
