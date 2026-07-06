@@ -52,7 +52,7 @@ func FlattenIR(file *IRFile) []SerialNode {
 			Text:     node.Text,
 			NodeID:   node.NodeID,
 			Location: node.Location,
-			Attrs:    node.Attrs,
+			Attrs:    copyAttrs(node.Attrs),
 			Children: children,
 		}
 	}
@@ -63,10 +63,10 @@ func FlattenIR(file *IRFile) []SerialNode {
 // (typically after a JSON marshal/unmarshal round-trip, e.g. from an AST
 // cache entry read back from disk). lang and path repopulate the fields
 // FlattenIR does not carry (they belong to IRFile, not IRNode). Returns nil
-// for an empty nodes slice. Restores the known-typed Attrs keys listed in
-// this file's package doc — see restoreAttrs below — so callers see the
-// exact same concrete types the original parser builders produced, not
-// JSON's default untyped-map/float64/[]interface{} shapes.
+// for an empty nodes slice. Restores the known-typed Attrs keys documented
+// on restoreAttrs below, so callers see the exact same concrete types the
+// original parser builders produced, not JSON's default untyped-map/
+// float64/[]interface{} shapes.
 func RebuildIR(nodes []SerialNode, lang core.Language, path string) *IRFile {
 	if len(nodes) == 0 {
 		return nil
@@ -131,13 +131,9 @@ func RebuildIR(nodes []SerialNode, lang core.Language, path string) *IRFile {
 // builder starts setting a new Attrs key with a non-string/non-bool value
 // type, add its restoration here too.
 func restoreAttrs(attrs map[string]any) map[string]any {
-	if attrs == nil {
+	out := copyAttrs(attrs)
+	if out == nil {
 		return nil
-	}
-
-	out := make(map[string]any, len(attrs))
-	for k, v := range attrs {
-		out[k] = v
 	}
 
 	if v, ok := out["argument_count"]; ok {
@@ -150,6 +146,23 @@ func restoreAttrs(attrs map[string]any) map[string]any {
 		out["except_handlers"] = coerceExceptHandlers(v)
 	}
 
+	return out
+}
+
+// copyAttrs returns a shallow copy of attrs, or nil for a nil input. Both
+// FlattenIR and restoreAttrs use this so neither the flattened SerialNode
+// nor the rebuilt IRNode ever shares its Attrs map with a live IRNode still
+// in use elsewhere (e.g. the original tree a cache write is reading from
+// while the rest of the scan continues to walk it) — mutating one map must
+// never be visible through the other.
+func copyAttrs(attrs map[string]any) map[string]any {
+	if attrs == nil {
+		return nil
+	}
+	out := make(map[string]any, len(attrs))
+	for k, v := range attrs {
+		out[k] = v
+	}
 	return out
 }
 

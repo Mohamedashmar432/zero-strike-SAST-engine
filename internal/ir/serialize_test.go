@@ -313,3 +313,39 @@ func TestRebuildIR_WithoutJSONHop(t *testing.T) {
 		t.Errorf("callNode.Parent should point to funcNode")
 	}
 }
+
+// TestFlattenIR_DoesNotAliasOriginalAttrs guards against a caller mutating a
+// SerialNode's Attrs (e.g. on a cache-write path) silently corrupting the
+// live IRNode tree still in use elsewhere in the same scan — FlattenIR must
+// copy each node's Attrs map, not share the original's underlying storage.
+func TestFlattenIR_DoesNotAliasOriginalAttrs(t *testing.T) {
+	original := buildSampleTree()
+	flat := ir.FlattenIR(original)
+
+	callNode := findByKind(original.Root, ir.NodeKindCall)
+	if callNode == nil {
+		t.Fatal("could not find call node in original tree")
+	}
+
+	var flatCall *ir.SerialNode
+	for i := range flat {
+		if flat[i].Kind == ir.NodeKindCall {
+			flatCall = &flat[i]
+			break
+		}
+	}
+	if flatCall == nil {
+		t.Fatal("could not find call node in flattened slice")
+	}
+
+	// Mutate the flattened copy's Attrs map directly.
+	flatCall.Attrs["argument_count"] = 999
+	flatCall.Attrs["injected"] = "should not leak back"
+
+	if ac, _ := callNode.Attrs["argument_count"].(int); ac != 2 {
+		t.Errorf("mutating the flattened Attrs map changed the original tree's argument_count to %v, want unchanged 2", ac)
+	}
+	if _, present := callNode.Attrs["injected"]; present {
+		t.Error("mutating the flattened Attrs map leaked a new key back into the original tree")
+	}
+}
