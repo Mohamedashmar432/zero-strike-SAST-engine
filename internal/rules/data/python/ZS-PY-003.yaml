@@ -9,9 +9,16 @@ cwe:
   - CWE-78
 owasp:
   - "A05:2025"
+rationale: |
+  With shell=True, the OS spawns /bin/sh (or cmd.exe) to interpret the command
+  string, so any shell metacharacters (;, |, &&, backticks, $()) present in
+  attacker-influenced input let the attacker chain or substitute arbitrary
+  commands rather than just supply a single argument. This is exploitable
+  wherever a filename, hostname, search term, or other request-derived value
+  is concatenated into the command string passed to subprocess.
 description: |
-  subprocess.run/call/Popen with shell=True passes the command through the shell,
-  enabling command injection if any part of the command includes user input.
+  subprocess.run/call/Popen with shell=True passes the assembled command
+  string through the shell before execution.
 message: "subprocess called with shell=True — pass a list of arguments instead"
 references:
   - https://docs.python.org/3/library/subprocess.html#security-considerations

@@ -9,11 +9,18 @@ cwe:
   - CWE-390
 owasp:
   - "A10:2025"
+rationale: |
+  Silently discarding an exception with a bare pass hides the fact that an
+  operation failed — including security-relevant failures such as a rejected
+  authentication attempt, a failed signature check, or a permission error —
+  so the surrounding code proceeds as if the operation had succeeded ("fail
+  open"). This is particularly dangerous when the guarded operation is a
+  security control, since there is no log entry or alert to reveal that the
+  check was bypassed.
 description: |
   An except handler whose body is just "pass" silently swallows the exception
-  with no logging or recovery, hiding failures ("fail open" / mishandled
-  exceptional conditions). Fires once per try block containing at least one
-  such handler (not once per clause).
+  with no logging or recovery. Fires once per try block containing at least
+  one such handler (not once per clause).
 message: "except clause with an empty (pass-only) body detected — log or handle the exception"
 references:
   - https://cwe.mitre.org/data/definitions/390.html

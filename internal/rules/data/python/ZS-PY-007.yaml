@@ -9,9 +9,14 @@ cwe:
   - CWE-327
 owasp:
   - "A04:2025"
+rationale: |
+  MD5 is cryptographically broken: collisions can be generated in seconds, and
+  as a password hash it is fast enough for commodity GPUs to brute-force
+  billions of guesses per second. Using it for password storage, digital
+  signatures, or file-integrity checks lets an attacker forge colliding
+  content or recover plaintext passwords from a leaked hash database.
 description: |
-  MD5 and SHA1 are cryptographically broken and must not be used for security purposes
-  such as password hashing or integrity verification.
+  Detects calls to hashlib.md5().
 message: "Weak hash algorithm detected — use SHA-256 or stronger"
 references:
   - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html

@@ -9,6 +9,13 @@ cwe:
   - CWE-798
 owasp:
   - "A07:2025"
+rationale: |
+  A credential embedded directly in source code is checked into version
+  control, copied into every build artifact, and visible to anyone with read
+  access to the repository or a decompiled/leaked build, including former
+  employees and future contributors. Once committed, rotating the secret
+  requires purging repository history, and any prior clone or CI log that
+  captured it remains a standing compromise.
 description: |
   A variable named like a credential (password, secret, api_key, token) is
   assigned a string literal directly in source code, rather than loaded from

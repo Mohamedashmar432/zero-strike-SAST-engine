@@ -9,6 +9,14 @@ cwe:
   - CWE-532
 owasp:
   - "A09:2025"
+rationale: |
+  Passwords, API keys, and tokens written to application logs persist in log
+  files, log-aggregation platforms, and monitoring dashboards that are often
+  readable by a much broader audience (ops staff, third-party log SaaS,
+  anyone with log-storage access) than the credential's intended scope. Once
+  logged, the secret is effectively exposed for as long as log retention and
+  backups keep it around, which is typically far longer than an application's
+  primary datastore.
 description: |
   A variable whose name suggests sensitive data (password, secret, api_key,
   token) is passed directly to logging.info(). This can leak credentials into

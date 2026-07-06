@@ -9,9 +9,15 @@ cwe:
   - CWE-347
 owasp:
   - "A07:2025"
+rationale: |
+  Without signature verification, jwt.decode() will accept any token whose
+  payload is well-formed JSON, regardless of who created it — an attacker can
+  hand-craft a token claiming any user identity, role, or permission and have
+  the application trust it outright. This is exploitable wherever JWTs
+  authenticate or authorize requests, letting an attacker impersonate any
+  user or escalate to admin.
 description: |
-  jwt.decode() called with verify=False accepts a JWT without checking its
-  signature, allowing an attacker to forge arbitrary tokens.
+  Detects calls to jwt.decode() with verify=False.
 message: "jwt.decode(verify=False) detected — signature verification is disabled"
 references:
   - https://cwe.mitre.org/data/definitions/347.html

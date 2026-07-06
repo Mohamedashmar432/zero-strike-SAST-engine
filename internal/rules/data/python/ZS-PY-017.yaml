@@ -9,10 +9,16 @@ cwe:
   - CWE-489
 owasp:
   - "A02:2025"
+rationale: |
+  With DEBUG = True, an unhandled exception in production renders a page
+  containing the full stack trace, source code context, local variable
+  values, and settings (including secrets pulled from environment variables),
+  served directly to whoever triggered the error. Any request that can cause
+  an exception — a malformed parameter, a missing resource — becomes a way
+  for an attacker to harvest configuration secrets and internal implementation
+  details.
 description: |
-  Django's DEBUG = True setting exposes detailed stack traces, source snippets,
-  and environment variables in error pages — a significant information
-  disclosure risk if left enabled in production.
+  Detects assignment of DEBUG = True in Django settings.
 message: "DEBUG = True detected — disable debug mode in production settings"
 references:
   - https://owasp.org/Top10/2025/A02_2025-Security_Misconfiguration/

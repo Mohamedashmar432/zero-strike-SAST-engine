@@ -9,8 +9,17 @@ cwe:
   - CWE-502
 owasp:
   - "A08:2025"
+rationale: |
+  Python's pickle format can embed a call to any importable callable via the
+  object's __reduce__ protocol, so pickle.loads() on attacker-controlled bytes
+  hands the attacker arbitrary code execution during deserialization, not just
+  a data-structure rebuild. This is commonly exploitable in caching layers,
+  session cookies, and inter-service message queues — anywhere a serialized
+  object crosses a trust boundary.
 description: |
-  pickle.loads() on untrusted data allows arbitrary code execution during deserialization.
+  Detects calls to pickle.loads(). The rule does not trace the byte source
+  back to a taint origin, so every call is reported regardless of whether the
+  input is verified as trusted.
 message: "Insecure deserialization via pickle.loads() — use a safe format like JSON"
 references:
   - https://docs.python.org/3/library/pickle.html#pickle-inst

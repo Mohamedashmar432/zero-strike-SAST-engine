@@ -9,10 +9,16 @@ cwe:
   - CWE-377
 owasp:
   - "A01:2025"
+rationale: |
+  Because the file does not yet exist when the name is returned, there is a
+  window between name generation and the application's own open()/write()
+  call during which a local attacker can create a file or symlink at that
+  exact path. If the application then writes to or trusts that path, the
+  attacker can redirect the write to an arbitrary file (a classic TOCTOU
+  symlink attack), potentially overwriting sensitive files or reading data
+  intended to be private.
 description: |
   tempfile.mktemp() returns a filename but does not create the file atomically.
-  The gap between name generation and file creation allows a race condition
-  (TOCTOU) that an attacker can exploit to create a symlink at that path.
 message: "tempfile.mktemp() is insecure — use tempfile.mkstemp() or tempfile.NamedTemporaryFile()"
 references:
   - https://docs.python.org/3/library/tempfile.html#tempfile.mktemp

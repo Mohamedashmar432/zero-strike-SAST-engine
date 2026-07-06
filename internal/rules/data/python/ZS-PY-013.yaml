@@ -9,6 +9,12 @@ cwe:
   - CWE-78
 owasp:
   - "A05:2025"
+rationale: |
+  os.popen() always executes its argument through the system shell, so a
+  tainted command string lets an attacker inject shell metacharacters to run
+  arbitrary additional commands and read their output through the returned
+  pipe. This is exploitable wherever the piped command is assembled from
+  user-supplied filenames, search terms, or other request data.
 description: |
   os.popen() opens a pipe to a shell command and is flagged when the command
   string traces back to an untrusted source (intra-procedural taint tracking).

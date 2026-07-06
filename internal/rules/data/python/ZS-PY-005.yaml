@@ -9,9 +9,15 @@ cwe:
   - CWE-78
 owasp:
   - "A05:2025"
+rationale: |
+  os.system() unconditionally invokes a shell to run its argument, so any
+  user-controlled data included in that string can be used to inject shell
+  metacharacters and execute arbitrary additional commands with the
+  privileges of the running process. This is exploitable wherever the command
+  string is built from request parameters, filenames, or other external input.
 description: |
-  os.system() passes the command string directly to the shell, enabling command injection
-  when the command includes any user-controlled data.
+  Detects direct calls to os.system(), which always executes its argument
+  through the system shell.
 message: "os.system() is vulnerable to command injection — use subprocess with a list of args"
 references:
   - https://docs.python.org/3/library/os.html#os.system

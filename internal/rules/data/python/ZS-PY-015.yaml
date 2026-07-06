@@ -9,10 +9,17 @@ cwe:
   - CWE-918
 owasp:
   - "A01:2025"
+rationale: |
+  If the URL passed to urlopen() is influenced by user input, an attacker can
+  redirect the request to internal-only services, loopback addresses, or cloud
+  metadata endpoints (e.g. 169.254.169.254) that are normally unreachable from
+  outside the network, potentially exposing internal APIs, credentials, or
+  instance metadata. This is exploitable in any feature that fetches a
+  user-supplied URL, such as webhook registration, link previews, or
+  file-import-by-URL.
 description: |
-  urllib.request.urlopen() fetches a URL that may be user-controlled, creating a
-  Server-Side Request Forgery (SSRF) risk. Attackers can use SSRF to reach internal
-  services, cloud metadata endpoints, or bypass network controls.
+  Detects calls to urllib.request.urlopen(), which fetches whatever URL it is
+  given without validation.
 message: "urllib.request.urlopen() detected — validate and allowlist URLs before use"
 references:
   - https://owasp.org/Top10/2025/A01_2025-Broken_Access_Control/

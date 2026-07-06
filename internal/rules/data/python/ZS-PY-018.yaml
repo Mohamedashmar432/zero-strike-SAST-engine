@@ -9,6 +9,14 @@ cwe:
   - CWE-295
 owasp:
   - "A02:2025"
+rationale: |
+  Disabling TLS certificate verification means the client accepts any
+  certificate — expired, self-signed, or issued for a different host — so an
+  attacker positioned on the network path (public Wi-Fi, a compromised proxy,
+  DNS spoofing) can present their own certificate and transparently intercept
+  or modify the traffic. This is exploitable for any request made with
+  verify=False, especially ones carrying credentials, tokens, or sensitive
+  payloads.
 description: |
   Calling requests.get() with verify=False disables TLS certificate validation,
   exposing the request to man-in-the-middle attacks.

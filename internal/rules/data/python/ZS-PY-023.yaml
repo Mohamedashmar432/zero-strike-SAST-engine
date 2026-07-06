@@ -9,10 +9,17 @@ cwe:
   - CWE-396
 owasp:
   - "A10:2025"
+rationale: |
+  A bare except swallows every exception indiscriminately, including ones
+  raised by security controls — a failed permission check, a cryptographic
+  verification error, a broken invariant — so the code can silently continue
+  down a path that assumed the operation succeeded. This is dangerous
+  anywhere a try block wraps an authentication, authorization, or
+  input-validation step, since the resulting failure mode is invisible: no
+  log entry, no alert, just execution continuing as if nothing went wrong.
 description: |
   A bare "except:" clause catches every exception, including SystemExit and
-  KeyboardInterrupt, masking bugs and making failures silently swallow
-  conditions they shouldn't. Fires once per try block containing at least one
+  KeyboardInterrupt. Fires once per try block containing at least one
   bare except clause (not once per clause).
 message: "Bare except: clause detected — catch specific exception types instead"
 references:

@@ -9,8 +9,17 @@ cwe:
   - CWE-95
 owasp:
   - "A05:2025"
+rationale: |
+  eval() compiles and executes its argument as arbitrary Python source, so any
+  attacker-controlled data reaching it grants full code execution in the
+  process — reading secrets, writing files, or spawning further commands. This
+  is exploitable wherever user input (form fields, query parameters,
+  deserialized data) flows into an eval() call, whether directly or after
+  string concatenation.
 description: |
-  eval() with untrusted input allows arbitrary code execution.
+  Detects calls to the eval() builtin. The rule does not perform taint
+  tracking, so every eval() call is reported regardless of whether its
+  argument originates from user input.
 message: "Dangerous call to eval() — replace with ast.literal_eval() for safe parsing"
 references:
   - https://owasp.org/Top10/2025/A05_2025-Injection/

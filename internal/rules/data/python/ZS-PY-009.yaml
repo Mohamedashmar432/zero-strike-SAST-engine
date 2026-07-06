@@ -9,10 +9,15 @@ cwe:
   - CWE-617
 owasp:
   - "A06:2025"
+rationale: |
+  Python strips assert statements entirely when the interpreter runs with -O,
+  so any authentication, authorization, or input-validation check expressed as
+  an assert silently vanishes in that mode — the guarded code path executes as
+  if the check always passed. An attacker who can trigger execution under an
+  optimized deployment (or who influences how the interpreter is invoked)
+  bypasses the check entirely with no error or log trace.
 description: |
   assert statements are removed when Python runs with the -O (optimize) flag.
-  Using assert for security checks (authentication, authorization, input validation)
-  silently disables those checks in optimized production deployments.
 message: "assert used for security check — use an explicit if/raise instead"
 references:
   - https://bandit.readthedocs.io/en/latest/plugins/b101_assert_used.html

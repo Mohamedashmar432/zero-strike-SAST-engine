@@ -9,6 +9,14 @@ cwe:
   - CWE-89
 owasp:
   - "A05:2025"
+rationale: |
+  Building SQL text via string interpolation lets an attacker-controlled value
+  change the query's structure — appending clauses, subqueries, or UNION
+  SELECT statements — rather than being treated as inert data. This can expose
+  or modify arbitrary rows, bypass authentication checks, or exfiltrate an
+  entire database, and is exploitable anywhere user-supplied input (form
+  fields, query parameters, headers) reaches a cursor.execute() call built
+  this way.
 description: |
   Detects SQL query strings that use Python string formatting operations, where the
   formatted value traces back to an untrusted source (intra-procedural taint tracking).

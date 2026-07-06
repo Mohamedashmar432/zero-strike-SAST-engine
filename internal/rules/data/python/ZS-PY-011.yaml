@@ -9,9 +9,15 @@ cwe:
   - CWE-327
 owasp:
   - "A04:2025"
+rationale: |
+  SHA1 has known practical collision attacks (e.g. SHAttered) and, like MD5, is
+  fast enough for attackers to brute-force at scale on commodity GPUs. Using it
+  for password hashing, digital signatures, or certificate/file integrity
+  checks lets an attacker forge colliding content or recover passwords from a
+  leaked hash, undermining the integrity guarantee the hash was meant to
+  provide.
 description: |
-  SHA1 is cryptographically broken and should not be used for security-sensitive
-  operations such as password hashing, digital signatures, or data integrity checks.
+  Detects calls to hashlib.sha1().
 message: "Weak hash algorithm SHA1 detected — use SHA-256 or stronger"
 references:
   - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html

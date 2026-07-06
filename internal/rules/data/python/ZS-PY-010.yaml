@@ -9,9 +9,16 @@ cwe:
   - CWE-502
 owasp:
   - "A08:2025"
+rationale: |
+  yaml.load() with the default (or any non-safe) Loader can construct
+  arbitrary Python objects via custom tags such as !!python/object/apply,
+  which lets an attacker who controls the YAML document execute arbitrary
+  code or instantiate dangerous objects during deserialization. This is
+  exploitable anywhere the application parses YAML from an untrusted source —
+  config uploads, API payloads, or user-editable settings files.
 description: |
-  yaml.load() with untrusted input can execute arbitrary Python code via custom YAML tags.
-  Use yaml.safe_load() which only constructs standard Python objects.
+  Detects calls to yaml.load(), regardless of whether a Loader argument is
+  supplied.
 message: "yaml.load() is unsafe — use yaml.safe_load() or add Loader=yaml.SafeLoader"
 references:
   - https://pyyaml.org/wiki/PyYAMLDocumentation#loading-yaml

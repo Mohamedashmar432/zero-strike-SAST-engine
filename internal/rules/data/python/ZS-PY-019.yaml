@@ -9,6 +9,12 @@ cwe:
   - CWE-16
 owasp:
   - "A02:2025"
+rationale: |
+  Django uses ALLOWED_HOSTS to validate the incoming Host header; a wildcard
+  ("*") or overly permissive entry disables that check, letting an attacker
+  send requests with an arbitrary Host header to trigger cache poisoning,
+  poison password-reset links (when the host is reflected into an email
+  link), or bypass host-based routing and security controls.
 description: |
   Flags any assignment to Django's ALLOWED_HOSTS setting for manual review.
   A wildcard value (e.g. ['*']) disables Django's Host header validation, but

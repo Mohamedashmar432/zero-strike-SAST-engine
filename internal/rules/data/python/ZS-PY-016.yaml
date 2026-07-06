@@ -9,9 +9,14 @@ cwe:
   - CWE-489
 owasp:
   - "A02:2025"
+rationale: |
+  Flask's debug mode enables the Werkzeug interactive debugger, which on an
+  unhandled exception serves a browser-based console that can execute
+  arbitrary Python on the server. If this debug endpoint is reachable — even
+  briefly, or from an internal network an attacker has pivoted into — anyone
+  who can trigger an exception gains full remote code execution.
 description: |
-  Running a Flask application with debug=True exposes the Werkzeug interactive
-  debugger, which allows arbitrary code execution if reachable in production.
+  Detects app.run() called with debug=True.
 message: "app.run(debug=True) detected — never enable the debugger in production"
 references:
   - https://owasp.org/Top10/2025/A02_2025-Security_Misconfiguration/
