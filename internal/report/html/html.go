@@ -32,21 +32,13 @@ type severityGroup struct {
 	Findings []core.Finding
 }
 
-var severityOrder = []core.Severity{
-	core.SeverityCritical,
-	core.SeverityHigh,
-	core.SeverityMedium,
-	core.SeverityLow,
-	core.SeverityInfo,
-}
-
 func buildTemplateData(rep *report.Report) templateData {
 	by := make(map[core.Severity][]core.Finding)
 	for _, f := range rep.Findings {
 		by[f.Severity] = append(by[f.Severity], f)
 	}
 	var groups []severityGroup
-	for _, sev := range severityOrder {
+	for _, sev := range report.SeverityOrder {
 		if fs := by[sev]; len(fs) > 0 {
 			s := string(sev)
 			groups = append(groups, severityGroup{

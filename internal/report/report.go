@@ -62,7 +62,9 @@ type Group struct {
 	Findings []core.Finding
 }
 
-var severityGroupOrder = []core.Severity{
+// SeverityOrder is the canonical highest-to-lowest severity ordering used
+// wherever findings are grouped or displayed by severity.
+var SeverityOrder = []core.Severity{
 	core.SeverityCritical,
 	core.SeverityHigh,
 	core.SeverityMedium,
@@ -70,12 +72,13 @@ var severityGroupOrder = []core.Severity{
 	core.SeverityInfo,
 }
 
-// GroupFindings partitions findings according to by. It always returns at
-// least one group (even for empty input or an unrecognized GroupBy), so
-// callers can treat "no grouping" uniformly as a single group containing
-// everything. Findings retain their original relative order within a group;
-// groups are ordered by first appearance in findings, except for
-// GroupBySeverity which is ordered from highest to lowest severity.
+// GroupFindings partitions findings according to by. For GroupByNone (or any
+// unrecognized value), it returns a single group containing all findings,
+// even when findings is empty. The other four modes return one group per
+// distinct key and zero groups for empty input. Findings retain their
+// original relative order within a group; groups are ordered by first
+// appearance in findings, except for GroupBySeverity which is ordered from
+// highest to lowest severity.
 func GroupFindings(findings []core.Finding, by GroupBy) []Group {
 	switch by {
 	case GroupByFile:
@@ -112,7 +115,7 @@ func groupBySeverity(findings []core.Finding) []Group {
 		by[f.Severity] = append(by[f.Severity], f)
 	}
 	var groups []Group
-	for _, sev := range severityGroupOrder {
+	for _, sev := range SeverityOrder {
 		if fs, ok := by[sev]; ok {
 			s := string(sev)
 			groups = append(groups, Group{Key: s, Label: s, Findings: fs})
