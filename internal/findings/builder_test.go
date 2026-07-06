@@ -98,3 +98,55 @@ func TestFingerprint_StableAcrossLineChanges(t *testing.T) {
 		t.Error("Fingerprint must not be empty")
 	}
 }
+
+// TestBuildFinding_RationaleAndRemediation verifies that Finding.Rationale and
+// Finding.Remediation are populated from the matched rule's Rationale and
+// FixSuggestion fields, and that a rule without them produces an empty (not
+// crashing) result.
+func TestBuildFinding_RationaleAndRemediation(t *testing.T) {
+	irRoot := &ir.IRNode{Kind: ir.NodeKindModule, Location: core.Location{StartLine: 1, EndLine: 20}}
+	irFile := &ir.IRFile{Language: core.LangPython, Path: "test.py", Root: irRoot}
+	syms := symboltable.NewBuilder().Build(irFile)
+	mc := &engine.MatchContext{
+		File: &analyzer.AnalysisResult{IR: irFile, Symbols: syms},
+	}
+	node := &ir.IRNode{
+		Kind:     ir.NodeKindCall,
+		Text:     "eval(user_input)",
+		Location: core.Location{File: "test.py", StartLine: 10, EndLine: 10},
+	}
+
+	t.Run("populated rule metadata", func(t *testing.T) {
+		rule := &rules.Rule{
+			ID:            "ZS-PY-001",
+			Name:          "eval usage",
+			Severity:      core.SeverityHigh,
+			Confidence:    core.ConfidenceHigh,
+			Rationale:     "eval() executes arbitrary code, allowing injection if input is attacker-controlled.",
+			FixSuggestion: "Avoid eval(); use ast.literal_eval() or a safe parser instead.",
+		}
+		f := findings.BuildFinding(engine.MatchResult{Rule: rule, Node: node}, mc)
+		if f.Rationale != rule.Rationale {
+			t.Errorf("Rationale = %q, want %q", f.Rationale, rule.Rationale)
+		}
+		if f.Remediation != rule.FixSuggestion {
+			t.Errorf("Remediation = %q, want %q", f.Remediation, rule.FixSuggestion)
+		}
+	})
+
+	t.Run("empty rule metadata", func(t *testing.T) {
+		rule := &rules.Rule{
+			ID:         "ZS-PY-002",
+			Name:       "no metadata rule",
+			Severity:   core.SeverityHigh,
+			Confidence: core.ConfidenceHigh,
+		}
+		f := findings.BuildFinding(engine.MatchResult{Rule: rule, Node: node}, mc)
+		if f.Rationale != "" {
+			t.Errorf("Rationale = %q, want empty", f.Rationale)
+		}
+		if f.Remediation != "" {
+			t.Errorf("Remediation = %q, want empty", f.Remediation)
+		}
+	})
+}

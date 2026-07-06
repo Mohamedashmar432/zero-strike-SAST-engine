@@ -62,6 +62,8 @@ func BuildFinding(result engine.MatchResult, mc *engine.MatchContext) core.Findi
 		CWE:         result.Rule.CWE,
 		OWASP:       result.Rule.OWASP,
 		References:  result.Rule.References,
+		Rationale:   result.Rule.Rationale,
+		Remediation: result.Rule.FixSuggestion,
 		Kind:        core.FindingKindSAST,
 	}
 }
