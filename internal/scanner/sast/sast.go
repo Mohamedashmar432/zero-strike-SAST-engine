@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/zerostrike/scanner/internal/analyzer"
+	"github.com/zerostrike/scanner/internal/cache"
 	"github.com/zerostrike/scanner/internal/core"
 	"github.com/zerostrike/scanner/internal/detector"
 	"github.com/zerostrike/scanner/internal/engine"
@@ -34,19 +35,25 @@ import (
 
 // SASTScanner runs rule-based pattern matching over AST IR.
 type SASTScanner struct {
-	eng       engine.Engine
-	ruleIndex *engine.RuleIndex
-	det       detector.Detector
-	rootPath  string
+	eng          engine.Engine
+	ruleIndex    *engine.RuleIndex
+	det          detector.Detector
+	rootPath     string
+	findingCache cache.FindingCache
+	astCache     cache.ASTCache
 }
 
-// New creates a SASTScanner from a pre-validated rule set.
-func New(allRules []*rules.Rule, rootPath string) *SASTScanner {
+// New creates a SASTScanner from a pre-validated rule set. findingCache and
+// astCache are consulted/written on every processed file; pass
+// cache.NoopCache{}/cache.NoopASTCache{} to disable caching (e.g. --no-cache).
+func New(allRules []*rules.Rule, rootPath string, findingCache cache.FindingCache, astCache cache.ASTCache) *SASTScanner {
 	return &SASTScanner{
-		eng:       engine.New(),
-		ruleIndex: engine.BuildIndex(allRules),
-		det:       detector.NewDetector(),
-		rootPath:  rootPath,
+		eng:          engine.New(),
+		ruleIndex:    engine.BuildIndex(allRules),
+		det:          detector.NewDetector(),
+		rootPath:     rootPath,
+		findingCache: findingCache,
+		astCache:     astCache,
 	}
 }
 
@@ -106,12 +113,28 @@ func (s *SASTScanner) processFile(ctx context.Context, entry walker.FileEntry) (
 		return nil, nil
 	}
 
+	contentHash := sha256Hex(source)
+
+	// Finding-cache check: on a hit, skip language detection, parsing,
+	// analysis, and matching entirely.
+	//
+	// NOTE: a finding-cache hit does NOT replay the original run's
+	// build/analyze diagnostics (parse warnings, etc.) - only findings are
+	// cached, not diagnostics. This is a deliberate, accepted simplification
+	// (diagnostics are advisory, not correctness-critical), not an
+	// oversight.
+	if e, ok := s.findingCache.Get(entry.Path); ok && e.SHA256 == contentHash {
+		if cached, err := s.findingCache.GetFindings(entry.Path); err == nil {
+			return cached, nil
+		}
+	}
+
 	lang := s.det.Detect(entry.Path, source)
 	if !lang.IsKnown() {
 		return nil, nil
 	}
 
-	irFile, warnings, err := s.buildIR(ctx, entry.Path, lang, source)
+	irFile, warnings, err := s.loadOrBuildIR(ctx, entry.Path, lang, source, contentHash)
 	var diags []analyzer.Diagnostic
 	if err != nil {
 		diags = append(diags, analyzer.Diagnostic{Severity: "error", Message: err.Error(), Location: &core.Location{File: entry.Path}})
@@ -121,6 +144,9 @@ func (s *SASTScanner) processFile(ctx context.Context, entry walker.FileEntry) (
 		diags = append(diags, analyzer.Diagnostic{Severity: "warning", Message: w, Location: &core.Location{File: entry.Path}})
 	}
 
+	// Analysis and matching always run, whether irFile came from the AST
+	// cache or a fresh parse: rules (and therefore match results) may have
+	// changed even though the file's content - and its cached AST - has not.
 	analysisResult, err := analyzer.New().Analyze(ctx, irFile)
 	if err != nil {
 		diags = append(diags, analyzer.Diagnostic{Severity: "error", Message: err.Error(), Location: &core.Location{File: entry.Path}})
@@ -142,7 +168,44 @@ func (s *SASTScanner) processFile(ctx context.Context, entry walker.FileEntry) (
 	for _, mr := range matchResults {
 		fileFindings = append(fileFindings, findings.BuildFinding(mr, mc))
 	}
+
+	// Write-through to the finding cache. PutRecord stores the Entry and its
+	// Findings as a single atomic write - unlike calling Set and PutFindings
+	// independently, it can never leave a fresh Entry paired with stale or
+	// absent Findings. A write failure is ignored rather than failing the
+	// scan: caching is strictly a performance optimization, never a
+	// correctness requirement.
+	_ = s.findingCache.PutRecord(cache.Entry{FilePath: entry.Path, SHA256: contentHash}, fileFindings)
+
 	return fileFindings, diags
+}
+
+// loadOrBuildIR returns the IR for path, preferring the AST cache over a
+// fresh parse when contentHash matches a stored entry. A corrupted or
+// unusable AST cache entry (bad JSON, a schema mismatch that fails to
+// rebuild, etc.) degrades to a fresh parse rather than failing the file -
+// the AST cache is a performance optimization, never a correctness
+// requirement.
+func (s *SASTScanner) loadOrBuildIR(ctx context.Context, path string, lang core.Language, source []byte, contentHash string) (*ir.IRFile, []string, error) {
+	if data, ok := s.astCache.GetIR(path, contentHash); ok {
+		if irFile, ok := decodeCachedIR(data, lang, path); ok {
+			return irFile, nil, nil
+		}
+		// Corrupted/incompatible cache entry: fall through to a fresh parse.
+	}
+
+	irFile, warnings, err := s.buildIR(ctx, path, lang, source)
+	if err != nil {
+		return nil, warnings, err
+	}
+
+	// Write-through to the AST cache. A write failure is ignored rather than
+	// failing the scan, for the same reason as the finding-cache write above.
+	if data, ok := encodeIR(irFile); ok {
+		_ = s.astCache.SetIR(path, contentHash, data)
+	}
+
+	return irFile, warnings, nil
 }
 
 // buildIR dispatches to the registered language builder. The ctx parameter is

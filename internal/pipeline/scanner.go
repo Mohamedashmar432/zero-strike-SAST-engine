@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"runtime"
 
+	"github.com/zerostrike/scanner/internal/cache"
 	"github.com/zerostrike/scanner/internal/core"
 	"github.com/zerostrike/scanner/internal/findings"
 	"github.com/zerostrike/scanner/internal/langreg"
@@ -67,7 +68,11 @@ func New(cfg ScanConfig) (*ScanPipeline, error) {
 	}
 
 	var scanners []scanner.Scanner
-	scanners = append(scanners, sast.New(allRules, cfg.RootPath))
+	// TODO(cache-wiring): these Noop placeholders make the SAST scanner
+	// cache-capable without turning caching on end-to-end. A later task
+	// wires up real cache instances here: cache.Open, rule-set hashing for
+	// invalidation, and --no-cache branching.
+	scanners = append(scanners, sast.New(allRules, cfg.RootPath, cache.NoopCache{}, cache.NoopASTCache{}))
 	if cfg.EnableSecrets {
 		scanners = append(scanners, secrets.New())
 	}
