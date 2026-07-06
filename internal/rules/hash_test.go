@@ -2,6 +2,8 @@
 package rules_test
 
 import (
+	"errors"
+	"io/fs"
 	"testing"
 	"testing/fstest"
 
@@ -157,6 +159,92 @@ func TestHashRuleSet_FlatDirectoryLikeExternalRulesOverride(t *testing.T) {
 	}
 	if h == "" {
 		t.Fatal("expected non-empty hash for flat external rules directory")
+	}
+
+	// The flat "." shape must be just as content/add-sensitive as the nested
+	// data/<lang> shape already covered above — this is the exact call the
+	// real --rules flag makes, so it deserves its own sensitivity check
+	// rather than only a non-empty-hash smoke test.
+	changed := fstest.MapFS{
+		"custom-rule.yaml": &fstest.MapFile{Data: []byte("id: custom-rule\nseverity: critical\n")},
+	}
+	hChanged, err := rules.HashRuleSet(changed, []string{"."})
+	if err != nil {
+		t.Fatalf("HashRuleSet: %v", err)
+	}
+	if h == hChanged {
+		t.Fatal("expected a content change in the flat directory to alter the hash")
+	}
+
+	withExtra := fstest.MapFS{
+		"custom-rule.yaml":  &fstest.MapFile{Data: []byte("id: custom-rule\nseverity: high\n")},
+		"another-rule.yaml": &fstest.MapFile{Data: []byte("id: another-rule\nseverity: low\n")},
+	}
+	hExtra, err := rules.HashRuleSet(withExtra, []string{"."})
+	if err != nil {
+		t.Fatalf("HashRuleSet: %v", err)
+	}
+	if h == hExtra {
+		t.Fatal("expected an added file in the flat directory to alter the hash")
+	}
+}
+
+func TestHashRuleSet_CRLFNormalizedToLF(t *testing.T) {
+	// This repo has no .gitattributes pinning rule YAML line endings, and a
+	// Windows checkout with core.autocrlf=true produces CRLF where a Linux
+	// CI runner produces LF for the same commit's content — go:embed bakes
+	// in whatever bytes are on disk at build time. HashRuleSet must not
+	// treat these as different content, or the cache would spuriously
+	// invalidate every time the team rebuilds on a different platform.
+	lf := fstest.MapFS{
+		"data/python/rule.yaml": &fstest.MapFile{Data: []byte("id: x\nseverity: high\n")},
+	}
+	crlf := fstest.MapFS{
+		"data/python/rule.yaml": &fstest.MapFile{Data: []byte("id: x\r\nseverity: high\r\n")},
+	}
+
+	hLF, err := rules.HashRuleSet(lf, []string{"data/python"})
+	if err != nil {
+		t.Fatalf("HashRuleSet: %v", err)
+	}
+	hCRLF, err := rules.HashRuleSet(crlf, []string{"data/python"})
+	if err != nil {
+		t.Fatalf("HashRuleSet: %v", err)
+	}
+	if hLF != hCRLF {
+		t.Fatalf("expected CRLF and LF variants of identical content to hash identically, got %s vs %s", hLF, hCRLF)
+	}
+}
+
+// erroringFS wraps an fstest.MapFS but returns a non-ErrNotExist error for a
+// specific directory, simulating a real I/O failure (e.g. a permission
+// error) as distinct from "directory doesn't exist."
+type erroringFS struct {
+	fstest.MapFS
+	failDir string
+	err     error
+}
+
+func (e erroringFS) ReadDir(name string) ([]fs.DirEntry, error) {
+	if name == e.failDir {
+		return nil, e.err
+	}
+	return e.MapFS.ReadDir(name)
+}
+
+func TestHashRuleSet_RealReadErrorIsPropagatedNotSkipped(t *testing.T) {
+	fsys := erroringFS{
+		MapFS:   mapFS(),
+		failDir: "data/python",
+		err:     fs.ErrPermission,
+	}
+
+	_, err := rules.HashRuleSet(fsys, []string{"data/python", "data/js"})
+	if err == nil {
+		t.Fatal("expected a real read error to be propagated, got nil")
+	}
+	if errors.Is(err, fs.ErrNotExist) {
+		t.Fatalf("a permission error must not be mistaken for a missing directory, got: %v", err)
 	}
 }
 

@@ -4,6 +4,7 @@ package rules
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io/fs"
 	"path"
@@ -17,12 +18,34 @@ import (
 // behavior in loader.go), so the result reflects exactly the files the rule
 // loader would actually load.
 //
-// Two rule sets with identical file content (byte-for-byte) hash identically
-// regardless of the order of dirs or of directory-listing order on disk; any
-// content or file-set change (a rule edited, added, or removed) produces a
-// different hash. This is achieved by hashing each file individually, then
-// sorting the (path, per-file-hash) pairs by path before combining them into
-// the final digest.
+// Two rule sets with identical file content hash identically regardless of
+// the order of dirs or of directory-listing order on disk; any content or
+// file-set change (a rule edited, added, or removed) produces a different
+// hash. This is achieved by hashing each file individually (after
+// normalizing CRLF line endings to LF, so the digest is stable across a
+// Windows dev checkout and a Linux CI runner of the same embedded content —
+// this repo has no .gitattributes pinning line endings, and its Windows
+// checkouts do produce CRLF where CI's do not), then sorting the (path,
+// per-file-hash) pairs by path before combining them into the final digest.
+//
+// Edge-case contract, since callers (cache invalidation logic) should be
+// able to rely on this without re-reading the implementation:
+//   - dirs entries are expected to be disjoint (no two entries covering the
+//     same file). Passing overlapping entries hashes the shared file once
+//     per entry that reaches it, changing the digest — today's two real call
+//     shapes (RuleDirs' disjoint data/<lang> dirs, or a single "." dir) never
+//     overlap, but a caller composing dirs some other way must keep them
+//     disjoint.
+//   - an empty dirs slice is not an error: it returns the fixed digest of an
+//     empty input (sha256 of an empty string), not a sentinel or error.
+//   - a directory in dirs that does not exist is skipped, contributing
+//     nothing to the hash — this is what lets rules.RuleDirs be hashed even
+//     if a future language directory is momentarily absent. Any OTHER read
+//     error (permission denied, a genuinely unreadable directory) is
+//     propagated as an error rather than silently treated as "no rules
+//     here," since silently under-counting a rule directory is exactly the
+//     kind of mistake that would make the cache serve stale findings after
+//     a real rule change.
 //
 // Callers pass rules.RuleDirs for the built-in embedded rule set:
 //
@@ -34,13 +57,6 @@ import (
 // loader.LoadDir("."). The matching call is therefore:
 //
 //	rules.HashRuleSet(os.DirFS(cfg.RulesDir), []string{"."})
-//
-// A directory in dirs that does not exist (or is unreadable) is silently
-// skipped rather than treated as an error — this relies on fs.Glob's
-// documented behavior of ignoring filesystem errors when listing a pattern's
-// directory, which lets an external rules override that only supplies a
-// subset of languages (or has no language subdirectories at all) hash
-// successfully instead of failing on missing dirs.
 func HashRuleSet(fsys fs.FS, dirs []string) (string, error) {
 	type fileHash struct {
 		path string
@@ -49,16 +65,24 @@ func HashRuleSet(fsys fs.FS, dirs []string) (string, error) {
 
 	var files []fileHash
 	for _, dir := range dirs {
-		matches, err := fs.Glob(fsys, path.Join(dir, "*.yaml"))
+		entries, err := fs.ReadDir(fsys, dir)
 		if err != nil {
-			return "", fmt.Errorf("hash rule set: glob %s: %w", dir, err)
-		}
-		for _, m := range matches {
-			data, err := fs.ReadFile(fsys, m)
-			if err != nil {
-				return "", fmt.Errorf("hash rule set: read %s: %w", m, err)
+			if errors.Is(err, fs.ErrNotExist) {
+				continue
 			}
-			files = append(files, fileHash{path: m, sum: sha256.Sum256(data)})
+			return "", fmt.Errorf("hash rule set: read dir %s: %w", dir, err)
+		}
+		for _, e := range entries {
+			if e.IsDir() || !strings.HasSuffix(e.Name(), ".yaml") {
+				continue
+			}
+			p := path.Join(dir, e.Name())
+			data, err := fs.ReadFile(fsys, p)
+			if err != nil {
+				return "", fmt.Errorf("hash rule set: read %s: %w", p, err)
+			}
+			normalized := strings.ReplaceAll(string(data), "\r\n", "\n")
+			files = append(files, fileHash{path: p, sum: sha256.Sum256([]byte(normalized))})
 		}
 	}
 
