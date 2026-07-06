@@ -9,6 +9,16 @@ cwe:
   - CWE-798
 owasp:
   - "A07:2025"
+rationale: |
+  A credential embedded as a string literal in source ships inside the
+  compiled assembly, and .NET binaries decompile back to near-original,
+  readable source with tools like ILSpy or dotPeek, so an attacker who
+  obtains only the shipped DLL/EXE — with no repository or CI access at all
+  — can recover the literal along with the surrounding logic that uses it.
+  Once extracted, the attacker gains standing access to whatever the
+  credential protects (a database, an internal API, a third-party service)
+  that persists until the secret is rotated, independent of any other
+  vulnerability in the running application.
 description: |
   A variable named like a credential (password, secret, api key, token) is
   assigned a string literal directly in source code, rather than loaded from

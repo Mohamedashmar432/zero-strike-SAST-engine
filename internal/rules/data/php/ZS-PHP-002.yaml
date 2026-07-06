@@ -9,6 +9,16 @@ cwe:
   - CWE-89
 owasp:
   - "A05:2025"
+rationale: |
+  Building a SQL query string by concatenating attacker-controlled data
+  before passing it to mysqli_query() lets an attacker terminate the
+  intended query and append arbitrary SQL — altering WHERE clauses to
+  bypass authentication, using UNION SELECT to exfiltrate data from other
+  tables, or chaining statements to modify or drop data. This is
+  exploitable wherever a search term, identifier, or filter value from
+  $_GET/$_POST/$_COOKIE reaches the query string before mysqli_query()
+  executes it, and is fully avoidable with a prepared statement bound via
+  mysqli_prepare()/bind_param().
 description: |
   mysqli_query() is called with a query string that traces back to an
   untrusted source (intra-procedural taint tracking), indicating SQL built

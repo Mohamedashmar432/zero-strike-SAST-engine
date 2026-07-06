@@ -9,6 +9,16 @@ cwe:
   - CWE-79
 owasp:
   - "A05:2025"
+rationale: |
+  Response.Write() sends its argument straight into the HTTP response body,
+  so attacker-controlled data containing <script> tags or event handlers is
+  parsed and executed by the victim's browser in the application's origin
+  the moment the page renders, unless it is HTML-encoded first. This is
+  exploitable wherever a query-string value, form field, or other
+  request-derived value is echoed back into the response — classic
+  reflected XSS in legacy ASP.NET Web Forms or MVC code paths that bypass
+  the framework's default output encoding by writing to the response
+  stream directly.
 description: |
   Response.Write() emits markup directly to the HTTP response, flagged when
   the written value traces back to an untrusted source (intra-procedural

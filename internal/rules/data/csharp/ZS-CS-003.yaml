@@ -9,12 +9,22 @@ cwe:
   - CWE-502
 owasp:
   - "A08:2025"
+rationale: |
+  BinaryFormatter reconstructs arbitrary .NET types from the byte stream by
+  design, including types with side-effecting constructors, property
+  setters, or ISerializable/IDeserializationCallback hooks, so an attacker
+  who controls the serialized payload can chain these into remote code
+  execution the moment Deserialize() runs — no separate injection point is
+  needed beyond feeding in the bytes. This is exploitable anywhere a
+  BinaryFormatter payload crosses a trust boundary: view state, cached
+  objects, inter-service messages, or uploads an attacker can influence,
+  which is why Microsoft now treats any use of the type as unsafe rather
+  than trying to sandbox specific call patterns.
 description: |
-  BinaryFormatter is insecure by design and deprecated by Microsoft: any use
-  for deserializing data enables remote code execution. This rule flags the
-  instantiation itself (new BinaryFormatter()), matching Microsoft's guidance
-  that the type should not be used at all, regardless of the receiver
-  variable it is later called through.
+  BinaryFormatter is deprecated by Microsoft; this rule flags the
+  instantiation itself (new BinaryFormatter()), matching Microsoft's
+  guidance that the type should not be used at all, regardless of the
+  receiver variable it is later called through.
 message: "BinaryFormatter usage detected — insecure deserialization enables RCE; use System.Text.Json or another safe serializer"
 references:
   - https://learn.microsoft.com/en-us/dotnet/standard/serialization/binaryformatter-security-guide

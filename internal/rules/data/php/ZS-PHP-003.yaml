@@ -9,10 +9,20 @@ cwe:
   - CWE-502
 owasp:
   - "A08:2025"
+rationale: |
+  unserialize() reconstructs arbitrary PHP objects from the byte string,
+  and PHP automatically invokes any __wakeup(), __destruct(), or
+  __toString() magic method the target class defines during that
+  reconstruction, so an attacker who controls the serialized payload can
+  chain gadget classes already autoloaded in the application (a
+  well-documented PHP Object Injection / POP-chain technique) into file
+  deletion, SSRF, or remote code execution — no additional injection point
+  is needed beyond feeding in the bytes. This is exploitable anywhere a
+  serialized payload crosses a trust boundary: cookies, cached session
+  data, or API inputs an attacker can influence.
 description: |
-  unserialize() on attacker-influenced data can instantiate arbitrary PHP
-  objects and trigger their magic methods (__wakeup/__destruct), a classic
-  PHP object-injection vector — any use on untrusted data is the risk, not
+  This rule flags unserialize() unconditionally rather than only when the
+  argument is provably tainted — the risk is any use on untrusted data, not
   just an obviously-tainted argument (mirrors ZS-CS-003's BinaryFormatter
   treatment).
 message: "unserialize() detected — do not unserialize untrusted data"

@@ -9,6 +9,16 @@ cwe:
   - CWE-89
 owasp:
   - "A05:2025"
+rationale: |
+  Building a SQL query string by concatenating or Sprintf-ing
+  attacker-controlled data before passing it to db.Query() lets an attacker
+  terminate the intended query and append arbitrary SQL — altering WHERE
+  clauses to bypass authorization checks, using UNION SELECT to pull data
+  from other tables, or chaining statements to modify or delete data. This
+  is exploitable wherever a search term, identifier, or filter value from a
+  request reaches the query string before Query()/QueryRow() runs it, and
+  is fully avoidable by passing the value as a placeholder argument (?, $1)
+  instead of splicing it into the SQL text.
 description: |
   A database query is executed with a query string that traces back to an
   untrusted source (intra-procedural taint tracking), indicating SQL built

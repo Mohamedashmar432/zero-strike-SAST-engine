@@ -9,6 +9,16 @@ cwe:
   - CWE-798
 owasp:
   - "A07:2025"
+rationale: |
+  A credential embedded as a string literal is compiled straight into the
+  binary's data section in plaintext, so an attacker who obtains the
+  compiled artifact — a container image, a deployed binary, a CI build
+  output — can recover it with a plain `strings` scan or disassembler, no
+  source-repository or build-system access required. Once extracted, the
+  attacker gains standing access to whatever the credential protects (a
+  database, an internal API, a third-party service) that persists until the
+  secret is rotated, independent of any other vulnerability in the running
+  service.
 description: |
   A variable named like a credential (password, secret, api key, token) is
   assigned a string literal directly in source code, rather than loaded from

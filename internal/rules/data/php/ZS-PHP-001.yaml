@@ -9,6 +9,16 @@ cwe:
   - CWE-78
 owasp:
   - "A05:2025"
+rationale: |
+  system() always runs its argument through the shell (equivalent to
+  Python's os.system() and unlike Go's exec.Command(), which executes the
+  target binary directly), so any shell metacharacters (;, |, &&,
+  backticks, $()) present in attacker-controlled data let an attacker chain
+  or substitute arbitrary commands rather than supply a single argument.
+  This is exploitable wherever a filename, hostname, or other
+  request-derived value from $_GET/$_POST/$_REQUEST is concatenated into
+  the command string, typically in image-processing, network-diagnostic, or
+  file-conversion endpoints that shell out to an external utility.
 description: |
   system() executes an OS command, flagged when an argument traces back to
   an untrusted source (intra-procedural taint tracking).

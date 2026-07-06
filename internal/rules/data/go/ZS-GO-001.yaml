@@ -9,6 +9,19 @@ cwe:
   - CWE-78
 owasp:
   - "A05:2025"
+rationale: |
+  exec.Command() forks and executes the named program directly via the OS,
+  without an intervening shell, so a tainted value used only as an argument
+  is passed to the target program's argv rather than reinterpreted for
+  shell metacharacters (;, |, &&) the way Python's os.system() or PHP's
+  system() would. The real exploitation path is when the attacker controls
+  the program name itself — letting them execute an arbitrary binary — or
+  when the tainted argument reaches a program that has its own dangerous
+  flags or that is itself a shell (e.g. exec.Command("sh", "-c", tainted)),
+  reintroducing full shell injection. This is exploitable wherever a
+  filename, URL, or other request-derived value is built into the command
+  or argument list for a shelled-out conversion, extraction, or admin
+  utility.
 description: |
   exec.Command() runs an external OS command, flagged when an argument
   traces back to an untrusted source (intra-procedural taint tracking).

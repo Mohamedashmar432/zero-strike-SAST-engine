@@ -9,6 +9,20 @@ cwe:
   - CWE-78
 owasp:
   - "A05:2025"
+rationale: |
+  Process.Start() launches an OS process using attacker-influenced data as
+  the executable path or argument string, letting an attacker redirect
+  execution to an arbitrary binary or smuggle extra arguments into whatever
+  program actually runs (cmd.exe, powershell.exe, or a scripting
+  interpreter). Unlike Python's os.system() or PHP's system(), which always
+  route the string through /bin/sh, .NET's default UseShellExecute=false
+  means no shell reinterprets metacharacters — but that only narrows the
+  blast radius, since a tainted filename or argument can still hijack which
+  program runs or what it is told to do. This is exploitable wherever a
+  filename, hostname, or other request-derived value is concatenated into
+  the process name or argument list, typically in file-conversion,
+  report-generation, or admin-tooling endpoints that shell out to an
+  external utility.
 description: |
   Process.Start() executes an OS command, flagged when the command string
   traces back to an untrusted source (intra-procedural taint tracking).

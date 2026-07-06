@@ -9,10 +9,20 @@ cwe:
   - CWE-22
 owasp:
   - "A01:2025"
+rationale: |
+  os.Open() opens whatever path it is given relative to the process's
+  working directory, so attacker-controlled path segments containing ../
+  sequences (or an absolute path, depending on how the path is joined) let
+  an attacker escape the intended directory and read arbitrary files the
+  process's OS-level permissions allow — configuration files, other users'
+  data, or source code. This is exploitable wherever a filename or path
+  segment from a request (a download endpoint, template name, or
+  user-uploaded file reference) is joined into the path passed to
+  os.Open() without first resolving and confining it to an allowed base
+  directory.
 description: |
   os.Open() is called with a path that traces back to an untrusted source
-  (intra-procedural taint tracking), which can allow reading files outside
-  the intended directory.
+  (intra-procedural taint tracking).
 message: "os.Open() called with a tainted path — validate and confine the path before use"
 references:
   - https://owasp.org/www-community/attacks/Path_Traversal

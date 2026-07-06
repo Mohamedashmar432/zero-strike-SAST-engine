@@ -9,10 +9,20 @@ cwe:
   - CWE-79
 owasp:
   - "A05:2025"
+rationale: |
+  echo prints its argument directly into the HTTP response body, so
+  attacker-controlled data containing <script> tags or event handlers is
+  parsed and executed by the victim's browser in the page's origin unless
+  it passes through htmlspecialchars()/htmlentities() first. This is
+  exploitable wherever a query-string value, form field, or other
+  superglobal-derived value ($_GET, $_POST, $_REQUEST) is echoed back into
+  a response — the most common reflected-XSS pattern in raw PHP templates
+  that mix logic and markup without a templating engine's automatic
+  escaping.
 description: |
   echo outputs a value that traces back to an untrusted source (intra-
   procedural taint tracking) without passing through htmlspecialchars()/
-  htmlentities() first, allowing stored/reflected XSS.
+  htmlentities() first.
 message: "echo of a tainted value detected — escape output with htmlspecialchars() before printing"
 references:
   - https://owasp.org/www-community/attacks/xss/

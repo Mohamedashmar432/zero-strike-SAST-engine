@@ -9,6 +9,17 @@ cwe:
   - CWE-798
 owasp:
   - "A07:2025"
+rationale: |
+  A credential embedded as a string literal ships in the PHP source file
+  itself, which is typically deployed to the server unmodified rather than
+  compiled, so an attacker who can read the deployed files — through a
+  misconfigured web server that serves .php source instead of executing it,
+  a leaked backup/.bak file, a shared-hosting neighbor, or a source-control/
+  CI leak — can recover the literal directly. Once extracted, the attacker
+  gains standing access to whatever the credential protects (a database, an
+  internal API, a third-party service) that persists until the secret is
+  rotated, independent of any other vulnerability in the running
+  application.
 description: |
   A variable named like a credential (password, secret, api key, token) is
   assigned a string literal directly in source code, rather than loaded from

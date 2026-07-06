@@ -9,10 +9,19 @@ cwe:
   - CWE-327
 owasp:
   - "A04:2025"
+rationale: |
+  MD5 is cryptographically broken: collisions can be forged in seconds, and
+  as a hash for passwords it is fast enough for commodity GPUs to test
+  billions of guesses per second, so using MD5.Create() for password
+  storage, digital signatures, or file-integrity checks lets an attacker
+  forge colliding content or recover plaintext passwords from a leaked hash
+  database. This is exploitable anywhere the hash is used as a security
+  control rather than a checksum — password tables, signed tokens, or
+  integrity checks on downloaded files — and the risk is identical to Go's
+  md5.New() (ZS-GO-004): the weakness is in the algorithm, not the API
+  surface around it.
 description: |
-  MD5 is cryptographically broken and should not be used for
-  security-sensitive operations such as password hashing, digital signatures,
-  or data integrity checks.
+  Detects calls to MD5.Create().
 message: "Weak hash algorithm MD5 detected — use SHA-256 or stronger"
 references:
   - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
