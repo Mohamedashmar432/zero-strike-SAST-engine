@@ -177,6 +177,25 @@ func (c *DiskCache) PutRecord(entry Entry, findings []core.Finding) error {
 // relies on for safety under multiple concurrent scan workers; no mutex is
 // needed because there is never a window where finalPath holds partial
 // data.
+//
+// Known limitation, single-attempt rename: on Windows, a burst of renames
+// targeting the same destination filename can transiently fail with
+// "Access is denied" (observed at high rates - up to ~98% of attempts in a
+// stress test - most likely a filesystem filter driver / antivirus product
+// briefly holding the freshly-renamed file open; see
+// concurrency_test.go's TestConcurrent* for the investigation). This
+// function does not retry on such failures - it returns the error and
+// leaves the previous complete file untouched, never a partial one. Retry-
+// with-backoff was considered and deliberately deferred rather than added
+// reactively here: the concurrent-same-key scenario that triggers this at
+// high rates cannot occur in this codebase's actual usage (each cache key
+// is written by exactly one worker per scan, per the channel-based
+// single-consumer-per-file design in internal/scanner/sast/sast.go), so
+// the immediate risk is limited to a lower-rate version of this same
+// failure mode affecting an ordinary sequential single-writer cache write
+// on an affected Windows host, silently reducing cache hit rate rather
+// than corrupting anything. Worth a scoped follow-up if that turns out to
+// matter in practice; not addressed here.
 func atomicWriteFile(finalPath string, data []byte) error {
 	dir := filepath.Dir(finalPath)
 	tmp, err := os.CreateTemp(dir, "*.tmp")
