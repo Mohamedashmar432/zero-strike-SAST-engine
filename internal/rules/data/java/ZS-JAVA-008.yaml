@@ -16,8 +16,17 @@ description: |
   source code. Short, hardcoded signing secrets are both guessable/
   brute-forceable and impossible to rotate without a code change. This is
   narrower than ZS-JAVA-005 (any hardcoded credential): it specifically
-  targets signing-key material and flags only short literals (≤16 chars),
-  which are the ones realistically brute-forceable against HMAC.
+  targets signing-key material and flags only short literals (≤16 chars —
+  at most 128 bits of keyspace even in the best case, and far less for a
+  human-typed string), which are the ones realistically brute-forceable
+  against HMAC.
+
+  Known limitation: matching is name-based, not value-based, so a short
+  literal assigned to a variable that merely LOOKS like a signing-key name
+  (e.g. a config-key NAME such as jwtSecretEnvVarName = "JWT_SECRET") also
+  triggers this rule. ZS-JAVA-005 has the same class of limitation with no
+  length bound at all; this is an accepted precision/recall tradeoff for a
+  name-pattern-based rule, not a regression introduced here.
 message: "Short, hardcoded JWT/HMAC signing secret detected — use a long, randomly generated secret loaded from configuration or a secrets manager"
 references:
   - https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html
