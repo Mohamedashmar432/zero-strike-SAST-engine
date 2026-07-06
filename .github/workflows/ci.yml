@@ -248,3 +248,68 @@ jobs:
           path: |
             benchmark-report.json
             accuracy-report.md
+
+  # Runs only on the CGo leg, same reasoning as accuracy: no-CGo builds
+  # register no parsers, so a "cold vs warm" timing comparison would only
+  # be measuring the non-SAST scanners and wouldn't reflect the AST/finding
+  # cache's actual value. Informational only — logs timing, never fails the
+  # job on the measured ratio. Hard timing thresholds on a shared CI runner
+  # are noisy (cold-cache-at-the-OS-level, noisy neighbors), so this is a
+  # one-time measurement written to the job log and an artifact, not a
+  # permanent regression gate.
+  cache-perf:
+    name: cache-perf
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    env:
+      CGO_ENABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install zerostrike
+        run: go install ./cmd/zerostrike/
+
+      # Reuses the same target scan-e2e already checks out, rather than
+      # adding a new external dependency just for timing.
+      - name: Checkout DVWA
+        uses: actions/checkout@v4
+        with:
+          repository: digininja/DVWA
+          ref: master
+          path: targets/dvwa
+
+      - name: Cold scan (no cache yet)
+        shell: bash
+        run: |
+          start=$(date +%s%N)
+          zerostrike scan --enable-sca --enable-secrets --format json --output /dev/null targets/dvwa || [ $? -eq 1 ]
+          end=$(date +%s%N)
+          echo "COLD_MS=$(( (end - start) / 1000000 ))" >> "$GITHUB_ENV"
+
+      - name: Warm scan (cache populated by the cold run)
+        shell: bash
+        run: |
+          start=$(date +%s%N)
+          zerostrike scan --enable-sca --enable-secrets --format json --output /dev/null targets/dvwa || [ $? -eq 1 ]
+          end=$(date +%s%N)
+          echo "WARM_MS=$(( (end - start) / 1000000 ))" >> "$GITHUB_ENV"
+
+      - name: Report timing
+        shell: bash
+        run: |
+          echo "cold=${COLD_MS}ms warm=${WARM_MS}ms" | tee cache-perf-report.txt
+          echo "### Cache performance (informational, not gating)" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Cold scan: ${COLD_MS}ms" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Warm scan: ${WARM_MS}ms" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload cache-perf report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cache-perf-report
+          path: cache-perf-report.txt
