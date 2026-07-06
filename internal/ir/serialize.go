@@ -2,6 +2,14 @@ package ir
 
 import "github.com/zerostrike/scanner/internal/core"
 
+// SchemaVersion is the version number of the SerialNode flat-serialization
+// format. Bump it by hand whenever SerialNode's shape changes in a way that
+// would break reading previously cached data (e.g. a field is added,
+// removed, renamed, or its meaning changes) - the AST cache stores this
+// value alongside cached IR and invalidates on a mismatch rather than risk
+// deserializing stale/incompatible IR.
+const SchemaVersion = 1
+
 // SerialNode is the flat, JSON-serializable form of one IRNode, used by the
 // AST cache to persist parsed IR across scan runs. Unlike IRNode, it has no
 // Parent pointer (rebuilt on load) and references children by index into
