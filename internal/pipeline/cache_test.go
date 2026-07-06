@@ -174,7 +174,10 @@ func TestPipelineNew_CacheOpenFailure_DegradesGracefully(t *testing.T) {
 		t.Fatalf("expected pipeline.New to degrade gracefully on a cache-open failure, got error: %v", err)
 	}
 
-	if _, statErr := os.Stat(filepath.Join(root, ".zerostrike", "cache")); !os.IsNotExist(statErr) {
-		t.Errorf("expected no cache dir to be created when cache.Open fails, stat err=%v", statErr)
+	// os.IsNotExist only matches ENOENT. Here .zerostrike is a file, not a
+	// dir, so stat(".zerostrike/cache") returns ENOTDIR on Linux (though
+	// ENOENT on Windows) - either way, the path isn't a real directory.
+	if _, statErr := os.Stat(filepath.Join(root, ".zerostrike", "cache")); statErr == nil {
+		t.Errorf("expected no cache dir to be created when cache.Open fails, stat succeeded")
 	}
 }
