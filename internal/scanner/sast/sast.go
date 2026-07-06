@@ -123,6 +123,13 @@ func (s *SASTScanner) processFile(ctx context.Context, entry walker.FileEntry) (
 	// cached, not diagnostics. This is a deliberate, accepted simplification
 	// (diagnostics are advisory, not correctness-critical), not an
 	// oversight.
+	//
+	// NOTE: cached findings also carry Finding.ID from the run that produced
+	// them, not a fresh uuid.New().String() for this run - deliberately, so
+	// this cache doesn't need to rewrite every finding just to mint new IDs.
+	// This is safe because ID is not this scanner's stable cross-run
+	// identity: Fingerprint is (see core.Finding's doc comment), and nothing
+	// downstream dedups/suppresses by ID.
 	if e, ok := s.findingCache.Get(entry.Path); ok && e.SHA256 == contentHash {
 		if cached, err := s.findingCache.GetFindings(entry.Path); err == nil {
 			return cached, nil

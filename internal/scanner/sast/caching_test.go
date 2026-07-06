@@ -14,6 +14,15 @@ import (
 // environments/CI where sast.go (cgo-only, links tree-sitter parsers) can't
 // even be compiled, let alone let us construct a real SASTScanner and drive
 // processFile end-to-end.
+//
+// TODO(cgo-capable CI, once a real cache.FindingCache/cache.ASTCache is
+// wired in by the pipeline-level task): add an integration test in
+// sast.go's own build (cgo-tagged) that runs processFile twice against the
+// same real file with a real DiskCache/DiskASTCache — cold, then warm — and
+// asserts identical []core.Finding on both runs. This is the one property
+// (hit-path control flow, and that analysis behaves identically on a
+// cache-rebuilt tree vs. a freshly-parsed one) that cannot be verified in a
+// no-CGo environment and is currently only verified by code review.
 
 func TestSha256Hex(t *testing.T) {
 	data := []byte("package main\n")

@@ -75,6 +75,16 @@ func FlattenIR(file *IRFile) []SerialNode {
 // on restoreAttrs below, so callers see the exact same concrete types the
 // original parser builders produced, not JSON's default untyped-map/
 // float64/[]interface{} shapes.
+//
+// The rebuilt tree is safe to feed straight into analysis/matching in place
+// of a freshly-parsed one: NodeID is not read anywhere in
+// internal/analyzer, internal/analyzer/taint, internal/symboltable, or
+// internal/engine (confirmed by grep — all traversal there is structural,
+// over Kind/Text/Children/Parent/Attrs, not keyed by NodeID or *IRNode
+// pointer identity), and this function produces a fully self-consistent
+// fresh tree (new *IRNode values, Parent pointers correctly rewired, Attrs
+// copied and type-restored). A cache-hit tree and a freshly-parsed tree are
+// structurally indistinguishable to every downstream consumer.
 func RebuildIR(nodes []SerialNode, lang core.Language, path string) *IRFile {
 	if len(nodes) == 0 {
 		return nil
