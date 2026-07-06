@@ -63,25 +63,36 @@ type Evidence struct {
 	EndLine   int
 }
 
+// TaintContext describes the tainted-data flow that produced a finding,
+// when the finding depended on taint tracking (see internal/analyzer/taint).
+type TaintContext struct {
+	SourceVar  string // tainted identifier referenced at the sink, e.g. "q"
+	SourceExpr string // the RHS/expression snippet that introduced the taint, e.g. "request.args.get('q')"
+	Sink       string // sink callee or LHS attribute, e.g. "os.system" or "innerHTML"
+}
+
 // Finding represents a single security issue detected in source code.
 type Finding struct {
-	ID          string
-	RuleID      string
-	RuleName    string
-	Category    string
-	Severity    Severity
-	Confidence  Confidence
-	Message     string
-	Location    Location
-	Language    Language
-	Evidence    []Evidence
-	CWE         []string
-	OWASP       []string
-	References  []string
-	Metadata    map[string]string
-	Fingerprint string // stable cross-run identity: hash(ruleID + enclosingSymbol + normalizedSnippet)
-	Kind        FindingKind
-	Secret      *SecretFinding     // non-nil iff Kind == FindingKindSecret
-	Dependency  *DependencyFinding // non-nil iff Kind == FindingKindSCA
-	Config      *ConfigFinding     // non-nil iff Kind == FindingKindConfig
+	ID           string
+	RuleID       string
+	RuleName     string
+	Category     string
+	Severity     Severity
+	Confidence   Confidence
+	Message      string
+	Location     Location
+	Language     Language
+	Evidence     []Evidence
+	CWE          []string
+	OWASP        []string
+	References   []string
+	Metadata     map[string]string
+	Fingerprint  string // stable cross-run identity: hash(ruleID + enclosingSymbol + normalizedSnippet)
+	Kind         FindingKind
+	Secret       *SecretFinding     // non-nil iff Kind == FindingKindSecret
+	Dependency   *DependencyFinding // non-nil iff Kind == FindingKindSCA
+	Config       *ConfigFinding     // non-nil iff Kind == FindingKindConfig
+	Rationale    string             // reviewer-facing "why this is risky" explanation, from rule YAML
+	Remediation  string             // concrete fix guidance, from the rule's FixSuggestion
+	TaintContext *TaintContext      // non-nil iff the finding depended on tainted-data tracking
 }

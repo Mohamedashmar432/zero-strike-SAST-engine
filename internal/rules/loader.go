@@ -29,6 +29,7 @@ type ruleYAML struct {
 	References    []string  `yaml:"references"`
 	Match         matchYAML `yaml:"match"`
 	FixSuggestion string    `yaml:"fix_suggestion"`
+	Rationale     string    `yaml:"rationale"`
 }
 
 type matchYAML struct {
@@ -139,6 +140,7 @@ func (l *defaultLoader) parseYAML(source string, data []byte) ([]*Rule, error) {
 		OWASP:         ry.OWASP,
 		References:    ry.References,
 		FixSuggestion: ry.FixSuggestion,
+		Rationale:     ry.Rationale,
 		Match: MatchPattern{
 			Kind:          ry.Match.Kind,
 			Callee:        ry.Match.Callee,

@@ -1,6 +1,8 @@
 package rules_test
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/zerostrike/scanner/internal/rules"
@@ -71,5 +73,44 @@ func TestLoader_RuleFieldsPopulated(t *testing.T) {
 		if r.Match.Kind == "" {
 			t.Errorf("rule %s has empty Match.Kind", r.ID)
 		}
+	}
+}
+
+func TestLoader_LoadsRationale(t *testing.T) {
+	dir := t.TempDir()
+	yamlPath := filepath.Join(dir, "ZS-TEST-001.yaml")
+	content := `id: ZS-TEST-001
+name: Test Rule
+version: "1.0.0"
+language: python
+category: dangerous-functions
+severity: high
+confidence: high
+description: |
+  Test description.
+message: "Test message"
+match:
+  kind: call
+  callee: eval
+fix_suggestion: "Use something safer."
+rationale: |
+  Calling eval() on untrusted input lets an attacker execute arbitrary
+  code in the context of the application.
+`
+	if err := os.WriteFile(yamlPath, []byte(content), 0o644); err != nil {
+		t.Fatalf("writing test fixture: %v", err)
+	}
+
+	loader := rules.NewLoader()
+	loaded, err := loader.Load(yamlPath)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if len(loaded) != 1 {
+		t.Fatalf("expected 1 rule, got %d", len(loaded))
+	}
+	want := "Calling eval() on untrusted input lets an attacker execute arbitrary\ncode in the context of the application.\n"
+	if loaded[0].Rationale != want {
+		t.Errorf("Rationale = %q, want %q", loaded[0].Rationale, want)
 	}
 }

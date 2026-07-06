@@ -64,6 +64,7 @@ type Rule struct {
 	References    []string
 	Match         MatchPattern
 	FixSuggestion string
+	Rationale     string
 }
 
 // Registry provides rule lookup by language and category.
