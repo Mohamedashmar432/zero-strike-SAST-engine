@@ -3,6 +3,7 @@ package sarif_test
 import (
 	"bytes"
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/zerostrike/scanner/internal/core"
@@ -117,6 +118,148 @@ func TestSARIF_Render(t *testing.T) {
 	}
 }
 
+func TestSARIF_Render_EnrichedFields(t *testing.T) {
+	rep := &report.Report{
+		ScannerVersion: "v0.5.0",
+		RootPath:       "/project",
+		Findings: []core.Finding{
+			{
+				RuleID:      "ZS-PY-001",
+				RuleName:    "eval-injection",
+				Message:     "Use of eval",
+				Severity:    core.SeverityHigh,
+				Location:    core.Location{File: "/project/src/main.py", StartLine: 10},
+				Rationale:   "eval() with untrusted input allows arbitrary code execution.",
+				Remediation: "Use ast.literal_eval() instead of eval() when parsing user data.",
+				References:  []string{"https://owasp.org/Top10/2025/A05_2025-Injection/", "https://example.com/other"},
+				CWE:         []string{"CWE-95"},
+				OWASP:       []string{"A05:2025"},
+				Fingerprint: "abc123fingerprint",
+			},
+			{
+				RuleID:   "ZS-PY-002",
+				RuleName: "pickle-loads",
+				Message:  "Unsafe deserialization",
+				Severity: core.SeverityMedium,
+				Location: core.Location{File: "/project/src/utils.py", StartLine: 5},
+				// All enrichment fields left empty/zero.
+			},
+		},
+	}
+
+	var buf bytes.Buffer
+	if err := sarif.New().Render(rep, &buf); err != nil {
+		t.Fatalf("Render: %v", err)
+	}
+	raw := buf.String()
+
+	var doc struct {
+		Runs []struct {
+			Tool struct {
+				Driver struct {
+					Rules []struct {
+						ID              string `json:"id"`
+						FullDescription *struct {
+							Text string `json:"text"`
+						} `json:"fullDescription"`
+						Help *struct {
+							Text string `json:"text"`
+						} `json:"help"`
+						HelpURI    string `json:"helpUri"`
+						Properties *struct {
+							Tags []string `json:"tags"`
+						} `json:"properties"`
+					} `json:"rules"`
+				} `json:"driver"`
+			} `json:"tool"`
+			Results []struct {
+				RuleID              string            `json:"ruleId"`
+				PartialFingerprints map[string]string `json:"partialFingerprints"`
+			} `json:"results"`
+		} `json:"runs"`
+	}
+	if err := json.Unmarshal(buf.Bytes(), &doc); err != nil {
+		t.Fatalf("unmarshal: %v\nraw: %s", err, raw)
+	}
+
+	run := doc.Runs[0]
+	if len(run.Tool.Driver.Rules) != 2 {
+		t.Fatalf("rules len = %d, want 2", len(run.Tool.Driver.Rules))
+	}
+
+	enriched := run.Tool.Driver.Rules[0]
+	if enriched.ID != "ZS-PY-001" {
+		t.Fatalf("rules[0].id = %q, want ZS-PY-001", enriched.ID)
+	}
+	if enriched.FullDescription == nil || enriched.FullDescription.Text != "eval() with untrusted input allows arbitrary code execution." {
+		t.Errorf("fullDescription.text = %+v, want rationale text", enriched.FullDescription)
+	}
+	wantHelp := "eval() with untrusted input allows arbitrary code execution.\n\nRemediation: Use ast.literal_eval() instead of eval() when parsing user data."
+	if enriched.Help == nil || enriched.Help.Text != wantHelp {
+		t.Errorf("help.text = %+v, want %q", enriched.Help, wantHelp)
+	}
+	if enriched.HelpURI != "https://owasp.org/Top10/2025/A05_2025-Injection/" {
+		t.Errorf("helpUri = %q, want first reference", enriched.HelpURI)
+	}
+	if enriched.Properties == nil {
+		t.Fatal("properties is nil, want tags")
+	}
+	wantTags := []string{"external/cwe/cwe-95", "owasp:a05-2025"}
+	if len(enriched.Properties.Tags) != len(wantTags) {
+		t.Fatalf("tags = %v, want %v", enriched.Properties.Tags, wantTags)
+	}
+	for i, tag := range wantTags {
+		if enriched.Properties.Tags[i] != tag {
+			t.Errorf("tags[%d] = %q, want %q", i, enriched.Properties.Tags[i], tag)
+		}
+	}
+
+	// The empty-fields finding's rule must have all enrichment fields omitted.
+	plain := run.Tool.Driver.Rules[1]
+	if plain.ID != "ZS-PY-002" {
+		t.Fatalf("rules[1].id = %q, want ZS-PY-002", plain.ID)
+	}
+	if plain.FullDescription != nil {
+		t.Errorf("rules[1].fullDescription = %+v, want nil", plain.FullDescription)
+	}
+	if plain.Help != nil {
+		t.Errorf("rules[1].help = %+v, want nil", plain.Help)
+	}
+	if plain.HelpURI != "" {
+		t.Errorf("rules[1].helpUri = %q, want empty", plain.HelpURI)
+	}
+	if plain.Properties != nil {
+		t.Errorf("rules[1].properties = %+v, want nil", plain.Properties)
+	}
+
+	if run.Results[0].RuleID != "ZS-PY-001" {
+		t.Fatalf("results[0].ruleId = %q, want ZS-PY-001", run.Results[0].RuleID)
+	}
+	if got := run.Results[0].PartialFingerprints["zerostrikeFingerprint/v1"]; got != "abc123fingerprint" {
+		t.Errorf("partialFingerprints[zerostrikeFingerprint/v1] = %q, want abc123fingerprint", got)
+	}
+	if run.Results[1].PartialFingerprints != nil {
+		t.Errorf("results[1].partialFingerprints = %v, want nil (no fingerprint set)", run.Results[1].PartialFingerprints)
+	}
+
+	// Raw-string checks that the omitted keys are truly absent, not present-but-null/empty.
+	for _, key := range []string{`"partialFingerprints"`} {
+		// Only the enriched result (index 0) should carry this key; ensure it
+		// doesn't leak into the second result's object. We check by counting
+		// occurrences: exactly one, for the enriched finding.
+		count := strings.Count(raw, key)
+		if count != 1 {
+			t.Errorf("raw JSON contains %q %d times, want exactly 1 (only on enriched result)", key, count)
+		}
+	}
+	for _, key := range []string{`"fullDescription"`, `"help"`, `"helpUri"`, `"properties"`} {
+		count := strings.Count(raw, key)
+		if count != 1 {
+			t.Errorf("raw JSON contains %q %d times, want exactly 1 (only on enriched rule)", key, count)
+		}
+	}
+}
+
 func TestSARIF_SeverityLevels(t *testing.T) {
 	cases := []struct {
 		sev   core.Severity
@@ -138,7 +281,9 @@ func TestSARIF_SeverityLevels(t *testing.T) {
 		sarif.New().Render(rep, &buf) //nolint:errcheck
 		var doc struct {
 			Runs []struct {
-				Results []struct{ Level string `json:"level"` } `json:"results"`
+				Results []struct {
+					Level string `json:"level"`
+				} `json:"results"`
 			} `json:"runs"`
 		}
 		json.Unmarshal(buf.Bytes(), &doc) //nolint:errcheck

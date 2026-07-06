@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io"
 	"path/filepath"
+	"strings"
 
 	"github.com/zerostrike/scanner/internal/core"
 	"github.com/zerostrike/scanner/internal/report"
@@ -40,9 +41,19 @@ type sarifDriver struct {
 }
 
 type sarifRule struct {
-	ID               string      `json:"id"`
-	Name             string      `json:"name,omitempty"`
-	ShortDescription sarifMsg    `json:"shortDescription"`
+	ID               string           `json:"id"`
+	Name             string           `json:"name,omitempty"`
+	ShortDescription sarifMsg         `json:"shortDescription"`
+	FullDescription  *sarifMsg        `json:"fullDescription,omitempty"`
+	Help             *sarifMsg        `json:"help,omitempty"`
+	HelpURI          string           `json:"helpUri,omitempty"`
+	Properties       *sarifProperties `json:"properties,omitempty"`
+}
+
+// sarifProperties carries GitHub code-scanning convention properties, e.g.
+// CWE/OWASP tags surfaced from a rule's first-seen finding.
+type sarifProperties struct {
+	Tags []string `json:"tags,omitempty"`
 }
 
 type sarifMsg struct {
@@ -50,11 +61,12 @@ type sarifMsg struct {
 }
 
 type sarifResult struct {
-	RuleID    string          `json:"ruleId"`
-	RuleIndex int             `json:"ruleIndex"`
-	Level     string          `json:"level"`
-	Message   sarifMsg        `json:"message"`
-	Locations []sarifLocation `json:"locations"`
+	RuleID              string            `json:"ruleId"`
+	RuleIndex           int               `json:"ruleIndex"`
+	Level               string            `json:"level"`
+	Message             sarifMsg          `json:"message"`
+	Locations           []sarifLocation   `json:"locations"`
+	PartialFingerprints map[string]string `json:"partialFingerprints,omitempty"`
 }
 
 type sarifLocation struct {
@@ -83,11 +95,42 @@ func (r *sarifReporter) Render(rep *report.Report, dest io.Writer) error {
 	for _, f := range rep.Findings {
 		if _, ok := ruleIndex[f.RuleID]; !ok {
 			ruleIndex[f.RuleID] = len(rules)
-			rules = append(rules, sarifRule{
+
+			rule := sarifRule{
 				ID:               f.RuleID,
 				Name:             f.RuleName,
 				ShortDescription: sarifMsg{Text: f.RuleName},
-			})
+			}
+
+			if f.Rationale != "" {
+				rule.FullDescription = &sarifMsg{Text: f.Rationale}
+			}
+
+			switch {
+			case f.Rationale != "" && f.Remediation != "":
+				rule.Help = &sarifMsg{Text: f.Rationale + "\n\nRemediation: " + f.Remediation}
+			case f.Rationale != "":
+				rule.Help = &sarifMsg{Text: f.Rationale}
+			case f.Remediation != "":
+				rule.Help = &sarifMsg{Text: f.Remediation}
+			}
+
+			if len(f.References) > 0 {
+				rule.HelpURI = f.References[0]
+			}
+
+			var tags []string
+			for _, c := range f.CWE {
+				tags = append(tags, cweTag(c))
+			}
+			for _, o := range f.OWASP {
+				tags = append(tags, owaspTag(o))
+			}
+			if len(tags) > 0 {
+				rule.Properties = &sarifProperties{Tags: tags}
+			}
+
+			rules = append(rules, rule)
 		}
 	}
 	if rules == nil {
@@ -101,6 +144,12 @@ func (r *sarifReporter) Render(rep *report.Report, dest io.Writer) error {
 			line = 1
 		}
 		col := f.Location.StartCol // omitted from JSON when 0 via omitempty
+
+		var fingerprints map[string]string
+		if f.Fingerprint != "" {
+			fingerprints = map[string]string{"zerostrikeFingerprint/v1": f.Fingerprint}
+		}
+
 		results = append(results, sarifResult{
 			RuleID:    f.RuleID,
 			RuleIndex: ruleIndex[f.RuleID],
@@ -115,6 +164,7 @@ func (r *sarifReporter) Render(rep *report.Report, dest io.Writer) error {
 					Region: sarifRegion{StartLine: line, StartColumn: col},
 				},
 			}},
+			PartialFingerprints: fingerprints,
 		})
 	}
 
@@ -146,6 +196,18 @@ func severityLevel(s core.Severity) string {
 	default:
 		return "note"
 	}
+}
+
+// cweTag formats a rule YAML CWE entry (e.g. "CWE-611") as a GitHub
+// code-scanning tag (e.g. "external/cwe/cwe-611").
+func cweTag(id string) string {
+	return "external/cwe/" + strings.ToLower(id)
+}
+
+// owaspTag formats a rule YAML OWASP entry (e.g. "A05:2025") as a GitHub
+// code-scanning tag (e.g. "owasp:a05-2025").
+func owaspTag(id string) string {
+	return "owasp:" + strings.ReplaceAll(strings.ToLower(id), ":", "-")
 }
 
 // relURI returns a forward-slash relative path from root to file, suitable for a SARIF URI.
