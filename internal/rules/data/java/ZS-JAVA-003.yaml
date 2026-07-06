@@ -9,6 +9,15 @@ cwe:
   - CWE-611
 owasp:
   - "A05:2025"
+rationale: |
+  With external entity processing enabled by default, an attacker who
+  controls XML parsed by DocumentBuilderFactory can declare a DOCTYPE with an
+  external entity that reads local files (e.g. /etc/passwd or application
+  config containing secrets) into the parsed document, makes the server issue
+  outbound requests to attacker-chosen URLs (SSRF), or references an entity
+  that expands recursively to exhaust memory (a "billion laughs" denial of
+  service) — all without needing any other vulnerability, since the payload
+  travels entirely inside the XML input.
 description: |
   DocumentBuilderFactory.newInstance() is vulnerable to XML External Entity
   (XXE) injection by default: external entity and DOCTYPE processing are

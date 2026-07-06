@@ -9,6 +9,17 @@ cwe:
   - CWE-611
 owasp:
   - "A05:2025"
+rationale: |
+  With external entity and DTD processing enabled by default, an attacker
+  who controls XML parsed via XMLInputFactory can declare an external entity
+  that reads local files (e.g. application configuration containing
+  secrets) into the parsed stream, makes the server issue outbound requests
+  to attacker-chosen URLs (SSRF), or references an entity that expands
+  recursively to exhaust memory (a "billion laughs" denial of service) — the
+  same class of impact as ZS-JAVA-003's DOM-parser case, since both APIs
+  share the same underlying entity-resolution behavior. This is exploitable
+  anywhere streamed XML input — a SOAP request body, an uploaded feed, a
+  configuration import — comes from an untrusted source.
 description: |
   XMLInputFactory (the StAX streaming XML API) is vulnerable to XML
   External Entity (XXE) injection by default, the same way

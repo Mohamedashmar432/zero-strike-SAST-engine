@@ -9,6 +9,15 @@ cwe:
   - CWE-22
 owasp:
   - "A01:2025"
+rationale: |
+  When a tainted value reaches new File() unvalidated, an attacker can embed
+  "../" sequences or an absolute path to escape the intended base directory,
+  letting them read arbitrary files (configuration, credentials, other
+  users' data) or, if the File is later written to, overwrite arbitrary
+  files such as application configuration or a web-accessible directory to
+  plant a webshell. This is exploitable wherever the path segment is
+  attacker-influenced: an uploaded filename, a query parameter used to pick
+  a resource, or any other request-derived value.
 description: |
   A java.io.File is constructed with a path that traces back to an untrusted
   source (intra-procedural taint tracking), which can allow reading or

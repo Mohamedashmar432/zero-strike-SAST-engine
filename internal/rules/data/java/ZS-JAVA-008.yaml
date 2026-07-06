@@ -10,16 +10,25 @@ cwe:
   - CWE-798
 owasp:
   - "A04:2025"
+rationale: |
+  A short HMAC/JWT signing secret is within reach of an offline brute-force
+  or dictionary attack against captured tokens using commodity tools like
+  hashcat, and once an attacker recovers it they can forge arbitrary
+  validly-signed tokens — impersonating any user, including administrators,
+  and bypassing authentication and authorization entirely rather than just
+  reading one piece of protected data. Because the secret is hardcoded, it
+  also cannot be rotated without a code change and redeploy, so a single
+  leak (a git history exposure, a decompiled JAR) leaves every token the
+  application has ever issued or will issue forgeable until that redeploy
+  happens.
 description: |
   A variable named like a JWT or HMAC signing key/secret (jwtSecret,
   hmacKey, signingKey, etc.) is assigned a short string literal directly in
-  source code. Short, hardcoded signing secrets are both guessable/
-  brute-forceable and impossible to rotate without a code change. This is
-  narrower than ZS-JAVA-005 (any hardcoded credential): it specifically
-  targets signing-key material and flags only short literals (≤16 chars —
-  at most 128 bits of keyspace even in the best case, and far less for a
-  human-typed string), which are the ones realistically brute-forceable
-  against HMAC.
+  source code. This is narrower than ZS-JAVA-005 (any hardcoded credential):
+  it specifically targets signing-key material and flags only short literals
+  (≤16 chars — at most 128 bits of keyspace even in the best case, and far
+  less for a human-typed string), which are the ones realistically
+  brute-forceable against HMAC.
 
   Known limitation: matching is name-based, not value-based, so a short
   literal assigned to a variable that merely LOOKS like a signing-key name

@@ -9,6 +9,14 @@ cwe:
   - CWE-256
 owasp:
   - "A07:2025"
+rationale: |
+  With NoOpPasswordEncoder wired into the authentication configuration,
+  passwords are stored and compared as plaintext, so an attacker who obtains
+  the user store through any other means — a SQL injection, a leaked
+  database backup, or insider access — reads every user's real password
+  directly with no hash to crack. Because people commonly reuse passwords
+  across sites, this single exposure typically cascades into credential-
+  stuffing takeovers of those users' accounts on unrelated services.
 description: |
   Spring Security's NoOpPasswordEncoder stores and compares passwords in
   plaintext — it exists only for legacy migration/testing and must never be

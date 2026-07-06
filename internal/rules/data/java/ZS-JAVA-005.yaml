@@ -9,6 +9,17 @@ cwe:
   - CWE-798
 owasp:
   - "A07:2025"
+rationale: |
+  A credential embedded as a string literal in source is compiled straight
+  into the .class file's constant pool, and Java bytecode decompiles back to
+  near-original, readable source with widely available tools like CFR,
+  Procyon, or JD-GUI, so an attacker who obtains only the shipped JAR/WAR —
+  with no repository or CI access at all — can recover the literal along
+  with the surrounding logic that uses it. Once extracted, the attacker
+  gains standing access to whatever the credential protects (a database, an
+  internal API, a third-party service) that persists until the secret is
+  rotated, independent of any other vulnerability in the running
+  application.
 description: |
   A variable named like a credential (password, secret, api key, token) is
   assigned a string literal directly in source code, rather than loaded from

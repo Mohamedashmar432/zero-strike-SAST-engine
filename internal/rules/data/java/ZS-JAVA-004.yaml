@@ -9,12 +9,19 @@ cwe:
   - CWE-327
 owasp:
   - "A04:2025"
+rationale: |
+  DES's 56-bit effective key length was brute-forceable with dedicated
+  hardware in the 1990s and is now well within reach of commodity cloud
+  compute in hours, so ciphertext encrypted with a DESKeySpec-derived key
+  offers an attacker who intercepts or obtains it a practical path to
+  recovering the plaintext — unlike a broken hash, a broken cipher directly
+  exposes the protected data itself. This is exploitable anywhere DES is
+  used to protect data at rest or in transit: stored credentials, session
+  tokens, or any payload an attacker can capture and attack offline.
 description: |
-  DESKeySpec constructs a key for the DES cipher, which is cryptographically
-  broken (56-bit effective key length) and should not be used for
-  security-sensitive encryption. This rule flags the constructor itself,
-  matching how ZS-GO-004/ZS-CS-005 flag their languages' equivalent MD5 APIs
-  unconditionally.
+  DESKeySpec constructs a key for the DES cipher. This rule flags the
+  constructor itself, matching how ZS-GO-004/ZS-CS-005 flag their languages'
+  equivalent MD5 APIs unconditionally.
 message: "DESKeySpec usage detected — DES is cryptographically broken; use AES-256 (AESKeySpec via KeyGenerator) instead"
 references:
   - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html

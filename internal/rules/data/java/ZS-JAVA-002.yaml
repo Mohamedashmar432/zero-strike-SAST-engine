@@ -9,11 +9,20 @@ cwe:
   - CWE-502
 owasp:
   - "A08:2025"
+rationale: |
+  ObjectInputStream.readObject() reconstructs arbitrary Java objects from the
+  byte stream and invokes their readObject()/readResolve()/finalize() methods
+  as part of that reconstruction, so an attacker who controls the stream can
+  chain together "gadget" classes already present on the classpath (the
+  well-known ysoserial technique) into remote code execution — no separate
+  injection point is needed beyond feeding in the bytes. This is exploitable
+  anywhere a serialized payload crosses a trust boundary: RMI endpoints,
+  session data, cached objects, or message-queue payloads an attacker can
+  influence.
 description: |
   ObjectInputStream.readObject() deserializes a byte stream into live Java
-  objects with no built-in type allowlist, enabling remote code execution
-  when the stream comes from an untrusted source. This rule flags the call
-  itself, matching how ZS-CS-003 (BinaryFormatter) flags C#'s equivalent
+  objects with no built-in type allowlist. This rule flags the call itself,
+  matching how ZS-CS-003 (BinaryFormatter) flags C#'s equivalent
   unconditionally rather than requiring the input stream's origin to be
   proven tainted.
 
