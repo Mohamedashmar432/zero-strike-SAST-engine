@@ -11,6 +11,7 @@ import (
 	"github.com/zerostrike/scanner/internal/cache"
 	"github.com/zerostrike/scanner/internal/core"
 	"github.com/zerostrike/scanner/internal/findings"
+	"github.com/zerostrike/scanner/internal/ir"
 	"github.com/zerostrike/scanner/internal/langreg"
 	"github.com/zerostrike/scanner/internal/rules"
 	"github.com/zerostrike/scanner/internal/scanner"
@@ -18,6 +19,7 @@ import (
 	"github.com/zerostrike/scanner/internal/scanner/sast"
 	scascan "github.com/zerostrike/scanner/internal/scanner/sca"
 	"github.com/zerostrike/scanner/internal/scanner/secrets"
+	"github.com/zerostrike/scanner/internal/version"
 	"github.com/zerostrike/scanner/internal/walker"
 )
 
@@ -67,12 +69,15 @@ func New(cfg ScanConfig) (*ScanPipeline, error) {
 		}
 	}
 
+	ruleSetHash, err := rules.HashRuleSet(rulesFS(cfg), ruleDirsFor(cfg))
+	if err != nil {
+		return nil, fmt.Errorf("pipeline: hash rule set: %w", err)
+	}
+
+	findingCache, astCache := openCache(cfg, ruleSetHash)
+
 	var scanners []scanner.Scanner
-	// TODO(cache-wiring): these Noop placeholders make the SAST scanner
-	// cache-capable without turning caching on end-to-end. A later task
-	// wires up real cache instances here: cache.Open, rule-set hashing for
-	// invalidation, and --no-cache branching.
-	scanners = append(scanners, sast.New(allRules, cfg.RootPath, cache.NoopCache{}, cache.NoopASTCache{}))
+	scanners = append(scanners, sast.New(allRules, cfg.RootPath, findingCache, astCache))
 	if cfg.EnableSecrets {
 		scanners = append(scanners, secrets.New())
 	}
@@ -113,11 +118,8 @@ func New(cfg ScanConfig) (*ScanPipeline, error) {
 // loadAllRules loads rules from all known language dirs (embedded or custom).
 func loadAllRules(cfg ScanConfig) ([]*rules.Rule, error) {
 	loader := rules.NewLoader(rulesFS(cfg))
-	if cfg.RulesDir != "" {
-		return loader.LoadDir(".")
-	}
 	var all []*rules.Rule
-	for _, dir := range rules.RuleDirs {
+	for _, dir := range ruleDirsFor(cfg) {
 		rs, err := loader.LoadDir(dir)
 		if err != nil {
 			return nil, fmt.Errorf("load rules from %s: %w", dir, err)
@@ -133,6 +135,41 @@ func rulesFS(cfg ScanConfig) fs.FS {
 		return os.DirFS(cfg.RulesDir)
 	}
 	return rules.EmbeddedFS
+}
+
+// ruleDirsFor returns the directories HashRuleSet/loadAllRules should read,
+// matching whichever rule source (embedded or external --rules) is active.
+func ruleDirsFor(cfg ScanConfig) []string {
+	if cfg.RulesDir != "" {
+		return []string{"."}
+	}
+	return rules.RuleDirs
+}
+
+// openCache opens the on-disk cache under <cfg.RootPath>/.zerostrike/cache,
+// or returns Noop implementations if caching is disabled (--no-cache) or if
+// opening the real cache fails for any reason (e.g. a read-only or
+// unwritable RootPath). A cache-open failure must never fail pipeline
+// construction - caching is strictly a performance optimization, matching
+// the same principle already applied to cache reads/writes inside the SAST
+// scanner (see internal/scanner/sast/sast.go): a scan must always be able
+// to proceed without a working cache, just slower.
+func openCache(cfg ScanConfig, ruleSetHash string) (cache.FindingCache, cache.ASTCache) {
+	if cfg.NoCache {
+		return cache.NoopCache{}, cache.NoopASTCache{}
+	}
+
+	cacheRoot := filepath.Join(cfg.RootPath, ".zerostrike", "cache")
+	mgr, err := cache.Open(cacheRoot, cache.Meta{
+		FormatVersion:   cache.FormatVersion,
+		EngineVersion:   version.Version,
+		RuleSetHash:     ruleSetHash,
+		IRSchemaVersion: ir.SchemaVersion,
+	})
+	if err != nil {
+		return cache.NoopCache{}, cache.NoopASTCache{}
+	}
+	return mgr.Findings, mgr.AST
 }
 
 // Run executes the scan and returns results.
