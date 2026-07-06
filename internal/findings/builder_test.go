@@ -150,3 +150,103 @@ func TestBuildFinding_RationaleAndRemediation(t *testing.T) {
 		}
 	})
 }
+
+// TestBuildFinding_TaintContext verifies that Finding.TaintContext is
+// populated with the source variable, source expression (from
+// AnalysisResult.TaintReasons), and sink (rule callee or assignment LHS)
+// when MatchResult.TaintedVar is non-empty, and stays nil otherwise.
+func TestBuildFinding_TaintContext(t *testing.T) {
+	irRoot := &ir.IRNode{Kind: ir.NodeKindModule, Location: core.Location{StartLine: 1, EndLine: 20}}
+	irFile := &ir.IRFile{Language: core.LangPython, Path: "test.py", Root: irRoot}
+	syms := symboltable.NewBuilder().Build(irFile)
+
+	t.Run("taint-gated call sink", func(t *testing.T) {
+		mc := &engine.MatchContext{
+			File: &analyzer.AnalysisResult{
+				IR:      irFile,
+				Symbols: syms,
+				TaintReasons: map[string]string{
+					"query": "request.args.get('id')",
+				},
+			},
+		}
+		rule := &rules.Rule{
+			ID:         "ZS-PY-003",
+			Name:       "sql injection",
+			Severity:   core.SeverityHigh,
+			Confidence: core.ConfidenceHigh,
+			Match:      rules.MatchPattern{Kind: string(ir.NodeKindCall), Callee: "cursor.execute"},
+		}
+		node := &ir.IRNode{
+			Kind:     ir.NodeKindCall,
+			Text:     "cursor.execute(query)",
+			Location: core.Location{File: "test.py", StartLine: 12, EndLine: 12},
+		}
+		f := findings.BuildFinding(engine.MatchResult{Rule: rule, Node: node, TaintedVar: "query"}, mc)
+		if f.TaintContext == nil {
+			t.Fatal("expected TaintContext to be populated")
+		}
+		if f.TaintContext.SourceVar != "query" {
+			t.Errorf("SourceVar = %q, want %q", f.TaintContext.SourceVar, "query")
+		}
+		if f.TaintContext.SourceExpr != "request.args.get('id')" {
+			t.Errorf("SourceExpr = %q, want %q", f.TaintContext.SourceExpr, "request.args.get('id')")
+		}
+		if f.TaintContext.Sink != "cursor.execute" {
+			t.Errorf("Sink = %q, want %q", f.TaintContext.Sink, "cursor.execute")
+		}
+	})
+
+	t.Run("taint-gated assignment sink falls back to LHS", func(t *testing.T) {
+		mc := &engine.MatchContext{
+			File: &analyzer.AnalysisResult{
+				IR:      irFile,
+				Symbols: syms,
+				TaintReasons: map[string]string{
+					"userInput": "req.query.name",
+				},
+			},
+		}
+		rule := &rules.Rule{
+			ID:         "ZS-JS-001",
+			Name:       "dom xss",
+			Severity:   core.SeverityHigh,
+			Confidence: core.ConfidenceHigh,
+			Match:      rules.MatchPattern{Kind: string(ir.NodeKindAssignment), LHSIdentifier: "innerHTML"},
+		}
+		node := &ir.IRNode{
+			Kind:     ir.NodeKindAssignment,
+			Text:     "el.innerHTML = userInput",
+			Attrs:    map[string]any{"lhs": "el.innerHTML"},
+			Location: core.Location{File: "test.py", StartLine: 12, EndLine: 12},
+		}
+		f := findings.BuildFinding(engine.MatchResult{Rule: rule, Node: node, TaintedVar: "userInput"}, mc)
+		if f.TaintContext == nil {
+			t.Fatal("expected TaintContext to be populated")
+		}
+		if f.TaintContext.Sink != "el.innerHTML" {
+			t.Errorf("Sink = %q, want LHS fallback %q", f.TaintContext.Sink, "el.innerHTML")
+		}
+	})
+
+	t.Run("no tainted var means nil TaintContext", func(t *testing.T) {
+		mc := &engine.MatchContext{
+			File: &analyzer.AnalysisResult{IR: irFile, Symbols: syms},
+		}
+		rule := &rules.Rule{
+			ID:         "ZS-PY-004",
+			Name:       "eval usage",
+			Severity:   core.SeverityHigh,
+			Confidence: core.ConfidenceHigh,
+		}
+		node := &ir.IRNode{
+			Kind:     ir.NodeKindCall,
+			Text:     "eval(user_input)",
+			Location: core.Location{File: "test.py", StartLine: 10, EndLine: 10},
+		}
+		f := findings.BuildFinding(engine.MatchResult{Rule: rule, Node: node}, mc)
+		if f.TaintContext != nil {
+			t.Errorf("TaintContext = %+v, want nil when TaintedVar is empty", f.TaintContext)
+		}
+	})
+}

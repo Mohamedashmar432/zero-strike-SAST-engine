@@ -20,11 +20,13 @@ func (a *defaultAnalyzer) Analyze(_ context.Context, file *ir.IRFile) (*Analysis
 		return &AnalysisResult{}, nil
 	}
 	symbols := symboltable.NewBuilder().Build(file)
+	tc := taint.BuildContext(file, symbols)
 	return &AnalysisResult{
-		File:        file.Path,
-		IR:          file,
-		Symbols:     symbols,
-		TaintedVars: taint.Build(file, symbols),
+		File:         file.Path,
+		IR:           file,
+		Symbols:      symbols,
+		TaintedVars:  tc.Tainted,
+		TaintReasons: tc.Reasons,
 	}, nil
 }
 
@@ -58,7 +60,13 @@ type AnalysisResult struct {
 	// per-language source/sanitizer patterns (Python/JS/TS/C#) and same-file
 	// function summaries — see package taint's doc comment for the ceiling.
 	TaintedVars map[string]bool
-	Diagnostics []Diagnostic
+	// TaintReasons holds a human-readable reason for each tainted variable in
+	// TaintedVars — the source expression, propagation origin, or summarized
+	// call that most recently caused its taint verdict (see
+	// internal/analyzer/taint.BuildContext). Keyed by the same variable
+	// names as TaintedVars; only set for variables where TaintedVars is true.
+	TaintReasons map[string]string
+	Diagnostics  []Diagnostic
 }
 
 // Analyzer runs analysis passes over an IRFile to produce an AnalysisResult.

@@ -47,24 +47,44 @@ func BuildFinding(result engine.MatchResult, mc *engine.MatchContext) core.Findi
 		lang = mc.File.IR.Language
 	}
 
+	var taintCtx *core.TaintContext
+	if result.TaintedVar != "" {
+		sink := result.Rule.Match.Callee
+		if sink == "" {
+			if lhs, ok := node.Attrs["lhs"].(string); ok {
+				sink = lhs
+			}
+		}
+		sourceExpr := ""
+		if mc.File != nil {
+			sourceExpr = mc.File.TaintReasons[result.TaintedVar]
+		}
+		taintCtx = &core.TaintContext{
+			SourceVar:  result.TaintedVar,
+			SourceExpr: sourceExpr,
+			Sink:       sink,
+		}
+	}
+
 	return core.Finding{
-		ID:          uuid.New().String(),
-		RuleID:      result.Rule.ID,
-		RuleName:    result.Rule.Name,
-		Category:    result.Rule.Category,
-		Severity:    result.Rule.Severity,
-		Confidence:  result.Rule.Confidence,
-		Message:     result.Rule.Message,
-		Location:    loc,
-		Language:    lang,
-		Fingerprint: fp,
-		Evidence:    evidence,
-		CWE:         result.Rule.CWE,
-		OWASP:       result.Rule.OWASP,
-		References:  result.Rule.References,
-		Rationale:   result.Rule.Rationale,
-		Remediation: result.Rule.FixSuggestion,
-		Kind:        core.FindingKindSAST,
+		ID:           uuid.New().String(),
+		RuleID:       result.Rule.ID,
+		RuleName:     result.Rule.Name,
+		Category:     result.Rule.Category,
+		Severity:     result.Rule.Severity,
+		Confidence:   result.Rule.Confidence,
+		Message:      result.Rule.Message,
+		Location:     loc,
+		Language:     lang,
+		Fingerprint:  fp,
+		Evidence:     evidence,
+		CWE:          result.Rule.CWE,
+		OWASP:        result.Rule.OWASP,
+		References:   result.Rule.References,
+		Rationale:    result.Rule.Rationale,
+		Remediation:  result.Rule.FixSuggestion,
+		Kind:         core.FindingKindSAST,
+		TaintContext: taintCtx,
 	}
 }
 

@@ -15,6 +15,10 @@ type MatchResult struct {
 	Rule     *rules.Rule
 	Node     *ir.IRNode
 	Captures map[string]string
+	// TaintedVar is the identifier that satisfied a TaintedArgument or
+	// TaintedRHS filter on the matched rule, or "" if the rule matched
+	// without any taint-gated filter (the common case).
+	TaintedVar string
 }
 
 // Project provides cross-file context for multi-file analysis (nil in Sprint 1–2).
@@ -87,7 +91,7 @@ func (e *defaultEngine) Match(_ context.Context, mc *MatchContext) ([]MatchResul
 				continue
 			}
 			if matchNode(r.Match, n, taintedVars) {
-				out = append(out, MatchResult{Rule: r, Node: n})
+				out = append(out, MatchResult{Rule: r, Node: n, TaintedVar: taintedIdentifierFor(r.Match, n, taintedVars)})
 			}
 		}
 		return true
@@ -286,4 +290,67 @@ func anyArgument(n *ir.IRNode, pred func(*ir.IRNode) bool) bool {
 		}
 	}
 	return false
+}
+
+// taintedIdentifierFor inspects pattern's top-level filters (not recursing
+// into a Filter.Not sub-pattern, since polarity is inverted there and "which
+// identifier is tainted" isn't meaningful for a negated match) for a
+// TaintedArgument or TaintedRHS filter, and if found, returns the actual
+// tainted identifier's text that satisfied it. Returns "" when the rule
+// matched without using either filter — the common case for most rules.
+func taintedIdentifierFor(pattern rules.MatchPattern, n *ir.IRNode, taintedVars map[string]bool) string {
+	for _, f := range pattern.Filters {
+		if f.TaintedArgument {
+			if id := firstTaintedArgument(n, taintedVars); id != "" {
+				return id
+			}
+		}
+		if f.TaintedRHS {
+			if id := firstTaintedRHSIdentifier(n, taintedVars); id != "" {
+				return id
+			}
+		}
+	}
+	return ""
+}
+
+// firstTaintedArgument returns the text of the first tainted identifier found
+// in a call's argument list, or "" if none. Same traversal shape as
+// anyArgument, kept separate since evalFilter's anyArgument-based check only
+// needs a bool on the hot matching path.
+func firstTaintedArgument(n *ir.IRNode, taintedVars map[string]bool) string {
+	if n.Kind != ir.NodeKindCall || len(n.Children) < 2 {
+		return ""
+	}
+	for _, argRoot := range n.Children[1:] {
+		if argRoot.Kind == ir.NodeKindIdentifier && taintedVars[argRoot.Text] {
+			return argRoot.Text
+		}
+		for _, d := range ir.Descendants(argRoot) {
+			if d.Kind == ir.NodeKindIdentifier && taintedVars[d.Text] {
+				return d.Text
+			}
+		}
+	}
+	return ""
+}
+
+// firstTaintedRHSIdentifier returns the text of the tainted identifier in an
+// assignment's right-hand-side subtree, or "" if none. Same traversal shape
+// as rhsIsTainted, kept separate since evalFilter's rhsIsTainted-based check
+// only needs a bool on the hot matching path.
+func firstTaintedRHSIdentifier(n *ir.IRNode, taintedVars map[string]bool) string {
+	if n.Kind != ir.NodeKindAssignment || len(n.Children) == 0 {
+		return ""
+	}
+	rhs := n.Children[len(n.Children)-1]
+	if rhs.Kind == ir.NodeKindIdentifier && taintedVars[rhs.Text] {
+		return rhs.Text
+	}
+	for _, d := range ir.Descendants(rhs) {
+		if d.Kind == ir.NodeKindIdentifier && taintedVars[d.Text] {
+			return d.Text
+		}
+	}
+	return ""
 }

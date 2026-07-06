@@ -304,6 +304,130 @@ func TestBuild_CrossFunctionNameReuseNotContaminated(t *testing.T) {
 	}
 }
 
+// TestBuildContext_SourcePatternReason verifies that a source-pattern match
+// records the RHS text itself as the taint reason.
+func TestBuildContext_SourcePatternReason(t *testing.T) {
+	root := &ir.IRNode{
+		Kind: ir.NodeKindModule,
+		Children: []*ir.IRNode{
+			assignment("user_id", "request.args.get('id')", ident("_")),
+		},
+	}
+	file := &ir.IRFile{Root: root}
+	result := taint.BuildContext(file, symboltable.NewBuilder().Build(file))
+	if !result.Tainted["user_id"] {
+		t.Fatal("expected user_id to be tainted")
+	}
+	if got := result.Reasons["user_id"]; got != "request.args.get('id')" {
+		t.Errorf("Reasons[user_id] = %q, want the RHS source expression", got)
+	}
+}
+
+// TestBuildContext_PropagationReason verifies that taint propagated from an
+// already-tainted identifier records "propagated from <name>".
+func TestBuildContext_PropagationReason(t *testing.T) {
+	root := &ir.IRNode{
+		Kind: ir.NodeKindModule,
+		Children: []*ir.IRNode{
+			assignment("user_id", "request.args.get('id')", ident("_")),
+			assignment("query", "\"SELECT \" + user_id", ident("user_id")),
+		},
+	}
+	file := &ir.IRFile{Root: root}
+	result := taint.BuildContext(file, symboltable.NewBuilder().Build(file))
+	if !result.Tainted["query"] {
+		t.Fatal("expected query to be tainted")
+	}
+	if got, want := result.Reasons["query"], "propagated from user_id"; got != want {
+		t.Errorf("Reasons[query] = %q, want %q", got, want)
+	}
+}
+
+// TestBuildContext_SummaryCallReason verifies that taint from a same-file
+// summarized function call records "tainted via <callee>(...)".
+func TestBuildContext_SummaryCallReason(t *testing.T) {
+	fn := &ir.IRNode{
+		Kind:  ir.NodeKindFunction,
+		Attrs: map[string]any{"function_name": "get_user"},
+		Children: []*ir.IRNode{
+			{Kind: ir.NodeKindReturn, Attrs: map[string]any{"return_expr": "request.args.get('id')"}},
+		},
+	}
+	root := &ir.IRNode{
+		Kind: ir.NodeKindModule,
+		Children: []*ir.IRNode{
+			fn,
+			assignment("y", "get_user()", &ir.IRNode{
+				Kind:     ir.NodeKindCall,
+				Children: []*ir.IRNode{ident("get_user")},
+			}),
+		},
+	}
+	file := &ir.IRFile{Root: root, Language: core.LangPython}
+	result := taint.BuildContext(file, symboltable.NewBuilder().Build(file))
+	if !result.Tainted["y"] {
+		t.Fatal("expected y to be tainted")
+	}
+	if got, want := result.Reasons["y"], "tainted via get_user(...)"; got != want {
+		t.Errorf("Reasons[y] = %q, want %q", got, want)
+	}
+}
+
+// TestBuildContext_SanitizerClearsReason verifies that a sanitizer call
+// clears both the taint verdict and any previously recorded reason.
+func TestBuildContext_SanitizerClearsReason(t *testing.T) {
+	root := &ir.IRNode{
+		Kind: ir.NodeKindModule,
+		Children: []*ir.IRNode{
+			assignment("x", "request.args.get('y')", ident("_")),
+			assignment("x", "html.escape(x)", &ir.IRNode{
+				Kind:     ir.NodeKindCall,
+				Children: []*ir.IRNode{ident("escape"), ident("x")},
+			}),
+		},
+	}
+	file := &ir.IRFile{Root: root, Language: core.LangPython}
+	result := taint.BuildContext(file, symboltable.NewBuilder().Build(file))
+	if result.Tainted["x"] {
+		t.Error("expected x to NOT be tainted after sanitizer")
+	}
+	if _, ok := result.Reasons["x"]; ok {
+		t.Errorf("expected no stale reason for x after sanitizer, got %q", result.Reasons["x"])
+	}
+}
+
+// TestBuildContext_AugmentedAssignmentKeepsReason verifies that an augmented
+// assignment inheriting its previous true verdict also keeps the previously
+// recorded reason instead of overwriting it with empty.
+func TestBuildContext_AugmentedAssignmentKeepsReason(t *testing.T) {
+	aug := assignment("x", "\" suffix\"", &ir.IRNode{Kind: ir.NodeKindLiteral, Text: " suffix"})
+	aug.Attrs["augmented"] = true
+	root := &ir.IRNode{
+		Kind: ir.NodeKindModule,
+		Children: []*ir.IRNode{
+			assignment("x", "request.args.get('y')", ident("_")),
+			aug,
+		},
+	}
+	file := &ir.IRFile{Root: root, Language: core.LangPython}
+	result := taint.BuildContext(file, symboltable.NewBuilder().Build(file))
+	if !result.Tainted["x"] {
+		t.Fatal("expected x to stay tainted after augmented assignment")
+	}
+	if got, want := result.Reasons["x"], "request.args.get('y')"; got != want {
+		t.Errorf("Reasons[x] = %q, want the original source reason %q preserved", got, want)
+	}
+}
+
+// TestBuildContext_NilFile verifies BuildContext returns non-nil empty maps
+// for a nil file, mirroring TestBuild_NilFile.
+func TestBuildContext_NilFile(t *testing.T) {
+	result := taint.BuildContext(nil, nil)
+	if len(result.Tainted) != 0 || len(result.Reasons) != 0 {
+		t.Errorf("expected empty maps for nil file, got %v / %v", result.Tainted, result.Reasons)
+	}
+}
+
 // TestBuild_NilSymbolTableDisablesInterprocedural: without a symbol table
 // the summary step is skipped but direct source/propagation still works.
 func TestBuild_NilSymbolTableDisablesInterprocedural(t *testing.T) {

@@ -411,6 +411,106 @@ func TestMatch_TaintedRHS(t *testing.T) {
 	}
 }
 
+// TestMatch_TaintedVarPopulated verifies that MatchResult.TaintedVar carries
+// the actual tainted identifier when the rule uses a TaintedArgument or
+// TaintedRHS filter, and stays empty for rules that don't.
+func TestMatch_TaintedVarPopulated(t *testing.T) {
+	taintedArgRule := &rules.Rule{
+		ID: "ZS-TEST-TAINTVAR-ARG",
+		Match: rules.MatchPattern{
+			Kind:    string(ir.NodeKindCall),
+			Callee:  "execute",
+			Filters: []rules.Filter{{TaintedArgument: true}},
+		},
+	}
+	taintedCall := &ir.IRNode{
+		Kind: ir.NodeKindCall,
+		Children: []*ir.IRNode{
+			{Kind: ir.NodeKindIdentifier, Text: "execute"},
+			{Kind: ir.NodeKindUnknown, Children: []*ir.IRNode{{Kind: ir.NodeKindIdentifier, Text: "query"}}},
+		},
+	}
+	root := &ir.IRNode{Kind: ir.NodeKindModule, Children: []*ir.IRNode{taintedCall}}
+	idx := engine.BuildIndex([]*rules.Rule{taintedArgRule})
+	mc := &engine.MatchContext{
+		Index: idx,
+		File: &analyzer.AnalysisResult{
+			IR:          &ir.IRFile{Root: root},
+			TaintedVars: map[string]bool{"query": true},
+		},
+	}
+	results, err := engine.New().Match(context.Background(), mc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(results) != 1 {
+		t.Fatalf("expected 1 match, got %d", len(results))
+	}
+	if results[0].TaintedVar != "query" {
+		t.Errorf("TaintedVar = %q, want %q", results[0].TaintedVar, "query")
+	}
+
+	taintedRHSRule := &rules.Rule{
+		ID: "ZS-TEST-TAINTVAR-RHS",
+		Match: rules.MatchPattern{
+			Kind:          string(ir.NodeKindAssignment),
+			LHSIdentifier: "innerHTML",
+			Filters:       []rules.Filter{{TaintedRHS: true}},
+		},
+	}
+	assignNode := &ir.IRNode{
+		Kind:     ir.NodeKindAssignment,
+		Attrs:    map[string]any{"lhs": "el.innerHTML"},
+		Children: []*ir.IRNode{{Kind: ir.NodeKindAttribute}, {Kind: ir.NodeKindIdentifier, Text: "userInput"}},
+	}
+	root2 := &ir.IRNode{Kind: ir.NodeKindModule, Children: []*ir.IRNode{assignNode}}
+	idx2 := engine.BuildIndex([]*rules.Rule{taintedRHSRule})
+	mc2 := &engine.MatchContext{
+		Index: idx2,
+		File: &analyzer.AnalysisResult{
+			IR:          &ir.IRFile{Root: root2},
+			TaintedVars: map[string]bool{"userInput": true},
+		},
+	}
+	results2, err := engine.New().Match(context.Background(), mc2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(results2) != 1 {
+		t.Fatalf("expected 1 match, got %d", len(results2))
+	}
+	if results2[0].TaintedVar != "userInput" {
+		t.Errorf("TaintedVar = %q, want %q", results2[0].TaintedVar, "userInput")
+	}
+
+	// A rule with no taint-gated filter must leave TaintedVar empty.
+	plainRule := &rules.Rule{
+		ID: "ZS-TEST-TAINTVAR-NONE",
+		Match: rules.MatchPattern{
+			Kind:   string(ir.NodeKindCall),
+			Callee: "execute",
+		},
+	}
+	idx3 := engine.BuildIndex([]*rules.Rule{plainRule})
+	mc3 := &engine.MatchContext{
+		Index: idx3,
+		File: &analyzer.AnalysisResult{
+			IR:          &ir.IRFile{Root: root},
+			TaintedVars: map[string]bool{"query": true},
+		},
+	}
+	results3, err := engine.New().Match(context.Background(), mc3)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(results3) != 1 {
+		t.Fatalf("expected 1 match, got %d", len(results3))
+	}
+	if results3[0].TaintedVar != "" {
+		t.Errorf("TaintedVar = %q, want empty for a non-taint-gated rule", results3[0].TaintedVar)
+	}
+}
+
 // TestMatch_ExceptHandlerFilters verifies HasBareExcept and HasEmptyExceptHandler.
 func TestMatch_ExceptHandlerFilters(t *testing.T) {
 	bareRule := &rules.Rule{
