@@ -229,6 +229,37 @@ func TestBuildFinding_TaintContext(t *testing.T) {
 		}
 	})
 
+	t.Run("tainted var missing from TaintReasons degrades to empty SourceExpr", func(t *testing.T) {
+		mc := &engine.MatchContext{
+			File: &analyzer.AnalysisResult{IR: irFile, Symbols: syms}, // TaintReasons left nil
+		}
+		rule := &rules.Rule{
+			ID:         "ZS-PY-003",
+			Name:       "sql injection",
+			Severity:   core.SeverityHigh,
+			Confidence: core.ConfidenceHigh,
+			Match:      rules.MatchPattern{Kind: string(ir.NodeKindCall), Callee: "cursor.execute"},
+		}
+		node := &ir.IRNode{
+			Kind:     ir.NodeKindCall,
+			Text:     "cursor.execute(query)",
+			Location: core.Location{File: "test.py", StartLine: 12, EndLine: 12},
+		}
+		f := findings.BuildFinding(engine.MatchResult{Rule: rule, Node: node, TaintedVar: "query"}, mc)
+		if f.TaintContext == nil {
+			t.Fatal("expected TaintContext to be populated when TaintedVar is set, even without a TaintReasons entry")
+		}
+		if f.TaintContext.SourceVar != "query" {
+			t.Errorf("SourceVar = %q, want %q", f.TaintContext.SourceVar, "query")
+		}
+		if f.TaintContext.SourceExpr != "" {
+			t.Errorf("SourceExpr = %q, want empty when TaintReasons has no entry for the tainted var", f.TaintContext.SourceExpr)
+		}
+		if f.TaintContext.Sink != "cursor.execute" {
+			t.Errorf("Sink = %q, want %q", f.TaintContext.Sink, "cursor.execute")
+		}
+	})
+
 	t.Run("no tainted var means nil TaintContext", func(t *testing.T) {
 		mc := &engine.MatchContext{
 			File: &analyzer.AnalysisResult{IR: irFile, Symbols: syms},
