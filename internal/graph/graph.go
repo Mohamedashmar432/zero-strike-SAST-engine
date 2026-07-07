@@ -131,6 +131,13 @@ func NewCFG(root *ir.IRNode) *CFG {
 	// execute one after another. A Return statement's own out-edge already
 	// goes to the implicit exit, so it doesn't also fall through.
 	//
+	// Each top-level statement line is wrapped in its own NodeKindUnknown
+	// node (tree-sitter's simple_statements — confirmed by dumping the real
+	// Python IR; see docs/roadmap/SPRINT-22-GRAPH-LAYER-CFG-DFG.md), so the
+	// actual statement (an Assignment, Call, etc.) is a grandchild of
+	// Module/Block, not a direct child. flattenStatements unwraps that so
+	// fall-through edges connect the real statements, not their wrappers.
+	//
 	// ponytail: this connects a branch/loop *header* node to the next
 	// sibling, not each branch's last inner statement — so a definition made
 	// only inside one arm of an if isn't seen as reaching the code after the
@@ -140,8 +147,9 @@ func NewCFG(root *ir.IRNode) *CFG {
 		if n.Kind != ir.NodeKindModule && n.Kind != ir.NodeKindBlock {
 			return true
 		}
-		for i := 0; i+1 < len(n.Children); i++ {
-			cur, next := n.Children[i], n.Children[i+1]
+		stmts := flattenStatements(n.Children)
+		for i := 0; i+1 < len(stmts); i++ {
+			cur, next := stmts[i], stmts[i+1]
 			if cur.Kind == ir.NodeKindReturn {
 				continue
 			}
@@ -151,6 +159,25 @@ func NewCFG(root *ir.IRNode) *CFG {
 	})
 
 	return cfg
+}
+
+// flattenStatements unwraps NodeKindUnknown wrapper nodes (tree-sitter
+// container types with no dedicated NodeKind, e.g. simple_statements) to
+// find the real statement nodes inside, recursively. A leaf NodeKindUnknown
+// (a bare token like a newline) has no children and contributes nothing —
+// it's punctuation, not a statement.
+func flattenStatements(children []*ir.IRNode) []*ir.IRNode {
+	var out []*ir.IRNode
+	for _, c := range children {
+		if c.Kind == ir.NodeKindUnknown {
+			if len(c.Children) > 0 {
+				out = append(out, flattenStatements(c.Children)...)
+			}
+			continue
+		}
+		out = append(out, c)
+	}
+	return out
 }
 
 // directOrWrappedBlocks returns every NodeKindBlock found either as a direct

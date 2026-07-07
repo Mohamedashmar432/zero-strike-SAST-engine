@@ -27,7 +27,7 @@ Sprint 22 implements a real CFG/DFG graph layer for Python IR, gated behind `--e
 
 ### CFG and DFG (`internal/graph`)
 
-- `NewCFG` builds control-flow edges over Python IR: `true`/`false` branches for `if` (including the elif/else-clause shape, where the block is nested one level inside a wrapper node — see the `directOrWrappedBlocks` doc comment for why that matters), `loop`/`loop-back` for `for`/`while`, `normal` into a `try`'s main body, `return` to an implicit exit, and sequential fall-through between statements in the same block.
+- `NewCFG` builds control-flow edges over Python IR: `true`/`false` branches for `if` (including the elif/else-clause shape, where the block is nested one level inside a wrapper node — see the `directOrWrappedBlocks` doc comment for why that matters), `loop`/`loop-back` for `for`/`while`, `normal` into a `try`'s main body, `return` to an implicit exit, and sequential fall-through between statements in the same block (via `flattenStatements`, which unwraps each line's `simple_statements` container — see **Bug found and fixed** below).
 - `NewDFG` builds definition/use maps and runs a fixed-point reaching-definitions analysis over the CFG.
 - **Known ceiling, documented rather than hidden**: the CFG connects a branch/loop header to the next sibling statement, not each branch's last inner statement — so a definition made only inside one arm of an `if` isn't threaded through as a confirmed reaching definition past that `if`. Straight-line and single-branch-body chains (the common case) work correctly; full block-exit-point merging is future work. See `docs/roadmap/SPRINT-22-GRAPH-LAYER-CFG-DFG.md`.
 - 11 unit tests in `internal/graph/graph_test.go`, built against hand-constructed IR fixtures (straight-line, if/else with both direct and wrapped-else shapes, while-loop, try, return, reaching-def propagation, reassignment-kills-prior-def, NodeID→Location resolution).
@@ -45,24 +45,37 @@ Sprint 22 implements a real CFG/DFG graph layer for Python IR, gated behind `--e
 - **Python-only**: CFG/DFG are implemented for Python IR only. Other languages get nil CFG/DFG regardless of `--enable-graphs`.
 - **Branch-exit-point ceiling**: see above — accepted for this sprint, not silently hidden.
 
+## Bug found and fixed after CGO verification became available
+
+The first version of this release note said the cgo-gated integration tests were "not verifiable on this machine" — that was true when written, but an existing MinGW-w64 `gcc` install was subsequently found on the machine (just not on `PATH`), which made a real `CGO_ENABLED=1` build and test run possible. Running it immediately surfaced a real, reproducible failure:
+
+```
+--- FAIL: TestIntegration_EnableGraphsPopulatesTaintPath (0.00s)
+    integration_test.go:161: expected TaintContext.Path to be populated with --enable-graphs
+FAIL    github.com/zerostrike/scanner/internal/engine  0.991s
+```
+
+**Root cause**: the real tree-sitter Python grammar wraps every top-level statement line in its own `simple_statements` node, which `internal/graph`'s `mapKind`-driven IR maps to `NodeKindUnknown` (no dedicated kind) — confirmed by dumping the actual IR tree for `user_id = request.args.get('id')\nquery = "SELECT " + user_id`: the two `Assignment` nodes are **grandchildren** of `Module`, not direct children. `NewCFG`'s sequential fall-through pass only connected direct `Module`/`Block` children, so it never linked the two statements — the DFG's reaching-definitions analysis had no CFG edge to propagate across, `taint.extendPath` correctly (per its own contract) refused to assert an unconfirmed path, and `TaintContext.Path` stayed empty even for this straight-line case, which was supposed to be the one scenario this sprint's CFG guaranteed.
+
+**Fix**: `internal/graph/graph.go` gained `flattenStatements`, which unwraps `NodeKindUnknown` containers (recursively, since it's the same generic "unrecognized grammar node" bucket) to find the real statement nodes before building fall-through edges — mirroring the wrapper-transparency `directOrWrappedBlocks` already had for elif/else clauses, just applied to the statement-sequencing pass too, which had been missed.
+
+This is a genuine, hand-built-IR-test blind spot: `internal/graph/graph_test.go`'s fixtures construct `Module`/`Block` nodes with statements as *direct* children (a reasonable simplification for testing CFG/DFG algorithms in isolation), so they never exercised the real grammar's wrapping shape — only the cgo-gated integration test, running against the actual parser, could catch this. All 11 hand-built-IR unit tests still pass after the fix (they didn't need to change), and it's now additionally verified against the real parser.
+
 ## Verification
 
-**Actually run on this machine** (`go1.26.3`, `CGO_ENABLED=0`, no `gcc` — same environment constraint the real Sprint 19+20 QA report documented):
+**Actually run, with real `CGO_ENABLED=1` and MinGW-w64 gcc** (not just non-cgo, as originally reported):
 
-- `go build ./...` — clean.
-- `go vet ./...` — clean.
-- `go test ./... -count=1` — all 31 testable packages pass, including the new/updated tests in `internal/rules`, `internal/graph`, `internal/analyzer`, `internal/analyzer/taint`, `internal/findings`, and `internal/pipeline`.
-- `internal/engine`'s Python integration test (`TestIntegration_EnableGraphsPopulatesTaintPath`) exercises the real Python parser end-to-end and asserts `TaintContext.Path` is populated with `--enable-graphs` and empty without it — but this file is `//go:build cgo`, so it could **not** be compiled or run on this machine. It's syntax-checked via `gofmt` only.
+- `go build ./...` — clean, both `CGO_ENABLED=0` and `CGO_ENABLED=1`.
+- `go vet ./...` — clean under both.
+- `go test ./... -count=1` under `CGO_ENABLED=1` — **all 31 packages pass**, including every `//go:build cgo` file touched this sprint (`internal/engine`'s five integration test files, `internal/scanner/sast/sast.go`) and the fixed `TestIntegration_EnableGraphsPopulatesTaintPath`.
+- `cmd/zerostrike-bench --corpus benchmark/corpus --min-recall 0.90 --max-fp 0`, built and run with real CGO: **TP=53 FP=0 FN=0, precision=100.00%, recall=100.00%**, identical with and without `--enable-graphs` — confirms graphs are additive to reporting detail only, not detection, exactly as claimed.
 
-**Not verifiable on this machine, honestly flagged rather than asserted as passing**:
-
-- All five `//go:build cgo` files touched this sprint (`internal/engine/integration_test.go` and the four other-language integration test files, `internal/scanner/sast/sast.go`) — the mechanical signature-update edits (`analyzer.New()` → `analyzer.New(false)`, adding `enableGraphs` to `sast.New`) follow the exact same pattern already proven correct in the non-cgo `internal/analyzer` tests, but were not compiled here. Needs a `gcc`-capable CI runner (Linux `ubuntu-cgo`, per the existing CI matrix) to confirm.
-- End-to-end `--enable-graphs` scanning against real source files, and the `cmd/zerostrike-bench --min-recall 0.90 --max-fp 0` accuracy gate — both require the CGo-enabled tree-sitter parsers this environment doesn't have.
+Nothing in this sprint's scope remains unverified.
 
 ## QA Test Plan
 
-1. On a `gcc`-capable runner: `go build ./...`, `go vet ./...`, `go test ./... -count=1` with `CGO_ENABLED=1` — confirm the cgo-gated integration tests (including `TestIntegration_EnableGraphsPopulatesTaintPath`) compile and pass.
+1. ~~On a `gcc`-capable runner: `go build ./...`, `go vet ./...`, `go test ./... -count=1` with `CGO_ENABLED=1`~~ — **done** (see Verification above); re-run on CI to confirm the fix holds on the Linux `ubuntu-cgo` runner too, not just this Windows+MinGW setup.
 2. Load a rule YAML with a missing or invalid `lifecycle` value; confirm the loader rejects it with a clear per-rule error, and that a directory with multiple bad rules reports all of them, not just the first.
-3. Run `cmd/zerostrike-bench --corpus benchmark/corpus --min-recall 0.90 --max-fp 0`, with and without `--enable-graphs`; confirm identical recall/precision (graphs are additive to reporting detail, not detection).
-4. Scan a Python fixture with a taint-gated rule (e.g. SQL injection via `request.args`) with `--enable-graphs`; confirm `TaintContext.Path` traces from source to sink. Scan the same fixture without the flag; confirm `Path` is empty but the finding still fires.
-5. Scan a Python fixture where the tainted assignment is inside one arm of an `if`, with `--enable-graphs`; confirm the finding still fires (flow-insensitive verdict unaffected) — `Path` may legitimately be shorter or absent for that hop, per the documented branch-exit-point ceiling.
+3. ~~Run `cmd/zerostrike-bench --corpus benchmark/corpus --min-recall 0.90 --max-fp 0`, with and without `--enable-graphs`~~ — **done**, 100%/100%/0 FP both ways.
+4. Scan a Python fixture with a taint-gated rule (e.g. SQL injection via `request.args`) with `--enable-graphs`; confirm `TaintContext.Path` traces from source to sink. Scan the same fixture without the flag; confirm `Path` is empty but the finding still fires. (Covered by `TestIntegration_EnableGraphsPopulatesTaintPath`, now passing — a manual `zerostrike scan --enable-graphs` against a real fixture file is still worth doing to see the JSON/HTML report shape.)
+5. Scan a Python fixture where the tainted assignment is inside one arm of an `if`, with `--enable-graphs`; confirm the finding still fires (flow-insensitive verdict unaffected) — `Path` may legitimately be shorter or absent for that hop, per the documented branch-exit-point ceiling (still real, distinct from the statement-wrapper bug fixed above).

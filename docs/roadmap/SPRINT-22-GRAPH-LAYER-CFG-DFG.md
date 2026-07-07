@@ -23,6 +23,23 @@ function-call summary, aren't chained (see `taint.extendPath`'s doc
 comment); the flow-insensitive taint verdict itself is unaffected either
 way — only whether a precise path can be attached.
 
+## Fixed: statement-wrapper unwrapping
+
+The real tree-sitter Python grammar wraps every top-level statement line in
+its own `simple_statements` node, which has no dedicated `ir.NodeKind` and so
+maps to `NodeKindUnknown` — meaning a straight-line sequence of statements
+under `Module`/`Block` has each statement as a *grandchild*, not a direct
+child. `NewCFG`'s sequential fall-through pass originally only looked at
+direct children, so it silently never connected consecutive top-level
+statements at all — confirmed by a CGO-enabled test run
+(`TestIntegration_EnableGraphsPopulatesTaintPath` failing) once a real `gcc`
+became available to actually build this package; the hand-built-IR fixtures
+in `internal/graph/graph_test.go` had statements as direct children and never
+exercised this shape. Fixed via `flattenStatements`, which unwraps
+`NodeKindUnknown` containers the same way `directOrWrappedBlocks` already did
+for elif/else clauses. See the Sprint 21+22 release notes' "Bug found and
+fixed" section for the full diagnosis.
+
 ## Known ceiling: branch-exit-point threading
 
 The CFG connects a branch/loop *header* node to the next sibling statement,
