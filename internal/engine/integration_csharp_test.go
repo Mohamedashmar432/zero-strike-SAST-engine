@@ -29,7 +29,7 @@ func matchCSharpSource(t *testing.T, idx *engine.RuleIndex, src string) []engine
 	if err != nil {
 		t.Fatalf("build IR: %v", err)
 	}
-	ar, err := analyzer.New().Analyze(context.Background(), irFile)
+	ar, err := analyzer.New(false).Analyze(context.Background(), irFile)
 	if err != nil {
 		t.Fatalf("analyze: %v", err)
 	}

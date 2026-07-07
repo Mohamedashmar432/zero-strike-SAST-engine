@@ -65,6 +65,8 @@ type Rule struct {
 	Match         MatchPattern
 	FixSuggestion string
 	Rationale     string
+	// Lifecycle is one of draft, validated, released, retired (see Validator).
+	Lifecycle string
 }
 
 // Registry provides rule lookup by language and category.

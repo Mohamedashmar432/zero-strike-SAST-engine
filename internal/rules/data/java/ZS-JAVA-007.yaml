@@ -1,4 +1,5 @@
 id: ZS-JAVA-007
+lifecycle: released
 name: NoOpPasswordEncoder Usage
 version: "1.0.0"
 language: java

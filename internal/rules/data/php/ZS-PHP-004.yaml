@@ -1,4 +1,5 @@
 id: ZS-PHP-004
+lifecycle: released
 name: echo XSS Sink
 version: "1.0.0"
 language: php

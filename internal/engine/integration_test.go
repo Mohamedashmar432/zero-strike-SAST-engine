@@ -7,7 +7,9 @@ import (
 	"testing"
 
 	"github.com/zerostrike/scanner/internal/analyzer"
+	"github.com/zerostrike/scanner/internal/core"
 	"github.com/zerostrike/scanner/internal/engine"
+	"github.com/zerostrike/scanner/internal/findings"
 	pythonparser "github.com/zerostrike/scanner/internal/parser/python"
 	"github.com/zerostrike/scanner/internal/rules"
 )
@@ -24,12 +26,20 @@ func loadPythonRules(t *testing.T) ([]*rules.Rule, *engine.RuleIndex) {
 
 func matchSource(t *testing.T, idx *engine.RuleIndex, src string) []engine.MatchResult {
 	t.Helper()
+	return matchSourceWithGraphs(t, idx, src, false)
+}
+
+// matchSourceWithGraphs is matchSource with enableGraphs threaded through to
+// analyzer.New, for tests that need CFG/DFG-based path-sensitive taint
+// reporting (see TestIntegration_EnableGraphsPopulatesTaintPath below).
+func matchSourceWithGraphs(t *testing.T, idx *engine.RuleIndex, src string, enableGraphs bool) []engine.MatchResult {
+	t.Helper()
 	builder := pythonparser.NewIRBuilder()
 	irFile, _, err := builder.Build("test.py", []byte(src))
 	if err != nil {
 		t.Fatalf("build IR: %v", err)
 	}
-	ar, err := analyzer.New().Analyze(context.Background(), irFile)
+	ar, err := analyzer.New(enableGraphs).Analyze(context.Background(), irFile)
 	if err != nil {
 		t.Fatalf("analyze: %v", err)
 	}
@@ -134,6 +144,57 @@ func TestIntegration_ConstantArgumentDoesNotFireZSPY004(t *testing.T) {
 	if hasRule(results, "ZS-PY-004") {
 		t.Error("expected ZS-PY-004 to NOT fire when execute() argument is a constant")
 	}
+}
+
+// TestIntegration_EnableGraphsPopulatesTaintPath verifies the graph layer
+// end-to-end through the real Python parser: with --enable-graphs, the same
+// tainted-argument scenario as TestIntegration_TaintedArgumentFiresZSPY004
+// additionally populates TaintContext.Path with the source-to-sink chain;
+// without it, ZS-PY-004 still fires (flow-insensitive tracking, unaffected)
+// but Path stays empty.
+func TestIntegration_EnableGraphsPopulatesTaintPath(t *testing.T) {
+	_, idx := loadPythonRules(t)
+	src := "user_id = request.args.get('id')\nquery = \"SELECT \" + user_id\nexecute(query)\n"
+
+	withGraphs := buildFindingForRule(t, idx, src, true, "ZS-PY-004")
+	if withGraphs.TaintContext == nil || len(withGraphs.TaintContext.Path) == 0 {
+		t.Error("expected TaintContext.Path to be populated with --enable-graphs")
+	}
+
+	withoutGraphs := buildFindingForRule(t, idx, src, false, "ZS-PY-004")
+	if withoutGraphs.TaintContext == nil {
+		t.Fatal("expected TaintContext to still be populated without --enable-graphs")
+	}
+	if len(withoutGraphs.TaintContext.Path) != 0 {
+		t.Error("expected TaintContext.Path to stay empty without --enable-graphs")
+	}
+}
+
+// buildFindingForRule runs the real Python parser -> analyzer -> engine ->
+// findings.BuildFinding pipeline and returns the core.Finding for ruleID.
+func buildFindingForRule(t *testing.T, idx *engine.RuleIndex, src string, enableGraphs bool, ruleID string) core.Finding {
+	t.Helper()
+	builder := pythonparser.NewIRBuilder()
+	irFile, _, err := builder.Build("test.py", []byte(src))
+	if err != nil {
+		t.Fatalf("build IR: %v", err)
+	}
+	ar, err := analyzer.New(enableGraphs).Analyze(context.Background(), irFile)
+	if err != nil {
+		t.Fatalf("analyze: %v", err)
+	}
+	mc := &engine.MatchContext{Index: idx, File: ar}
+	results, err := engine.New().Match(context.Background(), mc)
+	if err != nil {
+		t.Fatalf("match: %v", err)
+	}
+	for _, r := range results {
+		if r.Rule.ID == ruleID {
+			return findings.BuildFinding(r, mc)
+		}
+	}
+	t.Fatalf("no match result for rule %s", ruleID)
+	return core.Finding{}
 }
 
 // TestIntegration_TaintedSubprocessCallFiresZSPY012 verifies taint tracking on subprocess.call.

@@ -56,13 +56,16 @@ func BuildFinding(result engine.MatchResult, mc *engine.MatchContext) core.Findi
 			}
 		}
 		sourceExpr := ""
+		var path []core.Location
 		if mc.File != nil {
 			sourceExpr = mc.File.TaintReasons[result.TaintedVar]
+			path = mc.File.TaintPaths[result.TaintedVar]
 		}
 		taintCtx = &core.TaintContext{
 			SourceVar:  result.TaintedVar,
 			SourceExpr: sourceExpr,
 			Sink:       sink,
+			Path:       path,
 		}
 	}
 

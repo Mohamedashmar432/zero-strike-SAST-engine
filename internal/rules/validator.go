@@ -34,6 +34,10 @@ var validConfidences = map[string]bool{
 	"high": true, "medium": true, "low": true,
 }
 
+var validLifecycles = map[string]bool{
+	"draft": true, "validated": true, "released": true, "retired": true,
+}
+
 type defaultValidator struct{}
 
 // NewValidator returns a Validator that rejects unindexable and malformed rules.
@@ -56,6 +60,9 @@ func (v *defaultValidator) Validate(rule *Rule) []string {
 	}
 	if !validConfidences[string(rule.Confidence)] {
 		errs = append(errs, fmt.Sprintf("confidence: invalid value %q", rule.Confidence))
+	}
+	if !validLifecycles[rule.Lifecycle] {
+		errs = append(errs, fmt.Sprintf("lifecycle: invalid value %q", rule.Lifecycle))
 	}
 	return errs
 }

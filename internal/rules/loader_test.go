@@ -86,6 +86,7 @@ language: python
 category: dangerous-functions
 severity: high
 confidence: high
+lifecycle: released
 description: |
   Test description.
 message: "Test message"

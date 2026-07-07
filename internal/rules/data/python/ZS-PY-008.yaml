@@ -1,4 +1,5 @@
 id: ZS-PY-008
+lifecycle: released
 name: open() with Potentially User-Controlled Path
 version: "1.0.0"
 language: python

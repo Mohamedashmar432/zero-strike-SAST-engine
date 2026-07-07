@@ -1,4 +1,5 @@
 id: ZS-PY-024
+lifecycle: released
 name: Empty except Handler Swallows Exception
 version: "1.0.0"
 language: python

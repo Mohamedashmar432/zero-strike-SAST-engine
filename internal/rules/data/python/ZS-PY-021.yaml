@@ -1,4 +1,5 @@
 id: ZS-PY-021
+lifecycle: released
 name: JWT Signature Verification Disabled
 version: "1.0.0"
 language: python

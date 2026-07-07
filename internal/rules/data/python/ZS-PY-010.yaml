@@ -1,4 +1,5 @@
 id: ZS-PY-010
+lifecycle: released
 name: yaml.load Without safe_load
 version: "1.0.0"
 language: python

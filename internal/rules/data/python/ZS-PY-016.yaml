@@ -1,4 +1,5 @@
 id: ZS-PY-016
+lifecycle: released
 name: Flask Debug Mode Enabled
 version: "1.0.0"
 language: python

@@ -41,12 +41,15 @@ type SASTScanner struct {
 	rootPath     string
 	findingCache cache.FindingCache
 	astCache     cache.ASTCache
+	enableGraphs bool
 }
 
 // New creates a SASTScanner from a pre-validated rule set. findingCache and
 // astCache are consulted/written on every processed file; pass
 // cache.NoopCache{}/cache.NoopASTCache{} to disable caching (e.g. --no-cache).
-func New(allRules []*rules.Rule, rootPath string, findingCache cache.FindingCache, astCache cache.ASTCache) *SASTScanner {
+// enableGraphs opts into CFG/DFG-based path-sensitive taint reporting (see
+// internal/analyzer.New).
+func New(allRules []*rules.Rule, rootPath string, findingCache cache.FindingCache, astCache cache.ASTCache, enableGraphs bool) *SASTScanner {
 	return &SASTScanner{
 		eng:          engine.New(),
 		ruleIndex:    engine.BuildIndex(allRules),
@@ -54,6 +57,7 @@ func New(allRules []*rules.Rule, rootPath string, findingCache cache.FindingCach
 		rootPath:     rootPath,
 		findingCache: findingCache,
 		astCache:     astCache,
+		enableGraphs: enableGraphs,
 	}
 }
 
@@ -154,7 +158,7 @@ func (s *SASTScanner) processFile(ctx context.Context, entry walker.FileEntry) (
 	// Analysis and matching always run, whether irFile came from the AST
 	// cache or a fresh parse: rules (and therefore match results) may have
 	// changed even though the file's content - and its cached AST - has not.
-	analysisResult, err := analyzer.New().Analyze(ctx, irFile)
+	analysisResult, err := analyzer.New(s.enableGraphs).Analyze(ctx, irFile)
 	if err != nil {
 		diags = append(diags, analyzer.Diagnostic{Severity: "error", Message: err.Error(), Location: &core.Location{File: entry.Path}})
 		return nil, diags

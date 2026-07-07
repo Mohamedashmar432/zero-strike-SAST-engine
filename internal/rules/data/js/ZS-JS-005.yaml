@@ -1,4 +1,5 @@
 id: ZS-JS-005
+lifecycle: released
 name: outerHTML Assignment (DOM XSS)
 version: "1.0.0"
 language: javascript

@@ -20,7 +20,7 @@ type SASTScanner struct{}
 // compiles against whichever one the build tag selects). The cache params are
 // accepted and ignored, same as allRules/rootPath: this stub never calls Scan
 // meaningfully.
-func New(_ []*rules.Rule, _ string, _ cache.FindingCache, _ cache.ASTCache) *SASTScanner {
+func New(_ []*rules.Rule, _ string, _ cache.FindingCache, _ cache.ASTCache, _ bool) *SASTScanner {
 	return &SASTScanner{}
 }
 

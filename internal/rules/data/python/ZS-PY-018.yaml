@@ -1,4 +1,5 @@
 id: ZS-PY-018
+lifecycle: released
 name: TLS Certificate Verification Disabled (requests.get)
 version: "1.0.0"
 language: python

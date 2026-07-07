@@ -1,4 +1,5 @@
 id: ZS-TS-003
+lifecycle: released
 name: document.write() Usage (DOM XSS)
 version: "1.0.0"
 language: typescript

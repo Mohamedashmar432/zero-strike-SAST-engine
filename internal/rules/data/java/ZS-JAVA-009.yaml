@@ -1,4 +1,5 @@
 id: ZS-JAVA-009
+lifecycle: released
 name: StAX XMLInputFactory XXE
 version: "1.0.0"
 language: java

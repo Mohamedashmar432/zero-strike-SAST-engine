@@ -1,4 +1,5 @@
 id: ZS-TS-005
+lifecycle: released
 name: Empty catch Block Swallows Exception
 version: "1.0.0"
 language: typescript

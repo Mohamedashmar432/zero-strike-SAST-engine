@@ -30,6 +30,7 @@ type ruleYAML struct {
 	Match         matchYAML `yaml:"match"`
 	FixSuggestion string    `yaml:"fix_suggestion"`
 	Rationale     string    `yaml:"rationale"`
+	Lifecycle     string    `yaml:"lifecycle"`
 }
 
 type matchYAML struct {
@@ -60,16 +61,17 @@ type filterYAML struct {
 }
 
 type defaultLoader struct {
-	fsys fs.FS // nil = OS filesystem
+	fsys      fs.FS     // nil = OS filesystem
+	validator Validator // shared validator instance (stateless, reused for all rules)
 }
 
 // NewLoader returns a Loader. Pass an fs.FS to read from it (e.g. EmbeddedFS);
 // omit to read from the OS filesystem.
 func NewLoader(fsys ...fs.FS) Loader {
 	if len(fsys) > 0 && fsys[0] != nil {
-		return &defaultLoader{fsys: fsys[0]}
+		return &defaultLoader{fsys: fsys[0], validator: NewValidator()}
 	}
-	return &defaultLoader{}
+	return &defaultLoader{validator: NewValidator()}
 }
 
 // Load parses a single YAML rule file and returns it as a one-element slice.
@@ -95,6 +97,7 @@ func (l *defaultLoader) LoadDir(dir string) ([]*Rule, error) {
 	}
 
 	var all []*Rule
+	var errs []string
 	for _, e := range entries {
 		if e.IsDir() || !strings.HasSuffix(e.Name(), ".yaml") {
 			continue
@@ -106,9 +109,13 @@ func (l *defaultLoader) LoadDir(dir string) ([]*Rule, error) {
 		}
 		rules, err := l.parseYAML(filePath, data)
 		if err != nil {
-			return nil, err
+			errs = append(errs, err.Error())
+			continue
 		}
 		all = append(all, rules...)
+	}
+	if len(errs) > 0 {
+		return nil, fmt.Errorf("loader: readdir %s: %d rule(s) failed validation:\n%s", dir, len(errs), strings.Join(errs, "\n"))
 	}
 	return all, nil
 }
@@ -141,6 +148,7 @@ func (l *defaultLoader) parseYAML(source string, data []byte) ([]*Rule, error) {
 		References:    ry.References,
 		FixSuggestion: ry.FixSuggestion,
 		Rationale:     ry.Rationale,
+		Lifecycle:     ry.Lifecycle,
 		Match: MatchPattern{
 			Kind:          ry.Match.Kind,
 			Callee:        ry.Match.Callee,
@@ -151,6 +159,11 @@ func (l *defaultLoader) parseYAML(source string, data []byte) ([]*Rule, error) {
 			Filters:       convertFilters(ry.Match.Filters),
 		},
 	}
+
+	if errs := l.validator.Validate(rule); len(errs) > 0 {
+		return nil, fmt.Errorf("loader: parse %s: rule %s failed validation: %s", source, rule.ID, strings.Join(errs, "; "))
+	}
+
 	return []*Rule{rule}, nil
 }
 

@@ -1,4 +1,5 @@
 id: ZS-JAVA-001
+lifecycle: released
 name: JDBC Statement SQL Injection
 version: "1.0.0"
 language: java

@@ -28,17 +28,19 @@ import (
 
 func main() {
 	var (
-		corpusRoot string
-		minRecall  float64
-		maxFP      int
-		jsonOut    string
-		mdOut      string
+		corpusRoot   string
+		minRecall    float64
+		maxFP        int
+		jsonOut      string
+		mdOut        string
+		enableGraphs bool
 	)
 	flag.StringVar(&corpusRoot, "corpus", "benchmark/corpus", "path to the benchmark corpus root")
 	flag.Float64Var(&minRecall, "min-recall", 0.90, "minimum overall recall required to pass")
 	flag.IntVar(&maxFP, "max-fp", 0, "maximum false positives allowed on declared true-negative cases before failing")
 	flag.StringVar(&jsonOut, "json-out", "", "write the JSON report to this path (\"\" = skip)")
 	flag.StringVar(&mdOut, "md-out", "", "write the Markdown report to this path (\"\" = skip)")
+	flag.BoolVar(&enableGraphs, "enable-graphs", false, "enable CFG/DFG-based path-sensitive taint reporting (Python only)")
 	flag.Parse()
 
 	dirs, err := benchmark.LoadCorpus(corpusRoot)
@@ -47,7 +49,7 @@ func main() {
 		os.Exit(2)
 	}
 
-	summary, err := benchmark.ScoreCorpus(context.Background(), dirs)
+	summary, err := benchmark.ScoreCorpus(context.Background(), dirs, enableGraphs)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "zerostrike-bench:", err)
 		os.Exit(2)

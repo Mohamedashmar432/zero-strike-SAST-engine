@@ -1,4 +1,5 @@
 id: ZS-CS-006
+lifecycle: released
 name: Hardcoded Credential
 version: "1.0.0"
 language: csharp

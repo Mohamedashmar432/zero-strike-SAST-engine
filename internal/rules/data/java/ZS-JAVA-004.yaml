@@ -1,4 +1,5 @@
 id: ZS-JAVA-004
+lifecycle: released
 name: Weak Cryptographic Key Spec (DES)
 version: "1.0.0"
 language: java

@@ -10,23 +10,39 @@ import (
 	"github.com/zerostrike/scanner/internal/symboltable"
 )
 
-// New returns the default Analyzer implementation.
-func New() Analyzer { return &defaultAnalyzer{} }
+// New returns the default Analyzer implementation. enableGraphs opts into
+// building the CFG/DFG graph layer (Python IR only, this sprint — see
+// internal/graph) for path-sensitive taint reporting; leave it false for the
+// pre-existing flow-insensitive-only behavior at zero extra cost.
+func New(enableGraphs bool) Analyzer { return &defaultAnalyzer{enableGraphs: enableGraphs} }
 
-type defaultAnalyzer struct{}
+type defaultAnalyzer struct {
+	enableGraphs bool
+}
 
 func (a *defaultAnalyzer) Analyze(_ context.Context, file *ir.IRFile) (*AnalysisResult, error) {
 	if file == nil {
 		return &AnalysisResult{}, nil
 	}
 	symbols := symboltable.NewBuilder().Build(file)
-	tc := taint.BuildContext(file, symbols)
+
+	var cfg *graph.CFG
+	var dfg *graph.DFG
+	if a.enableGraphs && file.Language == core.LangPython && file.Root != nil {
+		cfg = graph.NewCFG(file.Root)
+		dfg = graph.NewDFG(file.Root, cfg)
+	}
+
+	tc := taint.BuildContext(file, symbols, dfg)
 	return &AnalysisResult{
 		File:         file.Path,
 		IR:           file,
 		Symbols:      symbols,
+		CFG:          cfg,
+		DFG:          dfg,
 		TaintedVars:  tc.Tainted,
 		TaintReasons: tc.Reasons,
+		TaintPaths:   tc.Paths,
 	}, nil
 }
 
@@ -66,7 +82,12 @@ type AnalysisResult struct {
 	// internal/analyzer/taint.BuildContext). Keyed by the same variable
 	// names as TaintedVars; only set for variables where TaintedVars is true.
 	TaintReasons map[string]string
-	Diagnostics  []Diagnostic
+	// TaintPaths holds the source-to-sink location chain for each tainted
+	// variable (see internal/analyzer/taint.Result.Paths). Nil unless
+	// --enable-graphs was set and the file's language has graph support
+	// (Python only, this sprint).
+	TaintPaths  map[string][]core.Location
+	Diagnostics []Diagnostic
 }
 
 // Analyzer runs analysis passes over an IRFile to produce an AnalysisResult.

@@ -69,6 +69,10 @@ type TaintContext struct {
 	SourceVar  string // tainted identifier referenced at the sink, e.g. "q"
 	SourceExpr string // the RHS/expression snippet that introduced the taint, e.g. "request.args.get('q')"
 	Sink       string // sink callee or LHS attribute, e.g. "os.system" or "innerHTML"
+	// Path holds the source-to-sink location chain for SourceVar, in order,
+	// when derived from graph-based reaching-definitions analysis (--enable-graphs).
+	// Nil when graphs are disabled or unavailable for the file's language.
+	Path []Location
 }
 
 // Finding represents a single security issue detected in source code.

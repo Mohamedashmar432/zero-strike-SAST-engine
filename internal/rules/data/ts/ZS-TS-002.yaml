@@ -1,4 +1,5 @@
 id: ZS-TS-002
+lifecycle: released
 name: innerHTML Assignment (DOM XSS)
 version: "1.0.0"
 language: typescript

@@ -1,4 +1,5 @@
 id: ZS-TS-001
+lifecycle: released
 name: eval() Usage
 version: "1.0.0"
 language: typescript

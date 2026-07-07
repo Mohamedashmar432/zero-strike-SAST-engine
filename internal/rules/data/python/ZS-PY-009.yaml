@@ -1,4 +1,5 @@
 id: ZS-PY-009
+lifecycle: released
 name: assert Used for Security Check
 version: "1.0.0"
 language: python

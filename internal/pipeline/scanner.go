@@ -77,7 +77,7 @@ func New(cfg ScanConfig) (*ScanPipeline, error) {
 	findingCache, astCache := openCache(cfg, ruleSetHash)
 
 	var scanners []scanner.Scanner
-	scanners = append(scanners, sast.New(allRules, cfg.RootPath, findingCache, astCache))
+	scanners = append(scanners, sast.New(allRules, cfg.RootPath, findingCache, astCache, cfg.EnableGraphs))
 	if cfg.EnableSecrets {
 		scanners = append(scanners, secrets.New())
 	}

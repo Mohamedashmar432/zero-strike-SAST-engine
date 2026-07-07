@@ -1,4 +1,5 @@
 id: ZS-JAVA-002
+lifecycle: released
 name: ObjectInputStream Unsafe Deserialization
 version: "1.0.0"
 language: java

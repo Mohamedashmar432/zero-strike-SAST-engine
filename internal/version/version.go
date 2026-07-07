@@ -6,4 +6,4 @@
 package version
 
 // Version is the ZeroStrike engine version. Update this on release.
-const Version = "v0.14.0"
+const Version = "v0.15.0"

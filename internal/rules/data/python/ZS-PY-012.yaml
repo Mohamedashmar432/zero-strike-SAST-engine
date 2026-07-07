@@ -1,4 +1,5 @@
 id: ZS-PY-012
+lifecycle: released
 name: subprocess.call() Usage
 version: "1.0.0"
 language: python

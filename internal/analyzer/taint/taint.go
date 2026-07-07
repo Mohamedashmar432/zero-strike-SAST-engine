@@ -11,6 +11,8 @@
 package taint
 
 import (
+	"github.com/zerostrike/scanner/internal/core"
+	"github.com/zerostrike/scanner/internal/graph"
 	"github.com/zerostrike/scanner/internal/ir"
 	"github.com/zerostrike/scanner/internal/symboltable"
 )
@@ -21,6 +23,13 @@ import (
 type Result struct {
 	Tainted map[string]bool
 	Reasons map[string]string // keyed by variable name, only set when Tainted[name] is true
+	// Paths holds the source-to-sink location chain for each tainted
+	// variable, only populated when BuildContext is given a non-nil *graph.DFG
+	// (i.e. --enable-graphs). A variable can be Tainted with no entry in
+	// Paths if the DFG couldn't confirm its definition reaches this point
+	// (see extendPath) — the flow-insensitive verdict is still trusted, the
+	// precise path just isn't.
+	Paths map[string][]core.Location
 }
 
 // Build walks file in source order and returns the set of variable names
@@ -52,7 +61,7 @@ type Result struct {
 // taint and true flow-sensitivity need the CFG/DFG graph layer (deferred —
 // see docs/roadmap/SPRINT-22-GRAPH-LAYER-CFG-DFG.md).
 func Build(file *ir.IRFile, symbols symboltable.SymbolTable) map[string]bool {
-	return BuildContext(file, symbols).Tainted
+	return BuildContext(file, symbols, nil).Tainted
 }
 
 // BuildContext performs the same walk as Build but additionally tracks, per
@@ -60,11 +69,12 @@ func Build(file *ir.IRFile, symbols symboltable.SymbolTable) map[string]bool {
 // source pattern, "propagated from <name>" for a tainted-identifier
 // reference, or "tainted via <callee>(...)" for a same-file summarized call.
 // See Build's doc comment for the full verdict rules.
-func BuildContext(file *ir.IRFile, symbols symboltable.SymbolTable) Result {
+func BuildContext(file *ir.IRFile, symbols symboltable.SymbolTable, dfg *graph.DFG) Result {
 	tainted := make(map[string]bool)
 	reasons := make(map[string]string)
+	paths := make(map[string][]core.Location)
 	if file == nil || file.Root == nil {
-		return Result{Tainted: tainted, Reasons: reasons}
+		return Result{Tainted: tainted, Reasons: reasons, Paths: paths}
 	}
 	pats := patternsFor(file.Language)
 	summaries := buildSummaries(file, pats)
@@ -76,43 +86,75 @@ func BuildContext(file *ir.IRFile, symbols symboltable.SymbolTable) Result {
 		if lhs == "" {
 			return true
 		}
-		verdict, reason := assignmentTaintsLHS(n, pats, summaries, symbols, tainted)
+		verdict, reason, ref := assignmentTaintsLHS(n, pats, summaries, symbols, tainted)
 		if aug, _ := n.Attrs["augmented"].(bool); aug {
 			if !verdict && tainted[lhs] {
 				// Inherits the previous verdict; keep the previously
 				// recorded reason instead of overwriting with empty.
 				verdict = true
 				reason = reasons[lhs]
+				ref = lhs
 			}
 		}
 		tainted[lhs] = verdict
 		if verdict {
 			reasons[lhs] = reason
+			if dfg != nil {
+				if p := extendPath(n, ref, dfg, paths); p != nil {
+					paths[lhs] = p
+				} else {
+					delete(paths, lhs)
+				}
+			}
 		} else {
 			delete(reasons, lhs)
+			delete(paths, lhs)
 		}
 		return true
 	})
-	return Result{Tainted: tainted, Reasons: reasons}
+	return Result{Tainted: tainted, Reasons: reasons, Paths: paths}
+}
+
+// extendPath builds the source-to-sink location chain for a tainted
+// assignment n whose taint verdict came from referencing variable ref (empty
+// when n is itself a direct source match or an opaque same-file-call
+// summary — see assignmentTaintsLHS). Returns nil when ref is non-empty but
+// dfg can't confirm ref's definition reaches n (e.g. across a branch this
+// sprint's CFG doesn't thread through — see graph.NewCFG's doc comment):
+// the flow-insensitive taint verdict is still trusted, but the precise path
+// isn't extended past what the graph can confirm.
+func extendPath(n *ir.IRNode, ref string, dfg *graph.DFG, paths map[string][]core.Location) []core.Location {
+	if ref == "" {
+		return []core.Location{n.Location}
+	}
+	if len(dfg.ReachingDefs[n.NodeID][ref]) == 0 {
+		return nil
+	}
+	prefix := paths[ref]
+	path := make([]core.Location, len(prefix), len(prefix)+1)
+	copy(path, prefix)
+	return append(path, n.Location)
 }
 
 // assignmentTaintsLHS computes the fresh taint verdict for one assignment,
-// along with a human-readable reason for a true verdict (empty for false).
-func assignmentTaintsLHS(n *ir.IRNode, pats languagePatterns, summaries map[string]functionSummary, symbols symboltable.SymbolTable, tainted map[string]bool) (bool, string) {
+// a human-readable reason for a true verdict (empty for false), and the
+// upstream tainted identifier name it propagated from, if any (empty for a
+// direct source match, a summarized-call verdict, or a false verdict).
+func assignmentTaintsLHS(n *ir.IRNode, pats languagePatterns, summaries map[string]functionSummary, symbols symboltable.SymbolTable, tainted map[string]bool) (bool, string, string) {
 	rhs, _ := n.Attrs["rhs"].(string)
 	if matchesAny(pats.Sanitizers, rhs) {
-		return false, ""
+		return false, "", ""
 	}
 	if matchesAny(pats.Sources, rhs) {
-		return true, rhs
+		return true, rhs, ""
 	}
 	if ref, ok := rhsReferencesTainted(n, tainted); ok {
-		return true, "propagated from " + ref
+		return true, "propagated from " + ref, ref
 	}
 	if callee, ok := callTaintedViaSummary(n, summaries, symbols, tainted); ok {
-		return true, "tainted via " + callee + "(...)"
+		return true, "tainted via " + callee + "(...)", ""
 	}
-	return false, ""
+	return false, "", ""
 }
 
 // rhsReferencesTainted reports whether the assignment's right-hand-side

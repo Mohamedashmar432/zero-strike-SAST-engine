@@ -14,6 +14,7 @@ func validRule() *rules.Rule {
 		ID:         "ZS-TEST-001",
 		Severity:   core.SeverityHigh,
 		Confidence: core.ConfidenceHigh,
+		Lifecycle:  "released",
 		Match: rules.MatchPattern{
 			Kind:   string(ir.NodeKindCall),
 			Callee: "eval",

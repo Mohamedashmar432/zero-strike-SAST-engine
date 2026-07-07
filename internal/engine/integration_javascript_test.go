@@ -40,7 +40,7 @@ func matchJSSource(t *testing.T, idx *engine.RuleIndex, src string) []engine.Mat
 	if err != nil {
 		t.Fatalf("build IR: %v", err)
 	}
-	ar, err := analyzer.New().Analyze(context.Background(), irFile)
+	ar, err := analyzer.New(false).Analyze(context.Background(), irFile)
 	if err != nil {
 		t.Fatalf("analyze: %v", err)
 	}
@@ -59,7 +59,7 @@ func matchTSSource(t *testing.T, idx *engine.RuleIndex, src string) []engine.Mat
 	if err != nil {
 		t.Fatalf("build IR: %v", err)
 	}
-	ar, err := analyzer.New().Analyze(context.Background(), irFile)
+	ar, err := analyzer.New(false).Analyze(context.Background(), irFile)
 	if err != nil {
 		t.Fatalf("analyze: %v", err)
 	}

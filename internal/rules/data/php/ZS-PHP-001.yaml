@@ -1,4 +1,5 @@
 id: ZS-PHP-001
+lifecycle: released
 name: system() Command Injection
 version: "1.0.0"
 language: php

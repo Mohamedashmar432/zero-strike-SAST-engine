@@ -1,4 +1,5 @@
 id: ZS-PY-019
+lifecycle: released
 name: Django ALLOWED_HOSTS Assignment
 version: "1.0.0"
 language: python

@@ -1,4 +1,5 @@
 id: ZS-JS-008
+lifecycle: released
 name: JWT Decoded Without Verification
 version: "1.0.0"
 language: javascript

@@ -1,4 +1,5 @@
 id: ZS-PHP-003
+lifecycle: released
 name: unserialize() Insecure Deserialization
 version: "1.0.0"
 language: php

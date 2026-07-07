@@ -1,4 +1,5 @@
 id: ZS-JAVA-003
+lifecycle: released
 name: DocumentBuilderFactory XXE
 version: "1.0.0"
 language: java

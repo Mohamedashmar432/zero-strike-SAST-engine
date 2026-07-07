@@ -77,7 +77,10 @@ func newSummary() *Summary {
 
 // ScoreCorpus runs the full pipeline (all scanners enabled) against every
 // corpus subdirectory and scores the results against each manifest.
-func ScoreCorpus(ctx context.Context, dirs []CorpusDir) (*Summary, error) {
+// enableGraphs opts into CFG/DFG-based path-sensitive taint reporting; it's
+// additive (see internal/analyzer.New) and shouldn't change which findings
+// fire, only whether TaintContext.Path is populated.
+func ScoreCorpus(ctx context.Context, dirs []CorpusDir, enableGraphs bool) (*Summary, error) {
 	summary := newSummary()
 
 	for _, dir := range dirs {
@@ -86,6 +89,7 @@ func ScoreCorpus(ctx context.Context, dirs []CorpusDir) (*Summary, error) {
 			EnableSecrets:         true,
 			EnableSCA:             true,
 			EnableFrameworkChecks: true,
+			EnableGraphs:          enableGraphs,
 			SCAOnError:            "warn",
 		}
 		pipe, err := pipeline.New(cfg)

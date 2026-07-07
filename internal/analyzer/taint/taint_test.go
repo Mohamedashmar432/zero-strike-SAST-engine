@@ -314,7 +314,7 @@ func TestBuildContext_SourcePatternReason(t *testing.T) {
 		},
 	}
 	file := &ir.IRFile{Root: root}
-	result := taint.BuildContext(file, symboltable.NewBuilder().Build(file))
+	result := taint.BuildContext(file, symboltable.NewBuilder().Build(file), nil)
 	if !result.Tainted["user_id"] {
 		t.Fatal("expected user_id to be tainted")
 	}
@@ -334,7 +334,7 @@ func TestBuildContext_PropagationReason(t *testing.T) {
 		},
 	}
 	file := &ir.IRFile{Root: root}
-	result := taint.BuildContext(file, symboltable.NewBuilder().Build(file))
+	result := taint.BuildContext(file, symboltable.NewBuilder().Build(file), nil)
 	if !result.Tainted["query"] {
 		t.Fatal("expected query to be tainted")
 	}
@@ -364,7 +364,7 @@ func TestBuildContext_SummaryCallReason(t *testing.T) {
 		},
 	}
 	file := &ir.IRFile{Root: root, Language: core.LangPython}
-	result := taint.BuildContext(file, symboltable.NewBuilder().Build(file))
+	result := taint.BuildContext(file, symboltable.NewBuilder().Build(file), nil)
 	if !result.Tainted["y"] {
 		t.Fatal("expected y to be tainted")
 	}
@@ -387,7 +387,7 @@ func TestBuildContext_SanitizerClearsReason(t *testing.T) {
 		},
 	}
 	file := &ir.IRFile{Root: root, Language: core.LangPython}
-	result := taint.BuildContext(file, symboltable.NewBuilder().Build(file))
+	result := taint.BuildContext(file, symboltable.NewBuilder().Build(file), nil)
 	if result.Tainted["x"] {
 		t.Error("expected x to NOT be tainted after sanitizer")
 	}
@@ -410,7 +410,7 @@ func TestBuildContext_AugmentedAssignmentKeepsReason(t *testing.T) {
 		},
 	}
 	file := &ir.IRFile{Root: root, Language: core.LangPython}
-	result := taint.BuildContext(file, symboltable.NewBuilder().Build(file))
+	result := taint.BuildContext(file, symboltable.NewBuilder().Build(file), nil)
 	if !result.Tainted["x"] {
 		t.Fatal("expected x to stay tainted after augmented assignment")
 	}
@@ -422,7 +422,7 @@ func TestBuildContext_AugmentedAssignmentKeepsReason(t *testing.T) {
 // TestBuildContext_NilFile verifies BuildContext returns non-nil empty maps
 // for a nil file, mirroring TestBuild_NilFile.
 func TestBuildContext_NilFile(t *testing.T) {
-	result := taint.BuildContext(nil, nil)
+	result := taint.BuildContext(nil, nil, nil)
 	if len(result.Tainted) != 0 || len(result.Reasons) != 0 {
 		t.Errorf("expected empty maps for nil file, got %v / %v", result.Tainted, result.Reasons)
 	}

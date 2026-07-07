@@ -1,4 +1,5 @@
 id: ZS-JS-006
+lifecycle: released
 name: TLS Certificate Verification Disabled (rejectUnauthorized)
 version: "1.0.0"
 language: javascript

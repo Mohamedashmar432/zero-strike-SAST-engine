@@ -1,4 +1,5 @@
 id: ZS-GO-002
+lifecycle: released
 name: db.Query SQL Injection
 version: "1.0.0"
 language: go

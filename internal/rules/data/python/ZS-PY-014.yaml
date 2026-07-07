@@ -1,4 +1,5 @@
 id: ZS-PY-014
+lifecycle: released
 name: tempfile.mktemp() Insecure Temp File
 version: "1.0.0"
 language: python

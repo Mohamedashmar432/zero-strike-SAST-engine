@@ -1,4 +1,5 @@
 id: ZS-PHP-002
+lifecycle: released
 name: mysqli_query SQL Injection
 version: "1.0.0"
 language: php

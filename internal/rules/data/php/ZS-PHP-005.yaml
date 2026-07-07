@@ -1,4 +1,5 @@
 id: ZS-PHP-005
+lifecycle: released
 name: Hardcoded Credential
 version: "1.0.0"
 language: php
