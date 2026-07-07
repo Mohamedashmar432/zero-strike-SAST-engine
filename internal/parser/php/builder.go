@@ -58,6 +58,19 @@ func (b *IRBuilder) buildNode(node *sitter.Node, source []byte, parent *ir.IRNod
 	if node.Type() == "echo_statement" {
 		return b.buildEchoAsCall(node, source, parent, path, warnings)
 	}
+	// include/require are language constructs (include_expression /
+	// require_expression), not function_call_expression, so they'd
+	// otherwise fall through to NodeKindUnknown — same problem
+	// echo_statement already had, same fix: build a synthetic
+	// NodeKindCall with a synthetic "include"/"require" identifier so
+	// TaintedArgument (LFI rules) can find them like any other sink call.
+	if node.Type() == "include_expression" || node.Type() == "require_expression" {
+		keyword := "include"
+		if node.Type() == "require_expression" {
+			keyword = "require"
+		}
+		return b.buildIncludeAsCall(node, source, parent, path, warnings, keyword)
+	}
 	start := node.StartPoint()
 	end := node.EndPoint()
 	irNode := &ir.IRNode{
@@ -132,6 +145,56 @@ func (b *IRBuilder) buildEchoAsCall(node *sitter.Node, source []byte, parent *ir
 		c := node.Child(i)
 		switch c.Type() {
 		case "echo", ";", ",":
+			continue
+		}
+		built := b.buildNode(c, source, irNode, path, warnings)
+		if built != nil {
+			children = append(children, built)
+			argCount++
+		}
+	}
+	irNode.Attrs["argument_count"] = argCount
+	irNode.Children = children
+	return irNode
+}
+
+// buildIncludeAsCall builds an include_expression/require_expression as a
+// NodeKindCall whose first child is a synthetic identifier holding keyword
+// ("include" or "require") and whose remaining child is the included path
+// expression — see the buildNode comment for why. The path expression may
+// itself be a generic parenthesized-expression wrapper (include($f)) or a
+// bare expression (include $f), same ambiguity buildEchoAsCall's comma-args
+// don't have; anyArgument/firstTaintedArgument already recurse into a
+// child's descendants, so no unwrapping is needed here.
+func (b *IRBuilder) buildIncludeAsCall(node *sitter.Node, source []byte, parent *ir.IRNode, path string, warnings *[]ir.BuildWarning, keyword string) *ir.IRNode {
+	start := node.StartPoint()
+	end := node.EndPoint()
+	loc := core.Location{
+		StartLine: int(start.Row) + 1,
+		StartCol:  int(start.Column),
+		EndLine:   int(end.Row) + 1,
+		EndCol:    int(end.Column),
+	}
+	irNode := &ir.IRNode{
+		NodeID:   uuid.New().String(),
+		Kind:     ir.NodeKindCall,
+		Location: loc,
+		Parent:   parent,
+		Attrs:    make(map[string]any),
+	}
+	kwIdent := &ir.IRNode{
+		NodeID:   uuid.New().String(),
+		Kind:     ir.NodeKindIdentifier,
+		Text:     keyword,
+		Location: loc,
+		Parent:   irNode,
+		Attrs:    make(map[string]any),
+	}
+	children := []*ir.IRNode{kwIdent}
+	argCount := 0
+	for i := 0; i < int(node.ChildCount()); i++ {
+		c := node.Child(i)
+		if c.Type() == keyword {
 			continue
 		}
 		built := b.buildNode(c, source, irNode, path, warnings)

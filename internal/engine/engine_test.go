@@ -549,3 +549,155 @@ func TestMatch_ExceptHandlerFilters(t *testing.T) {
 		t.Errorf("expected only ZS-TEST-EMPTYEXCEPT to fire on an empty typed except, got %d results", len(results))
 	}
 }
+
+// attrChain builds a nested NodeKindAttribute chain the same way the real
+// tree-sitter-derived IR does for a multi-segment dotted call (e.g.
+// "context.Response.Write" -> Attribute(Attribute(Identifier(context),
+// Identifier(Response)), Identifier(Write))) — mirrors the real shape
+// confirmed for urllib.request.urlopen earlier this session.
+func attrChain(parts ...string) *ir.IRNode {
+	if len(parts) == 1 {
+		return &ir.IRNode{Kind: ir.NodeKindIdentifier, Text: parts[0]}
+	}
+	return &ir.IRNode{
+		Kind: ir.NodeKindAttribute,
+		Children: []*ir.IRNode{
+			attrChain(parts[:len(parts)-1]...),
+			{Kind: ir.NodeKindIdentifier, Text: parts[len(parts)-1]},
+		},
+	}
+}
+
+func callNodeWithChain(parts ...string) *ir.IRNode {
+	return &ir.IRNode{
+		Kind:     ir.NodeKindCall,
+		Children: []*ir.IRNode{attrChain(parts...)},
+		Attrs:    map[string]any{"argument_count": 1},
+	}
+}
+
+func suffixRule(id, callee string) *rules.Rule {
+	return &rules.Rule{
+		ID:       id,
+		Language: core.LangCSharp,
+		Match: rules.MatchPattern{
+			Kind:         string(ir.NodeKindCall),
+			Callee:       callee,
+			CalleeSuffix: true,
+		},
+		Severity:   core.SeverityHigh,
+		Confidence: core.ConfidenceHigh,
+	}
+}
+
+func matchOne(t *testing.T, rule *rules.Rule, call *ir.IRNode) []engine.MatchResult {
+	t.Helper()
+	idx := engine.BuildIndex([]*rules.Rule{rule})
+	root := &ir.IRNode{Kind: ir.NodeKindModule, Children: []*ir.IRNode{call}}
+	mc := &engine.MatchContext{
+		Index: idx,
+		File:  &analyzer.AnalysisResult{IR: &ir.IRFile{Language: core.LangCSharp, Path: "test.cs", Root: root}},
+	}
+	results, err := engine.New().Match(context.Background(), mc)
+	if err != nil {
+		t.Fatalf("Match error: %v", err)
+	}
+	return results
+}
+
+func TestMatch_CalleeSuffix_ExactStillMatches(t *testing.T) {
+	rule := suffixRule("ZS-TEST-SUFFIX-EXACT", "Response.Write")
+	call := callNodeWithChain("Response", "Write")
+	results := matchOne(t, rule, call)
+	if len(results) != 1 {
+		t.Fatalf("expected exact match to still fire with callee_suffix:true, got %d results", len(results))
+	}
+}
+
+func TestMatch_CalleeSuffix_LongerChainMatches(t *testing.T) {
+	rule := suffixRule("ZS-TEST-SUFFIX-LONG", "Response.Write")
+	call := callNodeWithChain("context", "Response", "Write")
+	results := matchOne(t, rule, call)
+	if len(results) != 1 {
+		t.Fatalf("expected context.Response.Write to match callee_suffix rule for Response.Write, got %d results", len(results))
+	}
+}
+
+func TestMatch_CalleeSuffix_UnrelatedPartialWordDoesNotMatch(t *testing.T) {
+	rule := suffixRule("ZS-TEST-SUFFIX-PARTIAL", "Response.Write")
+	call := callNodeWithChain("XResponse", "Write") // no dot before "Response.Write" as a whole
+	results := matchOne(t, rule, call)
+	if len(results) != 0 {
+		t.Fatalf("expected XResponse.Write to NOT match Response.Write (not a dot-boundary suffix), got %d results", len(results))
+	}
+}
+
+func TestMatch_CalleeSuffix_SharedLastSegmentDoesNotCollide(t *testing.T) {
+	// Real shipped fixtures: benchmark/corpus/csharp/cases/clean.cs calls
+	// SHA256.Create(), which shares only its last segment ("Create") with
+	// ZS-CS-005's MD5.Create — the byCalleeSuffix shortlist groups them,
+	// but the full dot-boundary check must still keep them apart.
+	rule := suffixRule("ZS-TEST-SUFFIX-MD5", "MD5.Create")
+	call := callNodeWithChain("SHA256", "Create")
+	results := matchOne(t, rule, call)
+	if len(results) != 0 {
+		t.Fatalf("expected SHA256.Create to NOT match MD5.Create despite sharing the last segment, got %d results", len(results))
+	}
+}
+
+func TestMatch_CalleeSuffix_OptOutStaysExactOnly(t *testing.T) {
+	rule := &rules.Rule{
+		ID:       "ZS-TEST-SUFFIX-OPTOUT",
+		Language: core.LangCSharp,
+		Match: rules.MatchPattern{
+			Kind:   string(ir.NodeKindCall),
+			Callee: "Response.Write",
+			// CalleeSuffix intentionally left false.
+		},
+		Severity:   core.SeverityHigh,
+		Confidence: core.ConfidenceHigh,
+	}
+	call := callNodeWithChain("context", "Response", "Write")
+	results := matchOne(t, rule, call)
+	if len(results) != 0 {
+		t.Fatalf("expected context.Response.Write to NOT match when callee_suffix is false, got %d results", len(results))
+	}
+}
+
+// TestBuildIndex_CalleeSuffix_SingleSegmentNeverIndexedAsSuffix defends the
+// engine's own floor independently of the validator: even if a single-segment
+// callee_suffix:true rule somehow reaches BuildIndex, it must fall back to
+// exact-match-only, never suffix-match (which would make e.g. "eval" match
+// any "obj.eval()" call — see internal/rules/validator.go for the load-time
+// rejection of this same combination).
+func TestBuildIndex_CalleeSuffix_SingleSegmentNeverIndexedAsSuffix(t *testing.T) {
+	rule := &rules.Rule{
+		ID:       "ZS-TEST-SUFFIX-SINGLESEG",
+		Language: core.LangJavaScript,
+		Match: rules.MatchPattern{
+			Kind:         string(ir.NodeKindCall),
+			Callee:       "eval",
+			CalleeSuffix: true,
+		},
+		Severity:   core.SeverityHigh,
+		Confidence: core.ConfidenceHigh,
+	}
+	idx := engine.BuildIndex([]*rules.Rule{rule})
+	call := &ir.IRNode{
+		Kind:     ir.NodeKindCall,
+		Children: []*ir.IRNode{attrChain("obj", "eval")},
+		Attrs:    map[string]any{"argument_count": 1},
+	}
+	root := &ir.IRNode{Kind: ir.NodeKindModule, Children: []*ir.IRNode{call}}
+	mc := &engine.MatchContext{
+		Index: idx,
+		File:  &analyzer.AnalysisResult{IR: &ir.IRFile{Language: core.LangJavaScript, Path: "test.js", Root: root}},
+	}
+	results, err := engine.New().Match(context.Background(), mc)
+	if err != nil {
+		t.Fatalf("Match error: %v", err)
+	}
+	if len(results) != 0 {
+		t.Fatalf("expected single-segment callee_suffix rule to never suffix-match obj.eval(), got %d results", len(results))
+	}
+}

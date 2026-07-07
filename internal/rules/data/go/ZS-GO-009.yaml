@@ -1,0 +1,32 @@
+id: ZS-GO-009
+lifecycle: released
+name: Insecure TLS Minimum Version (SSLv3)
+version: "1.0.0"
+language: go
+category: cryptography
+severity: high
+confidence: high
+cwe:
+  - CWE-327
+owasp:
+  - "A04:2025"
+rationale: |
+  SSLv3 is broken by the POODLE attack, which lets a network attacker
+  decrypt parts of the traffic by exploiting SSLv3's padding scheme, so a
+  tls.Config that permits negotiating down to tls.VersionSSL30 accepts
+  connections an attacker can partially decrypt even if both ends would
+  otherwise prefer a modern TLS version. This is exploitable by any
+  attacker positioned to influence the TLS handshake (a network
+  man-in-the-middle) into forcing a downgrade to the weakest version the
+  server will still accept.
+description: |
+  Detects use of the tls.VersionSSL30 constant, typically set as a
+  tls.Config's MinVersion field.
+message: "TLS MinVersion set to SSLv3 — vulnerable to the POODLE downgrade attack"
+references:
+  - https://owasp.org/www-community/attacks/POODLE
+tags: [weak-crypto, tls, misconfiguration]
+match:
+  kind: identifier
+  identifier: VersionSSL30
+fix_suggestion: "Set tls.Config.MinVersion to tls.VersionTLS12 or higher."

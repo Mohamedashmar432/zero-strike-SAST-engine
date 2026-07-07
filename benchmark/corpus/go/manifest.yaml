@@ -25,6 +25,21 @@ cases:
   - file: testdata/vuln_dbexec.go
     language: go
     expect: [{rule_id: ZS-GO-007, min_count: 1}]
+  - file: testdata/vuln_des.go
+    language: go
+    expect: [{rule_id: ZS-GO-008, min_count: 1}]
+  - file: testdata/vuln_tls_minversion.go
+    language: go
+    expect: [{rule_id: ZS-GO-009, min_count: 1}]
+  - file: testdata/vuln_weak_rand.go
+    language: go
+    expect: [{rule_id: ZS-GO-010, min_count: 1}]
+  - file: testdata/vuln_rc4.go
+    language: go
+    expect: [{rule_id: ZS-GO-011, min_count: 1}]
+  - file: testdata/vuln_ssrf.go
+    language: go
+    expect: [{rule_id: ZS-GO-012, min_count: 1}]
   - file: testdata/clean.go
     language: go
     expect: []

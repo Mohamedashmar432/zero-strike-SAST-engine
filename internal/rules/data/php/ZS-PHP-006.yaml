@@ -1,0 +1,36 @@
+id: ZS-PHP-006
+lifecycle: released
+name: shell_exec() Command Injection
+version: "1.0.0"
+language: php
+category: injection
+severity: high
+confidence: high
+cwe:
+  - CWE-78
+owasp:
+  - "A05:2025"
+rationale: |
+  shell_exec() runs its argument through the shell exactly like system(),
+  so any shell metacharacters (;, |, &&, backticks, $()) present in
+  attacker-controlled data let an attacker chain or substitute arbitrary
+  commands rather than supply a single argument. This is exploitable
+  wherever a hostname, filename, or other request-derived value from
+  $_GET/$_POST/$_REQUEST is concatenated into the command string — the
+  functionally identical sibling sink to ZS-PHP-001's system(), which
+  that rule's own description already flagged as a follow-up since each
+  callee needs its own rule under this schema.
+description: |
+  shell_exec() executes an OS command and returns its output, flagged when
+  an argument traces back to an untrusted source (intra-procedural taint
+  tracking).
+message: "shell_exec() detected with a tainted argument — validate/allowlist the command and avoid passing user input to the shell"
+references:
+  - https://owasp.org/www-community/attacks/Command_Injection
+tags: [command-injection, injection]
+match:
+  kind: call
+  callee: shell_exec
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Avoid shelling out with user input; if unavoidable, use escapeshellarg() on each argument and prefer a fixed, allowlisted command."

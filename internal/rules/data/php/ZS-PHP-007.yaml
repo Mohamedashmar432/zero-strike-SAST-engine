@@ -1,0 +1,36 @@
+id: ZS-PHP-007
+lifecycle: released
+name: include() Local File Inclusion
+version: "1.0.0"
+language: php
+category: path-traversal
+severity: high
+confidence: high
+cwe:
+  - CWE-98
+owasp:
+  - "A01:2025"
+rationale: |
+  include() executes whatever file it is given as PHP source, so an
+  attacker who controls the path can point it at an uploaded file, a log
+  file they've poisoned with PHP code, or (with allow_url_include enabled)
+  a remote URL — turning a file-read primitive into arbitrary code
+  execution. This is exploitable wherever a page/template name from
+  $_GET/$_POST/$_REQUEST reaches include() without being checked against an
+  allowlist of known-safe filenames.
+description: |
+  include is a language construct, not a function call — the PHP builder
+  synthesizes a NodeKindCall for it (mirroring the existing echo_statement
+  handling) so this rule can use the same tainted_argument mechanism as
+  every other sink rule. Flagged when the included path traces back to an
+  untrusted source (intra-procedural taint tracking).
+message: "include() called with a tainted path — local file inclusion risk"
+references:
+  - https://owasp.org/www-community/attacks/Path_Traversal
+tags: [lfi, path-traversal, injection]
+match:
+  kind: call
+  callee: include
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Never build an include path from user input; map an allowlisted set of keys to fixed filenames instead."

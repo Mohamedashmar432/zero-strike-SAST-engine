@@ -38,8 +38,16 @@ type Filter struct {
 // MatchPattern is a typed description of what IR node pattern to find.
 // Typed fields prevent map[string]interface{} schema drift.
 type MatchPattern struct {
-	Kind          string // IRNode kind to match (e.g. "call")
-	Callee        string // for call nodes: callee identifier text
+	Kind   string // IRNode kind to match (e.g. "call")
+	Callee string // for call nodes: callee identifier text
+	// CalleeSuffix, when true, matches Callee against a call's resolved
+	// dotted-chain text as a dot-boundary suffix (e.g. "Response.Write"
+	// also matches "context.Response.Write") instead of requiring full
+	// equality. Ignored unless Callee has at least one dot — see
+	// Validator, which rejects the combination outright rather than
+	// silently downgrading it, since a single-segment callee (e.g. "eval")
+	// would become dangerously broad under suffix matching.
+	CalleeSuffix  bool
 	Identifier    string // for identifier nodes: variable name
 	Literal       string // for literal nodes: value (regex allowed)
 	LHSIdentifier string // for assignment nodes: regex match on left-hand-side variable name

@@ -15,6 +15,15 @@ cases:
   - file: cases/vuln_secret.php
     language: php
     expect: [{rule_id: ZS-PHP-005, min_count: 1}]
+  - file: cases/vuln_shell_exec.php
+    language: php
+    expect: [{rule_id: ZS-PHP-006, min_count: 1}]
+  - file: cases/vuln_lfi_include.php
+    language: php
+    expect: [{rule_id: ZS-PHP-007, min_count: 1}]
+  - file: cases/vuln_lfi_require.php
+    language: php
+    expect: [{rule_id: ZS-PHP-008, min_count: 1}]
   - file: cases/clean.php
     language: php
     expect: []

@@ -12,12 +12,21 @@ cases:
   - file: cases/vuln_xss.cs
     language: csharp
     expect: [{rule_id: ZS-CS-004, min_count: 1}]
+  - file: cases/vuln_xss_context_prefix.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-004, min_count: 1}]
   - file: cases/vuln_crypto.cs
     language: csharp
     expect: [{rule_id: ZS-CS-005, min_count: 1}]
   - file: cases/vuln_hardcoded_secret.cs
     language: csharp
     expect: [{rule_id: ZS-CS-006, min_count: 2}]
+  - file: cases/vuln_mysqlcommand.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-007, min_count: 1}]
+  - file: cases/vuln_process_new.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-008, min_count: 1}]
   - file: cases/clean.cs
     language: csharp
     expect: []

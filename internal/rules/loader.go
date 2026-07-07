@@ -36,6 +36,7 @@ type ruleYAML struct {
 type matchYAML struct {
 	Kind          string       `yaml:"kind"`
 	Callee        string       `yaml:"callee"`
+	CalleeSuffix  bool         `yaml:"callee_suffix"`
 	Identifier    string       `yaml:"identifier"`
 	Literal       string       `yaml:"literal"`
 	LHSIdentifier string       `yaml:"lhs_identifier"`
@@ -152,6 +153,7 @@ func (l *defaultLoader) parseYAML(source string, data []byte) ([]*Rule, error) {
 		Match: MatchPattern{
 			Kind:          ry.Match.Kind,
 			Callee:        ry.Match.Callee,
+			CalleeSuffix:  ry.Match.CalleeSuffix,
 			Identifier:    ry.Match.Identifier,
 			Literal:       ry.Match.Literal,
 			LHSIdentifier: ry.Match.LHSIdentifier,

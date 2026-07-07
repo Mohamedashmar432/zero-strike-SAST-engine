@@ -1,0 +1,30 @@
+id: ZS-GO-011
+lifecycle: released
+name: Weak Cryptographic Cipher (RC4)
+version: "1.0.0"
+language: go
+category: cryptography
+severity: medium
+confidence: high
+cwe:
+  - CWE-327
+owasp:
+  - "A04:2025"
+rationale: |
+  RC4 has known statistical biases in its keystream that let an attacker
+  recover plaintext from enough observed ciphertext without knowing the
+  key, which is why it has been removed from TLS and deprecated by NIST —
+  data encrypted with rc4.NewCipher() offers materially weaker
+  confidentiality than a modern stream or block cipher. This is exploitable
+  anywhere an attacker can capture enough RC4-encrypted traffic or stored
+  data to mount the statistical attacks published against the cipher.
+description: |
+  Detects calls to rc4.NewCipher().
+message: "Weak cipher RC4 detected — use AES-GCM or ChaCha20-Poly1305 instead"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+tags: [weak-crypto, rc4, cipher]
+match:
+  kind: call
+  callee: rc4.NewCipher
+fix_suggestion: "Replace rc4.NewCipher() with crypto/aes + cipher.NewGCM(), or golang.org/x/crypto/chacha20poly1305."

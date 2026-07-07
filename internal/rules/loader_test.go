@@ -115,3 +115,45 @@ rationale: |
 		t.Errorf("Rationale = %q, want %q", loaded[0].Rationale, want)
 	}
 }
+
+// TestLoader_CalleeSuffixRoundTrips confirms match.callee_suffix in YAML
+// round-trips into Rule.Match.CalleeSuffix, and that omitting it defaults
+// to false (the pre-existing, unaffected behavior for every other rule).
+func TestLoader_CalleeSuffixRoundTrips(t *testing.T) {
+	dir := t.TempDir()
+	yamlPath := filepath.Join(dir, "ZS-TEST-002.yaml")
+	content := `id: ZS-TEST-002
+name: Test Suffix Rule
+version: "1.0.0"
+language: csharp
+category: injection
+severity: high
+confidence: high
+lifecycle: released
+description: |
+  Test description.
+message: "Test message"
+match:
+  kind: call
+  callee: Response.Write
+  callee_suffix: true
+fix_suggestion: "Test fix."
+rationale: |
+  Test rationale.
+`
+	if err := os.WriteFile(yamlPath, []byte(content), 0o644); err != nil {
+		t.Fatalf("writing test fixture: %v", err)
+	}
+
+	loader := rules.NewLoader()
+	loaded, err := loader.Load(yamlPath)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if len(loaded) != 1 {
+		t.Fatalf("expected 1 rule, got %d", len(loaded))
+	}
+	if !loaded[0].Match.CalleeSuffix {
+		t.Error("expected match.callee_suffix: true to round-trip into Rule.Match.CalleeSuffix")
+	}
+}

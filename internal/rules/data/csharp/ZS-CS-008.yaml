@@ -1,0 +1,36 @@
+id: ZS-CS-008
+lifecycle: released
+name: new Process() Instantiation (Potential Command Injection)
+version: "1.0.0"
+language: csharp
+category: injection
+severity: medium
+confidence: low
+cwe:
+  - CWE-78
+owasp:
+  - "A05:2025"
+rationale: |
+  Code that constructs a Process object directly and drives it through
+  StartInfo.FileName/Arguments before calling the parameterless Start() is
+  functionally identical to Process.Start(cmd) (ZS-CS-001) — an attacker
+  who influences FileName or Arguments can hijack which program runs or
+  what it is told to do — but the tainted value is typically assigned to
+  StartInfo across separate statements rather than passed directly as an
+  argument, so ZS-CS-001's tainted_argument check on Process.Start's own
+  (empty) argument list can't see it.
+description: |
+  Detects the instance-based `new Process()` construction itself,
+  unconditionally, since this architecture can't correlate a later
+  StartInfo.FileName/Arguments assignment with the eventual no-argument
+  Start() call — the same "syntactic approximation, needs manual triage"
+  treatment as ZS-PY-008 (open()), rated lower confidence here since not
+  even a variable path argument can be observed at this match point.
+message: "new Process() detected — verify StartInfo.FileName/Arguments never come from unvalidated user input"
+references:
+  - https://owasp.org/www-community/attacks/Command_Injection
+tags: [command-injection, injection, process, syntactic-approximation]
+match:
+  kind: call
+  callee: Process
+fix_suggestion: "Use a fixed executable path and pass user data only as validated, individually-quoted arguments — never build FileName/Arguments from unvalidated input."

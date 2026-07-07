@@ -1,0 +1,36 @@
+id: ZS-JS-011
+lifecycle: released
+name: Sequelize SQL Injection
+version: "1.0.0"
+language: javascript
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-89
+owasp:
+  - "A05:2025"
+rationale: |
+  Sequelize's db.sequelize.query() executes whatever SQL string it is given
+  verbatim, so building that string by concatenating attacker-controlled
+  input lets an attacker terminate the intended query and append arbitrary
+  SQL — altering WHERE clauses to bypass authentication, using UNION SELECT
+  to pull data from other tables, or chaining statements to modify or
+  delete data. This is exploitable wherever a request body or query
+  parameter reaches the raw query string before .query() runs it, and is
+  fully avoidable by using Sequelize's built-in parameter binding
+  (replacements/bind) instead of string concatenation.
+description: |
+  A raw Sequelize query is executed with a query string that traces back to
+  an untrusted source (intra-procedural taint tracking), indicating SQL
+  built by string concatenation instead of parameter binding.
+message: "db.sequelize.query() called with a tainted query string — use parameter binding instead"
+references:
+  - https://owasp.org/www-community/attacks/SQL_Injection
+tags: [sqli, injection, sequelize]
+match:
+  kind: call
+  callee: db.sequelize.query
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Use Sequelize's replacements/bind parameter binding instead of concatenating values into the query string."

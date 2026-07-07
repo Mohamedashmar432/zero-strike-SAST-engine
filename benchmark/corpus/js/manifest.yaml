@@ -30,6 +30,21 @@ cases:
   - file: cases/vuln_sensitive_log.js
     language: javascript
     expect: [{rule_id: ZS-JS-009, min_count: 1}]
+  - file: cases/vuln_sqli_sequelize.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-011, min_count: 1}]
+  - file: cases/vuln_cmdi.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-012, min_count: 1}]
+  - file: cases/vuln_xxe.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-013, min_count: 1}]
+  - file: cases/vuln_deserialize.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-014, min_count: 1}]
+  - file: cases/vuln_open_redirect.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-015, min_count: 1}]
   - file: cases/clean.js
     language: javascript
     expect: []

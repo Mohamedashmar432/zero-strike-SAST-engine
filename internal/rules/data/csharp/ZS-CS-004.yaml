@@ -31,6 +31,12 @@ tags: [xss, response-write]
 match:
   kind: call
   callee: Response.Write
+  # callee_suffix: real code almost always reaches Response.Write through a
+  # receiver — context.Response.Write(...), this.Response.Write(...),
+  # Page.Response.Write(...) — not a bare 2-segment call. Suffix matching
+  # (dot-boundary only, see internal/engine's calleeSuffixMatches) lets this
+  # rule fire on any of those without a separate rule per receiver name.
+  callee_suffix: true
   filters:
     - tainted_argument: true
 fix_suggestion: "Encode before writing: Response.Write(HttpUtility.HtmlEncode(value)), or use framework encoding helpers."

@@ -1,0 +1,30 @@
+id: ZS-GO-008
+lifecycle: released
+name: Weak Cryptographic Cipher (DES)
+version: "1.0.0"
+language: go
+category: cryptography
+severity: medium
+confidence: high
+cwe:
+  - CWE-327
+owasp:
+  - "A04:2025"
+rationale: |
+  DES uses a 56-bit key, small enough to brute-force with commodity
+  hardware in hours, so data encrypted with des.NewCipher() offers no
+  meaningful confidentiality against a motivated attacker. This is
+  exploitable anywhere DES-encrypted data crosses a trust boundary an
+  attacker can capture — network traffic, stored files, backups — since
+  recovering the key (and therefore the plaintext) no longer requires
+  breaking the mathematics, only enough compute time.
+description: |
+  Detects calls to des.NewCipher().
+message: "Weak cipher DES detected — use AES-GCM or another modern authenticated cipher"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+tags: [weak-crypto, des, cipher]
+match:
+  kind: call
+  callee: des.NewCipher
+fix_suggestion: "Replace des.NewCipher() with crypto/aes + cipher.NewGCM() for authenticated encryption."

@@ -1,0 +1,36 @@
+id: ZS-GO-012
+lifecycle: released
+name: Server-Side Request Forgery (http.Get)
+version: "1.0.0"
+language: go
+category: ssrf
+severity: medium
+confidence: medium
+cwe:
+  - CWE-918
+owasp:
+  - "A01:2025"
+rationale: |
+  Passing a request-derived URL straight to http.Get() lets an attacker
+  redirect the server's own outbound request to internal-only services,
+  loopback addresses, or cloud metadata endpoints (e.g. 169.254.169.254)
+  that are normally unreachable from outside the network, potentially
+  exposing internal APIs, credentials, or instance metadata. This is
+  exploitable in any feature that fetches a user-supplied URL, such as
+  webhook registration, link previews, or file-import-by-URL; taint-gating
+  on this rule (rather than an unconditional match, unlike DES/RC4 above)
+  keeps precision acceptable since http.Get is otherwise a completely
+  ordinary, safe call when its argument is a fixed or validated URL.
+description: |
+  Detects calls to http.Get() where the URL argument traces back to an
+  untrusted source (intra-procedural taint tracking).
+message: "http.Get() called with a tainted URL — validate and allowlist URLs before use"
+references:
+  - https://owasp.org/www-community/attacks/Server_Side_Request_Forgery
+tags: [ssrf, http]
+match:
+  kind: call
+  callee: http.Get
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Validate the URL against an allowlist. Reject internal/private IPs and non-http(s) schemes before fetching."

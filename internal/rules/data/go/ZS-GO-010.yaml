@@ -1,0 +1,37 @@
+id: ZS-GO-010
+lifecycle: released
+name: Weak Pseudo-Random Number Generator (math/rand)
+version: "1.0.0"
+language: go
+category: cryptography
+severity: medium
+confidence: medium
+cwe:
+  - CWE-338
+owasp:
+  - "A04:2025"
+rationale: |
+  math/rand's generator is deterministic and seeded from a small state
+  space, so its output is predictable to an attacker who observes a few
+  values or knows roughly when the process started — using it for a
+  session token, password-reset code, or API key lets that attacker guess
+  or reconstruct future values instead of needing to brute-force a
+  cryptographically random space. This is exploitable anywhere the
+  generated value is meant to be unguessable, unlike its legitimate uses
+  (jitter, load-balancing, test fixtures) where predictability doesn't
+  matter.
+description: |
+  Detects zero-argument calls to rand.Int() from math/rand. The
+  argument_count: 0 filter distinguishes this from crypto/rand.Int(),
+  which always takes two arguments (an io.Reader and a *big.Int) and is
+  the cryptographically secure alternative.
+message: "math/rand.Int() detected — not cryptographically secure, predictable to an attacker"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+tags: [weak-crypto, weak-prng, math-rand]
+match:
+  kind: call
+  callee: rand.Int
+  filters:
+    - argument_count: 0
+fix_suggestion: "Use crypto/rand for anything security-sensitive (tokens, keys, reset codes); math/rand is fine only for non-security randomness."

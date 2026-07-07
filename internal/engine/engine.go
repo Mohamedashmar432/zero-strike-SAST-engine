@@ -27,29 +27,65 @@ type Project struct {
 }
 
 // RuleIndex is a prebuilt dispatch table enabling O(nodes) matching instead of O(rules × nodes).
-// Callee-specific call rules are stored only in byCallee; all other rules go in byKind.
+// Callee-specific call rules are stored in exactly one of byCallee or
+// byCalleeSuffix (never both) to avoid double-matching; all other rules go
+// in byKind.
 type RuleIndex struct {
 	byKind   map[ir.NodeKind][]*rules.Rule
 	byCallee map[string][]*rules.Rule
+	// byCalleeSuffix holds suffix-match-enabled rules (match.callee_suffix:
+	// true in YAML), keyed by the LAST dot-separated segment of the rule's
+	// callee (e.g. "Response.Write" -> "Write"). A call's own last segment
+	// gives an O(1) shortlist; calleeSuffixMatches verifies the full
+	// dot-boundary suffix against only that shortlist, not every rule.
+	byCalleeSuffix map[string][]*rules.Rule
 }
 
 // BuildIndex groups rules by kind and callee at load time.
 // Call once after loading rules; pass the result in MatchContext.Index per file.
 func BuildIndex(rs []*rules.Rule) *RuleIndex {
 	idx := &RuleIndex{
-		byKind:   make(map[ir.NodeKind][]*rules.Rule),
-		byCallee: make(map[string][]*rules.Rule),
+		byKind:         make(map[ir.NodeKind][]*rules.Rule),
+		byCallee:       make(map[string][]*rules.Rule),
+		byCalleeSuffix: make(map[string][]*rules.Rule),
 	}
 	for _, r := range rs {
 		kind := ir.NodeKind(r.Match.Kind)
-		if kind == ir.NodeKindCall && r.Match.Callee != "" {
+		switch {
+		case kind == ir.NodeKindCall && r.Match.Callee != "" && r.Match.CalleeSuffix && strings.Contains(r.Match.Callee, "."):
+			// ponytail: "contains a dot" is the ≥2-segment floor — the
+			// Validator already rejects callee_suffix:true on a
+			// single-segment callee, so this precondition is guaranteed,
+			// not just assumed, by the time a rule reaches here.
+			last := lastCalleeSegment(r.Match.Callee)
+			idx.byCalleeSuffix[last] = append(idx.byCalleeSuffix[last], r)
+		case kind == ir.NodeKindCall && r.Match.Callee != "":
 			// callee-specific rules go only in byCallee to avoid double-matching
 			idx.byCallee[r.Match.Callee] = append(idx.byCallee[r.Match.Callee], r)
-		} else {
+		default:
 			idx.byKind[kind] = append(idx.byKind[kind], r)
 		}
 	}
 	return idx
+}
+
+// lastCalleeSegment returns the final dot-separated segment of a dotted
+// callee chain (e.g. "context.Response.Write" -> "Write"), or the whole
+// string when it has no dot.
+func lastCalleeSegment(s string) string {
+	if i := strings.LastIndexByte(s, '.'); i >= 0 {
+		return s[i+1:]
+	}
+	return s
+}
+
+// calleeSuffixMatches reports whether ruleCallee is a dot-boundary suffix of
+// callText: either an exact match, or callText ends with "."+ruleCallee.
+// Requiring the preceding dot (rather than a bare strings.HasSuffix) is what
+// stops "XResponse.Write" from matching rule callee "Response.Write" on raw
+// substring grounds — only a real trailing segment boundary counts.
+func calleeSuffixMatches(ruleCallee, callText string) bool {
+	return callText == ruleCallee || strings.HasSuffix(callText, "."+ruleCallee)
 }
 
 // MatchContext bundles everything the engine needs to match rules against one file.
@@ -80,7 +116,13 @@ func (e *defaultEngine) Match(_ context.Context, mc *MatchContext) ([]MatchResul
 	ir.Walk(mc.File.IR.Root, func(n *ir.IRNode) bool {
 		candidates := mc.Index.byKind[n.Kind]
 		if n.Kind == ir.NodeKindCall {
-			candidates = append(candidates, mc.Index.byCallee[calleeText(n)]...)
+			text := calleeText(n)
+			candidates = append(candidates, mc.Index.byCallee[text]...)
+			for _, r := range mc.Index.byCalleeSuffix[lastCalleeSegment(text)] {
+				if calleeSuffixMatches(r.Match.Callee, text) {
+					candidates = append(candidates, r)
+				}
+			}
 		}
 		for _, r := range candidates {
 			// A rule only applies to files of its own declared language — the

@@ -2,6 +2,7 @@ package rules
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/zerostrike/scanner/internal/ir"
 )
@@ -54,6 +55,11 @@ func (v *defaultValidator) Validate(rule *Rule) []string {
 		errs = append(errs, fmt.Sprintf("match.kind: unknown value %q", rule.Match.Kind))
 	case rule.Match.Kind == string(ir.NodeKindCall) && rule.Match.Callee == "":
 		errs = append(errs, "match.callee: required for kind=call")
+	}
+	if rule.Match.CalleeSuffix && !strings.Contains(rule.Match.Callee, ".") {
+		errs = append(errs, fmt.Sprintf(
+			"match.callee_suffix: callee %q must have at least 2 dot-separated segments to opt into suffix matching",
+			rule.Match.Callee))
 	}
 	if !validSeverities[string(rule.Severity)] {
 		errs = append(errs, fmt.Sprintf("severity: invalid value %q", rule.Severity))

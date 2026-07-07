@@ -99,6 +99,24 @@ func TestBuild_CSharpSourceTaintsVariable(t *testing.T) {
 	}
 }
 
+// TestBuild_CSharpIndexerSourceTaintsVariable is a regression test for the
+// Sprint 24 fix: HttpRequest's indexer form (Request["key"]) is equally
+// untrusted as the explicit Request.QueryString[...] property form, but the
+// old pattern only recognized the latter — confirmed missing on the real
+// OWASP.WebGoat.NET app's context.Request["query"] usage.
+func TestBuild_CSharpIndexerSourceTaintsVariable(t *testing.T) {
+	root := &ir.IRNode{
+		Kind: ir.NodeKindModule,
+		Children: []*ir.IRNode{
+			assignment("query", "context.Request[\"query\"]", ident("_")),
+		},
+	}
+	tainted := build(&ir.IRFile{Root: root, Language: core.LangCSharp})
+	if !tainted["query"] {
+		t.Error("expected query to be tainted from the Request[...] indexer source")
+	}
+}
+
 func TestBuild_GoSourceTaintsVariable(t *testing.T) {
 	root := &ir.IRNode{
 		Kind: ir.NodeKindModule,
@@ -109,6 +127,23 @@ func TestBuild_GoSourceTaintsVariable(t *testing.T) {
 	tainted := build(&ir.IRFile{Root: root, Language: core.LangGo})
 	if !tainted["cmd"] {
 		t.Error("expected cmd to be tainted from os.Args source")
+	}
+}
+
+// TestBuild_GoSSRFSourceTaintsVariable_NonRReceiver is a regression test for
+// the Sprint 24 fix: the old goPatterns.Sources regex anchored on a literal
+// "r." receiver (`r\.URL\.Query\(\)`), missing the equally common shape where
+// the *http.Request isn't the receiver itself, e.g. resp.Request.URL.Query().
+func TestBuild_GoSSRFSourceTaintsVariable_NonRReceiver(t *testing.T) {
+	root := &ir.IRNode{
+		Kind: ir.NodeKindModule,
+		Children: []*ir.IRNode{
+			assignment("target", "resp.Request.URL.Query().Get(\"url\")", ident("_")),
+		},
+	}
+	tainted := build(&ir.IRFile{Root: root, Language: core.LangGo})
+	if !tainted["target"] {
+		t.Error("expected target to be tainted from resp.Request.URL.Query() source (non-\"r.\" receiver)")
 	}
 }
 

@@ -48,6 +48,23 @@ func TestValidator_CallWithoutCallee(t *testing.T) {
 	assertError(t, r, "match.callee")
 }
 
+func TestValidator_CalleeSuffixRequiresTwoSegments(t *testing.T) {
+	r := validRule()
+	r.Match.Callee = "eval"
+	r.Match.CalleeSuffix = true
+	assertError(t, r, "match.callee_suffix")
+}
+
+func TestValidator_CalleeSuffixAllowedWithTwoSegments(t *testing.T) {
+	r := validRule()
+	r.Match.Callee = "Response.Write"
+	r.Match.CalleeSuffix = true
+	errs := rules.NewValidator().Validate(r)
+	if len(errs) != 0 {
+		t.Errorf("expected no errors for a 2-segment callee_suffix rule, got: %v", errs)
+	}
+}
+
 func TestValidator_InvalidSeverity(t *testing.T) {
 	r := validRule()
 	r.Severity = "extreme"

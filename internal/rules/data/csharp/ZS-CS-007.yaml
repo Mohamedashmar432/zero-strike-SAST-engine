@@ -1,0 +1,39 @@
+id: ZS-CS-007
+lifecycle: released
+name: MySqlCommand SQL Injection
+version: "1.0.0"
+language: csharp
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-89
+owasp:
+  - "A05:2025"
+rationale: |
+  Building a MySqlCommand's query text by concatenating attacker-controlled
+  data lets an attacker terminate the intended query and append arbitrary
+  SQL — altering WHERE clauses to bypass authentication, using UNION SELECT
+  to pull data from other tables, or chaining statements to modify or drop
+  data. This is exploitable wherever a search term, identifier, or filter
+  value from a request reaches the query string before it is passed to
+  ExecuteReader/ExecuteNonQuery, and is entirely avoidable by binding the
+  value as a MySqlParameter instead of splicing it into the SQL text.
+  Sibling rule to ZS-CS-002 (SqlCommand): applications using MySqlConnector
+  or MySql.Data — a very common ADO.NET provider for MySQL — build the
+  identical vulnerability through a differently-named type, which
+  ZS-CS-002's exact-callee match cannot see.
+description: |
+  A MySqlCommand is constructed with a query string that traces back to an
+  untrusted source (intra-procedural taint tracking), indicating SQL built
+  by string concatenation instead of parameterization.
+message: "MySqlCommand constructed with a tainted query string — use parameterized queries instead"
+references:
+  - https://owasp.org/www-community/attacks/SQL_Injection
+tags: [sqli, injection, mysqlcommand]
+match:
+  kind: call
+  callee: MySqlCommand
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Use parameterized queries: new MySqlCommand(\"... WHERE Name = @name\", conn) with cmd.Parameters.AddWithValue(\"@name\", value)."

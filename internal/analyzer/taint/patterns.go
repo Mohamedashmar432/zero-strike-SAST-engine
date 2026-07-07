@@ -46,6 +46,12 @@ var jsPatterns = languagePatterns{
 var csharpPatterns = languagePatterns{
 	Sources: []*regexp.Regexp{
 		regexp.MustCompile(`Request\.(QueryString|Form|Params|Cookies)`),
+		// HttpRequest's indexer (Request["key"]) checks QueryString, Form,
+		// Cookies, and ServerVariables in turn — same untrusted sources as
+		// the explicit-property form above, just via ASP.NET's shorthand
+		// syntax (confirmed real-world usage: OWASP.WebGoat.NET's
+		// Autocomplete.ashx.cs reads context.Request["query"] this way).
+		regexp.MustCompile(`Request\[`),
 		regexp.MustCompile(`Console\.ReadLine\(`),
 	},
 	Sanitizers: []*regexp.Regexp{
@@ -58,7 +64,10 @@ var csharpPatterns = languagePatterns{
 var goPatterns = languagePatterns{
 	Sources: []*regexp.Regexp{
 		regexp.MustCompile(`os\.Args`),
-		regexp.MustCompile(`r\.(URL\.Query\(\)|FormValue\(|PostFormValue\()`),
+		// No receiver-name anchor: matches "r.URL.Query()", "resp.Request.URL.Query()",
+		// or any other variable name before the dot — strict superset of the
+		// old `r\.` literal anchor, which missed e.g. resp.Request.URL.Query().
+		regexp.MustCompile(`\.(URL\.Query\(\)|FormValue\(|PostFormValue\()`),
 		regexp.MustCompile(`os\.Getenv\(`),
 	},
 	Sanitizers: []*regexp.Regexp{
