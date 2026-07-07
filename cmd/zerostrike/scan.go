@@ -14,6 +14,7 @@ import (
 
 	"github.com/zerostrike/scanner/internal/analyzer"
 	"github.com/zerostrike/scanner/internal/core"
+	"github.com/zerostrike/scanner/internal/langreg"
 	"github.com/zerostrike/scanner/internal/pipeline"
 	"github.com/zerostrike/scanner/internal/report"
 	htmlreport "github.com/zerostrike/scanner/internal/report/html"
@@ -48,6 +49,16 @@ func parseLanguages(raw []string) []core.Language {
 		}
 	}
 	return langs
+}
+
+// noParsersRegisteredWarning returns a warning message when registeredLangs
+// is 0 (a CGo-less build has no language parsers registered, so SAST
+// scanning silently finds nothing regardless of input), or "" otherwise.
+func noParsersRegisteredWarning(registeredLangs int) string {
+	if registeredLangs > 0 {
+		return ""
+	}
+	return "WARNING: no language parsers registered — this binary was built with CGO_ENABLED=0, so SAST detection is disabled. Secrets/SCA/framework checks still run. Rebuild with CGO_ENABLED=1 and a C compiler on PATH to enable SAST scanning."
 }
 
 // parseGroupBy maps a --group-by flag value to a report.GroupBy. It is
@@ -124,6 +135,18 @@ func scanCmd() *cobra.Command {
 			pipe, err := pipeline.New(cfg)
 			if err != nil {
 				return fmt.Errorf("pipeline.New: %w", err)
+			}
+
+			// langreg is populated by each language package's cgo-gated init();
+			// zero entries means this binary was built with CGO_ENABLED=0, so
+			// SAST scanning is a silent no-op regardless of what files exist.
+			// Without this, a no-CGo build "successfully" produces a
+			// near-findings-free report that reads as a clean scan instead of a
+			// misconfigured one (see QA Sprint 23: a stale no-CGo binary scored
+			// ~1% detection across 5 known-vulnerable repos before anyone
+			// noticed the build, not the engine, was at fault).
+			if msg := noParsersRegisteredWarning(len(langreg.All())); msg != "" {
+				fmt.Fprintln(os.Stderr, msg)
 			}
 
 			start := time.Now()

@@ -19,6 +19,12 @@ cases:
   - file: testdata/vuln_secret.go
     language: go
     expect: [{rule_id: ZS-GO-005, min_count: 1}]
+  - file: testdata/vuln_readfile.go
+    language: go
+    expect: [{rule_id: ZS-GO-006, min_count: 1}]
+  - file: testdata/vuln_dbexec.go
+    language: go
+    expect: [{rule_id: ZS-GO-007, min_count: 1}]
   - file: testdata/clean.go
     language: go
     expect: []

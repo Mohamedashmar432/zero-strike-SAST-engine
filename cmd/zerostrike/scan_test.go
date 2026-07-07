@@ -38,6 +38,20 @@ func TestParseLanguages_AllRegisteredLanguages(t *testing.T) {
 	}
 }
 
+// TestNoParsersRegisteredWarning is a regression test for the Sprint 23 QA
+// finding: a stale CGO_ENABLED=0 binary scored ~1% detection across 5
+// known-vulnerable repos and nobody noticed because the scan "succeeded"
+// with a near-empty report. Zero registered languages must now produce a
+// non-empty warning; any registered language must produce none.
+func TestNoParsersRegisteredWarning(t *testing.T) {
+	if msg := noParsersRegisteredWarning(0); msg == "" {
+		t.Error("expected a warning when zero language parsers are registered")
+	}
+	if msg := noParsersRegisteredWarning(3); msg != "" {
+		t.Errorf("expected no warning when parsers are registered, got %q", msg)
+	}
+}
+
 func TestParseLanguages_UnknownFlagDropped(t *testing.T) {
 	if got := parseLanguages([]string{"cobol"}); got != nil {
 		t.Errorf("expected unrecognized language to be dropped, got %v", got)
