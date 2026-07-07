@@ -9,6 +9,12 @@ cases:
   - file: cases/vuln_empty_catch.ts
     language: typescript
     expect: [{rule_id: ZS-TS-005, min_count: 1}]
+  - file: cases/vuln_innerhtml.ts
+    language: typescript
+    expect: [{rule_id: ZS-TS-002, min_count: 1}]
+  - file: cases/vuln_document_write.ts
+    language: typescript
+    expect: [{rule_id: ZS-TS-003, min_count: 1}]
   - file: cases/clean.ts
     language: typescript
     expect: []

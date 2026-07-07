@@ -117,11 +117,24 @@ func calleeText(n *ir.IRNode) string {
 	return ""
 }
 
+// attributeText resolves a dotted attribute chain (a.b.c) to its full text.
+// The object side of a 3+-segment chain is itself a nested NodeKindAttribute
+// (e.g. urllib.request.urlopen parses as attribute(attribute(urllib,
+// request), urlopen)), so this recurses rather than only reading direct
+// Identifier children — a 2-segment chain (os.system) has both parts as
+// direct Identifier children already and is unaffected.
 func attributeText(n *ir.IRNode) string {
 	var parts []string
 	for _, c := range n.Children {
-		if c.Kind == ir.NodeKindIdentifier && c.Text != "" {
-			parts = append(parts, c.Text)
+		switch c.Kind {
+		case ir.NodeKindIdentifier:
+			if c.Text != "" {
+				parts = append(parts, c.Text)
+			}
+		case ir.NodeKindAttribute:
+			if t := attributeText(c); t != "" {
+				parts = append(parts, t)
+			}
 		}
 	}
 	return strings.Join(parts, ".")

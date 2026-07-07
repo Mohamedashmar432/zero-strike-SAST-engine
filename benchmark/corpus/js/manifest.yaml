@@ -15,6 +15,21 @@ cases:
   - file: cases/vuln_empty_catch.js
     language: javascript
     expect: [{rule_id: ZS-JS-010, min_count: 1}]
+  - file: cases/vuln_innerhtml.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-002, min_count: 1}]
+  - file: cases/vuln_document_write.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-003, min_count: 1}]
+  - file: cases/vuln_function_ctor.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-004, min_count: 1}]
+  - file: cases/vuln_outerhtml.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-005, min_count: 1}]
+  - file: cases/vuln_sensitive_log.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-009, min_count: 1}]
   - file: cases/clean.js
     language: javascript
     expect: []

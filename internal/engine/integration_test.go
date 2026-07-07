@@ -170,6 +170,25 @@ func TestIntegration_EnableGraphsPopulatesTaintPath(t *testing.T) {
 	}
 }
 
+// TestIntegration_EnableGraphsPopulatesTaintPathAcrossIfBranch is the Sprint
+// 23 regression test for the branch-exit-point fix: the tainted source lives
+// inside the only arm of an if with no else, and the sink is after the if —
+// exactly the shape docs/roadmap/SPRINT-22-GRAPH-LAYER-CFG-DFG.md flagged as
+// a known ceiling ("a definition made only inside one arm of an if isn't
+// threaded through as a confirmed reaching definition"). Before the fix,
+// NewCFG wired the if's header (not the branch's last statement) to the
+// following statement, so the DFG never confirmed this reaching def and
+// Path stayed empty even though the flow-insensitive verdict still fired.
+func TestIntegration_EnableGraphsPopulatesTaintPathAcrossIfBranch(t *testing.T) {
+	_, idx := loadPythonRules(t)
+	src := "if flag:\n    user_id = request.args.get('id')\nquery = \"SELECT \" + user_id\nexecute(query)\n"
+
+	withGraphs := buildFindingForRule(t, idx, src, true, "ZS-PY-004")
+	if withGraphs.TaintContext == nil || len(withGraphs.TaintContext.Path) == 0 {
+		t.Error("expected TaintContext.Path to be populated across the if-branch join with --enable-graphs")
+	}
+}
+
 // buildFindingForRule runs the real Python parser -> analyzer -> engine ->
 // findings.BuildFinding pipeline and returns the core.Finding for ruleID.
 func buildFindingForRule(t *testing.T, idx *engine.RuleIndex, src string, enableGraphs bool, ruleID string) core.Finding {

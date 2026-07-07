@@ -89,6 +89,64 @@ func TestNewCFG_Try_EdgesToMainBody(t *testing.T) {
 	assertEdge(t, cfg, "try1", "try-body", "normal")
 }
 
+func TestNewCFG_IfElse_BothBranchesJoinAtNextStatement(t *testing.T) {
+	// if flag: a1 = x else: a2 = x
+	// a3 = y   <- reachable from BOTH branches' last statement, not from if1's header
+	thenBlock := node("then", ir.NodeKindBlock, assign("a1", "x"))
+	elseBlock := node("else", ir.NodeKindBlock, assign("a2", "x"))
+	ifNode := node("if1", ir.NodeKindIf, ident("cond", "flag"), thenBlock, elseBlock)
+	next := assign("a3", "y")
+
+	cfg := graph.NewCFG(node("mod", ir.NodeKindModule, ifNode, next))
+
+	assertEdge(t, cfg, "a1", "a3", "normal")
+	assertEdge(t, cfg, "a2", "a3", "normal")
+}
+
+func TestNewCFG_IfNoElse_HeaderAndBranchBothJoinAtNextStatement(t *testing.T) {
+	// if flag: a1 = x
+	// a2 = y   <- reachable from a1 (true path) AND from if1 itself (false path, no else)
+	thenBlock := node("then", ir.NodeKindBlock, assign("a1", "x"))
+	ifNode := node("if1", ir.NodeKindIf, ident("cond", "flag"), thenBlock)
+	next := assign("a2", "y")
+
+	cfg := graph.NewCFG(node("mod", ir.NodeKindModule, ifNode, next))
+
+	assertEdge(t, cfg, "a1", "a2", "normal")
+	assertEdge(t, cfg, "if1", "a2", "normal")
+}
+
+func TestNewCFG_NestedIf_ExitsRecurseThroughBothLevels(t *testing.T) {
+	// if outerFlag:
+	//     if innerFlag: inner-a1 = x else: inner-a2 = x
+	// else:
+	//     outer-a2 = x
+	// next = y   <- reachable from inner-a1, inner-a2, and outer-a2
+	innerThen := node("inner-then", ir.NodeKindBlock, assign("inner-a1", "x"))
+	innerElse := node("inner-else", ir.NodeKindBlock, assign("inner-a2", "x"))
+	innerIf := node("inner-if", ir.NodeKindIf, ident("inner-cond", "innerFlag"), innerThen, innerElse)
+	outerThen := node("outer-then", ir.NodeKindBlock, innerIf)
+	outerElse := node("outer-else", ir.NodeKindBlock, assign("outer-a2", "x"))
+	outerIf := node("outer-if", ir.NodeKindIf, ident("outer-cond", "outerFlag"), outerThen, outerElse)
+	next := assign("next", "y")
+
+	cfg := graph.NewCFG(node("mod", ir.NodeKindModule, outerIf, next))
+
+	assertEdge(t, cfg, "inner-a1", "next", "normal")
+	assertEdge(t, cfg, "inner-a2", "next", "normal")
+	assertEdge(t, cfg, "outer-a2", "next", "normal")
+}
+
+func TestNewCFG_Try_JoinsFromLastBodyStatementNotHeader(t *testing.T) {
+	body := node("try-body", ir.NodeKindBlock, assign("a1", "x"), assign("a2", "x"))
+	tryNode := node("try1", ir.NodeKindTry, body)
+	next := assign("a3", "y")
+
+	cfg := graph.NewCFG(node("mod", ir.NodeKindModule, tryNode, next))
+
+	assertEdge(t, cfg, "a2", "a3", "normal")
+}
+
 func TestNewCFG_Return_EdgesToImplicitExit(t *testing.T) {
 	ret := node("ret1", ir.NodeKindReturn)
 	cfg := graph.NewCFG(node("mod", ir.NodeKindModule, ret))

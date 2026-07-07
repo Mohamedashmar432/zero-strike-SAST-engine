@@ -40,28 +40,24 @@ exercised this shape. Fixed via `flattenStatements`, which unwraps
 for elif/else clauses. See the Sprint 21+22 release notes' "Bug found and
 fixed" section for the full diagnosis.
 
-## Known ceiling: branch-exit-point threading
+## Fixed in Sprint 23: branch-exit-point threading
 
-The CFG connects a branch/loop *header* node to the next sibling statement,
-not each branch's last inner statement to that sibling. Concretely:
+The CFG used to connect a branch/loop *header* node to the next sibling
+statement, not each branch's last inner statement to that sibling:
 
 ```python
 if cond:
     x = tainted_source()
-y = x  # DFG may not confirm x's definition reaches here
+y = x  # used to not confirm x's definition reaches here
 ```
 
-A definition made only inside one arm of an `if` isn't threaded through to
-code after the `if` as a confirmed reaching definition. When the DFG can't
-confirm a reaching definition for a referenced variable, `taint.BuildContext`
-still trusts the (flow-insensitive) taint verdict — it just omits `Path`
-rather than asserting an unconfirmed chain.
-
-Fixing this needs each block to track its own exit point(s) and merge them at
-the join after the branch/loop — normal control-flow-graph construction, just
-not implemented this sprint. Straight-line and single-branch-body taint
-chains (the common case, and what this sprint's fixtures cover) are
-unaffected.
+A definition made only inside one arm of an `if` wasn't threaded through to
+code after the `if` as a confirmed reaching definition. Fixed via
+`blockExitNodes` (`internal/graph/graph.go`), which recursively resolves the
+real CFG exit point(s) of a statement — each branch's own exit(s), plus the
+header itself when there's no `else` — instead of using the header
+unconditionally. See `docs/release-notes/release-notes/SPRINT-23-RELEASE-NOTES.md`
+for the full change and its tests.
 
 ## CallGraph: deferred
 

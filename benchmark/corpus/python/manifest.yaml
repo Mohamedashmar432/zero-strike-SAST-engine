@@ -24,6 +24,51 @@ cases:
   - file: cases/vuln_hardcoded.py
     language: python
     expect: [{rule_id: ZS-PY-020, min_count: 2}]
+  - file: cases/vuln_execute_tainted.py
+    language: python
+    expect: [{rule_id: ZS-PY-004, min_count: 1}]
+  - file: cases/vuln_assert.py
+    language: python
+    expect: [{rule_id: ZS-PY-009, min_count: 1}]
+  - file: cases/vuln_sha1.py
+    language: python
+    expect: [{rule_id: ZS-PY-011, min_count: 1}]
+  - file: cases/vuln_subprocess_call.py
+    language: python
+    expect: [{rule_id: ZS-PY-012, min_count: 1}]
+  - file: cases/vuln_os_popen.py
+    language: python
+    expect: [{rule_id: ZS-PY-013, min_count: 1}]
+  - file: cases/vuln_mktemp.py
+    language: python
+    expect: [{rule_id: ZS-PY-014, min_count: 1}]
+  - file: cases/vuln_urlopen.py
+    language: python
+    expect: [{rule_id: ZS-PY-015, min_count: 1}]
+  - file: cases/vuln_flask_debug.py
+    language: python
+    expect: [{rule_id: ZS-PY-016, min_count: 1}]
+  - file: cases/vuln_debug_setting.py
+    language: python
+    expect: [{rule_id: ZS-PY-017, min_count: 1}]
+  - file: cases/vuln_requests_verify_false.py
+    language: python
+    expect: [{rule_id: ZS-PY-018, min_count: 1}]
+  - file: cases/vuln_allowed_hosts.py
+    language: python
+    expect: [{rule_id: ZS-PY-019, min_count: 1}]
+  - file: cases/vuln_jwt_no_verify.py
+    language: python
+    expect: [{rule_id: ZS-PY-021, min_count: 1}]
+  - file: cases/vuln_sensitive_log.py
+    language: python
+    expect: [{rule_id: ZS-PY-022, min_count: 1}]
+  - file: cases/vuln_bare_except.py
+    language: python
+    expect: [{rule_id: ZS-PY-023, min_count: 1}]
+  - file: cases/vuln_empty_except_handler.py
+    language: python
+    expect: [{rule_id: ZS-PY-024, min_count: 1}]
   - file: cases/clean.py
     language: python
     expect: []

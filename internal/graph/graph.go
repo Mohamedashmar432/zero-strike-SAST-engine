@@ -128,8 +128,13 @@ func NewCFG(root *ir.IRNode) *CFG {
 	})
 
 	// Sequential fall-through: statements directly inside a Module or Block
-	// execute one after another. A Return statement's own out-edge already
-	// goes to the implicit exit, so it doesn't also fall through.
+	// execute one after another. blockExitNodes resolves each statement to
+	// its real CFG exit point(s) — its own NodeID normally, but for an If or
+	// Try it's each branch's own last statement (recursed), not the header,
+	// so a definition made in only one arm of an if is correctly threaded
+	// through as reaching the code after the if (join semantics). A Return
+	// statement's own out-edge already goes to the implicit exit, so
+	// blockExitNodes reports no exit for it.
 	//
 	// Each top-level statement line is wrapped in its own NodeKindUnknown
 	// node (tree-sitter's simple_statements — confirmed by dumping the real
@@ -137,28 +142,58 @@ func NewCFG(root *ir.IRNode) *CFG {
 	// actual statement (an Assignment, Call, etc.) is a grandchild of
 	// Module/Block, not a direct child. flattenStatements unwraps that so
 	// fall-through edges connect the real statements, not their wrappers.
-	//
-	// ponytail: this connects a branch/loop *header* node to the next
-	// sibling, not each branch's last inner statement — so a definition made
-	// only inside one arm of an if isn't seen as reaching the code after the
-	// if. Full block-exit-point threading would fix that; not needed for the
-	// straight-line and single-branch taint chains this sprint targets.
 	ir.Walk(root, func(n *ir.IRNode) bool {
 		if n.Kind != ir.NodeKindModule && n.Kind != ir.NodeKindBlock {
 			return true
 		}
 		stmts := flattenStatements(n.Children)
 		for i := 0; i+1 < len(stmts); i++ {
-			cur, next := stmts[i], stmts[i+1]
-			if cur.Kind == ir.NodeKindReturn {
-				continue
+			next := stmts[i+1]
+			for _, exit := range blockExitNodes(stmts[:i+1]) {
+				addEdge(exit.NodeID, next.NodeID, "normal")
 			}
-			addEdge(cur.NodeID, next.NodeID, "normal")
 		}
 		return true
 	})
 
 	return cfg
+}
+
+// blockExitNodes returns the CFG exit node(s) that control reaches after
+// stmts finishes: normally just the last statement, but if that statement is
+// itself an If or Try, the exits are threaded through recursively — an If
+// with no else also exits via its own header (the untaken false path never
+// enters a block). A trailing Return contributes no exit (it already has its
+// own edge to the implicit function exit).
+func blockExitNodes(stmts []*ir.IRNode) []*ir.IRNode {
+	if len(stmts) == 0 {
+		return nil
+	}
+	last := stmts[len(stmts)-1]
+	switch last.Kind {
+	case ir.NodeKindReturn:
+		return nil
+	case ir.NodeKindIf:
+		blocks := directOrWrappedBlocks(last)
+		var exits []*ir.IRNode
+		for _, b := range blocks {
+			exits = append(exits, blockExitNodes(flattenStatements(b.Children))...)
+		}
+		if len(blocks) < 2 {
+			exits = append(exits, last) // no else/elif: false path skips straight to next
+		}
+		return exits
+	case ir.NodeKindTry:
+		// Only the main try body is modeled (see the Try case in NewCFG for
+		// why except-handler bodies aren't addressable CFG targets today).
+		blocks := directOrWrappedBlocks(last)
+		if len(blocks) == 0 {
+			return []*ir.IRNode{last}
+		}
+		return blockExitNodes(flattenStatements(blocks[0].Children))
+	default:
+		return []*ir.IRNode{last}
+	}
 }
 
 // flattenStatements unwraps NodeKindUnknown wrapper nodes (tree-sitter
