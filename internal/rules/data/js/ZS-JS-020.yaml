@@ -1,0 +1,35 @@
+id: ZS-JS-020
+lifecycle: released
+name: helmet Content-Security-Policy Disabled
+version: "1.0.0"
+language: javascript
+category: security-misconfiguration
+severity: medium
+confidence: medium
+cwe:
+  - CWE-1021
+owasp:
+  - "A02:2025"
+rationale: |
+  Passing contentSecurityPolicy: false to helmet() disables the
+  Content-Security-Policy header entirely, removing a key defense-in-depth
+  control against XSS — even if a reflected or stored XSS bug exists
+  elsewhere in the app, a properly configured CSP can block the injected
+  script from executing or exfiltrating data. This complements ZS-CFG-002,
+  which only detects helmet's total absence, not a present-but-neutered
+  configuration.
+description: |
+  Detects calls to helmet() where contentSecurityPolicy is explicitly set
+  to false.
+message: "helmet({ contentSecurityPolicy: false }) detected — Content-Security-Policy header is disabled"
+references:
+  - https://helmetjs.github.io/#content-security-policy
+tags: [misconfiguration, express, headers, csp]
+match:
+  kind: call
+  callee: helmet
+  filters:
+    - kwarg:
+        name: contentSecurityPolicy
+        value_pattern: "^false$"
+fix_suggestion: "Remove the contentSecurityPolicy: false override, or configure an explicit policy instead of disabling it."

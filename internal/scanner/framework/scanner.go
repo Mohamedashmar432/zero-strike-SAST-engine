@@ -24,6 +24,12 @@ var checks = []check{
 	expressHelmetCheck,
 	corsWildcardCheck,
 	laravelDebugCheck,
+	springActuatorExposedCheck,
+	springCookieInsecureCheck,
+	aspnetVerboseErrorsCheck,
+	aspnetDirectoryBrowseCheck,
+	laravelSessionCookieCheck,
+	laravelCsrfExceptCheck,
 }
 
 // FrameworkScanner detects framework-level security misconfigurations by

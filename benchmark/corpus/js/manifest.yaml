@@ -45,6 +45,15 @@ cases:
   - file: cases/vuln_open_redirect.js
     language: javascript
     expect: [{rule_id: ZS-JS-015, min_count: 1}]
+  - file: cases/vuln_session_secure_false.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-018, min_count: 1}]
+  - file: cases/vuln_session_httponly_false.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-019, min_count: 1}]
+  - file: cases/vuln_helmet_csp_disabled.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-020, min_count: 1}]
   - file: cases/clean.js
     language: javascript
     expect: []

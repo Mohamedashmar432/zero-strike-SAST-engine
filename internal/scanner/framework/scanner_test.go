@@ -84,6 +84,93 @@ func TestNonProdEnvFilenameSuppressed(t *testing.T) {
 	}
 }
 
+func TestSpringActuatorExposedCheck(t *testing.T) {
+	vuln := detectSpringActuatorExposed("spring/application-vuln-actuator.properties", readFixture(t, "spring/application-vuln-actuator.properties"))
+	if len(vuln) != 1 || vuln[0].RuleID != "ZS-CFG-005" {
+		t.Fatalf("expected 1 ZS-CFG-005 finding, got %+v", vuln)
+	}
+
+	clean := detectSpringActuatorExposed("spring/application-clean-actuator.properties", readFixture(t, "spring/application-clean-actuator.properties"))
+	if len(clean) != 0 {
+		t.Errorf("expected no finding when actuator exposure is an explicit allowlist, got %+v", clean)
+	}
+}
+
+func TestSpringCookieInsecureCheck(t *testing.T) {
+	vuln := detectSpringCookieInsecure("spring/application-vuln-cookie.properties", readFixture(t, "spring/application-vuln-cookie.properties"))
+	if len(vuln) != 1 || vuln[0].RuleID != "ZS-CFG-006" {
+		t.Fatalf("expected 1 ZS-CFG-006 finding, got %+v", vuln)
+	}
+
+	clean := detectSpringCookieInsecure("spring/application-clean-cookie.properties", readFixture(t, "spring/application-clean-cookie.properties"))
+	if len(clean) != 0 {
+		t.Errorf("expected no finding when cookie.secure=true, got %+v", clean)
+	}
+}
+
+func TestAspNetVerboseErrorsCheck(t *testing.T) {
+	vuln := detectAspNetVerboseErrors("aspnet/vuln_customerrors/web.config", readFixture(t, "aspnet/vuln_customerrors/web.config"))
+	if len(vuln) != 1 || vuln[0].RuleID != "ZS-CFG-007" {
+		t.Fatalf("expected 1 ZS-CFG-007 finding, got %+v", vuln)
+	}
+
+	clean := detectAspNetVerboseErrors("aspnet/clean_customerrors/web.config", readFixture(t, "aspnet/clean_customerrors/web.config"))
+	if len(clean) != 0 {
+		t.Errorf("expected no finding when customErrors mode=On, got %+v", clean)
+	}
+}
+
+func TestAspNetDirectoryBrowseCheck(t *testing.T) {
+	vuln := detectAspNetDirectoryBrowse("aspnet/vuln_directorybrowse/web.config", readFixture(t, "aspnet/vuln_directorybrowse/web.config"))
+	if len(vuln) != 1 || vuln[0].RuleID != "ZS-CFG-008" {
+		t.Fatalf("expected 1 ZS-CFG-008 finding, got %+v", vuln)
+	}
+
+	clean := detectAspNetDirectoryBrowse("aspnet/clean_directorybrowse/web.config", readFixture(t, "aspnet/clean_directorybrowse/web.config"))
+	if len(clean) != 0 {
+		t.Errorf("expected no finding when directoryBrowse enabled=false, got %+v", clean)
+	}
+}
+
+func TestLaravelSessionCookieCheck(t *testing.T) {
+	vuln := detectLaravelSessionCookieInsecure("laravel/vuln_session/config/session.php", readFixture(t, "laravel/vuln_session/config/session.php"))
+	if len(vuln) != 1 || vuln[0].RuleID != "ZS-CFG-009" {
+		t.Fatalf("expected 1 ZS-CFG-009 finding, got %+v", vuln)
+	}
+
+	clean := detectLaravelSessionCookieInsecure("laravel/clean_session/config/session.php", readFixture(t, "laravel/clean_session/config/session.php"))
+	if len(clean) != 0 {
+		t.Errorf("expected no finding when secure defaults to true via env(), got %+v", clean)
+	}
+}
+
+func TestLaravelCsrfExceptCheck(t *testing.T) {
+	vuln := detectLaravelCsrfExcept("laravel/vuln_csrf/VerifyCsrfToken.php", readFixture(t, "laravel/vuln_csrf/VerifyCsrfToken.php"))
+	if len(vuln) != 1 || vuln[0].RuleID != "ZS-CFG-010" {
+		t.Fatalf("expected 1 ZS-CFG-010 finding, got %+v", vuln)
+	}
+
+	clean := detectLaravelCsrfExcept("laravel/clean_csrf/VerifyCsrfToken.php", readFixture(t, "laravel/clean_csrf/VerifyCsrfToken.php"))
+	if len(clean) != 0 {
+		t.Errorf("expected no finding when $except is empty, got %+v", clean)
+	}
+}
+
+func TestCorsWildcardSourceCallCheck(t *testing.T) {
+	for _, lang := range []string{"go", "java", "cs", "php"} {
+		path := "cors/vuln_wildcard." + lang
+		vuln := detectCorsWildcardSourceCall(path, readFixture(t, path))
+		if len(vuln) != 1 || vuln[0].RuleID != "ZS-CFG-003" {
+			t.Errorf("%s: expected 1 ZS-CFG-003 finding, got %+v", lang, vuln)
+		}
+	}
+
+	clean := detectCorsWildcardSourceCall("cors/clean_restricted.go", readFixture(t, "cors/clean_restricted.go"))
+	if len(clean) != 0 {
+		t.Errorf("expected no finding for a restricted origin, got %+v", clean)
+	}
+}
+
 func TestFrameworkScanner_AcceptsAndScan(t *testing.T) {
 	sc := New()
 	if !sc.Accepts(walker.FileEntry{Path: "app/.env"}) {
@@ -92,7 +179,7 @@ func TestFrameworkScanner_AcceptsAndScan(t *testing.T) {
 	if sc.Accepts(walker.FileEntry{Path: "app/.env", IsBinary: true}) {
 		t.Error("Accepts should return false for binary files")
 	}
-	if sc.Accepts(walker.FileEntry{Path: "app/main.go"}) {
+	if sc.Accepts(walker.FileEntry{Path: "app/README.md"}) {
 		t.Error("Accepts should return false for files no check matches")
 	}
 

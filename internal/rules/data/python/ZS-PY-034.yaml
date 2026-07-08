@@ -1,0 +1,33 @@
+id: ZS-PY-034
+lifecycle: released
+name: Path Traversal via Flask send_file()
+version: "1.0.0"
+language: python
+category: path-traversal
+severity: high
+confidence: medium
+cwe:
+  - CWE-22
+owasp:
+  - "A01:2025"
+rationale: |
+  Flask's send_file() streams the named file back to the client; if the
+  filename is built from tainted, user-influenced data without validation,
+  an attacker can supply sequences like ../../etc/passwd or an absolute
+  path to read files outside the intended directory. This is exploitable
+  wherever a filename or document ID from a request is used to build the
+  path passed to send_file() — the same class of bug as ZS-PY-008 (open())
+  but for Flask's dedicated file-serving sink.
+description: |
+  Detects calls to send_file() where the path argument traces back to an
+  untrusted source (intra-procedural taint tracking).
+message: "send_file() called with a tainted path — validate against a directory allowlist before serving"
+references:
+  - https://owasp.org/www-community/attacks/Path_Traversal
+tags: [path-traversal, file-access, flask]
+match:
+  kind: call
+  callee: send_file
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Validate the requested filename against an allowlist, or resolve it with os.path.realpath() and confirm it stays within the intended directory before calling send_file()."

@@ -1,0 +1,30 @@
+id: ZS-PY-038
+lifecycle: released
+name: Django SECURE_HSTS_SECONDS Disabled
+version: "1.0.0"
+language: python
+category: security-misconfiguration
+severity: low
+confidence: medium
+cwe:
+  - CWE-319
+owasp:
+  - "A02:2025"
+rationale: |
+  With SECURE_HSTS_SECONDS = 0 (the default), Django never sends the
+  Strict-Transport-Security header, so browsers have no instruction to
+  refuse future plain-HTTP connections to the site — a user who types the
+  bare hostname or follows an http:// link stays exposed to SSL-stripping
+  attacks on every visit instead of being auto-upgraded to HTTPS by the
+  browser itself.
+description: |
+  Detects assignment of SECURE_HSTS_SECONDS = 0 in Django settings.
+message: "SECURE_HSTS_SECONDS = 0 detected — HSTS header will not be sent"
+references:
+  - https://docs.djangoproject.com/en/stable/ref/settings/#secure-hsts-seconds
+tags: [misconfiguration, django, hsts]
+match:
+  kind: assignment
+  lhs_identifier: "^SECURE_HSTS_SECONDS$"
+  rhs_literal: "^0$"
+fix_suggestion: "Set SECURE_HSTS_SECONDS to a non-zero value (e.g. 31536000) once HTTPS is confirmed working site-wide."

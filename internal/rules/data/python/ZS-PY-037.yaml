@@ -1,0 +1,29 @@
+id: ZS-PY-037
+lifecycle: released
+name: Django SECURE_SSL_REDIRECT Disabled
+version: "1.0.0"
+language: python
+category: security-misconfiguration
+severity: medium
+confidence: medium
+cwe:
+  - CWE-319
+owasp:
+  - "A02:2025"
+rationale: |
+  With SECURE_SSL_REDIRECT = False, Django will happily serve requests over
+  plain HTTP instead of forcing a redirect to HTTPS, so any credentials,
+  session cookies, or other sensitive data sent by a client that didn't
+  already upgrade to HTTPS travel in cleartext and can be intercepted by
+  anyone on the network path.
+description: |
+  Detects assignment of SECURE_SSL_REDIRECT = False in Django settings.
+message: "SECURE_SSL_REDIRECT = False detected — HTTP requests will not be redirected to HTTPS"
+references:
+  - https://docs.djangoproject.com/en/stable/ref/settings/#secure-ssl-redirect
+tags: [misconfiguration, django, tls]
+match:
+  kind: assignment
+  lhs_identifier: "^SECURE_SSL_REDIRECT$"
+  rhs_literal: "^False$"
+fix_suggestion: "Set SECURE_SSL_REDIRECT = True in production so all HTTP traffic is redirected to HTTPS."

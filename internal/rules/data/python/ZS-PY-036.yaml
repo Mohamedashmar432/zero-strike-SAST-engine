@@ -1,0 +1,29 @@
+id: ZS-PY-036
+lifecycle: released
+name: Django CSRF_COOKIE_SECURE Disabled
+version: "1.0.0"
+language: python
+category: security-misconfiguration
+severity: medium
+confidence: medium
+cwe:
+  - CWE-614
+owasp:
+  - "A02:2025"
+rationale: |
+  With CSRF_COOKIE_SECURE = False, Django's CSRF token cookie is sent over
+  plain HTTP as well as HTTPS, letting a network-positioned attacker
+  capture the CSRF token and use it to forge state-changing requests on
+  the victim's behalf. This is exploitable wherever any part of the site
+  is reachable over HTTP.
+description: |
+  Detects assignment of CSRF_COOKIE_SECURE = False in Django settings.
+message: "CSRF_COOKIE_SECURE = False detected — CSRF token cookie will be sent over plain HTTP"
+references:
+  - https://docs.djangoproject.com/en/stable/ref/settings/#csrf-cookie-secure
+tags: [misconfiguration, django, cookie, csrf]
+match:
+  kind: assignment
+  lhs_identifier: "^CSRF_COOKIE_SECURE$"
+  rhs_literal: "^False$"
+fix_suggestion: "Set CSRF_COOKIE_SECURE = True so the CSRF cookie is only ever sent over HTTPS."

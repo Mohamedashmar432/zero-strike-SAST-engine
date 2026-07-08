@@ -1,0 +1,33 @@
+id: ZS-PY-033
+lifecycle: released
+name: Dangerous exec() Usage
+version: "1.0.0"
+language: python
+category: dangerous-functions
+severity: high
+confidence: high
+cwe:
+  - CWE-95
+owasp:
+  - "A05:2025"
+rationale: |
+  exec() compiles and executes its argument as arbitrary Python source —
+  the same capability as eval() (ZS-PY-001) but for statements rather than
+  a single expression, so any attacker-controlled data reaching it grants
+  full code execution in the process. This is exploitable wherever plugin
+  code, template snippets, or other user-supplied text flows into an
+  exec() call.
+description: |
+  Detects calls to the exec() builtin. The rule does not perform taint
+  tracking, so every exec() call is reported regardless of whether its
+  argument originates from user input — matching ZS-PY-001's approach for
+  the same reason: unconditional exec() of dynamic content is inherently
+  high-risk.
+message: "Dangerous call to exec() — avoid executing dynamic code from untrusted sources"
+references:
+  - https://owasp.org/Top10/2025/A05_2025-Injection/
+tags: [rce, injection, exec]
+match:
+  kind: call
+  callee: exec
+fix_suggestion: "Avoid exec() entirely; if dynamic dispatch is required, use an explicit allowlist of functions instead of executing arbitrary source."

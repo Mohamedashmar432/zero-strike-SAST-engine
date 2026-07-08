@@ -1,0 +1,33 @@
+id: ZS-JS-018
+lifecycle: released
+name: express-session Cookie Missing secure Flag
+version: "1.0.0"
+language: javascript
+category: security-misconfiguration
+severity: medium
+confidence: medium
+cwe:
+  - CWE-614
+owasp:
+  - "A02:2025"
+rationale: |
+  With cookie.secure set to false, express-session will send the session
+  cookie over plain HTTP as well as HTTPS, so anyone positioned on the
+  network path can capture the session cookie in transit and hijack the
+  victim's authenticated session. This is exploitable whenever any part of
+  the site is reachable over HTTP.
+description: |
+  Detects calls to session() (express-session) where the nested
+  cookie.secure option is explicitly set to false.
+message: "session({ cookie: { secure: false } }) detected — session cookie will be sent over plain HTTP"
+references:
+  - https://www.npmjs.com/package/express-session#cookiesecure
+tags: [misconfiguration, express, cookie, session]
+match:
+  kind: call
+  callee: session
+  filters:
+    - kwarg:
+        name: secure
+        value_pattern: "^false$"
+fix_suggestion: "Set cookie.secure: true (behind app.set('trust proxy', 1) if running behind a reverse proxy)."

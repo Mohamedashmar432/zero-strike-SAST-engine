@@ -8,8 +8,9 @@ import hashlib
 import pickle
 import subprocess
 import requests
+import xml.etree.ElementTree as ET
 from Crypto.Cipher import DES
-from flask import Flask, request, redirect, render_template_string
+from flask import Flask, request, redirect, render_template_string, send_file
 
 app = Flask(__name__)
 
@@ -80,3 +81,33 @@ def safe_diagnostic(action):
     allowed = ['status', 'info']
     if action in allowed:
         subprocess.call(['echo', action], shell=False)
+
+
+def run_report():
+    # ZS-PY-031: subprocess.check_output() with a tainted, shell-interpreted command
+    cmd = request.args.get('cmd')
+    return subprocess.check_output(cmd, shell=True)
+
+
+def parse_upload():
+    # ZS-PY-032: XXE — the XML document itself is tainted
+    xml_data = request.form['xml']
+    return ET.fromstring(xml_data)
+
+
+def run_plugin():
+    # ZS-PY-033: exec() of attacker-supplied code
+    plugin_code = request.form['code']
+    exec(plugin_code)
+
+
+def download_report():
+    # ZS-PY-034: send_file() with a tainted, unvalidated path
+    filename = request.args.get('filename')
+    return send_file(filename)
+
+
+def download_report_safe():
+    # Safe: fixed, hardcoded filename — must NOT match ZS-PY-034
+    # (tainted_argument requires the argument to trace back to a source).
+    return send_file('static/report_template.pdf')

@@ -179,6 +179,24 @@ func TestBuild_PHPSourceTaintsVariable(t *testing.T) {
 	}
 }
 
+// TestBuild_PHPSessionSourceTaintsVariable is a Sprint 26 regression test:
+// $_SESSION was missing from phpPatterns.Sources even though session data is
+// exactly as attacker-influenced as $_GET/$_POST once an attacker can write
+// to it (e.g. via a prior unvalidated request), leaving every taint-gated
+// PHP rule blind to session-derived sinks.
+func TestBuild_PHPSessionSourceTaintsVariable(t *testing.T) {
+	root := &ir.IRNode{
+		Kind: ir.NodeKindModule,
+		Children: []*ir.IRNode{
+			assignment("$role", "$_SESSION['role']", ident("_")),
+		},
+	}
+	tainted := build(&ir.IRFile{Root: root, Language: core.LangPHP})
+	if !tainted["$role"] {
+		t.Error("expected $role to be tainted from $_SESSION source")
+	}
+}
+
 func TestBuild_UnrelatedAssignmentNotTainted(t *testing.T) {
 	root := &ir.IRNode{
 		Kind: ir.NodeKindModule,

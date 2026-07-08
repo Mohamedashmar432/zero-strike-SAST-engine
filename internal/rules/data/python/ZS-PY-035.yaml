@@ -1,0 +1,30 @@
+id: ZS-PY-035
+lifecycle: released
+name: Django SESSION_COOKIE_SECURE Disabled
+version: "1.0.0"
+language: python
+category: security-misconfiguration
+severity: medium
+confidence: medium
+cwe:
+  - CWE-614
+owasp:
+  - "A02:2025"
+rationale: |
+  With SESSION_COOKIE_SECURE = False, Django will send the session cookie
+  over plain HTTP as well as HTTPS, so anyone positioned on the network
+  path (public Wi-Fi, a compromised proxy) can capture the session cookie
+  in transit and hijack the victim's authenticated session. This is
+  exploitable whenever any part of the site is reachable over HTTP, even
+  if login itself happens over HTTPS.
+description: |
+  Detects assignment of SESSION_COOKIE_SECURE = False in Django settings.
+message: "SESSION_COOKIE_SECURE = False detected — session cookies will be sent over plain HTTP"
+references:
+  - https://docs.djangoproject.com/en/stable/ref/settings/#session-cookie-secure
+tags: [misconfiguration, django, cookie, session]
+match:
+  kind: assignment
+  lhs_identifier: "^SESSION_COOKIE_SECURE$"
+  rhs_literal: "^False$"
+fix_suggestion: "Set SESSION_COOKIE_SECURE = True so the session cookie is only ever sent over HTTPS."

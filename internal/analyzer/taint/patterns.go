@@ -78,7 +78,7 @@ var goPatterns = languagePatterns{
 
 var phpPatterns = languagePatterns{
 	Sources: []*regexp.Regexp{
-		regexp.MustCompile(`\$_(GET|POST|REQUEST|COOKIE|SERVER)\b`),
+		regexp.MustCompile(`\$_(GET|POST|REQUEST|COOKIE|SERVER|SESSION)\b`),
 	},
 	Sanitizers: []*regexp.Regexp{
 		regexp.MustCompile(`htmlspecialchars\(`),

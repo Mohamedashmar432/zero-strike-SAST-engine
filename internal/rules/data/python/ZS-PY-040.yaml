@@ -1,0 +1,30 @@
+id: ZS-PY-040
+lifecycle: released
+name: Flask WTF_CSRF_ENABLED Disabled
+version: "1.0.0"
+language: python
+category: security-misconfiguration
+severity: high
+confidence: medium
+cwe:
+  - CWE-352
+owasp:
+  - "A01:2025"
+rationale: |
+  With WTF_CSRF_ENABLED set to False, Flask-WTF's CSRF protection is
+  disabled site-wide, so an attacker can craft a page that submits a
+  state-changing request to the application on the victim's behalf using
+  the victim's own authenticated session — the classic cross-site request
+  forgery attack Flask-WTF exists specifically to prevent.
+description: |
+  Detects WTF_CSRF_ENABLED being set to False, whether via a bare
+  module-level assignment or app.config['WTF_CSRF_ENABLED'] subscript form.
+message: "WTF_CSRF_ENABLED set to False — CSRF protection is disabled site-wide"
+references:
+  - https://flask-wtf.readthedocs.io/en/stable/config/
+tags: [misconfiguration, flask, csrf]
+match:
+  kind: assignment
+  lhs_identifier: "WTF_CSRF_ENABLED"
+  rhs_literal: "^False$"
+fix_suggestion: "Remove the WTF_CSRF_ENABLED override (or set it to True) so CSRF protection stays enabled."

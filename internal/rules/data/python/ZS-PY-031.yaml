@@ -1,0 +1,35 @@
+id: ZS-PY-031
+lifecycle: released
+name: subprocess.check_output() Command Injection
+version: "1.0.0"
+language: python
+category: command-injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-78
+owasp:
+  - "A05:2025"
+rationale: |
+  subprocess.check_output() runs its command argument as a new process and
+  returns its output; when that command (or, with shell=True, the whole
+  command string) is built from tainted, user-influenced data, an attacker
+  can inject additional arguments or shell metacharacters to run arbitrary
+  commands. This is exploitable wherever request data, filenames, or
+  configuration values feed into the command being executed. Sibling to
+  ZS-PY-012 (subprocess.call) and ZS-PY-003 (subprocess.run) — the three
+  most common subprocess entry points, now all covered.
+description: |
+  subprocess.check_output() executes external commands and is flagged when
+  the command argument traces back to an untrusted source (intra-procedural
+  taint tracking).
+message: "subprocess.check_output() detected with a tainted argument — ensure it is not user-controlled; use shell=False"
+references:
+  - https://docs.python.org/3/library/subprocess.html#security-considerations
+tags: [command-injection, subprocess]
+match:
+  kind: call
+  callee: subprocess.check_output
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Pass a list of arguments (not a string) with shell=False, and validate/allowlist any user-influenced values before use."

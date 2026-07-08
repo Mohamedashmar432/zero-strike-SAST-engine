@@ -1,0 +1,36 @@
+id: ZS-PY-039
+lifecycle: released
+name: Flask SESSION_COOKIE_SECURE Disabled
+version: "1.0.0"
+language: python
+category: security-misconfiguration
+severity: medium
+confidence: medium
+cwe:
+  - CWE-614
+owasp:
+  - "A02:2025"
+rationale: |
+  With SESSION_COOKIE_SECURE set to False, Flask will send its session
+  cookie over plain HTTP as well as HTTPS, so anyone positioned on the
+  network path can capture the session cookie in transit and hijack the
+  victim's authenticated session. This is exploitable whenever any part of
+  the site is reachable over HTTP.
+description: |
+  Detects Flask's app.config['SESSION_COOKIE_SECURE'] subscript form being
+  set to False (matched via substring on the assignment's LHS text, the
+  same approach ZS-PY-030 uses for response.headers[...] assignments).
+  Deliberately scoped to the config[...] subscript shape, not a bare
+  SESSION_COOKIE_SECURE = False assignment — that bare form is
+  indistinguishable from Django's identical setting name and is already
+  covered by ZS-PY-035; matching it here too would double-report the same
+  line under two rule IDs.
+message: "app.config['SESSION_COOKIE_SECURE'] set to False — session cookies will be sent over plain HTTP"
+references:
+  - https://flask.palletsprojects.com/en/stable/config/#SESSION_COOKIE_SECURE
+tags: [misconfiguration, flask, cookie, session]
+match:
+  kind: assignment
+  lhs_identifier: "config\\[['\"]SESSION_COOKIE_SECURE['\"]\\]"
+  rhs_literal: "^False$"
+fix_suggestion: "Set SESSION_COOKIE_SECURE to True so the session cookie is only ever sent over HTTPS."
