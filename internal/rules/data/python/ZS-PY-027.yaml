@@ -1,0 +1,48 @@
+id: ZS-PY-027
+lifecycle: released
+name: Server-Side Template Injection (render_template_string)
+version: "1.0.0"
+language: python
+category: ssti
+severity: high
+confidence: medium
+cwe:
+  - CWE-94
+owasp:
+  - "A03:2025"
+rationale: |
+  Flask's render_template_string() compiles its argument as a Jinja2
+  template before rendering, so if that argument itself is
+  attacker-controlled (rather than a fixed template with only its render
+  *variables* coming from user input), the attacker can inject Jinja2
+  syntax like {{ 7*7 }} or the well-known {{ config }}/exec-via-
+  __class__.__mro__ payloads to read server config or achieve remote code
+  execution. This is exploitable wherever the template text itself — not
+  just the values substituted into it — comes from a request parameter,
+  which is a very different (and far more dangerous) pattern than the safe,
+  common case of rendering a fixed template string with tainted variables.
+description: |
+  Detects calls to render_template_string() where the template argument
+  itself traces back to an untrusted source (intra-procedural taint
+  tracking) — not merely a variable passed in to fill a placeholder.
+
+  tainted_argument alone checks every argument, so a safe call passing a
+  fixed template plus a tainted render variable (render_template_string(
+  template, name=name)) would false-positive on the variable, not the
+  template. argument_count: 1 additionally requires the call to have
+  exactly one argument — true for the vulnerable single-argument shape,
+  false for the safe fixed-template-plus-render-variables shape — so the
+  two filters together isolate "the template itself is tainted" from
+  "a value substituted into a fixed template is tainted" using only
+  existing filter primitives, no engine change needed.
+message: "render_template_string() called with a tainted template — server-side template injection risk"
+references:
+  - https://owasp.org/www-community/attacks/Server_Side_Template_Injection
+tags: [ssti, injection, jinja2]
+match:
+  kind: call
+  callee: render_template_string
+  filters:
+    - argument_count: 1
+    - tainted_argument: true
+fix_suggestion: "Never build the template string itself from user input; keep the template fixed and pass user data only as render variables."

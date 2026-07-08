@@ -130,7 +130,7 @@ func TestIntegration_AssertFiresZSPY009(t *testing.T) {
 // ZS-PY-004 now only fires when the execute() argument traces back to a source.
 func TestIntegration_TaintedArgumentFiresZSPY004(t *testing.T) {
 	_, idx := loadPythonRules(t)
-	results := matchSource(t, idx, "user_id = request.args.get('id')\nquery = \"SELECT \" + user_id\nexecute(query)\n")
+	results := matchSource(t, idx, "user_id = request.args.get('id')\nquery = \"SELECT \" + user_id\ncursor.execute(query)\n")
 	if !hasRule(results, "ZS-PY-004") {
 		t.Error("expected ZS-PY-004 to fire when execute() argument is tainted")
 	}
@@ -140,7 +140,7 @@ func TestIntegration_TaintedArgumentFiresZSPY004(t *testing.T) {
 // fix: a constant string passed to execute() no longer fires ZS-PY-004.
 func TestIntegration_ConstantArgumentDoesNotFireZSPY004(t *testing.T) {
 	_, idx := loadPythonRules(t)
-	results := matchSource(t, idx, "query = \"SELECT * FROM users\"\nexecute(query)\n")
+	results := matchSource(t, idx, "query = \"SELECT * FROM users\"\ncursor.execute(query)\n")
 	if hasRule(results, "ZS-PY-004") {
 		t.Error("expected ZS-PY-004 to NOT fire when execute() argument is a constant")
 	}
@@ -154,7 +154,7 @@ func TestIntegration_ConstantArgumentDoesNotFireZSPY004(t *testing.T) {
 // but Path stays empty.
 func TestIntegration_EnableGraphsPopulatesTaintPath(t *testing.T) {
 	_, idx := loadPythonRules(t)
-	src := "user_id = request.args.get('id')\nquery = \"SELECT \" + user_id\nexecute(query)\n"
+	src := "user_id = request.args.get('id')\nquery = \"SELECT \" + user_id\ncursor.execute(query)\n"
 
 	withGraphs := buildFindingForRule(t, idx, src, true, "ZS-PY-004")
 	if withGraphs.TaintContext == nil || len(withGraphs.TaintContext.Path) == 0 {
@@ -181,7 +181,7 @@ func TestIntegration_EnableGraphsPopulatesTaintPath(t *testing.T) {
 // Path stayed empty even though the flow-insensitive verdict still fired.
 func TestIntegration_EnableGraphsPopulatesTaintPathAcrossIfBranch(t *testing.T) {
 	_, idx := loadPythonRules(t)
-	src := "if flag:\n    user_id = request.args.get('id')\nquery = \"SELECT \" + user_id\nexecute(query)\n"
+	src := "if flag:\n    user_id = request.args.get('id')\nquery = \"SELECT \" + user_id\ncursor.execute(query)\n"
 
 	withGraphs := buildFindingForRule(t, idx, src, true, "ZS-PY-004")
 	if withGraphs.TaintContext == nil || len(withGraphs.TaintContext.Path) == 0 {

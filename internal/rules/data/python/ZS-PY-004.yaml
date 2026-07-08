@@ -21,13 +21,22 @@ rationale: |
 description: |
   Detects SQL query strings that use Python string formatting operations, where the
   formatted value traces back to an untrusted source (intra-procedural taint tracking).
+
+  callee_suffix: real DB-API-2.0 code (sqlite3, psycopg2, MySQLdb, pyodbc)
+  always calls execute() on a cursor object — cursor.execute(...),
+  self.cursor.execute(...), conn.cursor.execute(...) — never as a bare
+  top-level function. Matching only the bare "execute" callee (as this rule
+  did before) misses virtually every real occurrence; suffix matching
+  (dot-boundary only, see internal/engine's calleeSuffixMatches) catches
+  any receiver ending in .execute without needing a rule per variable name.
 message: "SQL query constructed with string formatting — use parameterized queries instead"
 references:
   - https://owasp.org/www-community/attacks/SQL_Injection
 tags: [sqli, injection]
 match:
   kind: call
-  callee: execute
+  callee: cursor.execute
+  callee_suffix: true
   filters:
     - tainted_argument: true
 fix_suggestion: "Use parameterized queries: cursor.execute(query, params) where params is a tuple."

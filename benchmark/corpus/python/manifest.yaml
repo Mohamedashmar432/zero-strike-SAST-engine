@@ -69,6 +69,35 @@ cases:
   - file: cases/vuln_empty_except_handler.py
     language: python
     expect: [{rule_id: ZS-PY-024, min_count: 1}]
+  - file: cases/vuln_ssrf_get.py
+    language: python
+    expect: [{rule_id: ZS-PY-025, min_count: 1}]
+  - file: cases/vuln_ssrf_post.py
+    language: python
+    expect: [{rule_id: ZS-PY-026, min_count: 1}]
+  - file: cases/vuln_ssti.py
+    language: python
+    expect: [{rule_id: ZS-PY-027, min_count: 1}]
+  - file: cases/vuln_open_redirect.py
+    language: python
+    expect: [{rule_id: ZS-PY-028, min_count: 1}]
+  - file: cases/vuln_des.py
+    language: python
+    expect: [{rule_id: ZS-PY-029, min_count: 1}]
+  - file: cases/vuln_cors.py
+    language: python
+    expect: [{rule_id: ZS-PY-030, min_count: 1}]
+  - file: cases/vuln_realistic_flask.py
+    language: python
+    expect:
+      - {rule_id: ZS-PY-002, min_count: 1}
+      - {rule_id: ZS-PY-004, min_count: 1}
+      - {rule_id: ZS-PY-007, min_count: 1}
+      - {rule_id: ZS-PY-012, min_count: 1}
+      - {rule_id: ZS-PY-025, min_count: 1}
+      - {rule_id: ZS-PY-027, min_count: 1}
+      - {rule_id: ZS-PY-028, min_count: 1}
+      - {rule_id: ZS-PY-029, min_count: 1}
   - file: cases/clean.py
     language: python
     expect: []

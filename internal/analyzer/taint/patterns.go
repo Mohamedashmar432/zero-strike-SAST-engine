@@ -18,7 +18,7 @@ type languagePatterns struct {
 
 var pythonPatterns = languagePatterns{
 	Sources: []*regexp.Regexp{
-		regexp.MustCompile(`request\.(args|form|GET|POST|values)`),
+		regexp.MustCompile(`request\.(args|form|GET|POST|values|headers)`),
 		regexp.MustCompile(`(^|\W)input\(`),
 		regexp.MustCompile(`sys\.argv`),
 		regexp.MustCompile(`os\.environ\.get`),

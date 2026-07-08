@@ -1,0 +1,39 @@
+id: ZS-PY-025
+lifecycle: released
+name: Server-Side Request Forgery (requests.get)
+version: "1.0.0"
+language: python
+category: ssrf
+severity: high
+confidence: medium
+cwe:
+  - CWE-918
+owasp:
+  - "A01:2025"
+rationale: |
+  Passing a request-derived URL straight to requests.get() lets an attacker
+  redirect the server's own outbound request to internal-only services,
+  loopback addresses, or cloud metadata endpoints (e.g. 169.254.169.254)
+  that are normally unreachable from outside the network, potentially
+  exposing internal APIs, credentials, or instance metadata. This is
+  exploitable in any feature that fetches a user-supplied URL, such as
+  webhook registration, link previews, or file-import-by-URL; taint-gating
+  keeps precision acceptable since requests.get is otherwise a completely
+  ordinary, safe call when its argument is a fixed or validated URL.
+description: |
+  Detects calls to requests.get() where the URL argument traces back to an
+  untrusted source (intra-procedural taint tracking).
+
+  Note: only requests.get() is covered by this rule — requests.post/put
+  are covered by ZS-PY-026 (a separate rule, since this engine requires one
+  rule per exact callee).
+message: "requests.get() called with a tainted URL — validate and allowlist URLs before use"
+references:
+  - https://owasp.org/www-community/attacks/Server_Side_Request_Forgery
+tags: [ssrf, requests]
+match:
+  kind: call
+  callee: requests.get
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Validate the URL against an allowlist. Reject internal/private IPs and non-http(s) schemes before fetching."

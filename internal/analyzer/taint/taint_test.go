@@ -27,6 +27,25 @@ func build(file *ir.IRFile) map[string]bool {
 	return taint.Build(file, symboltable.NewBuilder().Build(file))
 }
 
+// TestBuild_RequestHeadersSourceTaintsVariable is a regression test for the
+// Sprint 25 fix: request.headers (Origin, Referer, X-Forwarded-For, etc.)
+// is exactly as attacker-controlled as request.args/form, but was missing
+// from pythonPatterns.Sources — confirmed missing while investigating a
+// CORS-misconfiguration pattern (response.headers[...] = request.headers
+// .get('Origin')) that needs it to be taint-gated correctly.
+func TestBuild_RequestHeadersSourceTaintsVariable(t *testing.T) {
+	root := &ir.IRNode{
+		Kind: ir.NodeKindModule,
+		Children: []*ir.IRNode{
+			assignment("origin", "request.headers.get('Origin', '*')", ident("_")),
+		},
+	}
+	tainted := build(&ir.IRFile{Root: root})
+	if !tainted["origin"] {
+		t.Error("expected origin to be tainted from request.headers source")
+	}
+}
+
 func TestBuild_NilFile(t *testing.T) {
 	if got := taint.Build(nil, nil); len(got) != 0 {
 		t.Errorf("expected empty set for nil file, got %v", got)

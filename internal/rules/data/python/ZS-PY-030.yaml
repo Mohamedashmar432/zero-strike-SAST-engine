@@ -1,0 +1,37 @@
+id: ZS-PY-030
+lifecycle: released
+name: CORS Misconfiguration (Reflected Origin)
+version: "1.0.0"
+language: python
+category: security-misconfiguration
+severity: medium
+confidence: medium
+cwe:
+  - CWE-346
+owasp:
+  - "A05:2025"
+rationale: |
+  Reflecting the request's own Origin header back into the
+  Access-Control-Allow-Origin response header — instead of checking it
+  against an allowlist — defeats the Same-Origin Policy for any site an
+  attacker controls: their page's requests appear to come from an
+  "allowed" origin because the server always answers with whatever Origin
+  it was sent. Combined with Access-Control-Allow-Credentials, this lets
+  an attacker's page make authenticated cross-origin requests and read the
+  response, exfiltrating data that should have been confined to the
+  legitimate origin.
+description: |
+  Detects an assignment to a header dict entry named
+  Access-Control-Allow-Origin whose value traces back to an untrusted
+  source (intra-procedural taint tracking) — typically the request's own
+  Origin header reflected back unchecked.
+message: "Access-Control-Allow-Origin set to a tainted value — validate the origin against an allowlist instead of reflecting it"
+references:
+  - https://owasp.org/www-community/attacks/CORS_OriginHeaderScrutiny
+tags: [cors, misconfiguration]
+match:
+  kind: assignment
+  lhs_identifier: "Access-Control-Allow-Origin"
+  filters:
+    - tainted_rhs: true
+fix_suggestion: "Check the Origin header against an explicit allowlist and only echo it back (or a fixed value) when it matches; never reflect an unvalidated value."

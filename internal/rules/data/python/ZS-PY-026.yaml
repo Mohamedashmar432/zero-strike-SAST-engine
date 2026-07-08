@@ -1,0 +1,32 @@
+id: ZS-PY-026
+lifecycle: released
+name: Server-Side Request Forgery (requests.post)
+version: "1.0.0"
+language: python
+category: ssrf
+severity: high
+confidence: medium
+cwe:
+  - CWE-918
+owasp:
+  - "A01:2025"
+rationale: |
+  Passing a request-derived URL to requests.post() lets an attacker direct
+  the server's own outbound request (and whatever payload it carries) to an
+  internal-only service, loopback address, or cloud metadata endpoint —
+  the same SSRF risk as ZS-PY-025's requests.get(), just for the sibling
+  verb commonly used for webhook/callback delivery, where the destination
+  is frequently user-supplied by design.
+description: |
+  Detects calls to requests.post() where the URL argument traces back to an
+  untrusted source (intra-procedural taint tracking).
+message: "requests.post() called with a tainted URL — validate and allowlist URLs before use"
+references:
+  - https://owasp.org/www-community/attacks/Server_Side_Request_Forgery
+tags: [ssrf, requests]
+match:
+  kind: call
+  callee: requests.post
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Validate the URL against an allowlist. Reject internal/private IPs and non-http(s) schemes before sending."
