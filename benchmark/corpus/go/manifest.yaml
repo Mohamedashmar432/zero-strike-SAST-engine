@@ -40,6 +40,9 @@ cases:
   - file: testdata/vuln_ssrf.go
     language: go
     expect: [{rule_id: ZS-GO-012, min_count: 1}]
+  - file: testdata/vuln_cleartext_http.go
+    language: go
+    expect: [{rule_id: ZS-GO-013, min_count: 1}]
   - file: testdata/clean.go
     language: go
     expect: []

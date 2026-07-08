@@ -1,0 +1,36 @@
+id: ZS-PY-043
+lifecycle: released
+name: JWT Decode Allows algorithm='none'
+version: "1.0.0"
+language: python
+category: authentication
+severity: critical
+confidence: medium
+cwe:
+  - CWE-347
+owasp:
+  - "A07:2025"
+rationale: |
+  jwt.decode() takes the set of algorithms it will accept from the
+  algorithms= argument; if that list includes "none", an attacker can
+  present a token with alg: none and no signature at all, and the decoder
+  will accept it as valid regardless of what algorithm the application
+  intended to use. This is exploitable wherever such a decode call
+  authenticates or authorizes a request, letting an attacker forge a token
+  claiming any identity or role.
+description: |
+  Detects calls to jwt.decode() where the algorithms= argument's text
+  contains "none" (case-insensitive) anywhere in the list, e.g.
+  algorithms=['none'] or algorithms=['HS256', 'none'].
+message: "jwt.decode(algorithms=[...]) includes 'none' — an unsigned token would be accepted as valid"
+references:
+  - https://cwe.mitre.org/data/definitions/347.html
+tags: [jwt, authentication, signature-bypass]
+match:
+  kind: call
+  callee: jwt.decode
+  filters:
+    - kwarg:
+        name: algorithms
+        value_pattern: "(?i)none"
+fix_suggestion: "List only the specific signing algorithm(s) the application actually uses (e.g. algorithms=['HS256']); never include 'none'."

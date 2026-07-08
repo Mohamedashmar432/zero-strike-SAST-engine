@@ -117,6 +117,18 @@ cases:
   - file: cases/vuln_flask_csrf_disabled.py
     language: python
     expect: [{rule_id: ZS-PY-040, min_count: 1}]
+  - file: cases/vuln_nosql.py
+    language: python
+    expect: [{rule_id: ZS-PY-041, min_count: 1}]
+  - file: cases/vuln_jwt_alg_none.py
+    language: python
+    expect: [{rule_id: ZS-PY-042, min_count: 1}]
+  - file: cases/vuln_jwt_decode_algorithms_none.py
+    language: python
+    expect: [{rule_id: ZS-PY-043, min_count: 1}]
+  - file: cases/vuln_ldap.py
+    language: python
+    expect: [{rule_id: ZS-PY-044, min_count: 1}]
   - file: cases/vuln_realistic_flask.py
     language: python
     expect:

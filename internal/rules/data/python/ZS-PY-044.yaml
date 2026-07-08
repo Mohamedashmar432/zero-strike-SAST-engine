@@ -1,0 +1,37 @@
+id: ZS-PY-044
+lifecycle: released
+name: LDAP Injection via Connection.search()
+version: "1.0.0"
+language: python
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-90
+owasp:
+  - "A03:2025"
+rationale: |
+  LDAP search filters use special characters (*, (, ), \, NUL) to combine
+  and scope conditions; when a filter string is built by interpolating
+  attacker-controlled data directly (e.g. an f-string), an attacker can
+  inject additional filter clauses to bypass authentication checks,
+  enumerate directory entries, or extract data outside the intended scope.
+  This is exploitable wherever a username or other request-derived value is
+  spliced into the filter passed to Connection.search() without escaping.
+description: |
+  Detects calls to conn.search() (the conventional ldap3 Connection
+  receiver name) where an argument traces back to an untrusted source
+  (intra-procedural taint tracking). As with other receiver-qualified
+  rules in this rule set (cursor.execute, collection.find), this matches
+  the literal receiver name "conn" and will not fire if the ldap3
+  Connection object is bound to a differently-named variable.
+message: "conn.search() called with a tainted filter — escape special LDAP filter characters before use"
+references:
+  - https://owasp.org/www-community/attacks/LDAP_injection
+tags: [ldap-injection, injection, ldap3]
+match:
+  kind: call
+  callee: conn.search
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Escape LDAP special characters in user input (e.g. via ldap3.utils.conv.escape_filter_chars) before building the search filter."

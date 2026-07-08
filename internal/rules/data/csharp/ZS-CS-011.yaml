@@ -1,0 +1,45 @@
+id: ZS-CS-011
+lifecycle: released
+name: SqliteDataAdapter/SQLiteCommand SQL Injection
+version: "1.0.0"
+language: csharp
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-89
+owasp:
+  - "A05:2025"
+rationale: |
+  Building a SQLite query string by concatenating attacker-controlled data
+  lets an attacker terminate the intended query and append arbitrary SQL —
+  altering WHERE clauses to bypass authentication, using UNION SELECT to
+  pull data from other tables, or chaining statements to modify or drop
+  data. This is exploitable wherever a search term, identifier, or filter
+  value from a request reaches the query string before it is passed to
+  SqliteDataAdapter/SQLiteCommand, and is entirely avoidable by binding the
+  value as a parameter instead of splicing it into the SQL text.
+  Sibling rule to ZS-CS-002 (SqlCommand) and ZS-CS-007 (MySqlCommand):
+  applications using System.Data.SQLite build the identical vulnerability
+  through a differently-named type, which neither existing rule's exact-
+  callee match can see.
+  Known limitation shared with its siblings: the query string is often
+  built in one function from data received as a method parameter set by a
+  caller elsewhere in the codebase; since taint tracking here is
+  intra-procedural, this rule will not fire on that cross-function shape
+  until interprocedural taint analysis exists.
+description: |
+  A SqliteDataAdapter (or SQLiteCommand) is constructed with a query string
+  that traces back to an untrusted source within the same function
+  (intra-procedural taint tracking), indicating SQL built by string
+  concatenation instead of parameterization.
+message: "SqliteDataAdapter/SQLiteCommand constructed with a tainted query string — use parameterized queries instead"
+references:
+  - https://owasp.org/www-community/attacks/SQL_Injection
+tags: [sqli, injection, sqlite]
+match:
+  kind: call
+  callee: SqliteDataAdapter
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Use parameterized queries: new SqliteCommand(\"... WHERE Email = @email\", conn) with cmd.Parameters.AddWithValue(\"@email\", value)."

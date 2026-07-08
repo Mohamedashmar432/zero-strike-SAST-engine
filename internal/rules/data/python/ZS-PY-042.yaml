@@ -1,0 +1,37 @@
+id: ZS-PY-042
+lifecycle: released
+name: JWT Signed With algorithm='none'
+version: "1.0.0"
+language: python
+category: authentication
+severity: critical
+confidence: high
+cwe:
+  - CWE-347
+owasp:
+  - "A07:2025"
+rationale: |
+  jwt.encode(payload, key, algorithm='none') produces a token with no
+  cryptographic signature at all — anyone can construct or modify a token
+  claiming any identity or role, and a decoder that also allows the "none"
+  algorithm (or falls back to the token's own alg header) will accept it as
+  valid. This is exploitable wherever such tokens authenticate or authorize
+  requests, letting an attacker forge or tamper with a token to impersonate
+  any user.
+description: |
+  Detects calls to jwt.encode() with algorithm='none' (or "None" in any
+  case), the unsigned JWT algorithm. Sibling to ZS-PY-021, which covers
+  jwt.decode(verify=False) — a different vulnerability shape on the
+  decode side.
+message: "jwt.encode(..., algorithm='none') detected — the token is unsigned and can be forged"
+references:
+  - https://cwe.mitre.org/data/definitions/347.html
+tags: [jwt, authentication, signature-bypass]
+match:
+  kind: call
+  callee: jwt.encode
+  filters:
+    - kwarg:
+        name: algorithm
+        value_pattern: "(?i)^['\"]none['\"]$"
+fix_suggestion: "Always sign JWTs with a real algorithm (e.g. HS256 or RS256) and a secret/key that isn't empty."

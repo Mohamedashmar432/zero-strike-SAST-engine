@@ -1,0 +1,33 @@
+id: ZS-GO-013
+lifecycle: released
+name: Cleartext HTTP Server
+version: "1.0.0"
+language: go
+category: security-misconfiguration
+severity: medium
+confidence: high
+cwe:
+  - CWE-319
+owasp:
+  - "A02:2025"
+rationale: |
+  http.ListenAndServe() serves all traffic over plain HTTP, so any
+  credentials, session cookies, or other sensitive data exchanged with the
+  server travels in cleartext and can be intercepted or modified by anyone
+  on the network path (public Wi-Fi, a compromised router, a malicious
+  proxy). This is exploitable for the entire lifetime of the server unless
+  it sits behind a TLS-terminating reverse proxy the code itself gives no
+  indication of.
+description: |
+  Detects calls to http.ListenAndServe(), which serves over plain HTTP.
+  The rule does not perform taint tracking — every call is reported,
+  since serving any real traffic over http.ListenAndServe (as opposed to
+  http.ListenAndServeTLS) is the misconfiguration itself.
+message: "http.ListenAndServe() serves over plain HTTP — use http.ListenAndServeTLS() or terminate TLS upstream"
+references:
+  - https://cwe.mitre.org/data/definitions/319.html
+tags: [misconfiguration, tls, cleartext]
+match:
+  kind: call
+  callee: http.ListenAndServe
+fix_suggestion: "Use http.ListenAndServeTLS() with a valid certificate, or confirm TLS is terminated by a reverse proxy in front of this server."

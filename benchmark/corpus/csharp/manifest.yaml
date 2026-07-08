@@ -27,6 +27,9 @@ cases:
   - file: cases/vuln_process_new.cs
     language: csharp
     expect: [{rule_id: ZS-CS-008, min_count: 1}]
+  - file: cases/vuln_sqlite.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-011, min_count: 1}]
   - file: cases/clean.cs
     language: csharp
     expect: []
