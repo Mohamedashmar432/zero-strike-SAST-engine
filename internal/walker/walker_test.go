@@ -6,7 +6,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/zerostrike/scanner/internal/walker"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/walker"
 )
 
 // collectWalk drains both channels returned by Walk and returns the discovered

@@ -10,9 +10,9 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/zerostrike/scanner/internal/portal"
-	"github.com/zerostrike/scanner/internal/report"
-	jsonreport "github.com/zerostrike/scanner/internal/report/json"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/portal"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/report"
+	jsonreport "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/report/json"
 )
 
 // uploadFlagsError enforces that --server/--token/--project-id are either

@@ -7,10 +7,10 @@ import (
 	"os"
 	"regexp"
 
-	"github.com/zerostrike/scanner/internal/analyzer"
-	"github.com/zerostrike/scanner/internal/core"
-	"github.com/zerostrike/scanner/internal/findings"
-	"github.com/zerostrike/scanner/internal/walker"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/analyzer"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/findings"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/walker"
 )
 
 type detector struct {

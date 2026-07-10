@@ -8,8 +8,8 @@ import (
 
 	sitter "github.com/smacker/go-tree-sitter"
 	sitterpython "github.com/smacker/go-tree-sitter/python"
-	"github.com/zerostrike/scanner/internal/core"
-	"github.com/zerostrike/scanner/internal/parser"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/parser"
 )
 
 // PythonParser parses Python source files using tree-sitter.

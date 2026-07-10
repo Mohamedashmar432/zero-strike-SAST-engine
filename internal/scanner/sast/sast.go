@@ -9,28 +9,28 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/zerostrike/scanner/internal/analyzer"
-	"github.com/zerostrike/scanner/internal/cache"
-	"github.com/zerostrike/scanner/internal/core"
-	"github.com/zerostrike/scanner/internal/detector"
-	"github.com/zerostrike/scanner/internal/engine"
-	"github.com/zerostrike/scanner/internal/findings"
-	"github.com/zerostrike/scanner/internal/ir"
-	"github.com/zerostrike/scanner/internal/langreg"
-	"github.com/zerostrike/scanner/internal/rules"
-	"github.com/zerostrike/scanner/internal/walker"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/analyzer"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/cache"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/detector"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/engine"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/findings"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/ir"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/langreg"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/rules"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/walker"
 
 	// Blank imports run each language package's init() registration with
 	// langreg. Linking the (CGo) SAST scanner links its languages, so every
 	// consumer — the CLI binary and test binaries alike — gets a populated
 	// registry without wiring it up itself.
-	_ "github.com/zerostrike/scanner/internal/parser/csharp"
-	_ "github.com/zerostrike/scanner/internal/parser/golang"
-	_ "github.com/zerostrike/scanner/internal/parser/java"
-	_ "github.com/zerostrike/scanner/internal/parser/javascript"
-	_ "github.com/zerostrike/scanner/internal/parser/php"
-	_ "github.com/zerostrike/scanner/internal/parser/python"
-	_ "github.com/zerostrike/scanner/internal/parser/typescript"
+	_ "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/parser/csharp"
+	_ "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/parser/golang"
+	_ "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/parser/java"
+	_ "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/parser/javascript"
+	_ "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/parser/php"
+	_ "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/parser/python"
+	_ "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/parser/typescript"
 )
 
 // SASTScanner runs rule-based pattern matching over AST IR.

@@ -6,8 +6,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/zerostrike/scanner/internal/ir"
-	pythonparser "github.com/zerostrike/scanner/internal/parser/python"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/ir"
+	pythonparser "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/parser/python"
 )
 
 func TestParse_BasicModule(t *testing.T) {

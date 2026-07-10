@@ -119,7 +119,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/zerostrike/scanner/internal/core"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
 )
 
 // TestConcurrentDiskCache_SameKeyWritesNeverTornRecord spawns many

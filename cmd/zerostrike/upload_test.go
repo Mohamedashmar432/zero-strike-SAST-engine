@@ -10,7 +10,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/zerostrike/scanner/internal/portal"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/portal"
 )
 
 func TestUploadCmd_SuccessFlow(t *testing.T) {

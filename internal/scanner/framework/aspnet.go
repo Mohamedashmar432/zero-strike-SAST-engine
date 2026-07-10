@@ -5,8 +5,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/zerostrike/scanner/internal/core"
-	"github.com/zerostrike/scanner/internal/findings"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/findings"
 )
 
 var (

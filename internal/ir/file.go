@@ -1,6 +1,6 @@
 package ir
 
-import "github.com/zerostrike/scanner/internal/core"
+import "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
 
 // IRFile is the top-level IR container for a single source file.
 type IRFile struct {

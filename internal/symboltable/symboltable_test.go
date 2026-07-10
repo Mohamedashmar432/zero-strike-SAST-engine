@@ -3,9 +3,9 @@ package symboltable_test
 import (
 	"testing"
 
-	"github.com/zerostrike/scanner/internal/core"
-	"github.com/zerostrike/scanner/internal/ir"
-	"github.com/zerostrike/scanner/internal/symboltable"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/ir"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/symboltable"
 )
 
 func TestDefineAndResolve(t *testing.T) {

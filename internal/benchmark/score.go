@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/zerostrike/scanner/internal/core"
-	"github.com/zerostrike/scanner/internal/pipeline"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/pipeline"
 )
 
 // ScoreEvent is one TP/FP/FN outcome, tagged with the rule ID and modality

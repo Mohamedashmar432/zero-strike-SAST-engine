@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zerostrike/scanner/internal/report"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/report"
 )
 
 type htmlReporter struct{}

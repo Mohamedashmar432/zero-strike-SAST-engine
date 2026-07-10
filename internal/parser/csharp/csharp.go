@@ -8,8 +8,8 @@ import (
 
 	sitter "github.com/smacker/go-tree-sitter"
 	sittercsharp "github.com/smacker/go-tree-sitter/csharp"
-	"github.com/zerostrike/scanner/internal/core"
-	"github.com/zerostrike/scanner/internal/parser"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/parser"
 )
 
 // CSharpParser parses C# source files using tree-sitter.

@@ -1,0 +1,55 @@
+version: 2
+project_name: zerostrike
+
+builds:
+  - id: linux_amd64
+    main: ./cmd/zerostrike
+    binary: zerostrike
+    goos: [linux]
+    goarch: [amd64]
+    env: [CGO_ENABLED=1]
+    ldflags: [-s -w -X github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/version.Version={{.Tag}}]
+
+  - id: linux_arm64
+    main: ./cmd/zerostrike
+    binary: zerostrike
+    goos: [linux]
+    goarch: [arm64]
+    env: [CGO_ENABLED=1, CC=aarch64-linux-gnu-gcc]
+    ldflags: [-s -w -X github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/version.Version={{.Tag}}]
+
+  - id: windows_amd64
+    main: ./cmd/zerostrike
+    binary: zerostrike
+    goos: [windows]
+    goarch: [amd64]
+    env: [CGO_ENABLED=1]
+    ldflags: [-s -w -X github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/version.Version={{.Tag}}]
+
+  - id: darwin_amd64
+    main: ./cmd/zerostrike
+    binary: zerostrike
+    goos: [darwin]
+    goarch: [amd64]
+    env: [CGO_ENABLED=1]
+    ldflags: [-s -w -X github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/version.Version={{.Tag}}]
+
+  - id: darwin_arm64
+    main: ./cmd/zerostrike
+    binary: zerostrike
+    goos: [darwin]
+    goarch: [arm64]
+    env: [CGO_ENABLED=1]
+    ldflags: [-s -w -X github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/version.Version={{.Tag}}]
+
+archives:
+  - format: binary
+    name_template: "zerostrike_{{ .Os }}_{{ .Arch }}"
+
+checksum:
+  name_template: checksums.txt
+
+release:
+  github:
+    owner: Mohamedashmar432
+    name: zero-strike-SAST-engine

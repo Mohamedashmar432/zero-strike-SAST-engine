@@ -3,11 +3,11 @@ package analyzer
 import (
 	"context"
 
-	"github.com/zerostrike/scanner/internal/analyzer/taint"
-	"github.com/zerostrike/scanner/internal/core"
-	"github.com/zerostrike/scanner/internal/graph"
-	"github.com/zerostrike/scanner/internal/ir"
-	"github.com/zerostrike/scanner/internal/symboltable"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/analyzer/taint"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/graph"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/ir"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/symboltable"
 )
 
 // New returns the default Analyzer implementation. enableGraphs opts into

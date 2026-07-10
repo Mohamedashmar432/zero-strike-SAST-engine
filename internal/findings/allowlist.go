@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/bmatcuk/doublestar/v4"
-	"github.com/zerostrike/scanner/internal/core"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
 	"gopkg.in/yaml.v3"
 )
 

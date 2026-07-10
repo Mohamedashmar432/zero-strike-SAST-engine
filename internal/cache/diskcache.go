@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/zerostrike/scanner/internal/core"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
 )
 
 // diskCacheRecord is the on-disk JSON shape holding both the Cache Entry

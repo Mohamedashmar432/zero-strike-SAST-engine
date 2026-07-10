@@ -3,7 +3,7 @@ package rules_test
 import (
 	"testing"
 
-	"github.com/zerostrike/scanner/internal/rules"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/rules"
 )
 
 func TestLoader_JSRulesLoad(t *testing.T) {

@@ -8,8 +8,8 @@ import (
 
 	"github.com/google/uuid"
 	sitter "github.com/smacker/go-tree-sitter"
-	"github.com/zerostrike/scanner/internal/core"
-	"github.com/zerostrike/scanner/internal/ir"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/ir"
 )
 
 // IRBuilder converts a C# tree-sitter CST into an ir.IRFile.

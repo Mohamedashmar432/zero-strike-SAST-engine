@@ -5,11 +5,11 @@ package sast
 import (
 	"context"
 
-	"github.com/zerostrike/scanner/internal/analyzer"
-	"github.com/zerostrike/scanner/internal/cache"
-	"github.com/zerostrike/scanner/internal/core"
-	"github.com/zerostrike/scanner/internal/rules"
-	"github.com/zerostrike/scanner/internal/walker"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/analyzer"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/cache"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/rules"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/walker"
 )
 
 // SASTScanner is a no-op stub for builds without CGo.

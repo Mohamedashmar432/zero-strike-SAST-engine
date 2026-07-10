@@ -13,16 +13,16 @@ import (
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 
-	"github.com/zerostrike/scanner/internal/analyzer"
-	"github.com/zerostrike/scanner/internal/core"
-	"github.com/zerostrike/scanner/internal/langreg"
-	"github.com/zerostrike/scanner/internal/pipeline"
-	"github.com/zerostrike/scanner/internal/portal"
-	"github.com/zerostrike/scanner/internal/report"
-	htmlreport "github.com/zerostrike/scanner/internal/report/html"
-	jsonreport "github.com/zerostrike/scanner/internal/report/json"
-	sarifreport "github.com/zerostrike/scanner/internal/report/sarif"
-	"github.com/zerostrike/scanner/internal/version"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/analyzer"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/langreg"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/pipeline"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/portal"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/report"
+	htmlreport "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/report/html"
+	jsonreport "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/report/json"
+	sarifreport "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/report/sarif"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/version"
 )
 
 // parseLanguages maps --lang flag values to core.Language. Unrecognized

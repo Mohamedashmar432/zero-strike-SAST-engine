@@ -6,11 +6,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/zerostrike/scanner/internal/analyzer"
-	"github.com/zerostrike/scanner/internal/engine"
-	jsparser "github.com/zerostrike/scanner/internal/parser/javascript"
-	tsparser "github.com/zerostrike/scanner/internal/parser/typescript"
-	"github.com/zerostrike/scanner/internal/rules"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/analyzer"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/engine"
+	jsparser "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/parser/javascript"
+	tsparser "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/parser/typescript"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/rules"
 )
 
 func loadJSRules(t *testing.T) *engine.RuleIndex {

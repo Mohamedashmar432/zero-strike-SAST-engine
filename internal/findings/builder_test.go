@@ -3,13 +3,13 @@ package findings_test
 import (
 	"testing"
 
-	"github.com/zerostrike/scanner/internal/analyzer"
-	"github.com/zerostrike/scanner/internal/core"
-	"github.com/zerostrike/scanner/internal/engine"
-	"github.com/zerostrike/scanner/internal/findings"
-	"github.com/zerostrike/scanner/internal/ir"
-	"github.com/zerostrike/scanner/internal/rules"
-	"github.com/zerostrike/scanner/internal/symboltable"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/analyzer"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/engine"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/findings"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/ir"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/rules"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/symboltable"
 )
 
 func TestBuildSecretFinding_Fingerprint(t *testing.T) {

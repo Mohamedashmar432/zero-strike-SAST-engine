@@ -1,0 +1,112 @@
+name: release
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: write
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Install aarch64 cross toolchain
+        run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
+      - uses: goreleaser/goreleaser-action@v6
+        with:
+          install-only: true
+      - name: Build linux/amd64
+        run: |
+          goreleaser build --id linux_amd64 --clean
+          mv dist/*/zerostrike zerostrike_linux_amd64
+      - name: Build linux/arm64
+        run: |
+          goreleaser build --id linux_arm64 --clean
+          mv dist/*/zerostrike zerostrike_linux_arm64
+      - uses: actions/upload-artifact@v4
+        with:
+          name: binaries-linux
+          path: zerostrike_linux_*
+
+  build-windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Set up MinGW-w64
+        uses: egor-tensin/setup-mingw@v2
+        with:
+          platform: x64
+      - uses: goreleaser/goreleaser-action@v6
+        with:
+          install-only: true
+      - name: Build windows/amd64
+        run: |
+          goreleaser build --id windows_amd64 --clean
+          mv dist/*/zerostrike.exe zerostrike_windows_amd64.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: binaries-windows
+          path: zerostrike_windows_*
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: goreleaser/goreleaser-action@v6
+        with:
+          install-only: true
+      - name: Build darwin/amd64
+        run: |
+          goreleaser build --id darwin_amd64 --clean
+          mv dist/*/zerostrike zerostrike_darwin_amd64
+      - name: Build darwin/arm64
+        run: |
+          goreleaser build --id darwin_arm64 --clean
+          mv dist/*/zerostrike zerostrike_darwin_arm64
+      - uses: actions/upload-artifact@v4
+        with:
+          name: binaries-darwin
+          path: zerostrike_darwin_*
+
+  # ponytail: goreleaser's own release/publish pipe can't merge partial builds
+  # from separate native OS runners in the OSS tier (that's a Pro-only "split
+  # and merge" feature) - so this job checksums + uploads via `gh release`
+  # directly instead. Upgrade path: goreleaser Pro's `continue --merge`.
+  release:
+    needs: [build-linux, build-windows, build-macos]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: binaries-*
+          path: dist
+          merge-multiple: true
+      - name: Checksum and publish release
+        working-directory: dist
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          sha256sum zerostrike_* > checksums.txt
+          gh release create "${{ github.ref_name }}" zerostrike_* checksums.txt \
+            --repo "${{ github.repository }}" \
+            --title "${{ github.ref_name }}" --generate-notes

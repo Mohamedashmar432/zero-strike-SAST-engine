@@ -5,7 +5,7 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/zerostrike/scanner/internal/walker"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/walker"
 )
 
 // workerPool runs fn on each FileEntry from files using numWorkers goroutines.

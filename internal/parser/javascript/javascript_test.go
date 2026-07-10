@@ -5,8 +5,8 @@ package javascript_test
 import (
 	"testing"
 
-	"github.com/zerostrike/scanner/internal/ir"
-	"github.com/zerostrike/scanner/internal/parser/javascript"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/ir"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/parser/javascript"
 )
 
 // TestIRBuilder_PairKeywordArg verifies Sprint 12: object-literal properties

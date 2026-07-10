@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/zerostrike/scanner/internal/core"
-	"github.com/zerostrike/scanner/internal/ir"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/ir"
 )
 
 // buildSampleTree constructs a representative hand-built IR tree exercising

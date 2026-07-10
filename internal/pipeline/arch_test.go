@@ -13,12 +13,12 @@ import (
 //	core imports nothing; rules never imports engine.
 func TestImportDAG(t *testing.T) {
 	cases := []struct{ pkg, mustNotContain string }{
-		{"github.com/zerostrike/scanner/internal/rules", "/engine"},
-		{"github.com/zerostrike/scanner/internal/core", "github.com/zerostrike/scanner/internal"},
-		{"github.com/zerostrike/scanner/internal/ir", "/analyzer"},
-		{"github.com/zerostrike/scanner/internal/ir", "/engine"},
-		{"github.com/zerostrike/scanner/internal/ir", "/pipeline"},
-		{"github.com/zerostrike/scanner/internal/analyzer", "/pipeline"},
+		{"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/rules", "/engine"},
+		{"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core", "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal"},
+		{"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/ir", "/analyzer"},
+		{"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/ir", "/engine"},
+		{"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/ir", "/pipeline"},
+		{"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/analyzer", "/pipeline"},
 	}
 	for _, tc := range cases {
 		tc := tc

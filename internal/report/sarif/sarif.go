@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/zerostrike/scanner/internal/core"
-	"github.com/zerostrike/scanner/internal/report"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/report"
 )
 
 type sarifReporter struct{}
@@ -175,7 +175,7 @@ func (r *sarifReporter) Render(rep *report.Report, dest io.Writer) error {
 			Tool: sarifTool{Driver: sarifDriver{
 				Name:           "ZeroStrike",
 				Version:        rep.ScannerVersion,
-				InformationURI: "https://github.com/zerostrike/scanner",
+				InformationURI: "https://github.com/Mohamedashmar432/zero-strike-SAST-engine",
 				Rules:          rules,
 			}},
 			Results: results,

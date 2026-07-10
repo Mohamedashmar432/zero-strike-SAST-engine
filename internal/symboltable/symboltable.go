@@ -2,8 +2,8 @@ package symboltable
 
 import (
 	"github.com/google/uuid"
-	"github.com/zerostrike/scanner/internal/core"
-	"github.com/zerostrike/scanner/internal/ir"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/ir"
 )
 
 // ScopeType identifies the kind of lexical scope.

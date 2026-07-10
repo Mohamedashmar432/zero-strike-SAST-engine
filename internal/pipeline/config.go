@@ -1,6 +1,6 @@
 package pipeline
 
-import "github.com/zerostrike/scanner/internal/core"
+import "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
 
 // ScanConfig holds all configuration for a single scan run.
 type ScanConfig struct {

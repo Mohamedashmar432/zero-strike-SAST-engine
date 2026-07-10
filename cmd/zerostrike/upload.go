@@ -8,8 +8,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/zerostrike/scanner/internal/portal"
-	"github.com/zerostrike/scanner/internal/version"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/portal"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/version"
 )
 
 // ponytail: upload is a pure pass-through of on-disk report bytes — it has

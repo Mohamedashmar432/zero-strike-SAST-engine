@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/zerostrike/scanner/internal/core"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
 )
 
 func TestDiskCache_SetGetRoundTrip(t *testing.T) {

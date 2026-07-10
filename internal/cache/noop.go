@@ -1,6 +1,6 @@
 package cache
 
-import "github.com/zerostrike/scanner/internal/core"
+import "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
 
 // NoopCache is a Cache and FindingStore that never stores anything and
 // always reports a miss - the implementation used to satisfy --no-cache

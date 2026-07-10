@@ -3,8 +3,8 @@ package graph_test
 import (
 	"testing"
 
-	"github.com/zerostrike/scanner/internal/graph"
-	"github.com/zerostrike/scanner/internal/ir"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/graph"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/ir"
 )
 
 // node is a small builder for hand-constructed IR fixtures: real IR nodes

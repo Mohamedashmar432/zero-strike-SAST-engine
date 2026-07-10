@@ -1,4 +1,4 @@
-module github.com/zerostrike/scanner
+module github.com/Mohamedashmar432/zero-strike-SAST-engine
 
 go 1.26.3
 

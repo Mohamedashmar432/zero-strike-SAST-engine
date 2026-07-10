@@ -1,7 +1,7 @@
 package taint
 
 import (
-	"github.com/zerostrike/scanner/internal/ir"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/ir"
 )
 
 // functionSummary classifies what a same-file function does with taint,

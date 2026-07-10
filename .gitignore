@@ -1,6 +1,6 @@
 # Build output
 /zerostrike
-/zerostrike.exe
+/*.exe
 dist/
 
 # Go

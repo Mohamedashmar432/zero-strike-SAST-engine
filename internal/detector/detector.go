@@ -3,7 +3,7 @@
 // and shebang-line matching (fallback for extensionless or ambiguous files).
 package detector
 
-import "github.com/zerostrike/scanner/internal/core"
+import "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
 
 // Detector classifies source files by language.
 type Detector interface {

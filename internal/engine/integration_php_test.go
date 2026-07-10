@@ -6,10 +6,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/zerostrike/scanner/internal/analyzer"
-	"github.com/zerostrike/scanner/internal/engine"
-	phpparser "github.com/zerostrike/scanner/internal/parser/php"
-	"github.com/zerostrike/scanner/internal/rules"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/analyzer"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/engine"
+	phpparser "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/parser/php"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/rules"
 )
 
 func loadPhpRules(t *testing.T) *engine.RuleIndex {

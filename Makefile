@@ -1,14 +1,14 @@
 .PHONY: build build-release test test-short test-nocgo lint benchmark clean
 
 BINARY  := zerostrike
-MODULE  := github.com/zerostrike/scanner
+MODULE  := github.com/Mohamedashmar432/zero-strike-SAST-engine
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 
 build:
 	go build -o $(BINARY) ./cmd/zerostrike/
 
 build-release:
-	go build -ldflags="-X main.version=$(VERSION)" -o $(BINARY) ./cmd/zerostrike/
+	go build -ldflags="-X $(MODULE)/internal/version.Version=$(VERSION)" -o $(BINARY) ./cmd/zerostrike/
 
 test:
 	go test ./... -v -count=1

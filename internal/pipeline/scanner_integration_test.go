@@ -6,8 +6,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/zerostrike/scanner/internal/core"
-	"github.com/zerostrike/scanner/internal/pipeline"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/pipeline"
 )
 
 func TestScanPipeline_Python(t *testing.T) {

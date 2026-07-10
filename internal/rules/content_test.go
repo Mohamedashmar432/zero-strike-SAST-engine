@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zerostrike/scanner/internal/rules"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/rules"
 	"gopkg.in/yaml.v3"
 )
 

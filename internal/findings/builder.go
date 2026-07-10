@@ -6,9 +6,9 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/zerostrike/scanner/internal/core"
-	"github.com/zerostrike/scanner/internal/engine"
-	"github.com/zerostrike/scanner/internal/symboltable"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/engine"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/symboltable"
 )
 
 // DependencyInput carries the fields needed to build a DependencyFinding.

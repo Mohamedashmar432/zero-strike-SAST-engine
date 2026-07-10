@@ -12,18 +12,18 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/zerostrike/scanner/internal/benchmark"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/benchmark"
 
 	// Blank imports register each language's IR builder with
 	// internal/langreg — same requirement as cmd/zerostrike/main.go.
-	_ "github.com/zerostrike/scanner/internal/parser/csharp"
-	_ "github.com/zerostrike/scanner/internal/parser/golang"
-	_ "github.com/zerostrike/scanner/internal/parser/java"
-	_ "github.com/zerostrike/scanner/internal/parser/javascript"
-	_ "github.com/zerostrike/scanner/internal/parser/php"
-	_ "github.com/zerostrike/scanner/internal/parser/python"
-	_ "github.com/zerostrike/scanner/internal/parser/typescript"
-	"github.com/zerostrike/scanner/internal/version"
+	_ "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/parser/csharp"
+	_ "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/parser/golang"
+	_ "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/parser/java"
+	_ "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/parser/javascript"
+	_ "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/parser/php"
+	_ "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/parser/python"
+	_ "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/parser/typescript"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/version"
 )
 
 func main() {

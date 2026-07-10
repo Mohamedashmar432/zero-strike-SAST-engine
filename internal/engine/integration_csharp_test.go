@@ -6,10 +6,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/zerostrike/scanner/internal/analyzer"
-	"github.com/zerostrike/scanner/internal/engine"
-	csparser "github.com/zerostrike/scanner/internal/parser/csharp"
-	"github.com/zerostrike/scanner/internal/rules"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/analyzer"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/engine"
+	csparser "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/parser/csharp"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/rules"
 )
 
 func loadCSharpRules(t *testing.T) *engine.RuleIndex {

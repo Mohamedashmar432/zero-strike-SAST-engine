@@ -1,6 +1,6 @@
 package findings
 
-import "github.com/zerostrike/scanner/internal/core"
+import "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
 
 // Collector aggregates Findings from multiple files into a single slice.
 // Implementations must be safe for concurrent Add calls.

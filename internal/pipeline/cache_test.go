@@ -6,10 +6,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/zerostrike/scanner/internal/cache"
-	"github.com/zerostrike/scanner/internal/ir"
-	"github.com/zerostrike/scanner/internal/pipeline"
-	"github.com/zerostrike/scanner/internal/version"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/cache"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/ir"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/pipeline"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/version"
 )
 
 // testRuleYAML is a minimal valid rule fixture (same shape as

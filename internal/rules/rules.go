@@ -1,6 +1,6 @@
 package rules
 
-import "github.com/zerostrike/scanner/internal/core"
+import "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
 
 // KwargPattern matches a call's keyword argument by name and value.
 type KwargPattern struct {

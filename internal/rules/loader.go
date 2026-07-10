@@ -9,7 +9,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/zerostrike/scanner/internal/core"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
 )
 
 // ruleYAML is the wire format that maps YAML fields to Rule fields.

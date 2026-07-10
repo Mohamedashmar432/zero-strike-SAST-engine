@@ -5,7 +5,7 @@ package typescript
 import (
 	"testing"
 
-	"github.com/zerostrike/scanner/internal/ir"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/ir"
 )
 
 const evalSrc = `const x = eval("1+1");`

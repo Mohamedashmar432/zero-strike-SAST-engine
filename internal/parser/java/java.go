@@ -8,8 +8,8 @@ import (
 
 	sitter "github.com/smacker/go-tree-sitter"
 	sitterjava "github.com/smacker/go-tree-sitter/java"
-	"github.com/zerostrike/scanner/internal/core"
-	"github.com/zerostrike/scanner/internal/parser"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/parser"
 )
 
 // JavaParser parses Java source files using tree-sitter.

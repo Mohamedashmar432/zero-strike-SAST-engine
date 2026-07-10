@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zerostrike/scanner/internal/core"
-	jsonreport "github.com/zerostrike/scanner/internal/report/json"
-	"github.com/zerostrike/scanner/internal/report"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
+	jsonreport "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/report/json"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/report"
 )
 
 func TestJSONReporter_Format(t *testing.T) {

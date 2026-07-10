@@ -6,12 +6,12 @@ import (
 	"context"
 	"testing"
 
-	"github.com/zerostrike/scanner/internal/analyzer"
-	"github.com/zerostrike/scanner/internal/core"
-	"github.com/zerostrike/scanner/internal/engine"
-	"github.com/zerostrike/scanner/internal/findings"
-	pythonparser "github.com/zerostrike/scanner/internal/parser/python"
-	"github.com/zerostrike/scanner/internal/rules"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/analyzer"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/engine"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/findings"
+	pythonparser "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/parser/python"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/rules"
 )
 
 func loadPythonRules(t *testing.T) ([]*rules.Rule, *engine.RuleIndex) {

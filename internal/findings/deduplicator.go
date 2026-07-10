@@ -3,7 +3,7 @@ package findings
 import (
 	"fmt"
 
-	"github.com/zerostrike/scanner/internal/core"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
 )
 
 // intraRunKey is the dedup key for eliminating exact duplicates within a single scan.

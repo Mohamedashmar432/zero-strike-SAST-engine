@@ -6,7 +6,7 @@ import (
 	"context"
 
 	sitter "github.com/smacker/go-tree-sitter"
-	"github.com/zerostrike/scanner/internal/core"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
 )
 
 // ParseResult holds the raw tree-sitter output for a single file.

@@ -1,6 +1,6 @@
 package cache
 
-import "github.com/zerostrike/scanner/internal/core"
+import "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
 
 // FindingStore persists the findings produced for a file, keyed by file
 // path, so a Cache hit can return the same findings without re-scanning.

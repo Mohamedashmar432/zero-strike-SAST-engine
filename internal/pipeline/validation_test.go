@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zerostrike/scanner/internal/core"
-	"github.com/zerostrike/scanner/internal/pipeline"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/pipeline"
 )
 
 // TestPipelineNew_UnregisteredLanguageFailsFast verifies that requesting a

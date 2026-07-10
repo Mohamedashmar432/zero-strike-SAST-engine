@@ -5,5 +5,7 @@
 // the disk cache's version-based invalidation).
 package version
 
-// Version is the ZeroStrike engine version. Update this on release.
-const Version = "v0.22.0"
+// Version is the ZeroStrike engine version, overridden at build time via
+// -ldflags "-X .../internal/version.Version=$TAG" for tagged releases.
+// Defaults to "dev" for local/untagged builds.
+var Version = "dev"

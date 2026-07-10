@@ -3,7 +3,7 @@ package rules
 import (
 	"sync"
 
-	"github.com/zerostrike/scanner/internal/core"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
 )
 
 type defaultRegistry struct {

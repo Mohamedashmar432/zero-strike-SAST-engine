@@ -1,8 +1,8 @@
 package framework
 
 import (
-	"github.com/zerostrike/scanner/internal/core"
-	"github.com/zerostrike/scanner/internal/findings"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/findings"
 )
 
 // djangoDebugCheck flags DEBUG=True in an .env-style file. Django settings

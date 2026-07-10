@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zerostrike/scanner/internal/core"
-	"github.com/zerostrike/scanner/internal/walker"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/walker"
 )
 
 func TestSecretsScanner_AWSKey(t *testing.T) {

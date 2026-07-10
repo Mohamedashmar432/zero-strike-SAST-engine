@@ -1,6 +1,6 @@
 package ir
 
-import "github.com/zerostrike/scanner/internal/core"
+import "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
 
 // SchemaVersion is the version number of the SerialNode flat-serialization
 // format. Bump it by hand whenever SerialNode's shape changes in a way that

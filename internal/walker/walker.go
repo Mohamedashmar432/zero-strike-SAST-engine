@@ -3,7 +3,7 @@
 // well-known non-source directories, and filters binary files.
 package walker
 
-import "github.com/zerostrike/scanner/internal/core"
+import "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
 
 // FileEntry represents a single source file discovered during a walk.
 type FileEntry struct {

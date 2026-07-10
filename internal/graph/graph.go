@@ -1,6 +1,6 @@
 package graph
 
-import "github.com/zerostrike/scanner/internal/ir"
+import "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/ir"
 
 // CFGEdge is a directed control-flow edge between two IR nodes, identified by
 // NodeID. Kind is one of "normal", "true", "false", "loop", "loop-back", or

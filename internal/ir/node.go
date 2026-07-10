@@ -1,6 +1,6 @@
 package ir
 
-import "github.com/zerostrike/scanner/internal/core"
+import "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
 
 // NodeKind identifies the kind of an IR node.
 type NodeKind string
