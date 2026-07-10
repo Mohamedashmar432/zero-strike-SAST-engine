@@ -27,6 +27,7 @@ func main() {
 		Version: version.Version,
 	}
 	root.AddCommand(scanCmd())
+	root.AddCommand(uploadCmd())
 	if err := root.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)

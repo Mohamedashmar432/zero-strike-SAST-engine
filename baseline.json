@@ -1,0 +1,273 @@
+{
+  "tp": 12,
+  "fp": 0,
+  "fn": 41,
+  "precision": 1,
+  "recall": 0.22641509433962265,
+  "by_rule": {
+    "ZS-CFG-001": {
+      "TP": 1,
+      "FP": 0
+    },
+    "ZS-CFG-002": {
+      "TP": 1,
+      "FP": 0
+    },
+    "ZS-CFG-003": {
+      "TP": 1,
+      "FP": 0
+    },
+    "ZS-CFG-004": {
+      "TP": 1,
+      "FP": 0
+    },
+    "ZS-CS-001": {
+      "TP": 0,
+      "FP": 0
+    },
+    "ZS-CS-002": {
+      "TP": 0,
+      "FP": 0
+    },
+    "ZS-CS-003": {
+      "TP": 0,
+      "FP": 0
+    },
+    "ZS-CS-004": {
+      "TP": 0,
+      "FP": 0
+    },
+    "ZS-CS-005": {
+      "TP": 0,
+      "FP": 0
+    },
+    "ZS-CS-006": {
+      "TP": 0,
+      "FP": 0
+    },
+    "ZS-GO-001": {
+      "TP": 0,
+      "FP": 0
+    },
+    "ZS-GO-002": {
+      "TP": 0,
+      "FP": 0
+    },
+    "ZS-GO-003": {
+      "TP": 0,
+      "FP": 0
+    },
+    "ZS-GO-004": {
+      "TP": 0,
+      "FP": 0
+    },
+    "ZS-GO-005": {
+      "TP": 0,
+      "FP": 0
+    },
+    "ZS-JAVA-001": {
+      "TP": 0,
+      "FP": 0
+    },
+    "ZS-JAVA-002": {
+      "TP": 0,
+      "FP": 0
+    },
+    "ZS-JAVA-003": {
+      "TP": 0,
+      "FP": 0
+    },
+    "ZS-JAVA-004": {
+      "TP": 0,
+      "FP": 0
+    },
+    "ZS-JAVA-005": {
+      "TP": 0,
+      "FP": 0
+    },
+    "ZS-JAVA-006": {
+      "TP": 0,
+      "FP": 0
+    },
+    "ZS-JAVA-007": {
+      "TP": 0,
+      "FP": 0
+    },
+    "ZS-JAVA-008": {
+      "TP": 0,
+      "FP": 0
+    },
+    "ZS-JAVA-009": {
+      "TP": 0,
+      "FP": 0
+    },
+    "ZS-JS-001": {
+      "TP": 0,
+      "FP": 0
+    },
+    "ZS-JS-006": {
+      "TP": 0,
+      "FP": 0
+    },
+    "ZS-JS-007": {
+      "TP": 0,
+      "FP": 0
+    },
+    "ZS-JS-008": {
+      "TP": 0,
+      "FP": 0
+    },
+    "ZS-JS-010": {
+      "TP": 0,
+      "FP": 0
+    },
+    "ZS-PHP-001": {
+      "TP": 0,
+      "FP": 0
+    },
+    "ZS-PHP-002": {
+      "TP": 0,
+      "FP": 0
+    },
+    "ZS-PHP-003": {
+      "TP": 0,
+      "FP": 0
+    },
+    "ZS-PHP-004": {
+      "TP": 0,
+      "FP": 0
+    },
+    "ZS-PHP-005": {
+      "TP": 0,
+      "FP": 0
+    },
+    "ZS-PY-001": {
+      "TP": 0,
+      "FP": 0
+    },
+    "ZS-PY-002": {
+      "TP": 0,
+      "FP": 0
+    },
+    "ZS-PY-003": {
+      "TP": 0,
+      "FP": 0
+    },
+    "ZS-PY-005": {
+      "TP": 0,
+      "FP": 0
+    },
+    "ZS-PY-007": {
+      "TP": 0,
+      "FP": 0
+    },
+    "ZS-PY-008": {
+      "TP": 0,
+      "FP": 0
+    },
+    "ZS-PY-010": {
+      "TP": 0,
+      "FP": 0
+    },
+    "ZS-PY-020": {
+      "TP": 0,
+      "FP": 0
+    },
+    "ZS-SEC-001": {
+      "TP": 1,
+      "FP": 0
+    },
+    "ZS-SEC-002": {
+      "TP": 1,
+      "FP": 0
+    },
+    "ZS-SEC-003": {
+      "TP": 1,
+      "FP": 0
+    },
+    "ZS-SEC-004": {
+      "TP": 1,
+      "FP": 0
+    },
+    "ZS-SEC-005": {
+      "TP": 1,
+      "FP": 0
+    },
+    "ZS-TS-001": {
+      "TP": 0,
+      "FP": 0
+    },
+    "ZS-TS-004": {
+      "TP": 0,
+      "FP": 0
+    },
+    "ZS-TS-005": {
+      "TP": 0,
+      "FP": 0
+    },
+    "dependency Go/github.com/dgrijalva/jwt-go": {
+      "TP": 1,
+      "FP": 0
+    },
+    "dependency Maven/org.apache.logging.log4j:log4j-core": {
+      "TP": 1,
+      "FP": 0
+    },
+    "dependency npm/lodash": {
+      "TP": 1,
+      "FP": 0
+    }
+  },
+  "by_language": {
+    "csharp": {
+      "TP": 0,
+      "FN": 6
+    },
+    "go": {
+      "TP": 0,
+      "FN": 5
+    },
+    "java": {
+      "TP": 0,
+      "FN": 9
+    },
+    "javascript": {
+      "TP": 0,
+      "FN": 5
+    },
+    "php": {
+      "TP": 0,
+      "FN": 5
+    },
+    "python": {
+      "TP": 0,
+      "FN": 8
+    },
+    "typescript": {
+      "TP": 0,
+      "FN": 3
+    }
+  },
+  "by_modality": {
+    "config": {
+      "TP": 4,
+      "FP": 0,
+      "FN": 0
+    },
+    "sast": {
+      "TP": 0,
+      "FP": 0,
+      "FN": 41
+    },
+    "sca": {
+      "TP": 3,
+      "FP": 0,
+      "FN": 0
+    },
+    "secret": {
+      "TP": 5,
+      "FP": 0,
+      "FN": 0
+    }
+  }
+}

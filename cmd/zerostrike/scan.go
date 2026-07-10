@@ -2,6 +2,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -16,6 +17,7 @@ import (
 	"github.com/zerostrike/scanner/internal/core"
 	"github.com/zerostrike/scanner/internal/langreg"
 	"github.com/zerostrike/scanner/internal/pipeline"
+	"github.com/zerostrike/scanner/internal/portal"
 	"github.com/zerostrike/scanner/internal/report"
 	htmlreport "github.com/zerostrike/scanner/internal/report/html"
 	jsonreport "github.com/zerostrike/scanner/internal/report/json"
@@ -97,6 +99,10 @@ func scanCmd() *cobra.Command {
 		flagAllowFile    string
 		flagExcludeDirs  []string
 		flagGroupBy      string
+		flagServer       string
+		flagToken        string
+		flagProjectID    string
+		flagScanLabel    string
 	)
 
 	cmd := &cobra.Command{
@@ -105,6 +111,7 @@ func scanCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			rootPath := args[0]
+			ctx := context.Background()
 
 			// Validated early so a bad --group-by fails before the scan runs.
 			// --format is still validated late, after the scan, in the reporter
@@ -114,6 +121,20 @@ func scanCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
+
+			// Same fail-fast tier as --group-by: a partial set of the upload
+			// flags is almost certainly a forgotten flag, not an intentional
+			// local-only scan.
+			if err := uploadFlagsError(flagServer, flagToken, flagProjectID); err != nil {
+				return err
+			}
+			upload := uploadEnabled(flagServer, flagToken, flagProjectID)
+
+			// Hoisted up from their old post-pipe.Run position: upload mode's
+			// CreateScan call (below) needs them before the pipeline runs.
+			hostname, _ := os.Hostname()
+			absRoot, _ := filepath.Abs(rootPath)
+			gitCommit, gitBranch := gitInfo(ctx, absRoot)
 
 			cfg := pipeline.ScanConfig{
 				RootPath:              rootPath,
@@ -137,6 +158,29 @@ func scanCmd() *cobra.Command {
 				return fmt.Errorf("pipeline.New: %w", err)
 			}
 
+			// Upload mode's pre-flight: register the scan with the portal
+			// BEFORE running the pipeline. A 401 (invalid/expired/revoked
+			// token) must skip the pipeline entirely rather than run an
+			// expensive scan nobody can report.
+			var portalClient *portal.Client
+			var scanID string
+			if upload {
+				portalClient = portal.New(flagServer, flagToken)
+				resp, err := portalClient.CreateScan(ctx, portal.CreateScanRequest{
+					ProjectID:      flagProjectID,
+					ScannerVersion: version.Version,
+					Hostname:       hostname,
+					GitCommit:      gitCommit,
+					Branch:         gitBranch,
+					ScanLabel:      flagScanLabel,
+				})
+				if err != nil {
+					fmt.Fprintln(os.Stderr, describePortalError("create scan", err))
+					os.Exit(2)
+				}
+				scanID = resp.ScanID
+			}
+
 			// langreg is populated by each language package's cgo-gated init();
 			// zero entries means this binary was built with CGO_ENABLED=0, so
 			// SAST scanning is a silent no-op regardless of what files exist.
@@ -150,9 +194,18 @@ func scanCmd() *cobra.Command {
 			}
 
 			start := time.Now()
-			result, err := pipe.Run(context.Background())
+			result, err := pipe.Run(ctx)
 			elapsed := time.Since(start)
 			if err != nil {
+				if upload {
+					// Best-effort: don't leave the portal showing a
+					// permanently-"pending" scan with no explanation. This
+					// doesn't change the exit code below — a pipeline
+					// failure stays in the pre-existing error-return bucket.
+					if uerr := portalClient.UpdateStatus(ctx, scanID, "failed", err.Error()); uerr != nil {
+						fmt.Fprintf(os.Stderr, "warning: could not report pipeline failure to portal: %v\n", uerr)
+					}
+				}
 				return fmt.Errorf("scan failed: %w", err)
 			}
 
@@ -191,14 +244,14 @@ func scanCmd() *cobra.Command {
 				})
 			}
 
-			hostname, _ := os.Hostname()
-			absRoot, _ := filepath.Abs(rootPath)
 			rep := &report.Report{
 				ScanID:         uuid.New().String(),
 				ScannerVersion: version.Version,
 				StartedAt:      start,
 				Duration:       elapsed,
 				RootPath:       absRoot,
+				GitCommit:      gitCommit,
+				Branch:         gitBranch,
 				Hostname:       hostname,
 				Findings:       result.Findings,
 				Stats:          stats,
@@ -234,10 +287,33 @@ func scanCmd() *cobra.Command {
 			if err := repObj.Render(rep, out); err != nil {
 				return fmt.Errorf("render: %w", err)
 			}
+			// Local --output writing is now fully done — everything below is
+			// additive upload; a network failure here can never cost the
+			// user their local report.
 
-			// Exit code: 1 if findings exist, 0 otherwise
-			if len(result.Findings) > 0 {
-				os.Exit(1)
+			uploadFailed := false
+			if upload {
+				jsonBody, err := buildUploadJSON(rep)
+				if err != nil {
+					fmt.Fprintln(os.Stderr, describePortalError("render JSON for upload", err))
+					uploadFailed = true
+				} else if err := portalClient.UploadJSON(ctx, scanID, jsonBody); err != nil {
+					fmt.Fprintln(os.Stderr, describePortalError("upload JSON report", err))
+					uploadFailed = true
+				}
+
+				// HTML is optional — per the portal contract, only the JSON
+				// upload flips the scan's status, so an HTML failure just warns.
+				var htmlBuf bytes.Buffer
+				if err := htmlreport.New().Render(rep, &htmlBuf); err != nil {
+					fmt.Fprintf(os.Stderr, "warning: could not render HTML for upload: %v\n", err)
+				} else if err := portalClient.UploadHTML(ctx, scanID, htmlBuf.Bytes()); err != nil {
+					fmt.Fprintf(os.Stderr, "warning: HTML upload failed: %v\n", err)
+				}
+			}
+
+			if code := decideExitCode(len(result.Findings), uploadFailed); code != 0 {
+				os.Exit(code)
 			}
 			return nil
 		},
@@ -257,6 +333,10 @@ func scanCmd() *cobra.Command {
 	cmd.Flags().StringVar(&flagAllowFile, "allow-file", "", "path to allowlist YAML (default: <root>/.zs-allow.yaml)")
 	cmd.Flags().StringSliceVar(&flagExcludeDirs, "exclude-dir", nil, "directory names to skip, e.g. --exclude-dir gen --exclude-dir templates")
 	cmd.Flags().StringVar(&flagGroupBy, "group-by", "", "group findings in the report: file|rule|severity|language (default: no grouping for json, severity for html; ignored by sarif)")
+	cmd.Flags().StringVar(&flagServer, "server", "", "portal server base URL (enables report upload together with --token and --project-id)")
+	cmd.Flags().StringVar(&flagToken, "token", "", "portal project token")
+	cmd.Flags().StringVar(&flagProjectID, "project-id", "", "portal project ID")
+	cmd.Flags().StringVar(&flagScanLabel, "scan-label", "", "optional label for this scan, shown in the portal")
 
 	return cmd
 }
