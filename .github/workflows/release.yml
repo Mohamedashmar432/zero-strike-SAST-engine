@@ -92,8 +92,16 @@ jobs:
   # from separate native OS runners in the OSS tier (that's a Pro-only "split
   # and merge" feature) - so this job checksums + uploads via `gh release`
   # directly instead. Upgrade path: goreleaser Pro's `continue --merge`.
+  #
+  # ponytail: build-windows is deliberately left out of `needs` - its MinGW
+  # setup (egor-tensin/setup-mingw@v2 v16.1.0 via Chocolatey) currently fails
+  # on an unrelated upstream bug (tries to remove a libpthread.dll.a that
+  # doesn't exist in that package), so requiring it here would block every
+  # release on a third-party action bug. Releases ship linux+darwin only
+  # until that's fixed. Upgrade path: pin an older mingw version, or switch
+  # to msys2/setup-msys2, then add build-windows back to `needs`.
   release:
-    needs: [build-linux, build-windows, build-macos]
+    needs: [build-linux, build-macos]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
