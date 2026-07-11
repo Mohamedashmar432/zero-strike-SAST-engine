@@ -17,40 +17,36 @@ import (
 
 func TestUploadFlagsError(t *testing.T) {
 	cases := []struct {
-		name                        string
-		server, token, projectID   string
-		wantErr                     bool
+		name          string
+		server, token string
+		wantErr       bool
 	}{
-		{"all empty", "", "", "", false},
-		{"all set", "s", "t", "p", false},
-		{"only server", "s", "", "", true},
-		{"only token", "", "t", "", true},
-		{"only project", "", "", "p", true},
-		{"missing token", "s", "", "p", true},
-		{"missing server", "", "t", "p", true},
-		{"missing project", "s", "t", "", true},
+		{"all empty", "", "", false},
+		{"all set", "s", "t", false},
+		{"only server", "s", "", true},
+		{"only token", "", "t", true},
 	}
 	for _, c := range cases {
-		err := uploadFlagsError(c.server, c.token, c.projectID)
+		err := uploadFlagsError(c.server, c.token)
 		if (err != nil) != c.wantErr {
-			t.Errorf("%s: uploadFlagsError(%q,%q,%q) error = %v, wantErr %v", c.name, c.server, c.token, c.projectID, err, c.wantErr)
+			t.Errorf("%s: uploadFlagsError(%q,%q) error = %v, wantErr %v", c.name, c.server, c.token, err, c.wantErr)
 		}
 	}
 }
 
 func TestUploadEnabled(t *testing.T) {
 	cases := []struct {
-		name                      string
-		server, token, projectID string
-		want                      bool
+		name          string
+		server, token string
+		want          bool
 	}{
-		{"all empty", "", "", "", false},
-		{"all set", "s", "t", "p", true},
-		{"partial", "s", "t", "", false},
+		{"all empty", "", "", false},
+		{"all set", "s", "t", true},
+		{"partial", "s", "", false},
 	}
 	for _, c := range cases {
-		if got := uploadEnabled(c.server, c.token, c.projectID); got != c.want {
-			t.Errorf("%s: uploadEnabled(%q,%q,%q) = %v, want %v", c.name, c.server, c.token, c.projectID, got, c.want)
+		if got := uploadEnabled(c.server, c.token); got != c.want {
+			t.Errorf("%s: uploadEnabled(%q,%q) = %v, want %v", c.name, c.server, c.token, got, c.want)
 		}
 	}
 }

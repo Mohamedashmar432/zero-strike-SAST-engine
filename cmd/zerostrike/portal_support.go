@@ -15,25 +15,28 @@ import (
 	jsonreport "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/report/json"
 )
 
-// uploadFlagsError enforces that --server/--token/--project-id are either
-// all set (upload mode) or all unset (local-only) — a partial set almost
+// uploadFlagsError enforces that --server/--token are either both set
+// (upload mode) or both unset (local-only) — a partial set almost
 // certainly means a forgotten flag, not an intentional local-only scan.
-func uploadFlagsError(server, token, projectID string) error {
+// --project-id is no longer part of this check: the token alone resolves
+// the project server-side (kept as a deprecated, accepted-but-ignored flag
+// for backward compatibility with older committed CI pipeline YAML).
+func uploadFlagsError(server, token string) error {
 	set := 0
-	for _, v := range []string{server, token, projectID} {
+	for _, v := range []string{server, token} {
 		if v != "" {
 			set++
 		}
 	}
-	if set != 0 && set != 3 {
-		return fmt.Errorf("--server, --token, and --project-id must be set together (upload mode) or all omitted (local-only scan)")
+	if set != 0 && set != 2 {
+		return fmt.Errorf("--server and --token must be set together (upload mode) or both omitted (local-only scan)")
 	}
 	return nil
 }
 
 // uploadEnabled reports whether upload mode is active.
-func uploadEnabled(server, token, projectID string) bool {
-	return server != "" && token != "" && projectID != ""
+func uploadEnabled(server, token string) bool {
+	return server != "" && token != ""
 }
 
 // describePortalError formats a distinguishing, user-facing message for a

@@ -50,9 +50,9 @@ func (e *HTTPError) Error() string {
 	return fmt.Sprintf("portal: HTTP %d from %s: %s", e.StatusCode, e.URL, e.Body)
 }
 
-// CreateScanRequest is the body of POST /api/v1/scans.
+// CreateScanRequest is the body of POST /api/v1/scans. The token alone
+// resolves the project server-side, so no project ID is sent here.
 type CreateScanRequest struct {
-	ProjectID      string `json:"project_id"`
 	ScannerVersion string `json:"scanner_version"`
 	Hostname       string `json:"hostname,omitempty"`
 	GitCommit      string `json:"git_commit,omitempty"`
@@ -62,8 +62,10 @@ type CreateScanRequest struct {
 
 // CreateScanResponse is the body of a successful POST /api/v1/scans response.
 type CreateScanResponse struct {
-	ScanID string `json:"scan_id"`
-	Status string `json:"status"`
+	ScanID      string `json:"scan_id"`
+	Status      string `json:"status"`
+	ProjectID   string `json:"project_id"`
+	ProjectName string `json:"project_name"`
 }
 
 // CreateScan registers a new scan with the portal and returns the

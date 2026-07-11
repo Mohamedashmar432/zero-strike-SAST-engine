@@ -125,10 +125,13 @@ func scanCmd() *cobra.Command {
 			// Same fail-fast tier as --group-by: a partial set of the upload
 			// flags is almost certainly a forgotten flag, not an intentional
 			// local-only scan.
-			if err := uploadFlagsError(flagServer, flagToken, flagProjectID); err != nil {
+			if err := uploadFlagsError(flagServer, flagToken); err != nil {
 				return err
 			}
-			upload := uploadEnabled(flagServer, flagToken, flagProjectID)
+			upload := uploadEnabled(flagServer, flagToken)
+			if flagProjectID != "" {
+				fmt.Fprintln(os.Stderr, "warning: --project-id is deprecated and ignored; the token alone determines the project")
+			}
 
 			// Hoisted up from their old post-pipe.Run position: upload mode's
 			// CreateScan call (below) needs them before the pipeline runs.
@@ -167,7 +170,6 @@ func scanCmd() *cobra.Command {
 			if upload {
 				portalClient = portal.New(flagServer, flagToken)
 				resp, err := portalClient.CreateScan(ctx, portal.CreateScanRequest{
-					ProjectID:      flagProjectID,
 					ScannerVersion: version.Version,
 					Hostname:       hostname,
 					GitCommit:      gitCommit,
@@ -179,6 +181,7 @@ func scanCmd() *cobra.Command {
 					os.Exit(2)
 				}
 				scanID = resp.ScanID
+				fmt.Fprintf(os.Stderr, "scan registered for project %q (%s)\n", resp.ProjectName, resp.ProjectID)
 			}
 
 			// langreg is populated by each language package's cgo-gated init();
@@ -333,9 +336,9 @@ func scanCmd() *cobra.Command {
 	cmd.Flags().StringVar(&flagAllowFile, "allow-file", "", "path to allowlist YAML (default: <root>/.zs-allow.yaml)")
 	cmd.Flags().StringSliceVar(&flagExcludeDirs, "exclude-dir", nil, "directory names to skip, e.g. --exclude-dir gen --exclude-dir templates")
 	cmd.Flags().StringVar(&flagGroupBy, "group-by", "", "group findings in the report: file|rule|severity|language (default: no grouping for json, severity for html; ignored by sarif)")
-	cmd.Flags().StringVar(&flagServer, "server", "", "portal server base URL (enables report upload together with --token and --project-id)")
-	cmd.Flags().StringVar(&flagToken, "token", "", "portal project token")
-	cmd.Flags().StringVar(&flagProjectID, "project-id", "", "portal project ID")
+	cmd.Flags().StringVar(&flagServer, "server", "", "portal server base URL (enables report upload together with --token)")
+	cmd.Flags().StringVar(&flagToken, "token", "", "portal project token — alone determines which project a scan belongs to")
+	cmd.Flags().StringVar(&flagProjectID, "project-id", "", "deprecated, ignored — the project token alone determines the project")
 	cmd.Flags().StringVar(&flagScanLabel, "scan-label", "", "optional label for this scan, shown in the portal")
 
 	return cmd

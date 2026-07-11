@@ -45,10 +45,13 @@ func uploadCmd() *cobra.Command {
 				}
 			}
 
+			if flagProjectID != "" {
+				fmt.Fprintln(os.Stderr, "warning: --project-id is deprecated and ignored; the token alone determines the project")
+			}
+
 			client := portal.New(flagServer, flagToken)
 			hostname, _ := os.Hostname()
 			resp, err := client.CreateScan(ctx, portal.CreateScanRequest{
-				ProjectID:      flagProjectID,
 				ScannerVersion: version.Version,
 				Hostname:       hostname,
 				ScanLabel:      flagScanLabel,
@@ -57,6 +60,7 @@ func uploadCmd() *cobra.Command {
 				fmt.Fprintln(os.Stderr, describePortalError("create scan", err))
 				os.Exit(2)
 			}
+			fmt.Fprintf(os.Stderr, "scan registered for project %q (%s)\n", resp.ProjectName, resp.ProjectID)
 
 			jsonErr := client.UploadJSON(ctx, resp.ScanID, jsonBody)
 			if jsonErr != nil {
@@ -77,12 +81,11 @@ func uploadCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&flagReportPath, "report", "", "path to a previously generated JSON report (required; must have been rendered with --group-by unset)")
 	cmd.Flags().StringVar(&flagHTMLPath, "html", "", "path to a previously generated HTML report (optional)")
-	cmd.Flags().StringVar(&flagProjectID, "project-id", "", "portal project ID (required)")
+	cmd.Flags().StringVar(&flagProjectID, "project-id", "", "deprecated, ignored — the project token alone determines the project")
 	cmd.Flags().StringVar(&flagServer, "server", "", "portal server base URL (required)")
-	cmd.Flags().StringVar(&flagToken, "token", "", "portal project token (required)")
+	cmd.Flags().StringVar(&flagToken, "token", "", "portal project token (required) — alone determines which project a scan belongs to")
 	cmd.Flags().StringVar(&flagScanLabel, "scan-label", "", "optional label for this scan")
 	cmd.MarkFlagRequired("report")
-	cmd.MarkFlagRequired("project-id")
 	cmd.MarkFlagRequired("server")
 	cmd.MarkFlagRequired("token")
 

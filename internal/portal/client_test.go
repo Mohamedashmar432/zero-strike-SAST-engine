@@ -22,13 +22,14 @@ func TestCreateScan_Success(t *testing.T) {
 		gotPath = r.URL.Path
 		json.NewDecoder(r.Body).Decode(&gotBody)
 		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(CreateScanResponse{ScanID: "abc123", Status: "pending"})
+		json.NewEncoder(w).Encode(CreateScanResponse{
+			ScanID: "abc123", Status: "pending", ProjectID: "proj_1", ProjectName: "Demo",
+		})
 	}))
 	defer srv.Close()
 
 	client := New(srv.URL, "zst_live_test")
 	req := CreateScanRequest{
-		ProjectID:      "proj_1",
 		ScannerVersion: "v0.22.0",
 		Hostname:       "host1",
 		GitCommit:      "deadbeef",
@@ -41,6 +42,9 @@ func TestCreateScan_Success(t *testing.T) {
 	}
 	if resp.ScanID != "abc123" {
 		t.Errorf("ScanID = %q, want %q", resp.ScanID, "abc123")
+	}
+	if resp.ProjectID != "proj_1" || resp.ProjectName != "Demo" {
+		t.Errorf("ProjectID/ProjectName = %q/%q, want proj_1/Demo", resp.ProjectID, resp.ProjectName)
 	}
 	if gotAuth != "Bearer zst_live_test" {
 		t.Errorf("Authorization header = %q, want Bearer zst_live_test", gotAuth)
