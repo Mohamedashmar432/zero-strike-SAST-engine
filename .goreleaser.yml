@@ -8,7 +8,8 @@ builds:
     goos: [linux]
     goarch: [amd64]
     env: [CGO_ENABLED=1]
-    ldflags: [-s -w -X github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/version.Version={{.Tag}}]
+    ldflags:
+      - -s -w -X github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/version.Version={{.Tag}}
 
   - id: linux_arm64
     main: ./cmd/zerostrike
@@ -16,7 +17,8 @@ builds:
     goos: [linux]
     goarch: [arm64]
     env: [CGO_ENABLED=1, CC=aarch64-linux-gnu-gcc]
-    ldflags: [-s -w -X github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/version.Version={{.Tag}}]
+    ldflags:
+      - -s -w -X github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/version.Version={{.Tag}}
 
   - id: windows_amd64
     main: ./cmd/zerostrike
@@ -24,7 +26,8 @@ builds:
     goos: [windows]
     goarch: [amd64]
     env: [CGO_ENABLED=1]
-    ldflags: [-s -w -X github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/version.Version={{.Tag}}]
+    ldflags:
+      - -s -w -X github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/version.Version={{.Tag}}
 
   - id: darwin_amd64
     main: ./cmd/zerostrike
@@ -32,7 +35,8 @@ builds:
     goos: [darwin]
     goarch: [amd64]
     env: [CGO_ENABLED=1]
-    ldflags: [-s -w -X github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/version.Version={{.Tag}}]
+    ldflags:
+      - -s -w -X github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/version.Version={{.Tag}}
 
   - id: darwin_arm64
     main: ./cmd/zerostrike
@@ -40,7 +44,8 @@ builds:
     goos: [darwin]
     goarch: [arm64]
     env: [CGO_ENABLED=1]
-    ldflags: [-s -w -X github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/version.Version={{.Tag}}]
+    ldflags:
+      - -s -w -X github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/version.Version={{.Tag}}
 
 archives:
   - format: binary
