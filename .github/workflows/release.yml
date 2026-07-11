@@ -25,15 +25,15 @@ jobs:
       - name: Build linux/amd64
         run: |
           goreleaser build --id linux_amd64 --clean
-          mv dist/*/zerostrike zerostrike_linux_amd64
+          mv dist/*/zerostrike "${{ runner.temp }}/zerostrike_linux_amd64"
       - name: Build linux/arm64
         run: |
           goreleaser build --id linux_arm64 --clean
-          mv dist/*/zerostrike zerostrike_linux_arm64
+          mv dist/*/zerostrike "${{ runner.temp }}/zerostrike_linux_arm64"
       - uses: actions/upload-artifact@v4
         with:
           name: binaries-linux
-          path: zerostrike_linux_*
+          path: ${{ runner.temp }}/zerostrike_linux_*
 
   build-windows:
     runs-on: windows-latest
@@ -78,15 +78,15 @@ jobs:
       - name: Build darwin/amd64
         run: |
           goreleaser build --id darwin_amd64 --clean
-          mv dist/*/zerostrike zerostrike_darwin_amd64
+          mv dist/*/zerostrike "${{ runner.temp }}/zerostrike_darwin_amd64"
       - name: Build darwin/arm64
         run: |
           goreleaser build --id darwin_arm64 --clean
-          mv dist/*/zerostrike zerostrike_darwin_arm64
+          mv dist/*/zerostrike "${{ runner.temp }}/zerostrike_darwin_arm64"
       - uses: actions/upload-artifact@v4
         with:
           name: binaries-darwin
-          path: zerostrike_darwin_*
+          path: ${{ runner.temp }}/zerostrike_darwin_*
 
   # ponytail: goreleaser's own release/publish pipe can't merge partial builds
   # from separate native OS runners in the OSS tier (that's a Pro-only "split
