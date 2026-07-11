@@ -115,6 +115,46 @@ func TestIntegration_HardcodedCredentialFiresZSGO005(t *testing.T) {
 	}
 }
 
+// TestIntegration_TaintedTxQueryFiresZSGO014 verifies the tx-receiver SQLi sibling.
+func TestIntegration_TaintedTxQueryFiresZSGO014(t *testing.T) {
+	idx := loadGoRules(t)
+	src := "package main\nfunc handler() {\n\tid := r.URL.Query().Get(\"id\")\n" +
+		"\tquery := \"SELECT * FROM users WHERE id = \" + id\n" +
+		"\ttx, _ := db.Begin()\n\ttx.Query(query)\n}\n"
+	if !hasRule(matchGoSource(t, idx, src), "ZS-GO-014") {
+		t.Error("expected ZS-GO-014 to fire when tx.Query argument is tainted")
+	}
+}
+
+// TestIntegration_ConstantTxQueryDoesNotFireZSGO014 verifies the negative case.
+func TestIntegration_ConstantTxQueryDoesNotFireZSGO014(t *testing.T) {
+	idx := loadGoRules(t)
+	src := "package main\nfunc handler() {\n\ttx, _ := db.Begin()\n\ttx.Query(\"SELECT 1\")\n}\n"
+	if hasRule(matchGoSource(t, idx, src), "ZS-GO-014") {
+		t.Error("expected ZS-GO-014 to NOT fire for a constant query")
+	}
+}
+
+// TestIntegration_TaintedTxExecFiresZSGO015 verifies the tx-receiver Exec sibling.
+func TestIntegration_TaintedTxExecFiresZSGO015(t *testing.T) {
+	idx := loadGoRules(t)
+	src := "package main\nfunc handler() {\n\tid := r.URL.Query().Get(\"id\")\n" +
+		"\tquery := \"DELETE FROM users WHERE id = \" + id\n" +
+		"\ttx, _ := db.Begin()\n\ttx.Exec(query)\n}\n"
+	if !hasRule(matchGoSource(t, idx, src), "ZS-GO-015") {
+		t.Error("expected ZS-GO-015 to fire when tx.Exec argument is tainted")
+	}
+}
+
+// TestIntegration_HttpSetCookieFiresZSGO016 verifies the insecure-cookie rule.
+func TestIntegration_HttpSetCookieFiresZSGO016(t *testing.T) {
+	idx := loadGoRules(t)
+	src := "package main\nfunc handler() {\n\thttp.SetCookie(w, &http.Cookie{Name: \"auth\", Value: token})\n}\n"
+	if !hasRule(matchGoSource(t, idx, src), "ZS-GO-016") {
+		t.Error("expected ZS-GO-016 to fire on http.SetCookie() call")
+	}
+}
+
 // TestIntegration_CleanGoSourceHasNoFindings verifies the negative fixture shape.
 func TestIntegration_CleanGoSourceHasNoFindings(t *testing.T) {
 	idx := loadGoRules(t)

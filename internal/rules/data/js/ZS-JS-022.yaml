@@ -1,0 +1,41 @@
+id: ZS-JS-022
+lifecycle: released
+name: node-postgres/mysql2 Client Query SQL Injection
+version: "1.0.0"
+language: javascript
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-89
+owasp:
+  - "A05:2025"
+rationale: |
+  Same vulnerability and same two client libraries as ZS-JS-021 — building
+  a SQL query string by concatenating attacker-controlled input before
+  passing it to client.query() lets an attacker terminate the intended
+  query and append arbitrary SQL, exploitable wherever a request body or
+  query parameter reaches the raw query string before .query() runs it.
+
+  Sibling rule to ZS-JS-021 (pool.query): a single, direct connection
+  object (as opposed to a pool) is conventionally named "client" in both
+  node-postgres (`new Client()`) and mysql2 (`mysql.createConnection()`
+  results assigned to a variable frequently named "client" in examples and
+  real code alike). Needs its own callee match for the same reason
+  ZS-JS-021 does — see its rationale for why callee_suffix can't bridge
+  unrelated receiver names.
+description: |
+  client.query() is called with a query string that traces back to an
+  untrusted source (intra-procedural taint tracking), indicating SQL
+  built by string concatenation instead of parameterized placeholders.
+message: "client.query() called with a tainted query string — use parameterized placeholders instead"
+references:
+  - https://node-postgres.com/features/queries
+  - https://owasp.org/www-community/attacks/SQL_Injection
+tags: [sqli, injection, node-postgres, mysql2]
+match:
+  kind: call
+  callee: client.query
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Use parameterized placeholders: client.query('SELECT * FROM users WHERE id = $1', [id]) instead of concatenating the value into the query string."

@@ -54,6 +54,12 @@ cases:
   - file: cases/vuln_helmet_csp_disabled.js
     language: javascript
     expect: [{rule_id: ZS-JS-020, min_count: 1}]
+  - file: cases/vuln_sqli_pool_query.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-021, min_count: 1}]
+  - file: cases/vuln_sqli_client_query.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-022, min_count: 1}]
   - file: cases/clean.js
     language: javascript
     expect: []

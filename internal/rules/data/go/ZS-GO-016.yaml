@@ -1,0 +1,39 @@
+id: ZS-GO-016
+lifecycle: released
+name: Insecure Cookie Instantiation
+version: "1.0.0"
+language: go
+category: security-misconfiguration
+severity: medium
+confidence: low
+cwe:
+  - CWE-1004
+  - CWE-614
+owasp:
+  - "A02:2025"
+rationale: |
+  An http.Cookie sent without explicitly setting Secure and HttpOnly
+  defaults to being readable by client-side JavaScript and sendable over
+  plain HTTP. A cookie readable from script means any XSS elsewhere on the
+  page can steal it directly instead of merely acting within the page's
+  own context; a cookie sendable over HTTP means anyone on the network
+  path can capture it in transit and hijack the session it represents.
+  This is exploitable wherever the cookie carries a session/auth token and
+  the site is reachable over HTTP or has any XSS vector. The engine can't
+  inspect the fields of an &http.Cookie{...} composite literal (no
+  composite-literal field matching exists), so — mirroring C#'s
+  ZS-CS-013/ZS-CS-008's precedent for new Process() — this rule fires
+  unconditionally on the http.SetCookie call and asks the reader to
+  verify, rather than trying to prove the negative.
+description: |
+  Detects a call to http.SetCookie. Verify the *http.Cookie passed to it
+  has Secure and HttpOnly explicitly set to true.
+message: "http.SetCookie called — verify the Cookie's Secure and HttpOnly fields are explicitly set to true"
+references:
+  - https://owasp.org/www-community/controls/SecureCookieAttribute
+  - https://cwe.mitre.org/data/definitions/1004.html
+tags: [cookie, session, security-misconfiguration]
+match:
+  kind: call
+  callee: http.SetCookie
+fix_suggestion: "Set Secure: true and HttpOnly: true on the http.Cookie struct passed to http.SetCookie."

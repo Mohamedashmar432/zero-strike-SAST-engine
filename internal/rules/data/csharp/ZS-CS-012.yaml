@@ -1,0 +1,41 @@
+id: ZS-CS-012
+lifecycle: released
+name: ADO.NET CommandText SQL Injection
+version: "1.0.0"
+language: csharp
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-89
+owasp:
+  - "A05:2025"
+rationale: |
+  Assigning a concatenated string that traces back to attacker-controlled
+  data to a DbCommand's CommandText lets an attacker terminate the intended
+  query and append arbitrary SQL — altering WHERE clauses to bypass
+  authentication, using UNION SELECT to pull data from other tables, or
+  chaining statements to modify or drop data. This is exploitable wherever
+  a search term, identifier, or filter value from a request reaches the
+  query text before ExecuteReader/ExecuteNonQuery/ExecuteScalar runs, and
+  is entirely avoidable by binding the value as a parameter instead of
+  splicing it into the SQL text. CommandText is the property every
+  ADO.NET provider shares (SqlCommand, SqliteCommand, OleDbCommand,
+  MySqlCommand, OdbcCommand all derive from DbCommand), so this single
+  rule covers the property-assignment sink shape regardless of which
+  concrete command type is in play — a companion to ZS-CS-002/007/011,
+  which only match the constructor-argument shape.
+description: |
+  A DbCommand's CommandText property is assigned a string that traces back
+  to an untrusted source (intra-procedural taint tracking), indicating SQL
+  built by string concatenation instead of parameterization.
+message: "CommandText assigned a tainted query string — use parameterized queries instead"
+references:
+  - https://owasp.org/www-community/attacks/SQL_Injection
+tags: [sqli, injection, commandtext, ado.net]
+match:
+  kind: assignment
+  lhs_identifier: "CommandText"
+  filters:
+    - tainted_rhs: true
+fix_suggestion: "Use parameterized queries: cmd.CommandText = \"... WHERE Name = @name\"; cmd.Parameters.AddWithValue(\"@name\", value);"

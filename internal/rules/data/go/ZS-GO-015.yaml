@@ -1,0 +1,43 @@
+id: ZS-GO-015
+lifecycle: released
+name: tx.Exec SQL Injection
+version: "1.0.0"
+language: go
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-89
+owasp:
+  - "A05:2025"
+rationale: |
+  Building a SQL query string by concatenating or Sprintf-ing
+  attacker-controlled data before passing it to tx.Exec() lets an attacker
+  terminate the intended statement and append arbitrary SQL — altering
+  WHERE clauses to bypass authorization checks, or chaining statements to
+  modify or delete data. This is exploitable wherever a search term,
+  identifier, or filter value from a request reaches the query string
+  before Exec() runs it, and is fully avoidable by passing the value as a
+  placeholder argument (?, $1) instead of splicing it into the SQL text.
+
+  Sibling rule to ZS-GO-007 (db.Exec) and ZS-GO-014 (tx.Query): same
+  transaction-receiver gap — `tx` is a separate variable from `db`, not a
+  longer path to it, so it needs its own callee match rather than
+  callee_suffix (see ZS-GO-014's rationale for why that doesn't bridge the
+  two). Same known limitation: matches "tx.Exec" literally, so it only
+  fires when the *sql.Tx variable is conventionally named "tx".
+description: |
+  A database statement is executed on a transaction with a query string
+  that traces back to an untrusted source (intra-procedural taint
+  tracking), indicating SQL built by string concatenation/Sprintf instead
+  of a parameterized placeholder.
+message: "tx.Exec() called with a tainted query string — use a parameterized query instead"
+references:
+  - https://owasp.org/www-community/attacks/SQL_Injection
+tags: [sqli, injection, database-sql]
+match:
+  kind: call
+  callee: tx.Exec
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Use a parameterized query: tx.Exec(\"UPDATE users SET name = ? WHERE id = ?\", name, id) instead of building the query string with the tainted value."

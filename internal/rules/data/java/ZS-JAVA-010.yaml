@@ -1,0 +1,44 @@
+id: ZS-JAVA-010
+lifecycle: released
+name: JDBC Statement executeUpdate SQL Injection
+version: "1.0.0"
+language: java
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-89
+owasp:
+  - "A05:2025"
+rationale: |
+  Concatenating untrusted input into a SQL string executed via
+  Statement.executeUpdate() lets an attacker reshape the query itself —
+  closing a string literal and appending arbitrary clauses — to modify
+  rows outside the intended scope, bypass authentication checks, or in
+  some database configurations execute stacked queries or invoke
+  functions that read local files. This is exploitable wherever the
+  tainted value originates from a request parameter, header, or any other
+  attacker-influenced input that reaches the query text unescaped.
+
+  Sibling rule to ZS-JAVA-001 (executeQuery): java.sql.Statement splits
+  reads and writes into two methods the same way Go's database/sql splits
+  Query/Exec — executeQuery for SELECT, executeUpdate for
+  INSERT/UPDATE/DELETE — so it needed its own callee match rather than
+  being folded into ZS-JAVA-001's exact "stmt.executeQuery" text match.
+  Same known limitation as ZS-JAVA-001: matches "stmt.executeUpdate"
+  literally, so it only fires when the java.sql.Statement variable is
+  conventionally named "stmt".
+description: |
+  Statement.executeUpdate() is called with a query string that traces back
+  to an untrusted source (intra-procedural taint tracking), indicating SQL
+  built by string concatenation instead of a PreparedStatement placeholder.
+message: "stmt.executeUpdate() called with a tainted query string — use a PreparedStatement with bind parameters instead"
+references:
+  - https://owasp.org/www-community/attacks/SQL_Injection
+tags: [sqli, injection, jdbc]
+match:
+  kind: call
+  callee: stmt.executeUpdate
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Replace Statement with PreparedStatement and bind the tainted value via setString()/setInt() instead of concatenating it into the query text."

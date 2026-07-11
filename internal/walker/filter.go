@@ -25,6 +25,14 @@ var hardcodedSkipDirs = []string{
 	"migrations",
 }
 
+// defaultIgnorePatterns lists glob patterns (matched via matchesIgnorePattern,
+// the same mechanism as .gitignore/.zsignore) that are always excluded.
+// Vendored/minified third-party assets (e.g. jquery-1.3.2.min.js shipped
+// under Scripts/ or Content/) produce pure noise on rules like empty-catch
+// or eval-detected — they were never authored by, and can't be fixed by,
+// whoever is being scanned.
+var defaultIgnorePatterns = []string{"*.min.js", "*.min.css", "*.min.map"}
+
 // hardcodedBinaryExts lists file extensions that are always treated as binary.
 var hardcodedBinaryExts = []string{
 	".exe", ".dll", ".so", ".dylib",

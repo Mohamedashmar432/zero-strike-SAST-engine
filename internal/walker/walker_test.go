@@ -238,6 +238,25 @@ func TestWalk_SkipsStaticDir(t *testing.T) {
 	}
 }
 
+func TestWalk_SkipsMinifiedJsByDefault(t *testing.T) {
+	root := makeTempDir(t)
+	writeFile(t, filepath.Join(root, "Scripts", "jquery-1.3.2.min.js"), "// vendored, noisy")
+	writeFile(t, filepath.Join(root, "Scripts", "app.js"), "// first-party")
+
+	w := walker.NewWalker(nil)
+	paths, errs := collectWalk(t, w, root)
+
+	if len(errs) != 0 {
+		t.Errorf("unexpected errors: %v", errs)
+	}
+	if len(paths) != 1 {
+		t.Fatalf("expected 1 file (app.js), got %d: %v", len(paths), paths)
+	}
+	if filepath.Base(paths[0]) != "app.js" {
+		t.Errorf("unexpected path: %q", paths[0])
+	}
+}
+
 func TestWalk_ExcludeDirOption(t *testing.T) {
 	root := makeTempDir(t)
 	writeFile(t, filepath.Join(root, "gen", "schema.go"), "// generated")

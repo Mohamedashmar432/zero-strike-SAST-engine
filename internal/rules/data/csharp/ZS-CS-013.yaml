@@ -1,0 +1,40 @@
+id: ZS-CS-013
+lifecycle: released
+name: Insecure Cookie Instantiation
+version: "1.0.0"
+language: csharp
+category: security-misconfiguration
+severity: medium
+confidence: low
+cwe:
+  - CWE-1004
+  - CWE-614
+owasp:
+  - "A02:2025"
+rationale: |
+  An HttpCookie created without explicitly setting HttpOnly and Secure
+  defaults to being readable by client-side JavaScript and sendable over
+  plain HTTP. A cookie readable from script means any XSS elsewhere on the
+  page can steal it directly instead of merely acting within the page's
+  own context; a cookie sendable over HTTP means anyone on the network
+  path can capture it in transit and hijack the session it represents.
+  This is exploitable wherever the cookie carries a session/auth token and
+  the site is reachable over HTTP or has any XSS vector. The engine can't
+  reliably confirm HttpOnly/Secure were never set anywhere in the
+  surrounding scope (no cross-statement absence check), so — mirroring
+  ZS-CS-008's precedent for new Process() — this rule fires unconditionally
+  on construction and asks the reader to verify, rather than trying to
+  prove the negative.
+description: |
+  Detects direct instantiation of an HttpCookie. Verify HttpOnly and
+  Secure are explicitly set to true before the cookie is sent to the
+  client.
+message: "HttpCookie created — verify HttpOnly and Secure are explicitly set to true before sending it to the client"
+references:
+  - https://owasp.org/www-community/controls/SecureCookieAttribute
+  - https://cwe.mitre.org/data/definitions/1004.html
+tags: [cookie, session, security-misconfiguration]
+match:
+  kind: call
+  callee: HttpCookie
+fix_suggestion: "Set cookie.HttpOnly = true; and cookie.Secure = true; immediately after construction."

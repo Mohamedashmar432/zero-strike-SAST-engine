@@ -1,0 +1,43 @@
+id: ZS-TS-006
+lifecycle: released
+name: node-postgres/mysql2 Pool Query SQL Injection
+version: "1.0.0"
+language: typescript
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-89
+owasp:
+  - "A05:2025"
+rationale: |
+  Building a SQL query string by concatenating attacker-controlled input
+  before passing it to pool.query() lets an attacker terminate the
+  intended query and append arbitrary SQL — altering WHERE clauses to
+  bypass authentication, using UNION SELECT to pull data from other
+  tables, or chaining statements to modify or delete data. This is
+  exploitable wherever a request body or query parameter reaches the raw
+  query string before .query() runs it, and is fully avoidable by using
+  parameterized placeholders ($1, ?) instead of string concatenation.
+
+  TypeScript is a fully separate language in this engine and inherits
+  nothing from ZS-JS-*, so this SQLi gap is total, not partial — Express+TS
+  and NestJS backends use the identical node-postgres/mysql2 clients as
+  their JS counterparts. Same rationale and "pool" naming convention as
+  ZS-JS-021; a sibling rule for the equally common "client" receiver name
+  is ZS-TS-007.
+description: |
+  pool.query() is called with a query string that traces back to an
+  untrusted source (intra-procedural taint tracking), indicating SQL
+  built by string concatenation instead of parameterized placeholders.
+message: "pool.query() called with a tainted query string — use parameterized placeholders instead"
+references:
+  - https://node-postgres.com/features/queries
+  - https://owasp.org/www-community/attacks/SQL_Injection
+tags: [sqli, injection, node-postgres, mysql2]
+match:
+  kind: call
+  callee: pool.query
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Use parameterized placeholders: pool.query('SELECT * FROM users WHERE id = $1', [id]) instead of concatenating the value into the query string."

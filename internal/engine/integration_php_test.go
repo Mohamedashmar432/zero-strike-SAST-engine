@@ -173,3 +173,23 @@ func TestIntegration_ConstantRequireDoesNotFireZSPHP008(t *testing.T) {
 		t.Error("expected ZS-PHP-008 to NOT fire for a constant require path")
 	}
 }
+
+// TestIntegration_TaintedPgQueryFiresZSPHP009 verifies PostgreSQL SQL-injection detection.
+func TestIntegration_TaintedPgQueryFiresZSPHP009(t *testing.T) {
+	idx := loadPhpRules(t)
+	src := "<?php\n$id = $_GET['id'];\n" +
+		"$query = \"SELECT * FROM users WHERE id = \" . $id;\n" +
+		"pg_query($conn, $query);\n"
+	if !hasRule(matchPhpSource(t, idx, src), "ZS-PHP-009") {
+		t.Error("expected ZS-PHP-009 to fire when pg_query argument is tainted")
+	}
+}
+
+// TestIntegration_ConstantPgQueryDoesNotFireZSPHP009 verifies the negative case.
+func TestIntegration_ConstantPgQueryDoesNotFireZSPHP009(t *testing.T) {
+	idx := loadPhpRules(t)
+	src := "<?php\npg_query($conn, \"SELECT 1\");\n"
+	if hasRule(matchPhpSource(t, idx, src), "ZS-PHP-009") {
+		t.Error("expected ZS-PHP-009 to NOT fire for a constant query")
+	}
+}

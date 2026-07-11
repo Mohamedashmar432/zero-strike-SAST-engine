@@ -52,3 +52,7 @@ cases:
     expect: [{rule_id: ZS-CFG-003, min_count: 1}]
   - file: cases/cors/vuln_wildcard_header.php
     expect: [{rule_id: ZS-CFG-003, min_count: 1}]
+  - file: cases/php/vuln_ini/php.ini
+    expect: [{rule_id: ZS-CFG-011, min_count: 2}]
+  - file: cases/php/clean_ini/php.ini
+    expect: []

@@ -1,0 +1,50 @@
+id: ZS-PHP-009
+lifecycle: released
+name: pg_query SQL Injection
+version: "1.0.0"
+language: php
+category: injection
+severity: high
+confidence: high
+cwe:
+  - CWE-89
+owasp:
+  - "A05:2025"
+rationale: |
+  Building a SQL query string by concatenating attacker-controlled data
+  before passing it to pg_query() lets an attacker terminate the intended
+  query and append arbitrary SQL — altering WHERE clauses to bypass
+  authentication, using UNION SELECT to exfiltrate data from other
+  tables, or chaining statements to modify or drop data. This is
+  exploitable wherever a search term, identifier, or filter value from
+  $_GET/$_POST/$_COOKIE reaches the query string before pg_query()
+  executes it, and is fully avoidable with a prepared statement bound via
+  pg_query_params()/pg_prepare().
+
+  Sibling rule to ZS-PHP-002 (mysqli_query): pg_query is PostgreSQL's
+  equivalent bare procedural function, same vulnerable shape. The
+  object-oriented/PDO forms ($mysqli->query(...), $pdo->query(...),
+  Laravel's DB::raw(...)) are equivalent sinks but currently unmatchable —
+  confirmed against the real IR that PHP's builder produces no joined
+  attribute-chain text for "->"/"::" calls (a call node's children are the
+  separate identifier/operator tokens, e.g. ["DB", "::", "raw"], and
+  calleeText() returns only the first identifier — "DB", never "DB::raw"
+  or "raw"). Closing that needs PHP builder work to synthesize a joined
+  callee text for scoped/member calls, out of scope here; pg_query is a
+  bare function call and unaffected by that limitation, same as
+  mysqli_query.
+description: |
+  pg_query() is called with a query string that traces back to an
+  untrusted source (intra-procedural taint tracking), indicating SQL built
+  by string concatenation instead of a prepared statement.
+message: "pg_query() called with a tainted query string — use a prepared statement instead"
+references:
+  - https://owasp.org/www-community/attacks/SQL_Injection
+  - https://www.php.net/manual/en/function.pg-query-params.php
+tags: [sqli, injection, postgresql]
+match:
+  kind: call
+  callee: pg_query
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Use pg_query_params()/pg_prepare() instead of concatenating user input into the query string."

@@ -30,6 +30,7 @@ var checks = []check{
 	aspnetDirectoryBrowseCheck,
 	laravelSessionCookieCheck,
 	laravelCsrfExceptCheck,
+	phpIniCookieInsecureCheck,
 }
 
 // FrameworkScanner detects framework-level security misconfigurations by

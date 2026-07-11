@@ -30,6 +30,15 @@ cases:
   - file: cases/vuln_sqlite.cs
     language: csharp
     expect: [{rule_id: ZS-CS-011, min_count: 1}]
+  - file: cases/vuln_commandtext_sqli.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-012, min_count: 1}]
+  - file: cases/safe_commandtext_parameterized.cs
+    language: csharp
+    expect: []
+  - file: cases/vuln_insecure_cookie.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-013, min_count: 1}]
   - file: cases/clean.cs
     language: csharp
     expect: []

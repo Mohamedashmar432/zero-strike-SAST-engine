@@ -23,7 +23,7 @@ func (w *fsWalker) Walk(rootPath string) (<-chan FileEntry, <-chan error) {
 	go func() {
 		defer close(entries)
 		defer close(errs)
-		w.walk(rootPath, rootPath, nil, entries, errs)
+		w.walk(rootPath, rootPath, defaultIgnorePatterns, entries, errs)
 	}()
 
 	return entries, errs

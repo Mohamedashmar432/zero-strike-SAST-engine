@@ -115,6 +115,38 @@ func TestIntegration_HardcodedCredentialFiresZSCS006(t *testing.T) {
 	}
 }
 
+// TestIntegration_TaintedCommandTextFiresZSCS012 verifies CommandText-assignment SQLi detection.
+func TestIntegration_TaintedCommandTextFiresZSCS012(t *testing.T) {
+	idx := loadCSharpRules(t)
+	src := "class C { void M() { var name = Request.QueryString[\"name\"];\n" +
+		"var cmd = conn.CreateCommand();\n" +
+		"cmd.CommandText = \"SELECT * FROM Users WHERE Name = '\" + name + \"'\"; } }"
+	if !hasRule(matchCSharpSource(t, idx, src), "ZS-CS-012") {
+		t.Error("expected ZS-CS-012 to fire when CommandText is assigned a tainted value")
+	}
+}
+
+// TestIntegration_ConstantCommandTextDoesNotFireZSCS012 verifies the negative case —
+// mirrors the real-world safe pattern (constant table name + parameterized values).
+func TestIntegration_ConstantCommandTextDoesNotFireZSCS012(t *testing.T) {
+	idx := loadCSharpRules(t)
+	src := "class C { void M() { var cmd = conn.CreateCommand();\n" +
+		"cmd.CommandText = \"UPDATE \" + USER_TB_NAME + \" SET Password = $Password WHERE Username = $Username\";\n" +
+		"cmd.Parameters.AddWithValue(\"$Password\", encodedPwd); } }"
+	if hasRule(matchCSharpSource(t, idx, src), "ZS-CS-012") {
+		t.Error("expected ZS-CS-012 to NOT fire when only constants are concatenated into CommandText")
+	}
+}
+
+// TestIntegration_HttpCookieInstantiationFiresZSCS013 verifies the insecure-cookie rule.
+func TestIntegration_HttpCookieInstantiationFiresZSCS013(t *testing.T) {
+	idx := loadCSharpRules(t)
+	src := "class C { HttpCookie M() { var cookie = new HttpCookie(\"auth\", ticket);\nreturn cookie; } }"
+	if !hasRule(matchCSharpSource(t, idx, src), "ZS-CS-013") {
+		t.Error("expected ZS-CS-013 to fire on new HttpCookie() construction")
+	}
+}
+
 // TestIntegration_CleanCSharpSourceHasNoFindings verifies the negative fixture shape.
 func TestIntegration_CleanCSharpSourceHasNoFindings(t *testing.T) {
 	idx := loadCSharpRules(t)

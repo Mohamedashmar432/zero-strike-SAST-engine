@@ -1,0 +1,36 @@
+id: ZS-TS-009
+lifecycle: released
+name: express-session Cookie Missing httpOnly Flag
+version: "1.0.0"
+language: typescript
+category: security-misconfiguration
+severity: medium
+confidence: medium
+cwe:
+  - CWE-1004
+owasp:
+  - "A02:2025"
+rationale: |
+  With cookie.httpOnly set to false, the session cookie becomes readable
+  from client-side JavaScript via document.cookie, so any XSS vulnerability
+  elsewhere on the page can be used to steal the session cookie directly
+  instead of merely acting within the page's own context.
+
+  TypeScript is a fully separate language in this engine and inherits
+  nothing from ZS-JS-019, so this gap is total for Express+TS/NestJS
+  backends — ported verbatim from ZS-JS-019, same match shape.
+description: |
+  Detects calls to session() (express-session) where the nested
+  cookie.httpOnly option is explicitly set to false.
+message: "session({ cookie: { httpOnly: false } }) detected — session cookie is readable from client-side JavaScript"
+references:
+  - https://www.npmjs.com/package/express-session#cookiehttponly
+tags: [misconfiguration, express, cookie, session]
+match:
+  kind: call
+  callee: session
+  filters:
+    - kwarg:
+        name: httpOnly
+        value_pattern: "^false$"
+fix_suggestion: "Remove the httpOnly: false override (it defaults to true) so the cookie stays inaccessible to JavaScript."

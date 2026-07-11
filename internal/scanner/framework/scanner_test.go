@@ -156,6 +156,18 @@ func TestLaravelCsrfExceptCheck(t *testing.T) {
 	}
 }
 
+func TestPhpIniCookieInsecureCheck(t *testing.T) {
+	vuln := detectPhpIniCookieInsecure("php/vuln_ini/php.ini", readFixture(t, "php/vuln_ini/php.ini"))
+	if len(vuln) != 2 || vuln[0].RuleID != "ZS-CFG-011" {
+		t.Fatalf("expected 2 ZS-CFG-011 findings (httponly + secure), got %+v", vuln)
+	}
+
+	clean := detectPhpIniCookieInsecure("php/clean_ini/php.ini", readFixture(t, "php/clean_ini/php.ini"))
+	if len(clean) != 0 {
+		t.Errorf("expected no finding when both cookie flags are enabled, got %+v", clean)
+	}
+}
+
 func TestCorsWildcardSourceCallCheck(t *testing.T) {
 	for _, lang := range []string{"go", "java", "cs", "php"} {
 		path := "cors/vuln_wildcard." + lang

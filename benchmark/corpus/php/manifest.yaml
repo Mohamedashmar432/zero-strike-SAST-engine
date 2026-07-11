@@ -24,6 +24,9 @@ cases:
   - file: cases/vuln_lfi_require.php
     language: php
     expect: [{rule_id: ZS-PHP-008, min_count: 1}]
+  - file: cases/vuln_sqli_pg.php
+    language: php
+    expect: [{rule_id: ZS-PHP-009, min_count: 1}]
   - file: cases/clean.php
     language: php
     expect: []
