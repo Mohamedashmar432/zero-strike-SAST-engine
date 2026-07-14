@@ -1,0 +1,39 @@
+id: ZS-JAVA-022
+lifecycle: released
+name: Weak Cryptographic Hash Algorithm (MessageDigest)
+version: "1.0.0"
+language: java
+category: cryptography
+severity: medium
+confidence: high
+cwe:
+  - CWE-327
+owasp:
+  - "A04:2025"
+rationale: |
+  MD5 and SHA-1 are both broken for collision resistance: collisions can be
+  forged in seconds to minutes with commodity hardware, and as password
+  hashes they are fast enough for GPUs to test billions of guesses per
+  second. Using MessageDigest.getInstance("MD5") or
+  MessageDigest.getInstance("SHA1") for password storage, digital
+  signatures, or file-integrity checks lets an attacker forge colliding
+  content or recover plaintext passwords from a leaked hash database. This
+  rule uses the argument_literal_matches filter to distinguish
+  getInstance("MD5")/getInstance("SHA1")/getInstance("SHA-1") from safe
+  calls like getInstance("SHA-256"), so it doesn't flag every MessageDigest
+  lookup — only the ones naming a broken algorithm.
+description: |
+  MessageDigest.getInstance() is called with a string literal argument
+  naming MD5 or SHA-1 (case-insensitive, with or without the hyphen in
+  SHA-1), both of which are cryptographically broken for collision
+  resistance.
+message: "MessageDigest.getInstance() called with a weak algorithm (MD5/SHA-1) — use SHA-256 or stronger"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+tags: [weak-crypto, md5, sha1, hash]
+match:
+  kind: call
+  callee: MessageDigest.getInstance
+  filters:
+    - argument_literal_matches: "(?i)^(MD5|SHA-?1)$"
+fix_suggestion: "Replace MD5/SHA-1 with MessageDigest.getInstance(\"SHA-256\") or stronger, or use bcrypt/argon2 for password hashing."

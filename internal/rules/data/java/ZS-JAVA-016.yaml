@@ -1,0 +1,33 @@
+id: ZS-JAVA-016
+lifecycle: released
+name: Weak Pseudo-Random Number Generator (Math.random)
+version: "1.0.0"
+language: java
+category: cryptography
+severity: medium
+confidence: medium
+cwe:
+  - CWE-338
+owasp:
+  - "A04:2025"
+rationale: |
+  Math.random() is backed by a shared, deterministic java.util.Random
+  instance under the hood, so its output carries the same predictability
+  weakness: an attacker who observes a few values or knows roughly when the
+  process started can guess or reconstruct future values. Using it to
+  generate a session token, password-reset code, or API key lets that
+  attacker bypass the intended unguessability entirely. This is exploitable
+  anywhere the generated value is meant to be unguessable; sibling to
+  ZS-JAVA-015 (java.util.Random) — same underlying weakness, reached through
+  the static convenience method instead of direct construction, so not every
+  use is security-sensitive here either.
+description: |
+  Detects zero-argument calls to Math.random().
+message: "Math.random() detected — not cryptographically secure, predictable to an attacker"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+tags: [weak-crypto, weak-prng, random]
+match:
+  kind: call
+  callee: Math.random
+fix_suggestion: "Use java.security.SecureRandom for anything security-sensitive (tokens, keys, reset codes); Math.random() is fine only for non-security randomness."

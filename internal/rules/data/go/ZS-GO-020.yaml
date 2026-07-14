@@ -1,0 +1,60 @@
+id: ZS-GO-020
+lifecycle: released
+name: CORS Misconfiguration (Reflected Origin Header)
+version: "1.0.0"
+language: go
+category: security-misconfiguration
+severity: medium
+confidence: low
+cwe:
+  - CWE-942
+owasp:
+  - "A02:2025"
+rationale: |
+  Reflecting the request's Origin header straight back into the
+  Access-Control-Allow-Origin response header — instead of validating it
+  against a fixed allowlist of trusted origins — defeats the same-origin
+  protection CORS exists to enforce: whatever origin the attacker's page
+  happens to send is echoed back as "allowed," so any origin can issue
+  cross-origin requests and read the authenticated response as if CORS
+  were disabled outright. In Go this is typically written as
+  w.Header().Set("Access-Control-Allow-Origin", r.Header.Get("Origin")).
+
+  Known limitation, documented explicitly rather than hidden — the same
+  class of issue ZS-GO-018 already documents for w.Write: w.Header() is
+  itself a call expression, not a plain identifier chain, so the engine's
+  callee resolver can't see past it to know the receiver type and
+  collapses the chained call down to the bare method name `Set`, not
+  `w.Header.Set` or similar. This rule's callee is therefore just `Set`,
+  which is broad — it matches ANY `.Set(key, value)`-shaped call anywhere
+  in the codebase, not only http.Header.Set, so on its own it would flag
+  unrelated types with a same-named Set method (e.g. a cache, a map
+  wrapper, a config struct). Confidence is set to low (rather than medium,
+  as the other CORS rules) specifically because of this breadth. In
+  practice, requiring BOTH a literal first argument matching
+  "Access-Control-Allow-Origin" (case-insensitive) AND a tainted second
+  argument narrows this enough that an unrelated `.Set(...)` call is very
+  unlikely to accidentally satisfy both conditions at once — but that is a
+  practical mitigation, not a structural guarantee, so the theoretical
+  breadth is flagged honestly rather than presented as precise.
+description: |
+  Detects calls to a method literally named Set() where a literal argument
+  matches "Access-Control-Allow-Origin" (case-insensitive) and another
+  argument traces back to an untrusted source (intra-procedural taint
+  tracking) — the shape of w.Header().Set("Access-Control-Allow-Origin",
+  taintedOrigin). See the known-limitation note in the rationale: the
+  bare `Set` callee is not specific to http.Header, so this rule is
+  broader than "CORS misconfiguration" in the abstract, narrowed in
+  practice by the combination of both filters.
+message: "Set() called with a literal Access-Control-Allow-Origin header name and a tainted value — reflecting the request's Origin defeats CORS; validate against a fixed allowlist (matches any .Set(key, value) call, not only http.Header.Set, due to the w.Header() chained-call limitation — see rationale)"
+references:
+  - https://cwe.mitre.org/data/definitions/942.html
+  - https://owasp.org/www-community/attacks/CORS_OriginHeaderScrutiny
+tags: [cors, security-misconfiguration, injection, http]
+match:
+  kind: call
+  callee: Set
+  filters:
+    - argument_literal_matches: "(?i)^access-control-allow-origin$"
+    - tainted_argument: true
+fix_suggestion: "Validate the Origin header against a fixed allowlist of trusted origins before setting Access-Control-Allow-Origin, rather than reflecting the request's Origin value directly."

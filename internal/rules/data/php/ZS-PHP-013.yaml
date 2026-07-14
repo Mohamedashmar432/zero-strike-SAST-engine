@@ -1,0 +1,37 @@
+id: ZS-PHP-013
+lifecycle: released
+name: Server-Side Request Forgery (file_get_contents)
+version: "1.0.0"
+language: php
+category: ssrf
+severity: high
+confidence: medium
+cwe:
+  - CWE-918
+owasp:
+  - "A01:2025"
+rationale: |
+  file_get_contents() transparently follows the http:// and https://
+  stream wrappers (enabled by default via allow_url_fopen), so passing an
+  attacker-controlled URL to it lets an attacker redirect the server's own
+  outbound request to internal-only services, loopback addresses, or cloud
+  metadata endpoints (e.g. 169.254.169.254) that are normally unreachable
+  from outside the network, potentially exposing internal APIs,
+  credentials, or instance metadata. This is exploitable in any feature
+  that fetches a user-supplied URL, such as webhook registration, link
+  previews, avatar-by-URL, or file-import-by-URL; taint-gating keeps
+  precision acceptable since file_get_contents() is otherwise a completely
+  ordinary, safe call when reading a fixed or validated path/URL.
+description: |
+  Detects calls to file_get_contents() where the path/URL argument traces
+  back to an untrusted source (intra-procedural taint tracking).
+message: "file_get_contents() called with a tainted URL — validate and allowlist URLs before use"
+references:
+  - https://owasp.org/www-community/attacks/Server_Side_Request_Forgery
+tags: [ssrf, file_get_contents]
+match:
+  kind: call
+  callee: file_get_contents
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Validate the URL against an allowlist. Reject internal/private IPs and non-http(s) schemes before fetching, or disable allow_url_fopen if remote fetches aren't needed."

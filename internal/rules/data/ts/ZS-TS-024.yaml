@@ -1,0 +1,37 @@
+id: ZS-TS-024
+lifecycle: released
+name: Weak Cryptographic Hash Algorithm (crypto.createHash)
+version: "1.0.0"
+language: typescript
+category: cryptography
+severity: medium
+confidence: medium
+cwe:
+  - CWE-327
+owasp:
+  - "A04:2025"
+rationale: |
+  MD5 and SHA-1 are both broken for any security-relevant purpose: MD5
+  collisions can be generated in seconds and SHA-1 collisions are
+  computationally practical, so either lets an attacker forge a second
+  input that hashes to the same digest as a legitimate one — defeating
+  integrity checks, signature schemes, or password-hashing usages that rely
+  on the digest being unforgeable. TypeScript's type system does not
+  distinguish a weak digest from a strong one; crypto.createHash('md5') and
+  crypto.createHash('sha256') both type-check identically as a Hash
+  instance, so this is exploitable anywhere the resulting digest is trusted
+  for integrity, deduplication-as-a-security-control, or (worst of all)
+  password storage.
+description: |
+  Detects calls to crypto.createHash() where the algorithm argument is a
+  string literal matching md5 or sha1 (case-insensitive).
+message: "crypto.createHash('md5'|'sha1') detected — both are cryptographically broken"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+tags: [weak-crypto, hashing, cryptography]
+match:
+  kind: call
+  callee: crypto.createHash
+  filters:
+    - argument_literal_matches: "(?i)^(md5|sha1)$"
+fix_suggestion: "Replace crypto.createHash('md5')/crypto.createHash('sha1') with crypto.createHash('sha256'), or use bcrypt/argon2 for password hashing."

@@ -1,0 +1,43 @@
+id: ZS-JAVA-013
+lifecycle: released
+name: Servlet Response Writer XSS (println)
+version: "1.0.0"
+language: java
+category: xss
+severity: high
+confidence: medium
+cwe:
+  - CWE-79
+owasp:
+  - "A05:2025"
+rationale: |
+  Printing a tainted value through the servlet response's PrintWriter writes
+  it straight into the HTTP response body, so attacker-controlled data
+  containing <script> tags or event handlers is parsed and executed by the
+  victim's browser in the page's own origin unless it is HTML-escaped first.
+  This is exploitable wherever a query parameter, header, or other
+  request-derived value reaches out.println() unescaped — a common pattern
+  in raw servlets that build HTML by hand instead of using a templating
+  engine's automatic escaping.
+
+  This rule targets the idiomatic two-statement form
+  (PrintWriter out = response.getWriter(); out.println(tainted);) and, like
+  a JS rule matching res.redirect by convention, requires the PrintWriter
+  variable to be conventionally named "out" — the engine can't see through
+  the chained one-liner response.getWriter().println(tainted) to resolve it
+  back to the same sink.
+description: |
+  out.println() is called with a value that traces back to an untrusted
+  source (intra-procedural taint tracking), where "out" is the conventional
+  variable name for a PrintWriter obtained from
+  HttpServletResponse.getWriter().
+message: "out.println() called with a tainted value — HTML-escape it before writing to the response"
+references:
+  - https://owasp.org/www-community/attacks/xss/
+tags: [xss, injection, servlet]
+match:
+  kind: call
+  callee: out.println
+  filters:
+    - tainted_argument: true
+fix_suggestion: "HTML-escape the value (e.g. with OWASP Java Encoder's Encode.forHtml()) before passing it to out.println()."

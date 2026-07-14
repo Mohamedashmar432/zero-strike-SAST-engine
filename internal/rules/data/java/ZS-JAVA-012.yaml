@@ -1,0 +1,46 @@
+id: ZS-JAVA-012
+lifecycle: released
+name: Runtime.exec() Command Injection
+version: "1.0.0"
+language: java
+category: command-injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-78
+owasp:
+  - "A05:2025"
+rationale: |
+  Runtime.exec() forks and executes an external command directly, so a
+  tainted value reaching it — as the command string or one of its arguments —
+  lets an attacker run arbitrary programs, inject unintended arguments, or
+  redirect execution to a completely different binary or script, potentially
+  reading files, exfiltrating data, or opening a reverse shell on the host
+  running the application. This is exploitable wherever a filename,
+  hostname, or other request-derived value feeds into a shelled-out
+  conversion, extraction, or admin utility — the same class of risk as
+  ProcessBuilder (ZS-JAVA-011), just reached through the older, still-common
+  Runtime API.
+description: |
+  Runtime.exec() is called with an argument that traces back to an untrusted
+  source (intra-procedural taint tracking), indicating the external command
+  or one of its arguments is attacker-influenced.
+
+  Known limitation: like ZS-JAVA-001's "stmt"-only naming limitation, the
+  engine's callee resolver can't see through a receiver that is itself a
+  call expression — Runtime.getRuntime() is a call, not a plain identifier
+  chain, so Runtime.getRuntime().exec(tainted) collapses down to the bare
+  method name "exec" rather than a dotted "Runtime.getRuntime().exec" path.
+  This rule therefore matches ANY method literally named exec() called with
+  a tainted argument, not only Runtime.getRuntime().exec() — a known,
+  accepted broadening rather than a missed match.
+message: "exec() called with a tainted argument — validate/allowlist the command before executing (matches any method literally named exec(), not only Runtime.getRuntime().exec())"
+references:
+  - https://owasp.org/www-community/attacks/Command_Injection
+tags: [command-injection, injection, runtime]
+match:
+  kind: call
+  callee: exec
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Avoid Runtime.exec() with user-influenced input; use ProcessBuilder with a fixed executable and validated, individually-checked arguments instead."

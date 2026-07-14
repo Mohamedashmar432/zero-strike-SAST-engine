@@ -1,0 +1,33 @@
+id: ZS-PHP-011
+lifecycle: released
+name: Weak Pseudo-Random Number Generator (mt_rand)
+version: "1.0.0"
+language: php
+category: cryptography
+severity: medium
+confidence: medium
+cwe:
+  - CWE-338
+owasp:
+  - "A04:2025"
+rationale: |
+  mt_rand()'s Mersenne Twister state is not cryptographically secure and is
+  predictable to an attacker who observes a few outputs or knows roughly
+  when the process was seeded — using it to generate a session token,
+  password-reset code, or API key lets that attacker guess or reconstruct
+  future values instead of needing to brute-force a cryptographically
+  random space. Use random_int()/random_bytes() for anything
+  security-sensitive; mt_rand() remains fine for non-security randomness
+  (jitter, sampling, test fixtures) where predictability doesn't matter.
+description: |
+  Detects calls to mt_rand(). mt_rand() is a plain global PHP function, so
+  this rule matches unconditionally with no filters, the same shape as the
+  other bare-function sinks in this rule set.
+message: "mt_rand() detected — not cryptographically secure, predictable to an attacker"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+tags: [weak-crypto, weak-prng, mt_rand]
+match:
+  kind: call
+  callee: mt_rand
+fix_suggestion: "Use random_int() or random_bytes() for anything security-sensitive (tokens, session IDs, password-reset codes); mt_rand() is fine only for non-security randomness."

@@ -63,10 +63,36 @@ func (b *IRBuilder) buildNode(node *sitter.Node, source []byte, parent *ir.IRNod
 	}
 	if node.ChildCount() == 0 {
 		irNode.Text = node.Content(source)
+	} else if irNode.Kind == ir.NodeKindLiteral {
+		// tree-sitter-c-sharp's string_literal/character_literal nodes wrap
+		// their value in quote-token children ('"'/"'" + content + matching
+		// quote), so the ChildCount()==0 leaf check above never fires and
+		// Text would otherwise stay empty — silently breaking any filter
+		// that reads a literal argument's value (e.g.
+		// argument_literal_matches on Response.AppendHeader("Access-Control-
+		// Allow-Origin", ...)). Doesn't unwrap verbatim (@"..."),  raw
+		// ("""..."""), or interpolated ($"...") string forms correctly —
+		// no current rule needs one.
+		irNode.Text = unquoteLiteral(node.Content(source))
 	}
 	extractAttrs(irNode, node, source)
 	irNode.Children = b.buildChildren(node, source, irNode, path, warnings)
 	return irNode
+}
+
+// unquoteLiteral strips one layer of matching outer quote characters (" or ')
+// from a literal's raw source text, so filters like argument_literal_matches
+// match the literal's actual value (e.g. MD5) rather than its quoted source
+// form (e.g. "MD5"). Anything not quote-delimited (a bare numeric/boolean/
+// null token) passes through unchanged.
+func unquoteLiteral(raw string) string {
+	if len(raw) >= 2 {
+		first, last := raw[0], raw[len(raw)-1]
+		if first == last && (first == '"' || first == '\'') {
+			return raw[1 : len(raw)-1]
+		}
+	}
+	return raw
 }
 
 func (b *IRBuilder) buildChildren(node *sitter.Node, source []byte, parent *ir.IRNode, path string, warnings *[]ir.BuildWarning) []*ir.IRNode {
@@ -99,7 +125,12 @@ func mapKind(nodeType string) ir.NodeKind {
 		"interpolated_string_expression", "character_literal",
 		"integer_literal", "real_literal", "boolean_literal", "null_literal":
 		return ir.NodeKindLiteral
-	case "identifier":
+	case "identifier", "predefined_type":
+		// predefined_type covers built-in type keywords used as a static
+		// member-access receiver (string.Format, int.Parse, ...) — without
+		// this, attributeText's Identifier/Attribute-only recursion skips
+		// the "string" child entirely (it's neither), collapsing
+		// "string.Format" down to just "Format".
 		return ir.NodeKindIdentifier
 	case "block":
 		return ir.NodeKindBlock

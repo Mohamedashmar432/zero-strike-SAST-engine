@@ -1,0 +1,47 @@
+id: ZS-TS-019
+lifecycle: released
+name: Open Redirect
+version: "1.0.0"
+language: typescript
+category: open-redirect
+severity: medium
+confidence: medium
+cwe:
+  - CWE-601
+owasp:
+  - "A01:2025"
+rationale: |
+  Passing an attacker-controlled URL to res.redirect() sends the victim's
+  browser to whatever destination the attacker chose, while the link itself
+  still points at the trusted application's domain — a pattern widely used
+  in phishing to lend legitimacy to a malicious landing page, and in some
+  OAuth/SSO flows to steal authorization codes or tokens by redirecting
+  them to an attacker-controlled callback. This is exploitable wherever a
+  query parameter or form field is passed to redirect() without validating
+  it against an allowlist of permitted destinations.
+
+  TypeScript is a fully separate language in this engine and inherits
+  nothing from ZS-JS-015, so this gap is total, not partial — ported
+  verbatim from ZS-JS-015, same match shape.
+description: |
+  Detects calls to res.redirect() where the destination traces back to an
+  untrusted source (intra-procedural taint tracking).
+
+  Known limitation: tainted_argument only recognizes a named variable
+  previously assigned from a source (const url = req.query.url; ...
+  res.redirect(url)) — it does not recognize a source expression passed
+  directly inline (res.redirect(req.query.url)), since taint tracking
+  currently records tainted *variable names*, not arbitrary tainted
+  expressions. Real code that inlines the source, as dvna's actual
+  vulnerable line does, needs a broader argument-taint check; that's
+  follow-up work, not fixed here.
+message: "res.redirect() called with a tainted destination — open redirect risk"
+references:
+  - https://cwe.mitre.org/data/definitions/601.html
+tags: [open-redirect, injection]
+match:
+  kind: call
+  callee: res.redirect
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Validate the destination against an allowlist of known-safe paths/domains before passing it to redirect()."

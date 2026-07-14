@@ -1,0 +1,48 @@
+id: ZS-TS-027
+lifecycle: released
+name: child_process.spawn() Command Injection
+version: "1.0.0"
+language: typescript
+category: injection
+severity: high
+confidence: high
+cwe:
+  - CWE-78
+owasp:
+  - "A05:2025"
+rationale: |
+  child_process.spawn() only runs its command through a system shell when
+  the caller explicitly passes { shell: true } in its options — by default
+  it executes the named program directly, so shell metacharacters (;, |,
+  &&, backticks) in an argument are NOT reinterpreted the way they would be
+  with exec(). That said, a tainted value reaching spawn() is still
+  dangerous regardless of the shell option: spawn's first argument is the
+  program to execute, so if THAT is attacker-influenced the attacker picks
+  which binary runs on the host, full stop — no shell needed. And whenever
+  { shell: true } is present (a common way to get glob/pipe behavior),
+  tainted arguments regain the full shell-metacharacter injection risk that
+  exec() has. TypeScript's type system offers no protection here — a
+  tainted string still type-checks identically to a trusted one — so this
+  is exploitable wherever a request parameter or form field reaches
+  spawn()'s command or argument list unsanitized.
+
+  TypeScript is a fully separate language in this engine and inherits
+  nothing from ZS-JS-029, so this gap is total, not partial — ported
+  verbatim from ZS-JS-029, same match shape.
+description: |
+  Detects calls to spawn() (child_process.spawn) where any argument traces
+  back to an untrusted source (intra-procedural taint tracking, including a
+  source expression used directly inline as the argument — e.g.
+  spawn('ping', [req.body.host]) — not only via a previously-assigned named
+  variable).
+message: "spawn() called with a tainted argument — command injection / arbitrary program execution risk"
+references:
+  - https://owasp.org/www-community/attacks/Command_Injection
+  - https://nodejs.org/api/child_process.html#child_processspawncommand-args-options
+tags: [command-injection, injection, child-process]
+match:
+  kind: call
+  callee: spawn
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Never build the executable name or arguments from unsanitized input; validate against an allowlist and avoid the { shell: true } option."

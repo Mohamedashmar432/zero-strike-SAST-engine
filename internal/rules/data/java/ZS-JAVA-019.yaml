@@ -1,0 +1,40 @@
+id: ZS-JAVA-019
+lifecycle: released
+name: Server-Side Request Forgery (java.net.URL)
+version: "1.0.0"
+language: java
+category: ssrf
+severity: high
+confidence: medium
+cwe:
+  - CWE-918
+owasp:
+  - "A01:2025"
+rationale: |
+  Constructing a java.net.URL from a request-derived string and later opening
+  it lets an attacker redirect the server's own outbound request to
+  internal-only services, loopback addresses, or cloud metadata endpoints
+  (e.g. 169.254.169.254) that are normally unreachable from outside the
+  network, potentially exposing internal APIs, credentials, or instance
+  metadata. This is exploitable in any feature that fetches a user-supplied
+  URL, such as webhook registration, link previews, or file-import-by-URL.
+  new URL(taintedUrl) is the clean match point because the taint lives in
+  the constructor argument; matching the later chained .openConnection() call
+  instead wouldn't work — it takes zero arguments, and the engine can't
+  resolve that chain back to the URL constructor that produced its receiver
+  — so this targets construction directly, which also catches the case where
+  the URL is built but the connection is opened somewhere else entirely.
+description: |
+  A java.net.URL is constructed with a value that traces back to an
+  untrusted source (intra-procedural taint tracking), indicating the request
+  destination is attacker-influenced.
+message: "new URL() called with a tainted destination — validate and allowlist the URL before connecting to it"
+references:
+  - https://owasp.org/www-community/attacks/Server_Side_Request_Forgery
+tags: [ssrf, url, request-forgery]
+match:
+  kind: call
+  callee: URL
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Validate the URL against an allowlist. Reject internal/private IPs and non-http(s) schemes before opening a connection."

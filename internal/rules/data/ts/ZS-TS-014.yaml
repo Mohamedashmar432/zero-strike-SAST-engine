@@ -1,0 +1,41 @@
+id: ZS-TS-014
+lifecycle: released
+name: Sensitive Value Logged
+version: "1.0.0"
+language: typescript
+category: logging
+severity: medium
+confidence: low
+cwe:
+  - CWE-532
+owasp:
+  - "A09:2025"
+rationale: |
+  Passing a credential-shaped value straight to console.log() writes it in
+  plaintext into wherever that log output lands — server log files, log
+  aggregation services, CI build output, or the browser's DevTools console
+  — any of which may be readable by parties who should never see the raw
+  secret. TypeScript's compile-time types carry no information about
+  runtime sensitivity, so nothing stops a value typed as `string` from
+  being logged the same way a non-sensitive string would be. An attacker
+  with access to those logs, whether through a misconfigured log viewer, a
+  compromised aggregation service, or remote access to a developer's
+  browser, can extract the credential and reuse it to authenticate as the
+  application or the affected user.
+
+  TypeScript is a fully separate language in this engine and inherits
+  nothing from ZS-JS-009, so this gap is total, not partial — ported
+  verbatim from ZS-JS-009, same match shape.
+description: |
+  A variable whose name suggests sensitive data (password, secret, apiKey,
+  token) is passed directly to console.log().
+message: "Sensitive-looking value passed to console.log() — avoid logging credentials"
+references:
+  - https://cwe.mitre.org/data/definitions/532.html
+tags: [logging, information-disclosure]
+match:
+  kind: call
+  callee: console.log
+  filters:
+    - argument_identifier_matches: "(?i)(password|secret|apiKey|token)"
+fix_suggestion: "Redact or omit sensitive values before logging; log an identifier instead of the secret itself."

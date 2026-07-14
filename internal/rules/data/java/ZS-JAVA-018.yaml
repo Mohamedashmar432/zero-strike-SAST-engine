@@ -1,0 +1,43 @@
+id: ZS-JAVA-018
+lifecycle: released
+name: Insecure ResponseCookie Construction
+version: "1.0.0"
+language: java
+category: security-misconfiguration
+severity: medium
+confidence: low
+cwe:
+  - CWE-614
+  - CWE-1004
+owasp:
+  - "A02:2025"
+rationale: |
+  A Spring org.springframework.http.ResponseCookie built without explicitly
+  chaining .httpOnly(true) and .secure(true) defaults to being readable by
+  client-side JavaScript and sendable over plain HTTP. A cookie readable from
+  script means any XSS elsewhere on the page can steal it directly instead of
+  merely acting within the page's own context; a cookie sendable over HTTP
+  means anyone on the network path can capture it in transit and hijack the
+  session it represents. This is exploitable wherever the cookie carries a
+  session/auth token and the site is reachable over HTTP or has any XSS
+  vector. The same absence-check caveat as ZS-JAVA-017 applies: the engine
+  has no cross-statement absence check, so it can't confirm .httpOnly(true)/
+  .secure(true) were ever chained onto the builder before .build() — this
+  rule fires unconditionally on the ResponseCookie.from(...) call and asks
+  the reader to verify, rather than trying to prove the negative. The callee
+  is stable to match on because ResponseCookie.from(...) is a static factory
+  call with the class name as receiver, not an instance variable that could
+  be named differently.
+description: |
+  Detects a call to the static factory method ResponseCookie.from(name,
+  value). Verify .httpOnly(true) and .secure(true) are chained onto the
+  builder before .build() is called.
+message: "ResponseCookie.from() called — verify .httpOnly(true) and .secure(true) are chained before .build()"
+references:
+  - https://owasp.org/www-community/controls/SecureCookieAttribute
+  - https://cwe.mitre.org/data/definitions/1004.html
+tags: [cookie, session, security-misconfiguration, spring]
+match:
+  kind: call
+  callee: ResponseCookie.from
+fix_suggestion: "Chain .httpOnly(true) and .secure(true) onto the ResponseCookie.from(...) builder before calling .build()."

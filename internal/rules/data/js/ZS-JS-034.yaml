@@ -1,0 +1,51 @@
+id: ZS-JS-034
+lifecycle: released
+name: Tainted Format String (util.format)
+version: "1.0.0"
+language: javascript
+category: format-string
+severity: low
+confidence: low
+cwe:
+  - CWE-134
+owasp:
+  - "A05:2025"
+rationale: |
+  util.format() treats its first argument as a template that can contain
+  %s/%d/%i/%j/%o/%O/%c-style placeholder specifiers. When that template
+  itself is built from attacker-controlled text (e.g. util.format('User: '
+  + req.query.name)) rather than being a fixed string literal, the attacker
+  controls which specifiers appear and how many arguments are consumed —
+  letting them shape or corrupt the resulting log/output line beyond what
+  the developer intended. This is a much lower-severity, lower-likelihood
+  issue in Node.js than classic C printf format-string bugs (there is no
+  memory-corruption primitive here), but it's still an integrity risk for
+  anything that parses or trusts the formatted output.
+description: |
+  Detects calls to util.format() where any argument traces back to an
+  untrusted source (intra-procedural taint tracking, including a source
+  expression used directly inline as the argument, not only via a
+  previously-assigned named variable).
+
+  Known limitation, documented plainly rather than hidden (same convention
+  as ZS-CS-013 and ZS-JAVA-012's own known-limitation notes): the engine's
+  tainted_argument filter checks whether ANY argument to the call is
+  tainted, with no way to require specifically the first (template)
+  argument. This rule therefore ALSO fires on the extremely common and
+  entirely safe placeholder idiom util.format('User: %s', username) —
+  where only the substituted value, not the template, is tainted, and
+  util.format's %s substitution is not itself exploitable — not just on
+  the genuinely vulnerable shape where the template is built from tainted
+  input. Every match must be manually verified against which argument is
+  actually tainted before treating it as a real finding.
+message: "util.format() called with a tainted argument — verify whether the template itself (not just a substituted value) is attacker-influenced"
+references:
+  - https://cwe.mitre.org/data/definitions/134.html
+  - https://nodejs.org/api/util.html#utilformatformat-args
+tags: [format-string, injection, logging]
+match:
+  kind: call
+  callee: util.format
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Never build the format-string template from request data; only substituted %s/%d values should ever be attacker-influenced, and even then validate/sanitize before logging."

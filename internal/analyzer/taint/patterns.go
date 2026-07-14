@@ -137,3 +137,14 @@ func matchesAny(pats []*regexp.Regexp, text string) bool {
 	}
 	return false
 }
+
+// IsSource reports whether text matches one of lang's taint source patterns
+// directly. Exported for internal/engine, which uses it to recognize a
+// source expression used inline as a call argument or assignment RHS
+// (sink(req.body.x)) — the assignment-based Build/BuildContext pass above
+// only marks a *named variable* tainted (v := req.body.x; sink(v)), so an
+// inline source with no intervening assignment is otherwise invisible to
+// the TaintedArgument/TaintedRHS filters.
+func IsSource(lang core.Language, text string) bool {
+	return matchesAny(patternsFor(lang).Sources, text)
+}

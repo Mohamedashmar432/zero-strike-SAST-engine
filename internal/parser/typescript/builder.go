@@ -66,10 +66,35 @@ func (b *IRBuilder) buildNode(node *sitter.Node, source []byte, parent *ir.IRNod
 	}
 	if node.ChildCount() == 0 {
 		irNode.Text = node.Content(source)
+	} else if irNode.Kind == ir.NodeKindLiteral {
+		// tree-sitter-typescript's string/template_string nodes wrap their
+		// value in quote-token children ('"'/"'"/"`" + string_fragment +
+		// matching quote), so the ChildCount()==0 leaf check above never
+		// fires and Text would otherwise stay empty — silently breaking any
+		// filter that reads a literal argument's value (e.g.
+		// argument_literal_matches on crypto.createHash('md5')). Same fix as
+		// javascript.IRBuilder.buildNode — TS shares the grammar family.
+		irNode.Text = unquoteLiteral(node.Content(source))
 	}
 	extractAttrs(irNode, node, source)
 	irNode.Children = b.buildChildren(node, source, irNode, path, warnings)
 	return irNode
+}
+
+// unquoteLiteral strips one layer of matching outer quote characters
+// ("/'/`) from a literal's raw source text, so filters like
+// argument_literal_matches match the literal's actual value (e.g. md5)
+// rather than its quoted source form (e.g. 'md5'). Anything not
+// quote-delimited (a bare number/true/false/null/undefined token) passes
+// through unchanged.
+func unquoteLiteral(raw string) string {
+	if len(raw) >= 2 {
+		first, last := raw[0], raw[len(raw)-1]
+		if first == last && (first == '"' || first == '\'' || first == '`') {
+			return raw[1 : len(raw)-1]
+		}
+	}
+	return raw
 }
 
 func (b *IRBuilder) buildChildren(node *sitter.Node, source []byte, parent *ir.IRNode, path string, warnings *[]ir.BuildWarning) []*ir.IRNode {

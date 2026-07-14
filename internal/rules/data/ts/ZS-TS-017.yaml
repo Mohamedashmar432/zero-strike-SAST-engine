@@ -1,0 +1,42 @@
+id: ZS-TS-017
+lifecycle: released
+name: XXE via libxmljs (noent enabled)
+version: "1.0.0"
+language: typescript
+category: injection
+severity: high
+confidence: high
+cwe:
+  - CWE-611
+owasp:
+  - "A05:2025"
+rationale: |
+  Parsing XML with libxmljs' noent option enabled tells the parser to
+  resolve entity references, including external entities that fetch a
+  local file or a URL — so an attacker who controls the XML being parsed
+  can read arbitrary files off the server's disk (via a file:// entity) or
+  trigger server-side requests (via an http:// entity), regardless of
+  whether the surrounding code appears to validate the XML's structure.
+  This is exploitable wherever user-supplied XML — a file upload, an API
+  payload, an import feature — reaches parseXmlString() with this option
+  set.
+
+  TypeScript is a fully separate language in this engine and inherits
+  nothing from ZS-JS-013, so this gap is total, not partial — ported
+  verbatim from ZS-JS-013, same match shape.
+description: |
+  Detects libxmljs.parseXmlString() calls configured with noent: true,
+  which enables external entity resolution (XXE) regardless of whether the
+  parsed content itself is independently proven tainted.
+message: "libxmljs.parseXmlString() called with noent:true — XML external entity (XXE) injection risk"
+references:
+  - https://owasp.org/www-community/vulnerabilities/XML_External_Entity_(XXE)_Processing
+tags: [xxe, injection, libxmljs]
+match:
+  kind: call
+  callee: libxmljs.parseXmlString
+  filters:
+    - kwarg:
+        name: noent
+        value_pattern: "^true$"
+fix_suggestion: "Remove noent: true (the default disables entity expansion), or use a parser configured to reject DOCTYPE declarations entirely."

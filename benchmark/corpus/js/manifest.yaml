@@ -60,6 +60,42 @@ cases:
   - file: cases/vuln_sqli_client_query.js
     language: javascript
     expect: [{rule_id: ZS-JS-022, min_count: 1}]
+  - file: cases/vuln_math_random.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-023, min_count: 1}]
+  - file: cases/vuln_fs_readfile.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-024, min_count: 1}]
+  - file: cases/vuln_fs_readfilesync.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-025, min_count: 1}]
+  - file: cases/vuln_weak_hash.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-026, min_count: 1}]
+  - file: cases/vuln_cors_header.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-027, min_count: 1}]
+  - file: cases/vuln_cors_setheader.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-028, min_count: 1}]
+  - file: cases/vuln_spawn_cmdi.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-029, min_count: 1}]
+  - file: cases/vuln_execfile_cmdi.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-030, min_count: 1}]
+  - file: cases/vuln_fork_cmdi.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-031, min_count: 1}]
+  - file: cases/vuln_sendfile_traversal.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-032, min_count: 1}]
+  - file: cases/vuln_redos_regexp.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-033, min_count: 1}]
+  - file: cases/vuln_format_string.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-034, min_count: 1}]
   - file: cases/clean.js
     language: javascript
     expect: []

@@ -1,0 +1,39 @@
+id: ZS-JAVA-011
+lifecycle: released
+name: ProcessBuilder Command Injection
+version: "1.0.0"
+language: java
+category: command-injection
+severity: high
+confidence: high
+cwe:
+  - CWE-78
+owasp:
+  - "A05:2025"
+rationale: |
+  ProcessBuilder forks and executes the given command directly via the OS, so
+  when a tainted value reaches one of its constructor arguments, an attacker
+  can inject additional arguments the developer never intended or, if the
+  tainted value reaches the command name itself, execute a completely
+  different binary or script — reading arbitrary files, exfiltrating data, or
+  opening a reverse shell on the host running the application. This is
+  exploitable wherever a filename, hostname, or other request-derived value
+  is built into the command or argument list for a shelled-out conversion,
+  extraction, or admin utility, and unlike a naive concatenated shell string
+  it doesn't even require a shell metacharacter: controlling a single
+  argument is often enough to redirect what a program does via its own
+  flags.
+description: |
+  new ProcessBuilder(...) is constructed with an argument that traces back to
+  an untrusted source (intra-procedural taint tracking), indicating the
+  external command or one of its arguments is attacker-influenced.
+message: "new ProcessBuilder() called with a tainted argument — validate/allowlist the command and its arguments before executing"
+references:
+  - https://owasp.org/www-community/attacks/Command_Injection
+tags: [command-injection, injection, process]
+match:
+  kind: call
+  callee: ProcessBuilder
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Use a fixed executable path and pass user data only as validated, individually-checked arguments, never as the command itself; prefer an allowlist of permitted commands."

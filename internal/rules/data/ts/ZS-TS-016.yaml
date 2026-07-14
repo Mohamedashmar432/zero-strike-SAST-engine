@@ -1,0 +1,49 @@
+id: ZS-TS-016
+lifecycle: released
+name: child_process exec() Command Injection
+version: "1.0.0"
+language: typescript
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-78
+owasp:
+  - "A05:2025"
+rationale: |
+  child_process.exec() runs its argument through a system shell, so
+  attacker-controlled input containing shell metacharacters (;, |, &&,
+  backticks) lets an attacker append or replace commands entirely,
+  executing arbitrary code with the same privileges as the Node.js
+  process. This is exploitable wherever a request parameter or form field
+  is concatenated into the command string before exec() runs it — a
+  classic vector in tools that shell out to ping, convert, or similar
+  system utilities with a user-supplied argument.
+
+  TypeScript is a fully separate language in this engine and inherits
+  nothing from ZS-JS-012, so this gap is total, not partial — ported
+  verbatim from ZS-JS-012, same match shape.
+description: |
+  A call to exec() (child_process.exec, commonly destructured as exec) is
+  made with a command string that traces back to an untrusted source
+  (intra-procedural taint tracking).
+
+  Known limitation (same as ZS-TS-019): tainted_argument only recognizes a
+  named variable previously assigned from a source, e.g. const cmd =
+  'ping ' + req.body.address; exec(cmd) — it does not recognize the source
+  concatenated directly inline as the call argument (exec('ping ' +
+  req.body.address)), which is exactly how dvna's real vulnerable line is
+  written. Broadening tainted_argument to also match source patterns
+  directly within an argument's subtree (not just via a named tainted
+  variable) would close this for every taint-gated rule at once; that's
+  follow-up work, not fixed here.
+message: "exec() called with a tainted command string — command injection risk"
+references:
+  - https://owasp.org/www-community/attacks/Command_Injection
+tags: [command-injection, child-process]
+match:
+  kind: call
+  callee: exec
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Use execFile()/spawn() with an argument array instead of a shell string, or strictly allowlist/validate the input before building the command."

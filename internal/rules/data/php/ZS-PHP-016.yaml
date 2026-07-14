@@ -1,0 +1,39 @@
+id: ZS-PHP-016
+lifecycle: released
+name: XML External Entity (XXE) via simplexml_load_string
+version: "1.0.0"
+language: php
+category: xxe
+severity: high
+confidence: medium
+cwe:
+  - CWE-611
+owasp:
+  - "A05:2025"
+rationale: |
+  PHP's XML parsing (libxml under the hood) can resolve external entities
+  in a parsed document, so parsing attacker-controlled XML via
+  simplexml_load_string() can be used to read local files, trigger SSRF via
+  an entity URI, or exhaust memory/CPU via entity expansion. This is
+  exploitable wherever XML from a request body, upload, or webhook payload
+  is parsed directly. This rule is explicitly scoped to the plain global
+  function simplexml_load_string(); the equivalent OOP form,
+  DOMDocument->loadXML(), is unmatchable today — per this rule set's
+  confirmed engine limitation that PHP's callee-resolution returns the
+  object variable's own name for any $x->method() call, never the method
+  name — so it is intentionally out of scope here rather than silently
+  never matching.
+description: |
+  Detects calls to simplexml_load_string() where the XML argument traces
+  back to an untrusted source (intra-procedural taint tracking).
+message: "simplexml_load_string() called with a tainted argument — XXE risk"
+references:
+  - https://cwe.mitre.org/data/definitions/611.html
+  - https://owasp.org/www-community/vulnerabilities/XML_External_Entity_(XXE)_Processing
+tags: [xxe, injection, xml]
+match:
+  kind: call
+  callee: simplexml_load_string
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Avoid parsing untrusted XML with simplexml_load_string(); if unavoidable, don't pass LIBXML_NOENT/LIBXML_DTDLOAD flags and validate the input against a strict schema before parsing."

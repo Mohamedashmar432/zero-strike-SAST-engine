@@ -1,0 +1,39 @@
+id: ZS-TS-013
+lifecycle: released
+name: JWT Decoded Without Verification
+version: "1.0.0"
+language: typescript
+category: authentication
+severity: critical
+confidence: high
+cwe:
+  - CWE-347
+owasp:
+  - "A07:2025"
+rationale: |
+  jwt.decode() reads and returns a JWT's payload without checking its
+  cryptographic signature, so it will happily parse a token an attacker
+  crafted from scratch with any claims they choose — user ID, role, or
+  admin flag included. TypeScript's type definitions for the jsonwebtoken
+  package describe the shape of the decoded payload but do nothing to
+  verify it was produced by a trusted signer. This is exploitable anywhere
+  the decoded payload feeds an authentication or authorization decision,
+  letting an attacker forge a token claiming to be any user or an
+  administrator without ever needing a valid signing key.
+
+  TypeScript is a fully separate language in this engine and inherits
+  nothing from ZS-JS-008, so this gap is total, not partial — ported
+  verbatim from ZS-JS-008, same match shape.
+description: |
+  Detects calls to jwt.decode(). The rule matches any call to this function
+  regardless of context, so it does not check whether a corresponding
+  jwt.verify() call exists elsewhere or whether the decoded value is used
+  for any security-relevant decision.
+message: "jwt.decode() detected — this does not verify the signature; use jwt.verify() for authentication"
+references:
+  - https://cwe.mitre.org/data/definitions/347.html
+tags: [jwt, authentication, signature-bypass]
+match:
+  kind: call
+  callee: jwt.decode
+fix_suggestion: "Use jwt.verify(token, secretOrPublicKey) instead of jwt.decode() wherever the result is trusted for authentication."

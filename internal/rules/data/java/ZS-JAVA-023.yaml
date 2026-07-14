@@ -1,0 +1,47 @@
+id: ZS-JAVA-023
+lifecycle: released
+name: CORS Misconfiguration (Reflected Origin Header)
+version: "1.0.0"
+language: java
+category: security-misconfiguration
+severity: medium
+confidence: medium
+cwe:
+  - CWE-942
+owasp:
+  - "A02:2025"
+rationale: |
+  Reflecting the request's Origin header straight back into the
+  Access-Control-Allow-Origin response header — instead of validating it
+  against a fixed allowlist of trusted origins — defeats the same-origin
+  protection CORS exists to enforce: whatever origin the attacker's page
+  happens to send is echoed back as "allowed," so any origin can issue
+  cross-origin requests and read the authenticated response as if CORS
+  were disabled outright. This is exploitable wherever an API or resource
+  endpoint intended for a specific set of trusted origins simply echoes
+  whatever Origin the browser sent, letting a malicious page on any domain
+  read sensitive responses (session data, tokens, personal information)
+  from a victim's authenticated session. This rule relies on the
+  conventional Servlet API field/parameter name `response` for the
+  HttpServletResponse receiver — the same class of naming-convention
+  tradeoff as ZS-JAVA-021's response.sendRedirect: code that names its
+  response parameter/field something else won't be matched.
+description: |
+  Detects calls to response.setHeader() where the header-name literal
+  matches "Access-Control-Allow-Origin" (case-insensitive) and the value
+  argument traces back to an untrusted source (intra-procedural taint
+  tracking) — i.e., a tainted value (typically the request's own Origin
+  header) is being reflected back as the allowed origin instead of a
+  fixed, allowlisted value.
+message: "response.setHeader() sets Access-Control-Allow-Origin from a tainted value — reflecting the request's Origin defeats CORS; validate against a fixed allowlist"
+references:
+  - https://cwe.mitre.org/data/definitions/942.html
+  - https://owasp.org/www-community/attacks/CORS_OriginHeaderScrutiny
+tags: [cors, security-misconfiguration, injection]
+match:
+  kind: call
+  callee: response.setHeader
+  filters:
+    - argument_literal_matches: "(?i)^access-control-allow-origin$"
+    - tainted_argument: true
+fix_suggestion: "Validate the Origin header against a fixed allowlist of trusted origins before setting Access-Control-Allow-Origin, rather than reflecting the request's Origin value directly."

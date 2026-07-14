@@ -1,0 +1,41 @@
+id: ZS-TS-010
+lifecycle: released
+name: Function() Constructor (Dynamic Code Execution)
+version: "1.0.0"
+language: typescript
+category: injection
+severity: high
+confidence: high
+cwe:
+  - CWE-95
+owasp:
+  - "A05:2025"
+rationale: |
+  The Function() constructor compiles a string into a new function and
+  executes it with global scope — unlike eval(), it cannot see the caller's
+  local variables, but that offers no real protection since the resulting
+  function still runs with the full privileges of the page or Node.js
+  process once invoked, giving the attacker arbitrary code execution.
+  TypeScript's type system offers no protection here either, since it
+  disappears at compile time and the emitted JavaScript calls Function()
+  exactly as hand-written JavaScript would. This is exploitable wherever
+  templating engines, plugin systems, or dynamic handler generation build a
+  Function() body from user-supplied strings, such as configuration
+  values, form input, or query-derived expressions.
+
+  TypeScript is a fully separate language in this engine and inherits
+  nothing from ZS-JS-004, so this gap is total, not partial — ported
+  verbatim from ZS-JS-004, same match shape.
+description: |
+  Detects calls to the Function() constructor where the string argument
+  traces back to an untrusted source (intra-procedural taint tracking).
+message: "new Function() detected with a tainted argument — dynamic code construction is equivalent to eval()"
+references:
+  - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/Function
+tags: [eval, dynamic-code, injection]
+match:
+  kind: call
+  callee: Function
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Replace new Function(str) with a static function or JSON.parse() for data; never pass user input."

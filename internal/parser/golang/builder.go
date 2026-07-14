@@ -63,10 +63,36 @@ func (b *IRBuilder) buildNode(node *sitter.Node, source []byte, parent *ir.IRNod
 	}
 	if node.ChildCount() == 0 {
 		irNode.Text = node.Content(source)
+	} else if irNode.Kind == ir.NodeKindLiteral {
+		// tree-sitter-go's interpreted_string_literal/rune_literal nodes wrap
+		// their value in quote-token children ('"'/"'" + matching quote —
+		// no separate content child for a no-escape string), so the
+		// ChildCount()==0 leaf check above never fires and Text would
+		// otherwise stay empty — silently breaking any filter that reads a
+		// literal argument's value (e.g. argument_literal_matches on
+		// w.Header().Set("Access-Control-Allow-Origin", ...)). Doesn't
+		// unwrap raw string literals (`...`, which use no escape processing
+		// and a different quote char) correctly — no current rule needs one.
+		irNode.Text = unquoteLiteral(node.Content(source))
 	}
 	extractAttrs(irNode, node, source)
 	irNode.Children = b.buildChildren(node, source, irNode, path, warnings)
 	return irNode
+}
+
+// unquoteLiteral strips one layer of matching outer quote characters (" or ')
+// from a literal's raw source text, so filters like argument_literal_matches
+// match the literal's actual value (e.g. MD5) rather than its quoted source
+// form (e.g. "MD5"). Anything not quote-delimited (a bare numeric/boolean/
+// nil token) passes through unchanged.
+func unquoteLiteral(raw string) string {
+	if len(raw) >= 2 {
+		first, last := raw[0], raw[len(raw)-1]
+		if first == last && (first == '"' || first == '\'') {
+			return raw[1 : len(raw)-1]
+		}
+	}
+	return raw
 }
 
 func (b *IRBuilder) buildChildren(node *sitter.Node, source []byte, parent *ir.IRNode, path string, warnings *[]ir.BuildWarning) []*ir.IRNode {

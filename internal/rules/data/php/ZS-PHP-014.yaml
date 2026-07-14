@@ -1,0 +1,37 @@
+id: ZS-PHP-014
+lifecycle: released
+name: Server-Side Request Forgery (curl_setopt)
+version: "1.0.0"
+language: php
+category: ssrf
+severity: high
+confidence: medium
+cwe:
+  - CWE-918
+owasp:
+  - "A01:2025"
+rationale: |
+  curl_setopt($ch, CURLOPT_URL, $taintedUrl) letting an attacker choose the
+  request target enables internal network/metadata-endpoint access: the
+  server's own cURL handle can be pointed at loopback addresses, internal
+  services, or cloud metadata endpoints (e.g. 169.254.169.254) that are
+  normally unreachable from outside the network. This is exploitable in
+  any feature that fetches a user-supplied URL via cURL, such as webhook
+  delivery, link previews, or file-import-by-URL. Note this rule matches
+  whenever any argument to curl_setopt() is tainted, not only when the
+  option constant is CURLOPT_URL — the engine has no way to inspect which
+  CURLOPT_* constant was passed as the second argument, so a tainted third
+  argument to any curl_setopt() call is flagged for review.
+description: |
+  Detects calls to curl_setopt() where an argument traces back to an
+  untrusted source (intra-procedural taint tracking).
+message: "curl_setopt() called with a tainted argument — verify CURLOPT_URL isn't set from unvalidated input (SSRF risk)"
+references:
+  - https://owasp.org/www-community/attacks/Server_Side_Request_Forgery
+tags: [ssrf, curl, curl_setopt]
+match:
+  kind: call
+  callee: curl_setopt
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Validate the URL against an allowlist before passing it to curl_setopt($ch, CURLOPT_URL, ...). Reject internal/private IPs and non-http(s) schemes."

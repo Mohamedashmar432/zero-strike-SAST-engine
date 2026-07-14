@@ -30,6 +30,48 @@ cases:
   - file: cases/vuln_sqli_update.java
     language: java
     expect: [{rule_id: ZS-JAVA-010, min_count: 1}]
+  - file: cases/vuln_processbuilder.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-011, min_count: 1}]
+  - file: cases/vuln_runtime_exec.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-012, min_count: 1}]
+  - file: cases/vuln_writer_xss_println.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-013, min_count: 1}]
+  - file: cases/vuln_writer_xss_print.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-014, min_count: 1}]
+  - file: cases/vuln_weak_random.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-015, min_count: 1}]
+  - file: cases/vuln_math_random.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-016, min_count: 1}]
+  - file: cases/vuln_insecure_cookie.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-017, min_count: 1}]
+  - file: cases/vuln_insecure_response_cookie.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-018, min_count: 1}]
+  - file: cases/vuln_url_ssrf.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-019, min_count: 1}]
+  - file: cases/vuln_resttemplate_ssrf.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-020, min_count: 1}]
+  - file: cases/vuln_open_redirect.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-021, min_count: 1}]
+  - file: cases/vuln_weak_hash.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-022, min_count: 1}]
+  - file: cases/vuln_cors.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-023, min_count: 1}]
+  - file: cases/vuln_format_string.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-024, min_count: 1}]
   - file: cases/clean.java
     language: java
     expect: []

@@ -52,6 +52,18 @@ cases:
   - file: testdata/vuln_insecure_cookie.go
     language: go
     expect: [{rule_id: ZS-GO-016, min_count: 1}]
+  - file: testdata/vuln_xss_fprintf.go
+    language: go
+    expect: [{rule_id: ZS-GO-017, min_count: 1}]
+  - file: testdata/vuln_xss_write.go
+    language: go
+    expect: [{rule_id: ZS-GO-018, min_count: 1}]
+  - file: testdata/vuln_open_redirect.go
+    language: go
+    expect: [{rule_id: ZS-GO-019, min_count: 1}]
+  - file: testdata/vuln_cors.go
+    language: go
+    expect: [{rule_id: ZS-GO-020, min_count: 1}]
   - file: testdata/clean.go
     language: go
     expect: []

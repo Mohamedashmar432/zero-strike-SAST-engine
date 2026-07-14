@@ -1,0 +1,53 @@
+id: ZS-CS-018
+lifecycle: released
+name: CORS Misconfiguration (Reflected Origin Header)
+version: "1.0.0"
+language: csharp
+category: security-misconfiguration
+severity: medium
+confidence: medium
+cwe:
+  - CWE-942
+owasp:
+  - "A02:2025"
+rationale: |
+  Reflecting the request's Origin header straight back into the
+  Access-Control-Allow-Origin response header — instead of validating it
+  against a fixed allowlist of trusted origins — defeats the same-origin
+  protection CORS exists to enforce: whatever origin the attacker's page
+  happens to send is echoed back as "allowed," so any origin can issue
+  cross-origin requests and read the authenticated response as if CORS
+  were disabled outright. This is exploitable wherever an endpoint
+  intended for a specific set of trusted origins simply echoes whatever
+  Origin the browser sent, letting a malicious page on any domain read
+  sensitive responses (session data, tokens, personal information) from a
+  victim's authenticated session.
+
+  This rule targets the classic ASP.NET Web Forms HttpResponse.AppendHeader
+  API specifically. ASP.NET Core more commonly sets response headers via
+  Response.Headers.Add(...) or the Response.Headers["..."] indexer — a
+  different call shape (indexer/collection-add, not a plain method call
+  named AppendHeader) that this rule does not cover. That is a known gap,
+  not an oversight: a companion rule for the ASP.NET Core header APIs is a
+  follow-up, not required for this rule's exit criteria.
+description: |
+  Detects calls to Response.AppendHeader() (matched via callee_suffix, so
+  context.Response.AppendHeader(...), this.Response.AppendHeader(...), and
+  similar receiver-qualified forms all match — mirroring ZS-CS-004 and
+  ZS-CS-017's handling of Response.Write/Response.Redirect) where the
+  header-name literal matches "Access-Control-Allow-Origin"
+  (case-insensitive) and the value argument traces back to an untrusted
+  source (intra-procedural taint tracking).
+message: "Response.AppendHeader() sets Access-Control-Allow-Origin from a tainted value — reflecting the request's Origin defeats CORS; validate against a fixed allowlist"
+references:
+  - https://cwe.mitre.org/data/definitions/942.html
+  - https://owasp.org/www-community/attacks/CORS_OriginHeaderScrutiny
+tags: [cors, security-misconfiguration, injection]
+match:
+  kind: call
+  callee: Response.AppendHeader
+  callee_suffix: true
+  filters:
+    - argument_literal_matches: "(?i)^access-control-allow-origin$"
+    - tainted_argument: true
+fix_suggestion: "Validate the Origin header against a fixed allowlist of trusted origins before setting Access-Control-Allow-Origin, rather than reflecting the request's Origin value directly."

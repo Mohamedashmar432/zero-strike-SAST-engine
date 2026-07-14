@@ -64,9 +64,10 @@ func (b *IRBuilder) buildNode(node *sitter.Node, source []byte, parent *ir.IRNod
 	}
 	start := node.StartPoint()
 	end := node.EndPoint()
+	kind := mapKind(node.Type())
 	irNode := &ir.IRNode{
 		NodeID: uuid.New().String(),
-		Kind:   mapKind(node.Type()),
+		Kind:   kind,
 		Location: core.Location{
 			StartLine: int(start.Row) + 1,
 			StartCol:  int(start.Column),
@@ -78,6 +79,16 @@ func (b *IRBuilder) buildNode(node *sitter.Node, source []byte, parent *ir.IRNod
 	}
 	if node.ChildCount() == 0 {
 		irNode.Text = node.Content(source)
+	} else if kind == ir.NodeKindLiteral {
+		// Unlike numeric/boolean/null literals, tree-sitter-java's
+		// string_literal/character_literal nodes wrap their value in
+		// quote-token children ('"' string_fragment '"'), so the
+		// ChildCount()==0 leaf check above never fires and Text would
+		// otherwise stay empty — silently breaking any filter that reads a
+		// literal argument's value (e.g. argument_literal_matches on
+		// MessageDigest.getInstance("MD5")). Unquote the raw span instead of
+		// only tokens or you lose values that occur inside the same literal.
+		irNode.Text = unquoteLiteral(node.Content(source))
 	}
 	extractAttrs(irNode, node, source)
 	irNode.Children = b.buildChildren(node, source, irNode, path, warnings)
@@ -322,6 +333,22 @@ func extractParameters(node *sitter.Node, source []byte) []string {
 		}
 	}
 	return out
+}
+
+// unquoteLiteral strips one layer of matching outer quote characters (" or ')
+// from a literal's raw source text, so filters like argument_literal_matches
+// match the literal's actual value (e.g. MD5) rather than its quoted source
+// form (e.g. "MD5"). Text blocks (triple-quoted) aren't unwrapped correctly by
+// this — no current rule needs one — and anything not quote-delimited (a bare
+// numeric/boolean/null token) passes through unchanged.
+func unquoteLiteral(raw string) string {
+	if len(raw) >= 2 {
+		first, last := raw[0], raw[len(raw)-1]
+		if (first == '"' && last == '"') || (first == '\'' && last == '\'') {
+			return raw[1 : len(raw)-1]
+		}
+	}
+	return raw
 }
 
 // childOfType returns the first direct child with the given node type.

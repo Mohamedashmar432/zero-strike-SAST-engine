@@ -1,0 +1,55 @@
+id: ZS-TS-026
+lifecycle: released
+name: CORS Misconfiguration (Reflected Origin Header via setHeader)
+version: "1.0.0"
+language: typescript
+category: security-misconfiguration
+severity: medium
+confidence: medium
+cwe:
+  - CWE-942
+owasp:
+  - "A02:2025"
+rationale: |
+  Reflecting the request's Origin header straight back into
+  Access-Control-Allow-Origin (instead of returning a fixed, allowlisted
+  value) defeats CORS's same-origin protection entirely: the browser is
+  told that whatever site made the request is permitted to read the
+  response. Combined with credentials (cookies, Authorization headers),
+  this lets any malicious site read authenticated cross-origin responses
+  on the victim's behalf. TypeScript's `string` type for the header value
+  gives no guarantee about its contents, so this is exploitable wherever
+  the header value is derived from request data instead of a server-side
+  allowlist. Sibling of ZS-TS-025: Node's http.ServerResponse.setHeader()
+  is the same sink as Express's res.header(), just reached through the
+  lower-level, framework-agnostic API that's also commonly used directly
+  in Express handlers.
+
+  TypeScript is a fully separate language in this engine and inherits
+  nothing from ZS-JS-028, so this gap is total, not partial — ported
+  verbatim from ZS-JS-028, same match shape.
+description: |
+  Detects calls to res.setHeader() where one argument is the literal
+  "Access-Control-Allow-Origin" (case-insensitive) and another argument
+  traces back to an untrusted source (intra-procedural taint tracking,
+  including a source expression used directly inline as the argument, not
+  only via a previously-assigned named variable).
+
+  Note: argument_literal_matches and tainted_argument are each checked
+  independently across the call's arguments — the engine does not require
+  they be the same argument position. That is precise enough here because
+  res.setHeader('Access-Control-Allow-Origin', tainted) has exactly two
+  arguments, so the literal necessarily occupies the header-name position
+  and the tainted value the header-value position.
+message: "res.setHeader() reflects a tainted value into Access-Control-Allow-Origin — CORS misconfiguration risk"
+references:
+  - https://cwe.mitre.org/data/definitions/942.html
+  - https://portswigger.net/web-security/cors
+tags: [cors, misconfiguration, security-misconfiguration]
+match:
+  kind: call
+  callee: res.setHeader
+  filters:
+    - argument_literal_matches: "(?i)^access-control-allow-origin$"
+    - tainted_argument: true
+fix_suggestion: "Return a fixed, allowlisted origin (or validate the request's Origin against a server-side allowlist) instead of reflecting it back verbatim, especially when Access-Control-Allow-Credentials is true."

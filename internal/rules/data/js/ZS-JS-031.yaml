@@ -1,0 +1,40 @@
+id: ZS-JS-031
+lifecycle: released
+name: child_process.fork() Command Injection
+version: "1.0.0"
+language: javascript
+category: injection
+severity: high
+confidence: high
+cwe:
+  - CWE-78
+owasp:
+  - "A05:2025"
+rationale: |
+  child_process.fork() is a specialized spawn() that always launches a new
+  Node.js process to run a given JavaScript module path — it has no shell
+  involved at all. That makes its risk qualitatively different from
+  spawn()/execFile()/exec(): it isn't shell metacharacter injection, it's
+  arbitrary code execution. If the module path fork() runs is
+  attacker-influenced, the attacker isn't injecting an argument into a
+  trusted program — they are choosing which JavaScript file the process
+  loads and executes with full Node.js privileges, including any file
+  reachable on disk or (depending on how the path is resolved) supplied
+  directly by the attacker. This is exploitable wherever a request
+  parameter or form field influences which module fork() loads.
+description: |
+  Detects calls to fork() (child_process.fork) where any argument traces
+  back to an untrusted source (intra-procedural taint tracking, including a
+  source expression used directly inline as the argument — e.g.
+  fork(req.body.modulePath) — not only via a previously-assigned named
+  variable).
+message: "fork() called with a tainted module path — arbitrary code execution risk"
+references:
+  - https://nodejs.org/api/child_process.html#child_processforkmodulepath-args-options
+tags: [command-injection, injection, child-process, rce]
+match:
+  kind: call
+  callee: fork
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Never let request data determine which module fork() loads; restrict it to a fixed, allowlisted set of internal worker scripts."

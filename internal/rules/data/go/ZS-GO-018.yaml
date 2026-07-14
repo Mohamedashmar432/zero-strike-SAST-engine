@@ -1,0 +1,41 @@
+id: ZS-GO-018
+lifecycle: released
+name: Reflected XSS via ResponseWriter.Write
+version: "1.0.0"
+language: go
+category: xss
+severity: high
+confidence: medium
+cwe:
+  - CWE-79
+owasp:
+  - "A05:2025"
+rationale: |
+  Writing a tainted value directly into an http.ResponseWriter via
+  w.Write(...) without HTML-escaping lets an attacker-controlled value
+  execute as script in the victim's browser, exactly as with
+  fmt.Fprintf(w, ...) (see ZS-GO-017) — the bytes reach the client
+  unescaped. This is exploitable wherever the written value traces back
+  to a request parameter, header, or other untrusted source reflected
+  into an HTML response. Confidence is medium rather than high because
+  the match relies on the conventional Go net/http handler parameter
+  name `w` for the *http.ResponseWriter receiver: a handler that names
+  its parameter something else (e.g. `rw`, `resp`) won't be caught, and
+  conversely any other type's Write method named on a variable called
+  `w` would false-positive.
+description: |
+  Detects calls to w.Write() where an argument traces back to an
+  untrusted source (intra-procedural taint tracking). w.Write([]byte(x))
+  still matches because the tainted-argument filter recurses through
+  the []byte(...) conversion's argument subtree, not just bare top-level
+  arguments.
+message: "w.Write() called with a tainted argument — HTML-escape the value before writing it to the response"
+references:
+  - https://owasp.org/www-community/attacks/xss/
+tags: [xss, injection, http]
+match:
+  kind: call
+  callee: w.Write
+  filters:
+    - tainted_argument: true
+fix_suggestion: "HTML-escape the tainted value (e.g. html.EscapeString or html/template) before writing it into the response, or use html/template instead of a raw w.Write for HTML output."

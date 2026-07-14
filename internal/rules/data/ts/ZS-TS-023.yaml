@@ -1,0 +1,42 @@
+id: ZS-TS-023
+lifecycle: released
+name: Path Traversal via fs.readFileSync
+version: "1.0.0"
+language: typescript
+category: path-traversal
+severity: high
+confidence: medium
+cwe:
+  - CWE-22
+owasp:
+  - "A01:2025"
+rationale: |
+  Reading a file whose path traces back to untrusted input lets an
+  attacker embed ../ sequences (or supply an absolute path) to escape the
+  intended directory and read arbitrary files the process's OS-level
+  permissions allow — configuration files containing secrets, other
+  users' data, or application source code. TypeScript's `string` type for
+  the path argument gives no guarantee about its contents, so this is
+  exploitable wherever a filename or path segment from a request (a
+  download endpoint, template name, or user-uploaded file reference)
+  reaches fs.readFileSync() without first being resolved and confined to
+  an allowed base directory.
+
+  This is the synchronous sibling of ZS-TS-022: fs.readFile and
+  fs.readFileSync are two distinct callees on the same `fs` module, so a
+  separate rule is needed to cover the sync form used throughout
+  startup/config-loading code paths.
+description: |
+  Detects calls to fs.readFileSync() (the standard Node.js `import fs from
+  'fs'` / `const fs = require('fs')` convention) where the path argument
+  traces back to an untrusted source (intra-procedural taint tracking).
+message: "fs.readFileSync() called with a tainted path — validate and confine the path before use"
+references:
+  - https://owasp.org/www-community/attacks/Path_Traversal
+tags: [path-traversal, file-access, node-fs]
+match:
+  kind: call
+  callee: fs.readFileSync
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Resolve the path with path.resolve/path.normalize and confirm it stays within the allowed base directory before reading it."

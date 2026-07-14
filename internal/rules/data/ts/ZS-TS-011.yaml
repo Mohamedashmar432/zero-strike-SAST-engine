@@ -1,0 +1,41 @@
+id: ZS-TS-011
+lifecycle: released
+name: outerHTML Assignment (DOM XSS)
+version: "1.0.0"
+language: typescript
+category: xss
+severity: high
+confidence: medium
+cwe:
+  - CWE-79
+owasp:
+  - "A05:2025"
+rationale: |
+  Assigning to outerHTML replaces the entire target element — and
+  everything nested inside it — with HTML parsed from the assigned string,
+  so attacker-controlled data reaching it lets an attacker inject <script>
+  tags, event handlers, or forged UI elements that execute in the page's
+  origin. Because outerHTML also detaches the original element node from
+  the DOM, any event listeners attached directly to it are silently lost,
+  but the script-injection risk is identical to innerHTML; TypeScript's
+  type checker treats the assigned value as a plain string and provides no
+  protection against this at compile time. This is exploitable wherever URL
+  parameters, postMessage data, or user-supplied content is rendered into
+  the DOM this way, enabling cookie theft or session hijacking.
+
+  TypeScript is a fully separate language in this engine and inherits
+  nothing from ZS-JS-005, so this gap is total, not partial — ported
+  verbatim from ZS-JS-005, same match shape.
+description: |
+  Detects assignments to outerHTML where the assigned value traces back to
+  an untrusted source (intra-procedural taint tracking).
+message: "outerHTML assignment detected with a tainted value — sanitize input or use safe DOM APIs instead"
+references:
+  - https://owasp.org/www-community/attacks/xss/
+tags: [xss, outerHTML, dom-injection]
+match:
+  kind: assignment
+  lhs_identifier: "outerHTML"
+  filters:
+    - tainted_rhs: true
+fix_suggestion: "Use createElement/appendChild instead of outerHTML, or sanitize with DOMPurify before assignment."

@@ -1,0 +1,42 @@
+id: ZS-CS-016
+lifecycle: released
+name: Server-Side Request Forgery (HttpClient.GetAsync)
+version: "1.0.0"
+language: csharp
+category: ssrf
+severity: high
+confidence: medium
+cwe:
+  - CWE-918
+owasp:
+  - "A01:2025"
+rationale: |
+  Passing a request-derived URL straight to httpClient.GetAsync() lets an
+  attacker redirect the server's own outbound request to internal-only
+  services, loopback addresses, or cloud metadata endpoints (e.g.
+  169.254.169.254) that are normally unreachable from outside the
+  network, potentially exposing internal APIs, credentials, or instance
+  metadata. This is exploitable in any feature that fetches a
+  user-supplied URL, such as webhook registration, link previews, or
+  file-import-by-URL. The callee match relies on the conventional
+  instance field/variable name "httpClient" — the idiomatic name for an
+  injected or shared HttpClient in ASP.NET code — so an HttpClient stored
+  under a different variable name (client, http, apiClient) will not be
+  matched; that is the same tradeoff already accepted elsewhere in this
+  ruleset for receiver-qualified sinks keyed on a conventional name (e.g.
+  Go's db.Query/tx.Exec, Java's stmt.executeUpdate, JS's
+  res.redirect/pool.query), where a companion rule per alternate name is
+  a follow-up, not required for this rule's exit criteria.
+description: |
+  Detects calls to httpClient.GetAsync() where the URL argument traces
+  back to an untrusted source (intra-procedural taint tracking).
+message: "httpClient.GetAsync() called with a tainted URL — validate and allowlist URLs before use"
+references:
+  - https://owasp.org/www-community/attacks/Server_Side_Request_Forgery
+tags: [ssrf, http-client]
+match:
+  kind: call
+  callee: httpClient.GetAsync
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Validate the URL against an allowlist. Reject internal/private IPs and non-http(s) schemes before fetching."

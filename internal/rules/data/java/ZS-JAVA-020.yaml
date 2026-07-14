@@ -1,0 +1,39 @@
+id: ZS-JAVA-020
+lifecycle: released
+name: Server-Side Request Forgery (RestTemplate)
+version: "1.0.0"
+language: java
+category: ssrf
+severity: high
+confidence: medium
+cwe:
+  - CWE-918
+owasp:
+  - "A01:2025"
+rationale: |
+  Passing a request-derived URL straight to RestTemplate.getForObject() lets
+  an attacker redirect the server's own outbound request to internal-only
+  services, loopback addresses, or cloud metadata endpoints (e.g.
+  169.254.169.254) that are normally unreachable from outside the network,
+  potentially exposing internal APIs, credentials, or instance metadata.
+  This is exploitable in any feature that fetches a user-supplied URL, such
+  as webhook registration, link previews, or file-import-by-URL. This rule
+  relies on Spring's conventional field/variable name "restTemplate" for the
+  receiver — a RestTemplate instance held under a different variable name
+  won't be caught, the same convention-dependent tradeoff as other
+  receiver-name-based rules in this ruleset (e.g. ZS-JAVA-001's "stmt").
+description: |
+  Detects calls to restTemplate.getForObject() where an argument traces back
+  to an untrusted source (intra-procedural taint tracking), where
+  "restTemplate" is the conventional variable/field name for a Spring
+  RestTemplate instance.
+message: "restTemplate.getForObject() called with a tainted URL — validate and allowlist URLs before use"
+references:
+  - https://owasp.org/www-community/attacks/Server_Side_Request_Forgery
+tags: [ssrf, spring, request-forgery]
+match:
+  kind: call
+  callee: restTemplate.getForObject
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Validate the URL against an allowlist. Reject internal/private IPs and non-http(s) schemes before calling getForObject()."

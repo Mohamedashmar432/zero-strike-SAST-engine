@@ -1,0 +1,40 @@
+id: ZS-PHP-015
+lifecycle: released
+name: Open Redirect / Header Injection (header)
+version: "1.0.0"
+language: php
+category: open-redirect
+severity: medium
+confidence: medium
+cwe:
+  - CWE-601
+  - CWE-113
+owasp:
+  - "A01:2025"
+rationale: |
+  Passing an attacker-controlled value to header() lets an attacker send
+  the victim's browser to a destination of their choosing when the value
+  is used to build a "Location: ..." redirect — a pattern widely used in
+  phishing to lend legitimacy to a malicious landing page, and in some
+  OAuth/SSO flows to steal authorization codes or tokens. This rule is
+  intentionally broad: it fires on ANY tainted value passed to header(),
+  not only "Location:" redirects, because no filter can inspect a literal
+  string prefix like "Location: " that the tainted value is concatenated
+  onto. That breadth also legitimately catches general HTTP header
+  injection (CWE-113) — a tainted value containing CR/LF sequences that
+  splits or injects additional headers — which is a related, real concern
+  in its own right, so the breadth is treated as a feature, not a bug.
+description: |
+  Detects calls to header() where an argument traces back to an untrusted
+  source (intra-procedural taint tracking).
+message: "header() called with a tainted argument — open redirect / header injection risk, verify the value is validated"
+references:
+  - https://owasp.org/www-community/attacks/Server_Side_Request_Forgery
+  - https://cwe.mitre.org/data/definitions/113.html
+tags: [open-redirect, header-injection, injection]
+match:
+  kind: call
+  callee: header
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Validate any user-influenced value against an allowlist before passing it to header(), especially for Location: redirects; strip or reject CR/LF characters to prevent header injection."

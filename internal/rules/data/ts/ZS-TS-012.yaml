@@ -1,0 +1,39 @@
+id: ZS-TS-012
+lifecycle: released
+name: Hardcoded Credential
+version: "1.0.0"
+language: typescript
+category: authentication
+severity: high
+confidence: medium
+cwe:
+  - CWE-798
+owasp:
+  - "A07:2025"
+rationale: |
+  A credential embedded as a string literal in source code ships wherever
+  the code ships — an attacker can read it straight out of a client-side
+  bundle via browser devtools (TypeScript compiles to plain JavaScript, so
+  the literal survives verbatim in the shipped output), or extract it from
+  server-side code through source control history, build artifacts, or a
+  compromised CI pipeline. Once extracted, the attacker gains standing
+  access to whatever the credential protects (a database, an internal API,
+  a third-party service) that persists until the secret is rotated,
+  independent of any other vulnerability in the running application.
+
+  TypeScript is a fully separate language in this engine and inherits
+  nothing from ZS-JS-007, so this gap is total, not partial — ported
+  verbatim from ZS-JS-007, same match shape.
+description: |
+  A variable named like a credential (password, secret, apiKey, token) is
+  assigned a string literal directly in source code, rather than loaded from
+  an environment variable or secrets manager.
+message: "Hardcoded credential detected — load secrets from environment variables or a secrets manager"
+references:
+  - https://cwe.mitre.org/data/definitions/798.html
+tags: [hardcoded-credential, authentication]
+match:
+  kind: assignment
+  lhs_identifier: "(?i)(password|secret|apiKey|token)"
+  rhs_literal: "^[\"'`].+[\"'`]$"
+fix_suggestion: "Replace the literal with process.env.YOUR_VAR or a secrets manager lookup."

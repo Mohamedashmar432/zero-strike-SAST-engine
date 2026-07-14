@@ -1,0 +1,41 @@
+id: ZS-JAVA-017
+lifecycle: released
+name: Insecure Cookie Instantiation
+version: "1.0.0"
+language: java
+category: security-misconfiguration
+severity: medium
+confidence: low
+cwe:
+  - CWE-614
+  - CWE-1004
+owasp:
+  - "A02:2025"
+rationale: |
+  A javax.servlet.http.Cookie created without explicitly calling
+  setHttpOnly(true) and setSecure(true) defaults to being readable by
+  client-side JavaScript and sendable over plain HTTP. A cookie readable
+  from script means any XSS elsewhere on the page can steal it directly
+  instead of merely acting within the page's own context; a cookie sendable
+  over HTTP means anyone on the network path can capture it in transit and
+  hijack the session it represents. This is exploitable wherever the cookie
+  carries a session/auth token and the site is reachable over HTTP or has any
+  XSS vector. The engine has no cross-statement absence check, so it can't
+  confirm setHttpOnly(true)/setSecure(true) were never called later in the
+  same method — mirroring this ruleset's precedent for the same class of gap
+  (e.g. ZS-CS-013/ZS-GO-016's Insecure Cookie Instantiation), this rule fires
+  unconditionally on construction and asks the reader to verify, rather than
+  trying to prove the negative.
+description: |
+  Detects direct instantiation of javax.servlet.http.Cookie. Verify
+  setHttpOnly(true) and setSecure(true) are called on it before the cookie
+  is added to the response.
+message: "new Cookie() created — verify setHttpOnly(true) and setSecure(true) are called before sending it to the client"
+references:
+  - https://owasp.org/www-community/controls/SecureCookieAttribute
+  - https://cwe.mitre.org/data/definitions/1004.html
+tags: [cookie, session, security-misconfiguration]
+match:
+  kind: call
+  callee: Cookie
+fix_suggestion: "Call cookie.setHttpOnly(true) and cookie.setSecure(true) immediately after construction, before adding it to the response."

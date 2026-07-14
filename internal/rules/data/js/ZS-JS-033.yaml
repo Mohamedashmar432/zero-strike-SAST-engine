@@ -1,0 +1,38 @@
+id: ZS-JS-033
+lifecycle: released
+name: Regular Expression Denial of Service (ReDoS) via Dynamic RegExp
+version: "1.0.0"
+language: javascript
+category: redos
+severity: medium
+confidence: medium
+cwe:
+  - CWE-1333
+owasp:
+  - "A05:2025"
+rationale: |
+  Constructing a RegExp from attacker-controlled text lets the attacker
+  choose the pattern itself, not just the string it's matched against — and
+  a pathologically backtracking pattern (nested quantifiers like (a+)+, or
+  overlapping alternation) paired with a crafted input can make matching
+  take seconds to minutes of CPU time on a single request. Since Node.js
+  runs JavaScript on a single thread per process, one such request can stall
+  the entire event loop and every other in-flight request along with it —
+  a classic, low-effort denial-of-service vector wherever a search filter,
+  validation pattern, or similar feature builds a RegExp from request data.
+description: |
+  Detects calls to RegExp() (including new RegExp()) where the pattern
+  argument traces back to an untrusted source (intra-procedural taint
+  tracking, including a source expression used directly inline as the
+  argument, not only via a previously-assigned named variable).
+message: "RegExp() constructed from a tainted pattern — ReDoS risk"
+references:
+  - https://cwe.mitre.org/data/definitions/1333.html
+  - https://owasp.org/www-community/attacks/Regular_expression_Denial_of_Service_-_ReDoS
+tags: [redos, dos, regexp]
+match:
+  kind: call
+  callee: RegExp
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Never build a RegExp pattern from request data; if dynamic matching is required, use a fixed set of allowlisted patterns or a non-backtracking matching library."

@@ -1,0 +1,39 @@
+id: ZS-TS-018
+lifecycle: released
+name: node-serialize Insecure Deserialization
+version: "1.0.0"
+language: typescript
+category: deserialization
+severity: critical
+confidence: medium
+cwe:
+  - CWE-502
+owasp:
+  - "A08:2025"
+rationale: |
+  The node-serialize package's unserialize() reconstructs a JavaScript
+  object from a string by re-hydrating any embedded function literals and
+  immediately invoking their Immediately Invoked Function Expression (IIFE)
+  form during parsing, so an attacker who controls the serialized payload
+  gets arbitrary code execution the moment unserialize() runs — no separate
+  sink is needed beyond feeding in the string. This is exploitable
+  anywhere a node-serialize payload crosses a trust boundary: a cookie, an
+  uploaded file, or an API body an attacker can influence, which is why any
+  use of the function is treated as unsafe rather than trying to sandbox
+  specific inputs.
+
+  TypeScript is a fully separate language in this engine and inherits
+  nothing from ZS-JS-014, so this gap is total, not partial — ported
+  verbatim from ZS-JS-014, same match shape.
+description: |
+  Detects calls to node-serialize's unserialize(), which can execute
+  attacker-supplied code embedded in the serialized payload, regardless of
+  whether the argument is independently proven tainted.
+message: "node-serialize unserialize() detected — insecure deserialization enables RCE; use JSON.parse() for plain data instead"
+references:
+  - https://www.exploit-db.com/exploits/44335
+tags: [deserialization, rce, node-serialize]
+match:
+  kind: call
+  callee: serialize.unserialize
+fix_suggestion: "Replace node-serialize with JSON.parse() for plain data; never deserialize a format that can embed executable functions from untrusted input."

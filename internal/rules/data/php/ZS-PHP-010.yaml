@@ -1,0 +1,34 @@
+id: ZS-PHP-010
+lifecycle: released
+name: Weak Cryptographic Hash (MD5)
+version: "1.0.0"
+language: php
+category: cryptography
+severity: medium
+confidence: high
+cwe:
+  - CWE-327
+owasp:
+  - "A04:2025"
+rationale: |
+  MD5 is cryptographically broken for collision resistance: collisions can
+  be forged in seconds, and as a password hash it is fast enough for
+  commodity GPUs to test billions of guesses per second, so using md5()
+  for password storage, digital signatures, or integrity-critical hashing
+  lets an attacker forge colliding content or recover plaintext passwords
+  from a leaked hash database. This is exploitable anywhere the hash is
+  used as a security control rather than a simple checksum — password
+  tables, signed tokens, or file-integrity checks — and md5() should never
+  be used for those cases.
+description: |
+  Detects calls to md5(). md5() is a plain global PHP function, so this
+  rule matches unconditionally with no filters, the same shape as the
+  other bare-function sinks in this rule set.
+message: "Weak hash algorithm MD5 detected — use SHA-256 or stronger (or password_hash() for passwords)"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+tags: [weak-crypto, md5, hash]
+match:
+  kind: call
+  callee: md5
+fix_suggestion: "Replace md5() with hash('sha256', ...) for integrity checks, or use password_hash()/password_verify() for password storage."

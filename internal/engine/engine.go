@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/analyzer"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/analyzer/taint"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/ir"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/rules"
 )
@@ -132,8 +134,8 @@ func (e *defaultEngine) Match(_ context.Context, mc *MatchContext) ([]MatchResul
 			if r.Language != fileLang {
 				continue
 			}
-			if matchNode(r.Match, n, taintedVars) {
-				out = append(out, MatchResult{Rule: r, Node: n, TaintedVar: taintedIdentifierFor(r.Match, n, taintedVars)})
+			if matchNode(r.Match, n, taintedVars, fileLang) {
+				out = append(out, MatchResult{Rule: r, Node: n, TaintedVar: taintedIdentifierFor(r.Match, n, taintedVars, fileLang)})
 			}
 		}
 		return true
@@ -185,7 +187,7 @@ func attributeText(n *ir.IRNode) string {
 // matchNode checks whether a node satisfies the match pattern.
 // Callee matching is already handled by the index; matchNode covers
 // Identifier, Literal, and Filter constraints.
-func matchNode(pattern rules.MatchPattern, n *ir.IRNode, taintedVars map[string]bool) bool {
+func matchNode(pattern rules.MatchPattern, n *ir.IRNode, taintedVars map[string]bool, lang core.Language) bool {
 	if ir.NodeKind(pattern.Kind) != n.Kind {
 		return false
 	}
@@ -213,14 +215,14 @@ func matchNode(pattern rules.MatchPattern, n *ir.IRNode, taintedVars map[string]
 		}
 	}
 	for _, f := range pattern.Filters {
-		if !evalFilter(f, n, taintedVars) {
+		if !evalFilter(f, n, taintedVars, lang) {
 			return false
 		}
 	}
 	return true
 }
 
-func evalFilter(f rules.Filter, n *ir.IRNode, taintedVars map[string]bool) bool {
+func evalFilter(f rules.Filter, n *ir.IRNode, taintedVars map[string]bool, lang core.Language) bool {
 	if f.ArgumentCount != nil {
 		ac, _ := n.Attrs["argument_count"].(int)
 		if ac != *f.ArgumentCount {
@@ -242,6 +244,8 @@ func evalFilter(f rules.Filter, n *ir.IRNode, taintedVars map[string]bool) bool 
 	if f.TaintedArgument {
 		if !anyArgument(n, func(a *ir.IRNode) bool {
 			return a.Kind == ir.NodeKindIdentifier && taintedVars[a.Text]
+		}) && !anyArgument(n, func(a *ir.IRNode) bool {
+			return isDirectSourceExpression(a, lang)
 		}) {
 			return false
 		}
@@ -273,8 +277,19 @@ func evalFilter(f rules.Filter, n *ir.IRNode, taintedVars map[string]bool) bool 
 			return false
 		}
 	}
+	if f.ArgumentLiteralMatches != "" {
+		if !anyArgument(n, func(a *ir.IRNode) bool {
+			if a.Kind != ir.NodeKindLiteral {
+				return false
+			}
+			matched, err := regexp.MatchString(f.ArgumentLiteralMatches, a.Text)
+			return err == nil && matched
+		}) {
+			return false
+		}
+	}
 	if f.TaintedRHS {
-		if !rhsIsTainted(n, taintedVars) {
+		if !rhsIsTainted(n, taintedVars, lang) {
 			return false
 		}
 	}
@@ -289,7 +304,7 @@ func evalFilter(f rules.Filter, n *ir.IRNode, taintedVars map[string]bool) bool 
 		}
 	}
 	if f.Not != nil {
-		if matchNode(*f.Not, n, taintedVars) {
+		if matchNode(*f.Not, n, taintedVars, lang) {
 			return false
 		}
 	}
@@ -310,8 +325,10 @@ func anyExceptHandler(n *ir.IRNode, pred func(ir.ExceptHandler) bool) bool {
 
 // rhsIsTainted reports whether an assignment node's right-hand-side subtree
 // (its last child — see the Python/JS/TS grammars' left, '=', right shape)
-// contains an identifier present in taintedVars.
-func rhsIsTainted(n *ir.IRNode, taintedVars map[string]bool) bool {
+// contains an identifier present in taintedVars, or a source pattern matched
+// directly inline (element.innerHTML = req.body.x, with no intervening
+// assignment to a named variable — see isDirectSourceExpression).
+func rhsIsTainted(n *ir.IRNode, taintedVars map[string]bool, lang core.Language) bool {
 	if n.Kind != ir.NodeKindAssignment || len(n.Children) == 0 {
 		return false
 	}
@@ -319,12 +336,42 @@ func rhsIsTainted(n *ir.IRNode, taintedVars map[string]bool) bool {
 	if rhs.Kind == ir.NodeKindIdentifier && taintedVars[rhs.Text] {
 		return true
 	}
+	if isDirectSourceExpression(rhs, lang) {
+		return true
+	}
 	for _, d := range ir.Descendants(rhs) {
 		if d.Kind == ir.NodeKindIdentifier && taintedVars[d.Text] {
 			return true
 		}
+		if isDirectSourceExpression(d, lang) {
+			return true
+		}
 	}
 	return false
+}
+
+// isDirectSourceExpression reports whether n's own text (not its
+// descendants — callers walk those separately, e.g. via anyArgument/
+// ir.Descendants) matches one of lang's taint source patterns directly.
+// This recognizes a source used inline (sink(req.body.x)) in addition to
+// the assignment-based taintedVars propagation the taint pass already
+// handles (const v = req.body.x; sink(v)) — see taint.IsSource's doc
+// comment for why the assignment-based pass alone misses this.
+func isDirectSourceExpression(n *ir.IRNode, lang core.Language) bool {
+	switch n.Kind {
+	case ir.NodeKindCall:
+		// Source patterns like "request.getParameter(" or "os.Getenv("
+		// include the trailing paren — the assignment-based check sees it
+		// naturally via raw RHS source text, so calleeText needs it added
+		// back explicitly here.
+		return taint.IsSource(lang, calleeText(n)+"(")
+	case ir.NodeKindAttribute:
+		return taint.IsSource(lang, attributeText(n))
+	case ir.NodeKindIdentifier:
+		return taint.IsSource(lang, n.Text)
+	default:
+		return false
+	}
 }
 
 // anyArgument reports whether any node in a call's argument list (everything
@@ -353,15 +400,15 @@ func anyArgument(n *ir.IRNode, pred func(*ir.IRNode) bool) bool {
 // TaintedArgument or TaintedRHS filter, and if found, returns the actual
 // tainted identifier's text that satisfied it. Returns "" when the rule
 // matched without using either filter — the common case for most rules.
-func taintedIdentifierFor(pattern rules.MatchPattern, n *ir.IRNode, taintedVars map[string]bool) string {
+func taintedIdentifierFor(pattern rules.MatchPattern, n *ir.IRNode, taintedVars map[string]bool, lang core.Language) string {
 	for _, f := range pattern.Filters {
 		if f.TaintedArgument {
-			if id := firstTaintedArgument(n, taintedVars); id != "" {
+			if id := firstTaintedArgument(n, taintedVars, lang); id != "" {
 				return id
 			}
 		}
 		if f.TaintedRHS {
-			if id := firstTaintedRHSIdentifier(n, taintedVars); id != "" {
+			if id := firstTaintedRHSIdentifier(n, taintedVars, lang); id != "" {
 				return id
 			}
 		}
@@ -370,10 +417,12 @@ func taintedIdentifierFor(pattern rules.MatchPattern, n *ir.IRNode, taintedVars 
 }
 
 // firstTaintedArgument returns the text of the first tainted identifier found
-// in a call's argument list, or "" if none. Same traversal shape as
-// anyArgument, kept separate since evalFilter's anyArgument-based check only
-// needs a bool on the hot matching path.
-func firstTaintedArgument(n *ir.IRNode, taintedVars map[string]bool) string {
+// in a call's argument list, or — when no named tainted variable is found —
+// the text of the first node matching a source pattern directly inline (see
+// isDirectSourceExpression). Returns "" if neither is found. Same traversal
+// shape as anyArgument, kept separate since evalFilter's anyArgument-based
+// check only needs a bool on the hot matching path.
+func firstTaintedArgument(n *ir.IRNode, taintedVars map[string]bool, lang core.Language) string {
 	if n.Kind != ir.NodeKindCall || len(n.Children) < 2 {
 		return ""
 	}
@@ -387,14 +436,42 @@ func firstTaintedArgument(n *ir.IRNode, taintedVars map[string]bool) string {
 			}
 		}
 	}
+	for _, argRoot := range n.Children[1:] {
+		if isDirectSourceExpression(argRoot, lang) {
+			return sourceExpressionText(argRoot)
+		}
+		for _, d := range ir.Descendants(argRoot) {
+			if isDirectSourceExpression(d, lang) {
+				return sourceExpressionText(d)
+			}
+		}
+	}
 	return ""
 }
 
+// sourceExpressionText returns the best-effort display text for a node that
+// isDirectSourceExpression matched, for the MatchResult.TaintedVar report
+// field — the same text isDirectSourceExpression tested against the source
+// patterns (with the call form's trailing "(" omitted, since it's only
+// needed for the regex match, not for display).
+func sourceExpressionText(n *ir.IRNode) string {
+	switch n.Kind {
+	case ir.NodeKindCall:
+		return calleeText(n)
+	case ir.NodeKindAttribute:
+		return attributeText(n)
+	default:
+		return n.Text
+	}
+}
+
 // firstTaintedRHSIdentifier returns the text of the tainted identifier in an
-// assignment's right-hand-side subtree, or "" if none. Same traversal shape
-// as rhsIsTainted, kept separate since evalFilter's rhsIsTainted-based check
-// only needs a bool on the hot matching path.
-func firstTaintedRHSIdentifier(n *ir.IRNode, taintedVars map[string]bool) string {
+// assignment's right-hand-side subtree, or — when no named tainted variable
+// is found — the text of the first node matching a source pattern directly
+// inline (see isDirectSourceExpression). Returns "" if neither is found.
+// Same traversal shape as rhsIsTainted, kept separate since evalFilter's
+// rhsIsTainted-based check only needs a bool on the hot matching path.
+func firstTaintedRHSIdentifier(n *ir.IRNode, taintedVars map[string]bool, lang core.Language) string {
 	if n.Kind != ir.NodeKindAssignment || len(n.Children) == 0 {
 		return ""
 	}
@@ -405,6 +482,14 @@ func firstTaintedRHSIdentifier(n *ir.IRNode, taintedVars map[string]bool) string
 	for _, d := range ir.Descendants(rhs) {
 		if d.Kind == ir.NodeKindIdentifier && taintedVars[d.Text] {
 			return d.Text
+		}
+	}
+	if isDirectSourceExpression(rhs, lang) {
+		return sourceExpressionText(rhs)
+	}
+	for _, d := range ir.Descendants(rhs) {
+		if isDirectSourceExpression(d, lang) {
+			return sourceExpressionText(d)
 		}
 	}
 	return ""

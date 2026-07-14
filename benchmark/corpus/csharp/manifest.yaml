@@ -39,6 +39,24 @@ cases:
   - file: cases/vuln_insecure_cookie.cs
     language: csharp
     expect: [{rule_id: ZS-CS-013, min_count: 1}]
+  - file: cases/vuln_weak_random.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-014, min_count: 1}]
+  - file: cases/vuln_path_traversal.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-015, min_count: 1}]
+  - file: cases/vuln_ssrf_httpclient.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-016, min_count: 1}]
+  - file: cases/vuln_open_redirect.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-017, min_count: 1}]
+  - file: cases/vuln_cors.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-018, min_count: 1}]
+  - file: cases/vuln_format_string.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-019, min_count: 1}]
   - file: cases/clean.cs
     language: csharp
     expect: []

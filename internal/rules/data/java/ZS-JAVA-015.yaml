@@ -1,0 +1,33 @@
+id: ZS-JAVA-015
+lifecycle: released
+name: Weak Pseudo-Random Number Generator (java.util.Random)
+version: "1.0.0"
+language: java
+category: cryptography
+severity: medium
+confidence: medium
+cwe:
+  - CWE-338
+owasp:
+  - "A04:2025"
+rationale: |
+  java.util.Random is a deterministic linear congruential generator seeded
+  from a small state space, so its output is predictable to an attacker who
+  observes a few values or knows roughly when the process started — using it
+  to generate a session token, password-reset code, or API key lets that
+  attacker guess or reconstruct future values instead of needing to
+  brute-force a cryptographically random space. This is exploitable anywhere
+  the generated value is meant to be unguessable; not every use of Random is
+  security-sensitive (jitter, shuffling a game board, load-balancing), which
+  is why this rule fires at medium rather than high confidence — every use
+  is worth a second look, not every use is a bug.
+description: |
+  Detects zero-argument construction of java.util.Random via new Random().
+message: "new Random() detected — not cryptographically secure, predictable to an attacker"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+tags: [weak-crypto, weak-prng, random]
+match:
+  kind: call
+  callee: Random
+fix_suggestion: "Use java.security.SecureRandom for anything security-sensitive (tokens, keys, reset codes); java.util.Random is fine only for non-security randomness."

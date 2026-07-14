@@ -1,0 +1,33 @@
+id: ZS-GO-017
+lifecycle: released
+name: Reflected XSS via fmt.Fprintf
+version: "1.0.0"
+language: go
+category: xss
+severity: high
+confidence: high
+cwe:
+  - CWE-79
+owasp:
+  - "A05:2025"
+rationale: |
+  Writing a tainted value directly into an http.ResponseWriter via
+  fmt.Fprintf(w, ...) without HTML-escaping lets an attacker-controlled
+  value execute as script in the victim's browser, since the formatted
+  output is sent back to the client as-is with no encoding applied. This
+  is exploitable wherever the formatted value traces back to a request
+  parameter, header, or other untrusted source reflected into an HTML
+  response, enabling cookie theft, session hijacking, or page defacement.
+description: |
+  Detects calls to fmt.Fprintf() where an argument traces back to an
+  untrusted source (intra-procedural taint tracking).
+message: "fmt.Fprintf() called with a tainted argument — HTML-escape the value before writing it to the response"
+references:
+  - https://owasp.org/www-community/attacks/xss/
+tags: [xss, injection, fmt]
+match:
+  kind: call
+  callee: fmt.Fprintf
+  filters:
+    - tainted_argument: true
+fix_suggestion: "HTML-escape the tainted value (e.g. html.EscapeString or html/template) before writing it into the response, or use html/template instead of fmt.Fprintf for HTML output."

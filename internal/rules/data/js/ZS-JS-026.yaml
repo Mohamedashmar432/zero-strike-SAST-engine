@@ -1,0 +1,37 @@
+id: ZS-JS-026
+lifecycle: released
+name: Weak Cryptographic Hash Algorithm (crypto.createHash)
+version: "1.0.0"
+language: javascript
+category: cryptography
+severity: medium
+confidence: high
+cwe:
+  - CWE-327
+owasp:
+  - "A04:2025"
+rationale: |
+  MD5 and SHA-1 are both cryptographically broken for collision
+  resistance: collisions can be generated in seconds to minutes on
+  commodity hardware, so an attacker can forge a second input that hashes
+  identically to a trusted one — undermining digital signatures,
+  file-integrity checks, and certificate validation. As password hashes
+  both are additionally fast enough for commodity GPUs to brute-force
+  billions of guesses per second. Using either in
+  crypto.createHash('md5')/crypto.createHash('sha1') lets an attacker
+  exploit whichever of these properties the hash is relied on for.
+description: |
+  Detects calls to crypto.createHash() where the algorithm argument is
+  the string literal "md5" or "sha1" (case-insensitive), using the
+  argument_literal_matches filter to distinguish these from safe calls
+  such as crypto.createHash('sha256').
+message: "crypto.createHash() called with a weak algorithm (MD5/SHA-1) — use SHA-256 or stronger"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+tags: [weak-crypto, md5, sha1, hash]
+match:
+  kind: call
+  callee: crypto.createHash
+  filters:
+    - argument_literal_matches: "(?i)^(md5|sha1)$"
+fix_suggestion: "Replace crypto.createHash('md5')/crypto.createHash('sha1') with crypto.createHash('sha256'), or use bcrypt/argon2 for password hashing."

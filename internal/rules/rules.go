@@ -27,6 +27,9 @@ type Filter struct {
 	// ArgumentIdentifierMatches requires at least one identifier anywhere in the call's
 	// argument list to match this regex, e.g. a variable named "password" passed to print().
 	ArgumentIdentifierMatches string
+	// ArgumentLiteralMatches requires at least one literal anywhere in the call's
+	// argument list to match this regex, e.g. "MD5" passed to MessageDigest.getInstance().
+	ArgumentLiteralMatches string
 	// HasBareExcept requires a try_statement node to contain at least one bare
 	// "except:" clause (see ir.ExceptHandler.IsBare).
 	HasBareExcept bool

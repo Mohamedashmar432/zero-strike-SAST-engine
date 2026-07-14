@@ -27,6 +27,30 @@ cases:
   - file: cases/vuln_sqli_pg.php
     language: php
     expect: [{rule_id: ZS-PHP-009, min_count: 1}]
+  - file: cases/vuln_md5.php
+    language: php
+    expect: [{rule_id: ZS-PHP-010, min_count: 1}]
+  - file: cases/vuln_mt_rand.php
+    language: php
+    expect: [{rule_id: ZS-PHP-011, min_count: 1}]
+  - file: cases/vuln_setcookie.php
+    language: php
+    expect: [{rule_id: ZS-PHP-012, min_count: 1}]
+  - file: cases/vuln_ssrf_file_get_contents.php
+    language: php
+    expect: [{rule_id: ZS-PHP-013, min_count: 1}]
+  - file: cases/vuln_ssrf_curl.php
+    language: php
+    expect: [{rule_id: ZS-PHP-014, min_count: 1}]
+  - file: cases/vuln_open_redirect_header.php
+    language: php
+    expect: [{rule_id: ZS-PHP-015, min_count: 1}]
+  - file: cases/vuln_xxe_simplexml.php
+    language: php
+    expect: [{rule_id: ZS-PHP-016, min_count: 1}]
+  - file: cases/vuln_format_string.php
+    language: php
+    expect: [{rule_id: ZS-PHP-017, min_count: 1}]
   - file: cases/clean.php
     language: php
     expect: []

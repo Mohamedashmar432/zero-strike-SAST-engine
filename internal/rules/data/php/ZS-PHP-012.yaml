@@ -1,0 +1,41 @@
+id: ZS-PHP-012
+lifecycle: released
+name: Insecure Cookie via setcookie()
+version: "1.0.0"
+language: php
+category: security-misconfiguration
+severity: medium
+confidence: low
+cwe:
+  - CWE-1004
+  - CWE-614
+owasp:
+  - "A02:2025"
+rationale: |
+  A cookie set without the httponly flag is readable by client-side
+  JavaScript, so any XSS elsewhere on the page can steal it directly
+  instead of merely acting within the page's own context; a cookie set
+  without the secure flag can be sent over plain HTTP, so anyone on the
+  network path can capture it in transit and hijack the session it
+  represents. This matters most for cookies carrying a session/auth token.
+  The engine has no cross-statement absence check, and PHP's parser has no
+  keyword-argument/options-array field synthesis, so it cannot inspect
+  whether the httponly/secure flags were actually passed — whether as PHP
+  8 named arguments or the PHP 7.3+ options-array form. Rather than try to
+  prove that negative, this rule fires unconditionally on any setcookie()
+  call and asks the reader to verify those flags are set, mirroring the
+  precedent set by ZS-CS-013 (C#'s HttpCookie) for the same underlying
+  limitation.
+description: |
+  Detects calls to setcookie(). Verify httponly and secure are explicitly
+  set to true (and samesite to an appropriate value) before relying on the
+  cookie.
+message: "setcookie() called — verify the httponly and secure flags are explicitly set to true"
+references:
+  - https://owasp.org/www-community/controls/SecureCookieAttribute
+  - https://www.php.net/manual/en/function.setcookie.php
+tags: [cookie, session, security-misconfiguration]
+match:
+  kind: call
+  callee: setcookie
+fix_suggestion: "Pass the options-array form: setcookie($name, $value, ['httponly' => true, 'secure' => true, 'samesite' => 'Strict']) (or the equivalent PHP 8 named arguments) instead of the legacy positional form."

@@ -1,0 +1,40 @@
+id: ZS-JS-030
+lifecycle: released
+name: child_process.execFile() Command Injection
+version: "1.0.0"
+language: javascript
+category: injection
+severity: high
+confidence: high
+cwe:
+  - CWE-78
+owasp:
+  - "A05:2025"
+rationale: |
+  child_process.execFile() is often reached for specifically because,
+  unlike exec(), it does not spawn a shell by default — so shell
+  metacharacters in an argument aren't reinterpreted. That protection
+  doesn't cover the whole surface, though: execFile()'s first argument is
+  the executable to run, so a tainted value there still lets the attacker
+  choose an arbitrary binary (or an interpreter such as sh/cmd.exe, which
+  reintroduces full shell injection once its own -c/-e argument is also
+  attacker-influenced). Sibling of ZS-JS-029 (spawn) — same class of risk,
+  reached via execFile's slightly different, callback-oriented API. This is
+  exploitable wherever a request parameter or form field reaches
+  execFile()'s command or argument list unsanitized.
+description: |
+  Detects calls to execFile() (child_process.execFile) where any argument
+  traces back to an untrusted source (intra-procedural taint tracking,
+  including a source expression used directly inline as the argument, not
+  only via a previously-assigned named variable).
+message: "execFile() called with a tainted argument — command injection / arbitrary program execution risk"
+references:
+  - https://owasp.org/www-community/attacks/Command_Injection
+  - https://nodejs.org/api/child_process.html#child_processexecfilefile-args-options-callback
+tags: [command-injection, injection, child-process]
+match:
+  kind: call
+  callee: execFile
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Never build the executable name or arguments from unsanitized input; validate against an allowlist, and never pass a shell interpreter (sh, cmd.exe) as the executable with a tainted script argument."
