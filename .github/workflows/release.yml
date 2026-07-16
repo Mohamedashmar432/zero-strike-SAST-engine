@@ -117,3 +117,34 @@ jobs:
           gh release create "${{ github.ref_name }}" zerostrike_* checksums.txt \
             --repo "${{ github.repository }}" \
             --title "${{ github.ref_name }}" --generate-notes
+
+      # Portal's /api/v1/downloads/zerostrike/latest/{os-arch} (what the portal's own
+      # onboarding UI tells users to curl in their CI) only ever serves binaries a prior
+      # admin call POSTed to /api/v1/admin/downloads/zerostrike — this repo's release
+      # never did that, so every "latest" download 404s until someone publishes manually.
+      # Closes that gap: log in as the portal's CI service account and publish all five.
+      - name: Publish binaries to the ZeroStrike portal
+        working-directory: dist
+        env:
+          PORTAL_URL: https://zero-strike-production.up.railway.app
+          PORTAL_ADMIN_EMAIL: ${{ secrets.ZS_PORTAL_ADMIN_EMAIL }}
+          PORTAL_ADMIN_PASSWORD: ${{ secrets.ZS_PORTAL_ADMIN_PASSWORD }}
+        run: |
+          token=$(curl -fsSL -X POST "$PORTAL_URL/api/v1/auth/login" \
+            -H 'Content-Type: application/json' \
+            -d "{\"email\":\"$PORTAL_ADMIN_EMAIL\",\"password\":\"$PORTAL_ADMIN_PASSWORD\"}" \
+            | jq -r '.access_token')
+
+          publish() {
+            echo "Publishing $1 as $2/$3..."
+            curl -fsSL -X POST "$PORTAL_URL/api/v1/admin/downloads/zerostrike" \
+              -H "Authorization: Bearer $token" \
+              -F "version=${{ github.ref_name }}" -F "os=$2" -F "arch=$3" -F "file=@$1"
+            echo
+          }
+
+          publish zerostrike_linux_amd64 linux amd64
+          publish zerostrike_linux_arm64 linux arm64
+          publish zerostrike_windows_amd64.exe windows amd64
+          publish zerostrike_darwin_amd64 darwin amd64
+          publish zerostrike_darwin_arm64 darwin arm64
