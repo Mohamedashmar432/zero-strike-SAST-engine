@@ -53,7 +53,8 @@ ZeroStrike takes the opposite bet: **one Go binary, four scanning modalities, on
 - **Optional path-sensitive taint analysis** — a CFG/DFG (control-flow / data-flow graph) layer for Python attaches an exact source→sink path to a finding when `--enable-graphs` is set.
 - **Indexed rule engine** — rules are pre-grouped by IR node kind and callee at startup, so matching is `O(nodes)` rather than `O(rules × nodes)`.
 - **Stable, content-based fingerprints** — every finding's `Fingerprint` is a hash of the rule ID, enclosing symbol, and normalized code snippet (deliberately excluding line/column), so it survives unrelated code churn — the same bug doesn't reopen as a "new" finding after a reformat.
-- **Three report formats** — JSON (flat or grouped), **SARIF 2.1.0** (drop-in for GitHub Code Scanning), and a self-contained HTML report.
+- **Taint-chain correlation** — findings in the same file that trace back to the same tainted source variable (e.g. one unsanitized input reaching both a path-traversal read and a command-injection sink) are linked via `Finding.Metadata["chain_id"/"chain_size"/"chain_rules"]`, surfaced in the HTML report as a single attack chain instead of unrelated line items.
+- **Three report formats** — JSON (flat or grouped), **SARIF 2.1.0** (drop-in for GitHub Code Scanning), and a self-contained HTML report — all three carry CWE/OWASP tags, rule rationale/description/remediation text, the matched code snippet, and taint source→sink context when available.
 - **Content-addressed caching** — parsed IR and computed findings are cached under `<root>/.zerostrike/cache/`, automatically invalidated on rule-set, engine version, or IR-schema changes. Cache failures degrade to a slower scan, never a wrong one.
 - **Allowlist-based suppression** — `.zs-allow.yaml` suppresses by exact fingerprint, by rule + path glob, or by rule alone.
 - **Deterministic exit codes** for CI gating: `0` clean, `1` findings present, `2` engine/upload error.
@@ -78,14 +79,14 @@ flowchart TD
         Analyzer -. "--enable-graphs (Python only)" .-> Graph["graph\nCFG / DFG\nreaching-definitions"]
         Graph -. "precise source→sink path" .-> Analyzer
         Analyzer --> Engine["engine\nindexed rule matcher\n(O(nodes), not O(rules×nodes))"]
-        Rules[("rules/data/&lt;lang&gt;/*.yaml\n185 embedded rules\n+ optional --rules dir")] --> Engine
+        Rules[("rules/data/&lt;lang&gt;/*.yaml\n262 embedded rules\n+ optional --rules dir")] --> Engine
     end
 
     Walker --> Secrets["scanner/secrets\nentropy-gated regex\n(pure Go, no CGo)"]
     Walker --> SCA["scanner/sca\nlockfile parse\n→ OSV.dev API"]
     Walker --> Framework["scanner/framework\nconfig-file checks\n(pure Go, no CGo)"]
 
-    Engine --> Findings["findings\nBuildFinding, Dedup,\nFingerprint, AllowList"]
+    Engine --> Findings["findings\nBuildFinding, Dedup,\nFingerprint, AllowList, Correlate"]
     Secrets --> Findings
     SCA --> Findings
     Framework --> Findings
@@ -108,7 +109,7 @@ Everything above the `SAST modality` box is shared infrastructure; everything in
 4. **Analyze** — `internal/analyzer` builds a symbol table (`internal/symboltable`) and runs a lightweight, file-scoped, regex-driven **taint pass** (`internal/analyzer/taint`) that classifies sources/sanitizers per language and tracks same-file call summaries. With `--enable-graphs` (Python only, currently), `internal/graph` builds a real CFG/DFG and attaches a precise source→sink path to taint-dependent findings.
 5. **Match** — `internal/engine` matches the IR against the active rule set. Rules are pre-indexed by node kind and callee at load time so a scan is `O(files × nodes)`, not `O(files × nodes × rules)`.
 6. **Scan (parallel modalities)** — independently of the SAST path, `internal/scanner/secrets`, `internal/scanner/sca`, and `internal/scanner/framework` each implement a common `Scanner` interface and run concurrently over the same file list, contributing their own findings.
-7. **Build findings** — `internal/findings` normalizes every hit from every modality into a common `core.Finding`, computes its stable content-hash `Fingerprint`, deduplicates exact repeats, and applies `.zs-allow.yaml` suppressions.
+7. **Build findings** — `internal/findings` normalizes every hit from every modality into a common `core.Finding`, computes its stable content-hash `Fingerprint`, deduplicates exact repeats, applies `.zs-allow.yaml` suppressions, then runs `findings.Correlate` to link same-file findings sharing a tainted source variable into an attack chain (`chain_id`/`chain_size`/`chain_rules` in `Finding.Metadata`).
 8. **Cache** — IR and per-file findings are cached under `<root>/.zerostrike/cache/`, keyed by file content hash plus a fingerprint of the active rule set, engine version, and IR schema — any of those changing invalidates the cache automatically. A cache miss or corrupt cache file never fails the scan, it just costs the re-parse.
 9. **Report** — `internal/report/{json,sarif,html}` renders the collected findings as flat or grouped JSON, GitHub-Code-Scanning-ready SARIF 2.1.0, or a self-contained HTML page.
 10. **(Optional) Upload** — if `--server`/`--token` are set, `internal/portal` registers the scan, uploads the JSON (and optionally HTML) report to a companion portal backend, and marks the scan `failed` if the pipeline errored — all as a strictly additive step that never blocks the local report.
@@ -117,15 +118,15 @@ Everything above the `SAST modality` box is shared infrastructure; everything in
 
 | Language | Grammar | Embedded rules | Example categories |
 |---|---|---|---|
-| Python | `tree-sitter-python` | 43 | injection, deserialization (`pickle`/`yaml.load`), SSRF, SSTI, crypto, framework debug flags |
-| JavaScript | `tree-sitter-javascript` | 32 | XSS, CORS misconfiguration, command injection (`spawn`/`execFile`/`fork`), path traversal, ReDoS, insecure crypto |
-| TypeScript | `tree-sitter-typescript` | 32 | injection, XSS, CORS misconfiguration, path traversal, insecure config |
-| Go | `tree-sitter-go` | 20 | command injection, path traversal, CORS misconfiguration, weak crypto, error handling |
-| C# | `tree-sitter-c-sharp` | 19 | injection, deserialization, weak crypto, SSRF, CORS/ASP.NET misconfig |
-| Java | `tree-sitter-java` | 24 | injection, XXE, deserialization, SSRF, CORS/Spring misconfig |
-| PHP | `tree-sitter-php` | 17 | injection, path traversal, XXE, SSRF, Laravel/`php.ini` misconfig |
+| Python | `tree-sitter-python` | 55 | injection, deserialization (`pickle`/`marshal`/`dill`/`yaml.load`), zip-slip, SSRF, SSTI, XXE, LDAP/NoSQL injection, log injection, crypto, framework debug flags |
+| JavaScript | `tree-sitter-javascript` | 46 | XSS, SSRF, SSTI (`ejs`/`pug`), NoSQL injection, prototype pollution, CORS misconfiguration, command injection (`spawn`/`execFile`/`fork`/`execSync`), path traversal, ReDoS, insecure crypto, JWT bypass |
+| TypeScript | `tree-sitter-typescript` | 46 | mirrors the JavaScript rule set 1:1 |
+| Go | `tree-sitter-go` | 28 | command injection, path traversal, TLS/cert-verification bypass, SSRF, insecure file permissions, format-string injection, weak crypto |
+| C# | `tree-sitter-c-sharp` | 27 | injection, deserialization (`TypeNameHandling`), XXE, XPath/LDAP injection, weak crypto, SSRF, JWT bypass, CORS/ASP.NET misconfig |
+| Java | `tree-sitter-java` | 34 | injection, XPath/LDAP/JNDI injection, unsafe reflection, deserialization (`XMLDecoder`/`XStream`/SnakeYAML), SSRF, CORS/Spring misconfig |
+| PHP | `tree-sitter-php` | 26 | injection (`eval`/`exec`/`passthru`/`assert`), mass assignment, path traversal, XXE, SSRF, weak crypto, Laravel/`php.ini` misconfig |
 
-Across all 185 rules, the most common categories are **injection** (47 rules combining `injection`/`command-injection` — SQLi, command injection, SSTI), **security misconfiguration** (32), **cryptography** (21 — weak hashes/ciphers/random), **path traversal** (14), **authentication** (13 — hardcoded credentials, JWT bypass), **XSS** (12), **SSRF** (9), and **open redirect**/**insecure deserialization** (7 each), plus smaller categories for XXE, format-string injection, ReDoS, and dangerous-function usage (`eval`, `exec`).
+Across all 262 rules, the most common categories are **injection** (SQLi, command injection, SSTI, XPath/LDAP/NoSQL/JNDI injection), **security misconfiguration**, **cryptography** (weak hashes/ciphers/random/TLS), **path traversal** (including zip-slip and arbitrary file write), **authentication** (hardcoded credentials, JWT bypass), **XSS**, **SSRF**, **insecure deserialization**, plus smaller categories for XXE, prototype pollution, unsafe reflection, format-string injection, log injection, mass assignment, ReDoS, and dangerous-function usage (`eval`, `exec`).
 
 Layered on top, independent of language parsing:
 
@@ -238,13 +239,17 @@ Both commands accept a deprecated, silently-ignored `--project-id` (kept as a no
   "OWASP": ["A05:2025"],
   "Fingerprint": "9a3f2c1b7e5d4a10",
   "Rationale": "eval() compiles and executes its argument as arbitrary Python source...",
-  "Remediation": "Use ast.literal_eval() instead of eval() when parsing user data."
+  "Description": "Detects calls to the eval() builtin. The rule does not perform taint tracking...",
+  "Remediation": "Use ast.literal_eval() instead of eval() when parsing user data.",
+  "Metadata": { "chain_id": "3d93098bb583", "chain_size": "2", "chain_source": "cmd", "chain_rules": "ZS-PY-012,ZS-PY-013" }
 }
 ```
 
-**SARIF 2.1.0** — one `sarifRule` per distinct rule ID (with `fullDescription`/`help` built from the rule's rationale and remediation text), CWE/OWASP formatted as SARIF taxonomy tags, and a `partialFingerprints["zerostrikeFingerprint/v1"]` carrying the same stable fingerprint — designed to upload directly via `github/codeql-action/upload-sarif`.
+`Metadata`'s `chain_*` keys are only present when `findings.Correlate` linked this finding to others in the same file via a shared tainted source variable (see [Key Features](#key-features)).
 
-**HTML** — a single self-contained report file for humans, groupable the same way as JSON.
+**SARIF 2.1.0** — one `sarifRule` per distinct rule ID (with `fullDescription`/`help` built from the rule's rationale, remediation, and full reference list), CWE/OWASP formatted as SARIF taxonomy tags, a `region.snippet` carrying the matched code, and a `partialFingerprints["zerostrikeFingerprint/v1"]` carrying the same stable fingerprint — designed to upload directly via `github/codeql-action/upload-sarif`.
+
+**HTML** — a single self-contained report file for humans, groupable the same way as JSON, with CWE/OWASP/category/confidence tags, the matched code snippet, taint source→sink flow, and taint-chain badges rendered per finding.
 
 ## Writing Custom Rules
 
@@ -345,7 +350,7 @@ go build -o zerostrike-bench ./cmd/zerostrike-bench
   --json-out benchmark-report.json --md-out accuracy-report.md
 ```
 
-The CI `accuracy` job runs this on every push and fails the build if recall drops below 90% or any false positive appears in the corpus. Documented v1 gaps: three Python taint-gated rules pending same-file taint fixes, SCA limited to npm/Go/Maven (no Ruby/Bundler yet), approximate Maven version-range resolution, and a dependency on the live OSV.dev API for SCA test cases.
+The CI `accuracy` job runs this on every push and fails the build if recall drops below 90% or any false positive appears in the corpus. Current corpus result: **TP=299, FP=0, FN=0 — 100% precision/recall**. Documented v1 gaps: three Python taint-gated rules pending same-file taint fixes, SCA limited to npm/Go/Maven (no Ruby/Bundler yet), approximate Maven version-range resolution, and a dependency on the live OSV.dev API for SCA test cases.
 
 ## How ZeroStrike Compares
 
