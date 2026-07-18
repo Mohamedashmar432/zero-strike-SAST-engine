@@ -1,0 +1,38 @@
+id: ZS-GO-025
+lifecycle: released
+name: exec.CommandContext Command Injection
+version: "1.0.0"
+language: go
+category: injection
+severity: high
+confidence: high
+cwe:
+  - CWE-78
+owasp:
+  - "A05:2025"
+rationale: |
+  exec.CommandContext() is the context-aware twin of exec.Command() and
+  carries exactly the same injection risk ZS-GO-001 covers: the command
+  runs without an intervening shell, so the serious exploitation paths
+  are an attacker controlling the program name itself (arbitrary binary
+  execution) or a tainted argument reaching a program that interprets it
+  dangerously — most notably exec.CommandContext(ctx, "sh", "-c",
+  tainted), which reintroduces full shell injection. Because idiomatic
+  server code favors the Context variant for cancellation and timeouts,
+  omitting it would leave the most common form of shelling out in HTTP
+  handlers completely unflagged.
+description: |
+  exec.CommandContext() runs an external OS command, flagged when an
+  argument traces back to an untrusted source (intra-procedural taint
+  tracking). Sibling of ZS-GO-001 (exec.Command); the callee match is
+  exact, so each variant needs its own rule.
+message: "exec.CommandContext() detected with a tainted argument — validate/allowlist the command and avoid passing user input to the shell"
+references:
+  - https://owasp.org/www-community/attacks/Command_Injection
+tags: [command-injection, injection, exec]
+match:
+  kind: call
+  callee: exec.CommandContext
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Use a fixed executable path and pass user data only as validated, individually-quoted arguments, never as the command itself."

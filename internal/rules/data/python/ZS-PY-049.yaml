@@ -1,0 +1,33 @@
+id: ZS-PY-049
+lifecycle: released
+name: Insecure pickle.load Deserialization
+version: "1.0.0"
+language: python
+category: deserialization
+severity: critical
+confidence: high
+cwe:
+  - CWE-502
+owasp:
+  - "A08:2025"
+rationale: |
+  pickle.load() reads a pickle stream from a file object and, exactly like
+  pickle.loads(), will invoke any importable callable embedded via the
+  __reduce__ protocol during deserialization. Loading a pickle file that an
+  attacker could write or replace — an upload, a shared cache directory, a
+  model checkpoint fetched over the network — grants arbitrary code
+  execution in the process the moment the file is opened and loaded.
+description: |
+  Detects calls to pickle.load() (the file-object variant). Exact-match
+  sibling to ZS-PY-002, which covers pickle.loads() on byte strings; the
+  two callees are matched independently and do not overlap. No taint
+  tracking is applied — every call is reported.
+message: "Insecure deserialization via pickle.load() on a file — use a safe format like JSON for untrusted files"
+references:
+  - https://docs.python.org/3/library/pickle.html#pickle-inst
+  - https://cwe.mitre.org/data/definitions/502.html
+tags: [deserialization, rce, pickle]
+match:
+  kind: call
+  callee: pickle.load
+fix_suggestion: "Store data as JSON, or verify an HMAC signature over the file before calling pickle.load()."

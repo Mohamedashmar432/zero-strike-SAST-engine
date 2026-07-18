@@ -1,0 +1,39 @@
+id: ZS-JAVA-027
+lifecycle: released
+name: JNDI Injection (Context.lookup)
+version: "1.0.0"
+language: java
+category: injection
+severity: critical
+confidence: medium
+cwe:
+  - CWE-74
+owasp:
+  - "A05:2025"
+rationale: |
+  Passing attacker-influenced input to Context.lookup() lets the attacker
+  supply a JNDI URL such as ldap://attacker.example/x or rmi://attacker/x,
+  causing the server to connect to an attacker-controlled endpoint and — on
+  vulnerable JVM/configuration combinations — load and instantiate a remote
+  object factory, which is full remote code execution. This is the
+  log4shell (CVE-2021-44228) vulnerability class: a single tainted lookup
+  name is enough, no other injection point is required.
+description: |
+  Context.lookup() is called with a name that traces back to an untrusted
+  source (intra-procedural taint tracking), indicating an
+  attacker-controlled JNDI lookup target.
+
+  Known limitation: the callee is a receiver-variable method call, so this
+  rule only fires when the javax.naming.Context variable is conventionally
+  named "ctx". A companion rule for other receiver names is a follow-up.
+message: "ctx.lookup() called with a tainted name — never pass user input to JNDI lookups (log4shell-class RCE)"
+references:
+  - https://cwe.mitre.org/data/definitions/74.html
+  - https://owasp.org/www-project-top-ten/
+tags: [jndi, injection, rce]
+match:
+  kind: call
+  callee: ctx.lookup
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Resolve JNDI names from a hardcoded allowlist or configuration, never from request data; additionally disable remote codebases (com.sun.jndi.ldap.object.trustURLCodebase=false)."

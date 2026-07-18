@@ -23,7 +23,12 @@ type DependencyInput struct {
 }
 
 // BuildFinding converts a MatchResult into a core.Finding with a stable cross-run Fingerprint.
-func BuildFinding(result engine.MatchResult, mc *engine.MatchContext) core.Finding {
+//
+// source is the raw file content the match was found in. It's needed because node.Text is only
+// ever populated for tree-sitter leaf nodes (see IRNode.Text's doc comment) - every rule in this
+// engine matches on a compound node (call, assignment, try, ...), so node.Text is empty for every
+// real match and the source lines are the only way to recover a snippet.
+func BuildFinding(result engine.MatchResult, mc *engine.MatchContext, source []byte) core.Finding {
 	node := result.Node
 	loc := node.Location
 	if mc.File != nil && mc.File.IR != nil {
@@ -35,11 +40,16 @@ func BuildFinding(result engine.MatchResult, mc *engine.MatchContext) core.Findi
 		enclosingSym = enclosingSymbolName(loc, mc.File.Symbols)
 	}
 
-	fp := computeFingerprint(result.Rule.ID, enclosingSym, node.Text)
+	snippet := node.Text
+	if snippet == "" {
+		snippet = sourceLines(source, loc.StartLine, loc.EndLine)
+	}
+
+	fp := computeFingerprint(result.Rule.ID, enclosingSym, snippet)
 
 	var evidence []core.Evidence
-	if node.Text != "" {
-		evidence = []core.Evidence{{Snippet: node.Text, StartLine: loc.StartLine, EndLine: loc.EndLine}}
+	if snippet != "" {
+		evidence = []core.Evidence{{Snippet: snippet, StartLine: loc.StartLine, EndLine: loc.EndLine}}
 	}
 
 	lang := core.LangUnknown
@@ -85,6 +95,7 @@ func BuildFinding(result engine.MatchResult, mc *engine.MatchContext) core.Findi
 		OWASP:        result.Rule.OWASP,
 		References:   result.Rule.References,
 		Rationale:    result.Rule.Rationale,
+		Description:  result.Rule.Description,
 		Remediation:  result.Rule.FixSuggestion,
 		Kind:         core.FindingKindSAST,
 		TaintContext: taintCtx,
@@ -228,6 +239,22 @@ func computeFingerprint(ruleID, enclosingSym, snippet string) string {
 	normalized := strings.Join(strings.Fields(strings.TrimSpace(snippet)), " ")
 	h := sha256.Sum256([]byte(ruleID + "|" + enclosingSym + "|" + normalized))
 	return hex.EncodeToString(h[:])[:16]
+}
+
+// sourceLines returns source[startLine:endLine] (1-indexed, inclusive) joined back with "\n", or
+// "" if the range is invalid/out of bounds - a bad line range must degrade to no snippet, not panic.
+func sourceLines(source []byte, startLine, endLine int) string {
+	if len(source) == 0 || startLine < 1 || endLine < startLine {
+		return ""
+	}
+	lines := strings.Split(string(source), "\n")
+	if startLine > len(lines) {
+		return ""
+	}
+	if endLine > len(lines) {
+		endLine = len(lines)
+	}
+	return strings.Join(lines[startLine-1:endLine], "\n")
 }
 
 func enclosingSymbolName(loc core.Location, syms symboltable.SymbolTable) string {

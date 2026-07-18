@@ -1,0 +1,32 @@
+id: ZS-CS-022
+lifecycle: released
+name: Weak Cipher (DES)
+version: "1.0.0"
+language: csharp
+category: cryptography
+severity: medium
+confidence: high
+cwe:
+  - CWE-327
+owasp:
+  - "A04:2025"
+rationale: |
+  DES uses a 56-bit key, which has been brute-forceable with commodity
+  hardware since the late 1990s — dedicated crackers and cloud GPU rigs
+  recover a DES key in hours, so any data protected by DES.Create() should
+  be considered readable by a motivated attacker. Its 64-bit block size
+  additionally exposes block-collision attacks (Sweet32) on long-lived
+  connections or large ciphertexts. Data encrypted today with DES fails
+  every modern compliance baseline (PCI DSS, NIST SP 800-131A).
+description: |
+  Detects calls to DES.Create(). The weakness is in the algorithm itself,
+  so every use for confidentiality is flagged regardless of key or mode.
+message: "Weak cipher DES detected — use AES (Aes.Create()) instead"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+  - https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.des
+tags: [weak-crypto, des, cipher]
+match:
+  kind: call
+  callee: DES.Create
+fix_suggestion: "Replace DES.Create() with Aes.Create() (AES-256, GCM or CBC+HMAC) and re-encrypt existing data."

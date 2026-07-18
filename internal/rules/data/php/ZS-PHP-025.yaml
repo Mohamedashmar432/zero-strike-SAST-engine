@@ -1,0 +1,38 @@
+id: ZS-PHP-025
+lifecycle: released
+name: preg_replace() /e Modifier Code Execution
+version: "1.0.0"
+language: php
+category: dangerous-functions
+severity: high
+confidence: high
+cwe:
+  - CWE-95
+owasp:
+  - "A05:2025"
+rationale: |
+  The PCRE /e modifier makes preg_replace() evaluate the replacement
+  string as PHP code after substituting in the matched text, so any
+  subject string the pattern matches flows into an implicit eval() —
+  attacker input matched by the pattern becomes attacker code. The
+  modifier was deprecated in PHP 5.5 and removed in PHP 7.0 precisely
+  because of this, but the pattern still appears in legacy codebases and
+  is a reliable RCE primitive wherever such code runs on an old runtime.
+description: |
+  Detects preg_replace() calls whose pattern literal carries the /e
+  modifier (a literal of the form "/.../<modifiers>" where the trailing
+  modifier list contains e). Patterns built dynamically at runtime are
+  not inspected, and other delimiters than / are not matched by this
+  rule's literal pattern check. No taint tracking is applied — /e is
+  dangerous regardless of where the subject comes from.
+message: "preg_replace() uses the /e (eval) modifier — replacement is executed as PHP code; use preg_replace_callback() instead"
+references:
+  - https://www.php.net/manual/en/reference.pcre.pattern.modifiers.php
+  - https://cwe.mitre.org/data/definitions/95.html
+tags: [code-injection, preg_replace, rce]
+match:
+  kind: call
+  callee: preg_replace
+  filters:
+    - argument_literal_matches: "^/.*/[a-df-z]*e[a-df-z]*$"
+fix_suggestion: "Drop the /e modifier and use preg_replace_callback() with a real callback function; this also unblocks upgrading past PHP 7.0, where /e is a fatal error."

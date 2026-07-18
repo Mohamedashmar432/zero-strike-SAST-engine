@@ -1,0 +1,36 @@
+id: ZS-JS-044
+lifecycle: released
+name: Weak Symmetric Cipher (crypto.createCipheriv)
+version: "1.0.0"
+language: javascript
+category: cryptography
+severity: medium
+confidence: high
+cwe:
+  - CWE-327
+owasp:
+  - "A04:2025"
+rationale: |
+  DES, 3DES (des-ede3), RC2, RC4, and Blowfish are broken or obsolete
+  ciphers: DES's 56-bit key is brute-forceable in hours, RC4 keystream
+  biases allow plaintext recovery, and the 64-bit block size of
+  DES/3DES/Blowfish enables birthday-bound attacks like Sweet32 on
+  long-lived connections. Data encrypted with them today should be treated
+  as recoverable by a resourced attacker, which defeats the purpose of
+  encrypting it at all.
+description: |
+  Detects crypto.createCipheriv() called with a weak algorithm name
+  (des*, des-ede3*, rc4*, rc2*, bf*) as a string literal. Algorithm names
+  supplied via variables or configuration are not resolved. Modern
+  algorithms such as aes-256-gcm do not fire this rule.
+message: "crypto.createCipheriv() called with a weak cipher (DES/3DES/RC4/RC2/Blowfish) — use aes-256-gcm instead"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+  - https://sweet32.info/
+tags: [cryptography, weak-cipher, des, rc4]
+match:
+  kind: call
+  callee: crypto.createCipheriv
+  filters:
+    - argument_literal_matches: "(?i)^(des|des-ede3|rc4|rc2|bf)(-|$)"
+fix_suggestion: "Switch to an authenticated modern cipher such as aes-256-gcm (or chacha20-poly1305) with a random per-message IV."

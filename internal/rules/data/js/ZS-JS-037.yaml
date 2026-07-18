@@ -1,0 +1,36 @@
+id: ZS-JS-037
+lifecycle: released
+name: Server-Side Request Forgery (fetch)
+version: "1.0.0"
+language: javascript
+category: ssrf
+severity: high
+confidence: medium
+cwe:
+  - CWE-918
+owasp:
+  - "A01:2025"
+rationale: |
+  The global fetch() API (built into Node.js 18+ and every browser) sends a
+  request to whatever URL it is given. When that URL is derived from request
+  input, the attacker chooses the destination: internal-only services
+  (localhost admin panels, cloud metadata endpoints such as
+  169.254.169.254), hosts inside the network perimeter, or arbitrary
+  external systems — turning the server's network position and credentials
+  against it for port scanning, metadata credential theft, and pivoting.
+description: |
+  Detects calls to the bare global fetch() where an argument traces back to
+  an untrusted source (intra-procedural taint tracking). Only the bare
+  identifier fetch(...) is matched, not member calls such as
+  client.fetch(...).
+message: "fetch() called with a tainted URL — validate the target against an allowlist to prevent SSRF"
+references:
+  - https://owasp.org/Top10/A10_2021-Server-Side_Request_Forgery_%28SSRF%29/
+  - https://cwe.mitre.org/data/definitions/918.html
+tags: [ssrf, fetch, http-client]
+match:
+  kind: call
+  callee: fetch
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Validate the target URL against an allowlist of hosts and schemes before passing it to fetch(); never fetch a raw user-supplied URL."

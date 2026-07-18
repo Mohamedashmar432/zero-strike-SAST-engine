@@ -1,0 +1,35 @@
+id: ZS-PY-055
+lifecycle: released
+name: Log Injection of Tainted Value
+version: "1.0.0"
+language: python
+category: logging
+severity: medium
+confidence: low
+cwe:
+  - CWE-117
+owasp:
+  - "A09:2025"
+rationale: |
+  Writing unsanitized user input to a log lets an attacker embed CR/LF
+  sequences and ANSI escapes that forge new log lines, corrupt structured
+  log parsing, or hide malicious activity behind fabricated entries.
+  Downstream log viewers and SIEM pipelines that trust log integrity can be
+  misled during incident response, and crafted payloads may exploit
+  log-processing tooling itself.
+description: |
+  Detects logging.info() calls whose argument traces back to an untrusted
+  source (intra-procedural taint tracking). Only logging.info() is covered
+  by this rule — other levels are not yet detected. Complements ZS-PY-022,
+  which flags credential-shaped identifiers regardless of taint.
+message: "Tainted value passed to logging.info() — sanitize newlines/control characters before logging user input"
+references:
+  - https://cwe.mitre.org/data/definitions/117.html
+  - https://owasp.org/www-community/attacks/Log_Injection
+tags: [logging, log-injection, injection]
+match:
+  kind: call
+  callee: logging.info
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Strip or escape \\r/\\n and control characters from user input before logging, or log via structured fields (extra=...) that encode values."

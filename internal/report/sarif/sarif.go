@@ -84,8 +84,16 @@ type sarifArtifact struct {
 }
 
 type sarifRegion struct {
-	StartLine   int `json:"startLine"`
-	StartColumn int `json:"startColumn,omitempty"`
+	StartLine   int                   `json:"startLine"`
+	StartColumn int                   `json:"startColumn,omitempty"`
+	EndLine     int                   `json:"endLine,omitempty"`
+	Snippet     *sarifArtifactContent `json:"snippet,omitempty"`
+}
+
+// sarifArtifactContent is the SARIF artifactContent object (spec §3.3),
+// used for region.snippet.
+type sarifArtifactContent struct {
+	Text string `json:"text"`
 }
 
 func (r *sarifReporter) Render(rep *report.Report, dest io.Writer) error {
@@ -106,13 +114,25 @@ func (r *sarifReporter) Render(rep *report.Report, dest io.Writer) error {
 				rule.FullDescription = &sarifMsg{Text: f.Rationale}
 			}
 
+			helpText := ""
 			switch {
 			case f.Rationale != "" && f.Remediation != "":
-				rule.Help = &sarifMsg{Text: f.Rationale + "\n\nRemediation: " + f.Remediation}
+				helpText = f.Rationale + "\n\nRemediation: " + f.Remediation
 			case f.Rationale != "":
-				rule.Help = &sarifMsg{Text: f.Rationale}
+				helpText = f.Rationale
 			case f.Remediation != "":
-				rule.Help = &sarifMsg{Text: f.Remediation}
+				helpText = f.Remediation
+			}
+			// helpUri holds only one URL, so the rest of the rule's
+			// references would be silently dropped without this.
+			if len(f.References) > 1 {
+				helpText += "\n\nReferences:"
+				for _, ref := range f.References {
+					helpText += "\n- " + ref
+				}
+			}
+			if helpText != "" {
+				rule.Help = &sarifMsg{Text: helpText}
 			}
 
 			if len(f.References) > 0 {
@@ -150,6 +170,14 @@ func (r *sarifReporter) Render(rep *report.Report, dest io.Writer) error {
 			fingerprints = map[string]string{"zerostrikeFingerprint/v1": f.Fingerprint}
 		}
 
+		region := sarifRegion{StartLine: line, StartColumn: col}
+		if f.Location.EndLine > line {
+			region.EndLine = f.Location.EndLine
+		}
+		if len(f.Evidence) > 0 && f.Evidence[0].Snippet != "" {
+			region.Snippet = &sarifArtifactContent{Text: f.Evidence[0].Snippet}
+		}
+
 		results = append(results, sarifResult{
 			RuleID:    f.RuleID,
 			RuleIndex: ruleIndex[f.RuleID],
@@ -161,7 +189,7 @@ func (r *sarifReporter) Render(rep *report.Report, dest io.Writer) error {
 						URI:       relURI(rep.RootPath, f.Location.File),
 						URIBaseID: "%SRCROOT%",
 					},
-					Region: sarifRegion{StartLine: line, StartColumn: col},
+					Region: region,
 				},
 			}},
 			PartialFingerprints: fingerprints,

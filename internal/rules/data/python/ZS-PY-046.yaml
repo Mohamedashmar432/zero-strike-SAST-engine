@@ -1,0 +1,34 @@
+id: ZS-PY-046
+lifecycle: released
+name: Unsafe zipfile extractall (Zip-Slip)
+version: "1.0.0"
+language: python
+category: path-traversal
+severity: high
+confidence: medium
+cwe:
+  - CWE-22
+owasp:
+  - "A01:2025"
+rationale: |
+  zip_ref.extractall() writes archive members to disk using the names stored
+  inside the ZIP file. Although zipfile strips leading slashes and drive
+  letters, crafted member names containing ../ sequences have repeatedly led
+  to Zip-Slip path-traversal issues in applications that post-process the
+  extracted tree, and extracting an untrusted archive can still plant
+  unexpected files (symlinks, huge decompression bombs) in the target
+  directory.
+description: |
+  Detects calls to extractall() on a zipfile object named "zip_ref" (the
+  conventional receiver for zipfile.ZipFile results). The rule is purely
+  syntactic — archive content cannot be modeled by taint tracking, so every
+  call is reported regardless of where the archive came from.
+message: "zip_ref.extractall() on an untrusted archive risks Zip-Slip — validate member names before extraction"
+references:
+  - https://cwe.mitre.org/data/definitions/22.html
+  - https://security.snyk.io/research/zip-slip-vulnerability
+tags: [path-traversal, zip-slip, zipfile]
+match:
+  kind: call
+  callee: zip_ref.extractall
+fix_suggestion: "Iterate zip_ref.infolist(), reject names that escape the target directory (os.path.realpath check), then extract members individually."

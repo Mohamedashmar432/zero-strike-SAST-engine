@@ -1,0 +1,38 @@
+id: ZS-GO-028
+lifecycle: released
+name: Sensitive Value Logged (log.Printf)
+version: "1.0.0"
+language: go
+category: logging
+severity: medium
+confidence: low
+cwe:
+  - CWE-532
+owasp:
+  - "A09:2025"
+rationale: |
+  Passwords, API keys, and tokens written to application logs persist in
+  log files, log-aggregation platforms, and monitoring dashboards that
+  are often readable by a much broader audience (ops staff, third-party
+  log SaaS, anyone with log-storage access) than the credential's
+  intended scope. Once logged, the secret is effectively exposed for as
+  long as log retention and backups keep it around, which is typically
+  far longer than an application's primary datastore.
+description: |
+  A variable whose name suggests sensitive data (password, passwd,
+  secret, token, apikey, api_key) is passed directly to log.Printf().
+  Purely name-based — no taint tracking and no value inspection, so a
+  variable that merely sounds sensitive (e.g. tokenCount) also matches;
+  confidence is low accordingly. Only log.Printf() is covered — other
+  log functions (Println, Fatalf, slog, zap, logrus) are not yet
+  detected by this single rule.
+message: "Sensitive-looking value passed to log.Printf() — avoid logging credentials"
+references:
+  - https://cwe.mitre.org/data/definitions/532.html
+tags: [logging, information-disclosure]
+match:
+  kind: call
+  callee: log.Printf
+  filters:
+    - argument_identifier_matches: "(?i)(password|passwd|secret|token|apikey|api_key)"
+fix_suggestion: "Redact or omit sensitive values before logging; log an identifier instead of the secret itself."

@@ -1,0 +1,41 @@
+id: ZS-PHP-024
+lifecycle: released
+name: Arbitrary File Write via file_put_contents()
+version: "1.0.0"
+language: php
+category: path-traversal
+severity: high
+confidence: medium
+cwe:
+  - CWE-22
+  - CWE-73
+owasp:
+  - "A01:2025"
+rationale: |
+  file_put_contents() with attacker-influenced input is a write-side
+  path traversal: a tainted destination path lets the attacker drop or
+  overwrite any file the web server user can write — most critically a
+  .php file inside the docroot, which converts the file write directly
+  into remote code execution — and a tainted content argument written to
+  a server-controlled but web-reachable path (logs, caches, exports) can
+  plant executable payloads or poison stored data. Upload handlers,
+  logging endpoints, and "save settings" features that build the target
+  path from request data are the usual offenders.
+description: |
+  Detects calls to file_put_contents() where an argument (path or
+  content) traces back to an untrusted source (intra-procedural taint
+  tracking, file-scoped). The tainted_argument filter cannot distinguish
+  which argument is tainted, so tainted-content-to-fixed-path writes are
+  also flagged; those are lower risk but still worth review when the
+  destination is web-reachable. Fixed path and content are not flagged.
+message: "file_put_contents() called with tainted input — arbitrary file write; validate the destination path and never derive it from request data"
+references:
+  - https://cwe.mitre.org/data/definitions/73.html
+  - https://owasp.org/www-community/attacks/Path_Traversal
+tags: [path-traversal, file-write, file_put_contents]
+match:
+  kind: call
+  callee: file_put_contents
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Write only to fixed, non-web-accessible directories; derive filenames server-side (e.g. random IDs), never from request input, and verify realpath() of the target stays inside the intended base directory."

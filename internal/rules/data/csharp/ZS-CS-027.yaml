@@ -1,0 +1,39 @@
+id: ZS-CS-027
+lifecycle: released
+name: Server-Side Request Forgery (WebClient.DownloadString)
+version: "1.0.0"
+language: csharp
+category: ssrf
+severity: high
+confidence: medium
+cwe:
+  - CWE-918
+owasp:
+  - "A01:2025"
+rationale: |
+  Passing a request-derived URL straight to client.DownloadString() lets an
+  attacker redirect the server's own outbound request to internal-only
+  services, loopback addresses, or cloud metadata endpoints (e.g.
+  169.254.169.254) that are unreachable from outside the network — and
+  DownloadString returns the response body, so whatever the internal
+  service answers is handed back to the attacker. Webhook registration,
+  link previews, and import-by-URL features are the classic exploitable
+  surfaces.
+description: |
+  Detects calls to client.DownloadString() where the URL argument traces
+  back to an untrusted source (intra-procedural taint tracking). The
+  callee match relies on the conventional receiver name "client" for a
+  WebClient — an instance held under a different variable name will not
+  be matched, the same receiver-name tradeoff accepted for
+  httpClient.GetAsync (ZS-CS-016).
+message: "client.DownloadString() called with a tainted URL — validate and allowlist URLs before use"
+references:
+  - https://owasp.org/www-community/attacks/Server_Side_Request_Forgery
+  - https://learn.microsoft.com/en-us/dotnet/api/system.net.webclient.downloadstring
+tags: [ssrf, webclient]
+match:
+  kind: call
+  callee: client.DownloadString
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Validate the URL against an allowlist. Reject internal/private IPs and non-http(s) schemes before fetching; prefer HttpClient with a vetted handler."

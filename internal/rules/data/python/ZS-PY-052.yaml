@@ -1,0 +1,35 @@
+id: ZS-PY-052
+lifecycle: released
+name: Paramiko AutoAddPolicy Host-Key Bypass
+version: "1.0.0"
+language: python
+category: security-misconfiguration
+severity: medium
+confidence: high
+cwe:
+  - CWE-295
+owasp:
+  - "A02:2025"
+rationale: |
+  ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy()) makes the SSH
+  client silently accept and store any unknown host key, defeating the one
+  mechanism SSH has for authenticating the server. A machine-in-the-middle
+  can present its own key on first contact (or after a spoofed "key
+  changed" event) and transparently capture credentials and session
+  traffic. This is the SSH equivalent of disabling TLS certificate checks.
+description: |
+  Detects calls to set_missing_host_key_policy() on a client object named
+  "ssh" (the conventional receiver for paramiko.SSHClient()) where an
+  argument identifier matches AutoAddPolicy. RejectPolicy and WarningPolicy
+  do not fire the rule.
+message: "paramiko AutoAddPolicy accepts any SSH host key — pin known hosts with load_system_host_keys() and RejectPolicy"
+references:
+  - https://docs.paramiko.org/en/latest/api/client.html#paramiko.client.SSHClient.set_missing_host_key_policy
+  - https://cwe.mitre.org/data/definitions/295.html
+tags: [misconfiguration, ssh, paramiko, host-key]
+match:
+  kind: call
+  callee: ssh.set_missing_host_key_policy
+  filters:
+    - argument_identifier_matches: "^AutoAddPolicy$"
+fix_suggestion: "Load known host keys (ssh.load_system_host_keys()) and use paramiko.RejectPolicy(); distribute host keys out of band instead of auto-accepting them."

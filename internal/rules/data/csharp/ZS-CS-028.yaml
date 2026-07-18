@@ -1,0 +1,34 @@
+id: ZS-CS-028
+lifecycle: released
+name: JWT Signature Validation Disabled
+version: "1.0.0"
+language: csharp
+category: authentication
+severity: critical
+confidence: high
+cwe:
+  - CWE-347
+owasp:
+  - "A07:2025"
+rationale: |
+  Setting TokenValidationParameters.RequireSignedTokens or
+  ValidateIssuerSigningKey to false tells the JWT middleware to accept
+  tokens whose signature is missing or whose signing key was never
+  verified. An attacker can then mint their own token — any username, any
+  role, any expiry — and the application will treat it as authentic,
+  which is a complete authentication bypass. These flags exist for test
+  harnesses and have no safe production use.
+description: |
+  Detects assignments of the literal false to RequireSignedTokens or
+  ValidateIssuerSigningKey (including object-initializer members, which
+  lower to assignment nodes).
+message: "RequireSignedTokens/ValidateIssuerSigningKey set to false disables JWT signature validation — remove the override"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html
+  - https://learn.microsoft.com/en-us/dotnet/api/microsoft.identitymodel.tokens.tokenvalidationparameters
+tags: [jwt, authentication, signature-validation]
+match:
+  kind: assignment
+  lhs_identifier: "(RequireSignedTokens|ValidateIssuerSigningKey)$"
+  rhs_literal: "^false$"
+fix_suggestion: "Keep RequireSignedTokens and ValidateIssuerSigningKey at true and configure IssuerSigningKey with the real signing key."

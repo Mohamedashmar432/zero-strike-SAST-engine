@@ -1,0 +1,38 @@
+id: ZS-CS-024
+lifecycle: released
+name: LDAP Injection via DirectorySearcher.Filter
+version: "1.0.0"
+language: csharp
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-90
+owasp:
+  - "A05:2025"
+rationale: |
+  Assigning a filter string built from attacker-controlled data to
+  DirectorySearcher.Filter lets an attacker inject LDAP filter
+  metacharacters (*, (, ), \, |, &) to rewrite the query — matching every
+  directory entry instead of one, bypassing login checks that "succeed if
+  a match is found", or enumerating attributes and users that should be
+  hidden. Any login, lookup, or search feature that splices a request
+  value into the filter is exploitable; the fix is to escape the value per
+  RFC 4515 before it reaches the filter string.
+description: |
+  Detects assignments to a .Filter property where the right-hand side
+  traces back to an untrusted source (intra-procedural taint tracking).
+  The dotted-LHS anchor (".Filter") keeps bare variables named Filter out
+  of scope; a property named Filter on a non-LDAP object assigned tainted
+  data would still match.
+message: "DirectorySearcher.Filter assigned a tainted value — escape LDAP filter metacharacters before use"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/LDAP_Injection_Prevention_Cheat_Sheet.html
+  - https://learn.microsoft.com/en-us/dotnet/api/system.directoryservices.directorysearcher.filter
+tags: [ldap, injection, directorysearcher]
+match:
+  kind: assignment
+  lhs_identifier: "\\.Filter$"
+  filters:
+    - tainted_rhs: true
+fix_suggestion: "Escape user input per RFC 4515 (encode * ( ) \\ and NUL) before building the filter, e.g. \"(uid=\" + LdapEscape(user) + \")\"."

@@ -1,0 +1,33 @@
+id: ZS-PY-048
+lifecycle: released
+name: Insecure dill.loads Deserialization
+version: "1.0.0"
+language: python
+category: deserialization
+severity: critical
+confidence: high
+cwe:
+  - CWE-502
+owasp:
+  - "A08:2025"
+rationale: |
+  dill extends pickle to serialize almost any Python object, including
+  lambdas, closures, and full class definitions, and inherits pickle's
+  __reduce__ mechanism verbatim. dill.loads() on attacker-controlled bytes
+  therefore executes arbitrary code during deserialization — often more
+  easily than plain pickle, since dill also reconstructs code objects. Any
+  cache entry, queue message, or uploaded blob fed to dill.loads() is a
+  remote-code-execution vector.
+description: |
+  Detects calls to dill.loads(). The rule does not trace the byte source
+  back to a taint origin, so every call is reported regardless of whether
+  the input is verified as trusted. Sibling to ZS-PY-002 (pickle.loads).
+message: "Insecure deserialization via dill.loads() — attacker-controlled bytes execute code, use a safe format like JSON"
+references:
+  - https://cwe.mitre.org/data/definitions/502.html
+  - https://github.com/uqfoundation/dill#major-features
+tags: [deserialization, rce, dill]
+match:
+  kind: call
+  callee: dill.loads
+fix_suggestion: "Replace dill with json for data interchange, or sign payloads (HMAC) and verify before deserializing."

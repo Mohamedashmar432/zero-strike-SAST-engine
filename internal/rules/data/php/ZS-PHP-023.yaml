@@ -1,0 +1,38 @@
+id: ZS-PHP-023
+lifecycle: released
+name: Path Traversal via fopen()
+version: "1.0.0"
+language: php
+category: path-traversal
+severity: high
+confidence: medium
+cwe:
+  - CWE-22
+owasp:
+  - "A01:2025"
+rationale: |
+  fopen() with an attacker-controlled path lets the attacker walk out of
+  the intended directory with ../ sequences and open any file the web
+  server user can read or write — /etc/passwd, application source with
+  embedded credentials, session files — and because PHP stream wrappers
+  are resolved by fopen(), a tainted path can also be escalated to SSRF
+  (http://) or filter-based source disclosure (php://filter) when
+  allow_url_fopen is enabled. Typical hotspots are download/preview
+  endpoints that take a filename from the request.
+description: |
+  Detects calls to fopen() where the path argument traces back to an
+  untrusted source (intra-procedural taint tracking, file-scoped).
+  Confidence is medium because some call sites sanitize with
+  basename()/realpath() checks the engine does not model; fopen() with a
+  fixed path is not flagged.
+message: "fopen() called with a tainted path — path traversal; canonicalize with realpath() and enforce a base-directory allowlist"
+references:
+  - https://owasp.org/www-community/attacks/Path_Traversal
+  - https://cwe.mitre.org/data/definitions/22.html
+tags: [path-traversal, file-access, fopen]
+match:
+  kind: call
+  callee: fopen
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Resolve the user-supplied name with basename(), join it to a fixed base directory, then verify realpath() of the result still starts with that base directory before opening."

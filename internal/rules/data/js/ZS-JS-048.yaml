@@ -1,0 +1,37 @@
+id: ZS-JS-048
+lifecycle: released
+name: JWT Verification Accepting 'none' Algorithm
+version: "1.0.0"
+language: javascript
+category: authentication
+severity: critical
+confidence: high
+cwe:
+  - CWE-347
+owasp:
+  - "A07:2025"
+rationale: |
+  Including "none" in the algorithms option of jwt.verify() tells the
+  verifier to accept tokens whose header declares alg: none — tokens with
+  no cryptographic signature at all. Anyone can hand-craft such a token
+  claiming any identity or role, and verification will succeed, so every
+  authentication and authorization decision built on the token collapses:
+  an attacker forges an admin token with a base64 encoder and nothing else.
+description: |
+  Detects calls to jwt.verify() (the jsonwebtoken library under its
+  conventional binding name "jwt") whose options object lists the "none"
+  algorithm in its algorithms array. Verifiers that omit the algorithms
+  option entirely are not flagged by this rule.
+message: "jwt.verify() configured with algorithms including 'none' — unsigned tokens will be accepted and can be forged"
+references:
+  - https://cwe.mitre.org/data/definitions/347.html
+  - https://auth0.com/blog/critical-vulnerabilities-in-json-web-token-libraries/
+tags: [jwt, authentication, signature-bypass]
+match:
+  kind: call
+  callee: jwt.verify
+  filters:
+    - kwarg:
+        name: algorithms
+        value_pattern: "(?i)none"
+fix_suggestion: "Pin algorithms to the single real algorithm you sign with (e.g. { algorithms: ['RS256'] }) and never include 'none'."

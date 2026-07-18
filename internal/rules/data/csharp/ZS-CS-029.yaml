@@ -1,0 +1,32 @@
+id: ZS-CS-029
+lifecycle: released
+name: Weak Cryptographic Hash (SHA1)
+version: "1.0.0"
+language: csharp
+category: cryptography
+severity: medium
+confidence: high
+cwe:
+  - CWE-327
+owasp:
+  - "A04:2025"
+rationale: |
+  SHA-1 is cryptographically broken: practical chosen-prefix collisions
+  (SHAttered, 2017; SHA-mbles, 2020) let an attacker forge two documents
+  with the same digest, and as a password hash it is fast enough for
+  commodity GPUs to test billions of guesses per second. Using
+  SHA1.Create() for password storage, digital signatures, or
+  file-integrity checks therefore lets an attacker forge colliding content
+  or recover plaintext passwords from a leaked hash database — the same
+  algorithm-level weakness as MD5.Create() (ZS-CS-005), one generation
+  newer.
+description: |
+  Detects calls to SHA1.Create().
+message: "Weak hash algorithm SHA-1 detected — use SHA-256 or stronger"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+tags: [weak-crypto, sha1, hash]
+match:
+  kind: call
+  callee: SHA1.Create
+fix_suggestion: "Replace SHA1.Create() with SHA256.Create(), or use a password KDF (PBKDF2/bcrypt/argon2) for passwords."

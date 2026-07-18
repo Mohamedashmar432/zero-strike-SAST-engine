@@ -1,0 +1,33 @@
+id: ZS-PY-051
+lifecycle: released
+name: TLS Verification Disabled via ssl._create_unverified_context
+version: "1.0.0"
+language: python
+category: security-misconfiguration
+severity: high
+confidence: high
+cwe:
+  - CWE-295
+owasp:
+  - "A02:2025"
+rationale: |
+  ssl._create_unverified_context() returns an SSLContext with certificate
+  verification and hostname checking turned off, so any TLS connection made
+  with it accepts every certificate — expired, self-signed, or issued for a
+  different host. An attacker on the network path (public Wi-Fi, compromised
+  proxy, DNS spoofing) can transparently intercept or modify the traffic,
+  including credentials and tokens. The leading underscore marks it as a
+  private CPython helper that was never meant for application code.
+description: |
+  Detects calls to ssl._create_unverified_context(). Every call is reported;
+  there is no legitimate production use of an unverified context for remote
+  endpoints.
+message: "ssl._create_unverified_context() disables certificate verification — use ssl.create_default_context()"
+references:
+  - https://docs.python.org/3/library/ssl.html#ssl.create_default_context
+  - https://cwe.mitre.org/data/definitions/295.html
+tags: [misconfiguration, tls, certificate-validation]
+match:
+  kind: call
+  callee: ssl._create_unverified_context
+fix_suggestion: "Use ssl.create_default_context(); to trust a private CA, pass cafile=/path/to/ca.pem instead of disabling verification."

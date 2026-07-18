@@ -1,0 +1,33 @@
+id: ZS-PY-045
+lifecycle: released
+name: Unsafe tarfile extractall (Zip-Slip)
+version: "1.0.0"
+language: python
+category: path-traversal
+severity: high
+confidence: medium
+cwe:
+  - CWE-22
+owasp:
+  - "A01:2025"
+rationale: |
+  tar.extractall() writes every member of the archive to disk using the path
+  stored inside the archive. A malicious archive can contain member names
+  like ../../etc/cron.d/backdoor or absolute paths, so extracting an
+  attacker-supplied tarball can overwrite arbitrary files outside the target
+  directory — the classic Zip-Slip attack. Before Python 3.12's filter=
+  parameter, tarfile performed no path sanitization at all.
+description: |
+  Detects calls to extractall() on a tarfile object named "tar" (the
+  conventional receiver for tarfile.open results). The rule is purely
+  syntactic — archive content cannot be modeled by taint tracking, so every
+  call is reported regardless of where the archive came from.
+message: "tar.extractall() extracts attacker-controlled paths — pass filter='data' (Python 3.12+) or validate each member"
+references:
+  - https://cwe.mitre.org/data/definitions/22.html
+  - https://docs.python.org/3/library/tarfile.html#extraction-filters
+tags: [path-traversal, zip-slip, tarfile]
+match:
+  kind: call
+  callee: tar.extractall
+fix_suggestion: "Use tar.extractall(path, filter='data') on Python 3.12+, or validate every member name stays inside the target directory before extracting."

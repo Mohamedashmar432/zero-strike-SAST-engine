@@ -1,0 +1,39 @@
+id: ZS-JS-039
+lifecycle: released
+name: NoSQL Injection via MongoDB find()
+version: "1.0.0"
+language: javascript
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-943
+owasp:
+  - "A05:2025"
+rationale: |
+  MongoDB query operators like $where accept a JavaScript expression
+  evaluated server-side, and operators like $gt/$ne rewrite the meaning of
+  a filter; when the filter passed to find() is built with
+  attacker-controlled data — directly, or interpolated into a $where
+  string — an attacker can inject additional query operators or arbitrary
+  JavaScript to bypass filters, extract unrelated documents, or degrade
+  performance. This is exploitable wherever a search term, username, or
+  other request-derived value flows into the filter passed to find()
+  without being treated as a plain scalar value.
+description: |
+  Detects calls to collection.find() (the conventional MongoDB driver
+  receiver name) where an argument traces back to an untrusted source
+  (intra-procedural taint tracking). As with other receiver-qualified rules
+  in this rule set (pool.query, client.query), this matches the literal
+  receiver name "collection" and will not fire if the Collection object is
+  bound to a differently-named variable.
+message: "collection.find() called with a tainted argument — validate/escape input before building the query filter"
+references:
+  - https://owasp.org/www-community/attacks/NoSQL_injection
+tags: [nosql-injection, injection, mongodb]
+match:
+  kind: call
+  callee: collection.find
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Never interpolate user input into $where or a query operator; pass user values as plain scalar filter values and validate their types first."

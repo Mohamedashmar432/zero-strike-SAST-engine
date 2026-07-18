@@ -1,0 +1,36 @@
+id: ZS-PHP-019
+lifecycle: released
+name: exec() Command Injection
+version: "1.0.0"
+language: php
+category: injection
+severity: high
+confidence: high
+cwe:
+  - CWE-78
+owasp:
+  - "A05:2025"
+rationale: |
+  exec() runs its argument through the system shell, so shell
+  metacharacters (;, |, &&, backticks, $()) in attacker-controlled data
+  let an attacker chain or substitute arbitrary commands instead of
+  supplying a single argument. It is the direct sibling of system() and
+  shell_exec() — already covered by ZS-PHP-001 and ZS-PHP-006 — and shows
+  up in the same request-derived filename/hostname patterns (ping
+  utilities, converters, archive tools) where $_GET/$_POST values are
+  concatenated into the command string.
+description: |
+  Detects calls to exec() where an argument traces back to an untrusted
+  source (intra-procedural taint tracking, file-scoped). exec() with a
+  fixed command string is not flagged.
+message: "exec() detected with a tainted argument — escape with escapeshellarg() or use a fixed allowlisted command"
+references:
+  - https://owasp.org/www-community/attacks/Command_Injection
+  - https://www.php.net/manual/en/function.exec.php
+tags: [command-injection, injection, exec]
+match:
+  kind: call
+  callee: exec
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Avoid shelling out with user input; if unavoidable, wrap every user-derived argument in escapeshellarg() and keep the command itself a fixed literal."

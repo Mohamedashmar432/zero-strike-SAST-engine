@@ -1,0 +1,38 @@
+id: ZS-PHP-022
+lifecycle: released
+name: extract() on Request Superglobal
+version: "1.0.0"
+language: php
+category: dangerous-functions
+severity: high
+confidence: high
+cwe:
+  - CWE-915
+owasp:
+  - "A05:2025"
+rationale: |
+  extract($_POST) / extract($_GET) / extract($_REQUEST) turns every
+  request parameter into a local PHP variable, recreating the notorious
+  register_globals behavior: an attacker can overwrite ANY variable the
+  script relies on — $is_admin, $authenticated, $config_path, $db_host —
+  simply by sending a request parameter with that name. This is classic
+  mass assignment / variable injection and routinely escalates to
+  authentication bypass or local file inclusion depending on which
+  variable gets clobbered.
+description: |
+  Detects extract() called directly on a request superglobal ($_POST,
+  $_GET, or $_REQUEST). extract() over other arrays (e.g. a database row
+  or a locally built array) is not flagged, and use of the
+  EXTR_SKIP/EXTR_PREFIX_ALL flags is not inspected — even with those
+  flags, extracting request data is a fragile pattern worth reviewing.
+message: "extract() called on a request superglobal — attacker can overwrite arbitrary local variables; read parameters explicitly instead"
+references:
+  - https://cwe.mitre.org/data/definitions/915.html
+  - https://www.php.net/manual/en/function.extract.php
+tags: [mass-assignment, variable-injection, extract]
+match:
+  kind: call
+  callee: extract
+  filters:
+    - argument_identifier_matches: "^\\$_(POST|GET|REQUEST)$"
+fix_suggestion: "Read each expected parameter explicitly ($name = $_POST['name'] ?? default) instead of extract(); if extract() is unavoidable, pass a filtered allowlisted array, never a raw superglobal."

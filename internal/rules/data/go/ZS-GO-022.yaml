@@ -1,0 +1,39 @@
+id: ZS-GO-022
+lifecycle: released
+name: JWT Parsed Without Signature Verification
+version: "1.0.0"
+language: go
+category: authentication
+severity: critical
+confidence: high
+cwe:
+  - CWE-347
+owasp:
+  - "A07:2025"
+rationale: |
+  jwt.ParseUnverified() decodes a JSON Web Token's header and claims
+  WITHOUT validating its signature — the function exists purely for
+  pre-routing inspection (e.g. reading the `kid` header to select a key)
+  and its own documentation warns it must never be used for trust
+  decisions. If the claims it returns are used for authentication or
+  authorization, an attacker can mint an arbitrary token with any
+  identity and role they like (no key required), because nothing ever
+  checks that the token was signed by the trusted issuer. That is a
+  complete authentication bypass.
+description: |
+  Detects calls to jwt.ParseUnverified() (golang-jwt/jwt-go), which
+  decodes a token without verifying its signature. Matches the
+  package-level/receiver form jwt.ParseUnverified(...); a chained
+  jwt.NewParser().ParseUnverified(...) call collapses to the bare method
+  name in the engine's callee resolver and is not covered by this rule.
+  The rule cannot tell a legitimate pre-parse (key-id lookup) from a
+  trust decision — every hit needs review of how the claims are used.
+message: "jwt.ParseUnverified() decodes the token without checking its signature — never use its claims for auth decisions; use jwt.Parse/ParseWithClaims with a key function"
+references:
+  - https://cwe.mitre.org/data/definitions/347.html
+  - https://pkg.go.dev/github.com/golang-jwt/jwt/v5#Parser.ParseUnverified
+tags: [jwt, authentication, signature-verification]
+match:
+  kind: call
+  callee: jwt.ParseUnverified
+fix_suggestion: "Use jwt.Parse or jwt.ParseWithClaims with a Keyfunc that returns the trusted verification key; reserve ParseUnverified strictly for reading the key id before real verification."

@@ -57,6 +57,36 @@ cases:
   - file: cases/vuln_format_string.cs
     language: csharp
     expect: [{rule_id: ZS-CS-019, min_count: 1}]
+  - file: cases/vuln_xxe_dtdprocessing.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-020, min_count: 1}]
+  - file: cases/vuln_tls_cert_validation.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-021, min_count: 1}]
+  - file: cases/vuln_weak_cipher_des.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-022, min_count: 1}]
+  - file: cases/vuln_typenamehandling.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-023, min_count: 1}]
+  - file: cases/vuln_ldap_filter.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-024, min_count: 1}]
+  - file: cases/vuln_xpath_selectnodes.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-025, min_count: 1}]
+  - file: cases/vuln_file_write.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-026, min_count: 1}]
+  - file: cases/vuln_ssrf_webclient.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-027, min_count: 1}]
+  - file: cases/vuln_jwt_validation_disabled.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-028, min_count: 1}]
+  - file: cases/vuln_weak_hash_sha1.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-029, min_count: 1}]
   - file: cases/clean.cs
     language: csharp
     expect: []

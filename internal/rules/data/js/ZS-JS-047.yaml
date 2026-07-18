@@ -1,0 +1,36 @@
+id: ZS-JS-047
+lifecycle: released
+name: insertAdjacentHTML DOM XSS
+version: "1.0.0"
+language: javascript
+category: xss
+severity: high
+confidence: medium
+cwe:
+  - CWE-79
+owasp:
+  - "A05:2025"
+rationale: |
+  insertAdjacentHTML() parses its second argument as HTML and inserts the
+  resulting nodes into the live document, exactly like innerHTML but at an
+  arbitrary insertion point. When that HTML string is derived from
+  untrusted input, embedded event handlers, <img onerror=...> payloads, or
+  javascript: URIs execute in the victim's browser session, enabling cookie
+  theft, session hijacking, and page defacement.
+description: |
+  Detects calls to el.insertAdjacentHTML() where an argument traces back to
+  an untrusted source (intra-procedural taint tracking). As with other
+  receiver-qualified rules in this rule set, this matches the literal
+  receiver name "el" and will not fire for differently-named element
+  variables.
+message: "insertAdjacentHTML() called with a tainted HTML string — sanitize input or use insertAdjacentText/DOM APIs instead"
+references:
+  - https://owasp.org/www-community/attacks/xss/
+  - https://developer.mozilla.org/en-US/docs/Web/API/Element/insertAdjacentHTML
+tags: [xss, dom-injection, insertadjacenthtml]
+match:
+  kind: call
+  callee: el.insertAdjacentHTML
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Use insertAdjacentText for text, or sanitize the HTML with DOMPurify before passing it to insertAdjacentHTML."

@@ -99,3 +99,45 @@ cases:
   - file: cases/clean.ts
     language: typescript
     expect: []
+  - file: cases/vuln_ssrf_axios_get.ts
+    language: typescript
+    expect: [{rule_id: ZS-TS-033, min_count: 1}]
+  - file: cases/vuln_ssrf_axios_post.ts
+    language: typescript
+    expect: [{rule_id: ZS-TS-034, min_count: 1}]
+  - file: cases/vuln_ssrf_fetch.ts
+    language: typescript
+    expect: [{rule_id: ZS-TS-035, min_count: 1}]
+  - file: cases/vuln_ssrf_http_get.ts
+    language: typescript
+    expect: [{rule_id: ZS-TS-036, min_count: 1}]
+  - file: cases/vuln_nosqli_collection_find.ts
+    language: typescript
+    expect: [{rule_id: ZS-TS-037, min_count: 1}]
+  - file: cases/vuln_proto_pollution.ts
+    language: typescript
+    expect: [{rule_id: ZS-TS-038, min_count: 1}]
+  - file: cases/vuln_ssti_ejs.ts
+    language: typescript
+    expect: [{rule_id: ZS-TS-039, min_count: 1}]
+  - file: cases/vuln_ssti_pug.ts
+    language: typescript
+    expect: [{rule_id: ZS-TS-040, min_count: 1}]
+  - file: cases/vuln_vm_run_in_new_context.ts
+    language: typescript
+    expect: [{rule_id: ZS-TS-041, min_count: 1}]
+  - file: cases/vuln_weak_cipher.ts
+    language: typescript
+    expect: [{rule_id: ZS-TS-042, min_count: 1}]
+  - file: cases/vuln_execsync_cmdi.ts
+    language: typescript
+    expect: [{rule_id: ZS-TS-043, min_count: 1}]
+  - file: cases/vuln_location_href_redirect.ts
+    language: typescript
+    expect: [{rule_id: ZS-TS-044, min_count: 1}]
+  - file: cases/vuln_insert_adjacent_html.ts
+    language: typescript
+    expect: [{rule_id: ZS-TS-045, min_count: 1}]
+  - file: cases/vuln_jwt_alg_none.ts
+    language: typescript
+    expect: [{rule_id: ZS-TS-046, min_count: 1}]

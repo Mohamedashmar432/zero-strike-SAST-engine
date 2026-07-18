@@ -1,0 +1,38 @@
+id: ZS-PHP-026
+lifecycle: released
+name: Weak Cipher in openssl_encrypt()
+version: "1.0.0"
+language: php
+category: cryptography
+severity: medium
+confidence: high
+cwe:
+  - CWE-327
+owasp:
+  - "A04:2025"
+rationale: |
+  DES (56-bit key) is brute-forceable on commodity hardware, 3DES
+  (des-ede3) is limited to a 64-bit block size and broken in practice by
+  the Sweet32 birthday attack, RC4 has exploitable keystream biases that
+  led to its prohibition in TLS (RFC 7465), and RC2/Blowfish share the
+  small-block problem — data encrypted with any of them cannot be
+  considered confidential against a resourced attacker. Choosing one of
+  these in openssl_encrypt() usually indicates copy-pasted legacy code
+  rather than an informed tradeoff.
+description: |
+  Detects openssl_encrypt() calls whose cipher-method literal names a
+  known-weak algorithm (DES, 3DES/des-ede3, RC4, RC2, Blowfish),
+  matching case-insensitively on the cipher family prefix. Cipher names
+  supplied via variables or configuration are not inspected; modern
+  choices such as aes-256-gcm are not flagged.
+message: "openssl_encrypt() uses a weak cipher (DES/3DES/RC4/RC2/Blowfish) — switch to an AEAD cipher such as aes-256-gcm"
+references:
+  - https://cwe.mitre.org/data/definitions/327.html
+  - https://sweet32.info/
+tags: [cryptography, weak-cipher, openssl]
+match:
+  kind: call
+  callee: openssl_encrypt
+  filters:
+    - argument_literal_matches: "(?i)^(des|des-ede3|rc4|rc2|bf)(-|$)"
+fix_suggestion: "Use an authenticated modern cipher: openssl_encrypt($data, 'aes-256-gcm', $key, OPENSSL_RAW_DATA, $iv, $tag) with a random 12-byte IV per message, or use libsodium (sodium_crypto_secretbox)."

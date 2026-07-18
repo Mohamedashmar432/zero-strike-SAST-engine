@@ -50,7 +50,34 @@ cases:
     expect: [{rule_id: ZS-PHP-016, min_count: 1}]
   - file: cases/vuln_format_string.php
     language: php
-    expect: [{rule_id: ZS-PHP-017, min_count: 1}]
+    expect: [{rule_id: ZS-PHP-017, min_count: 1}, {rule_id: ZS-PHP-024, min_count: 1}]
+  - file: cases/vuln_eval.php
+    language: php
+    expect: [{rule_id: ZS-PHP-018, min_count: 1}]
+  - file: cases/vuln_cmdi_exec.php
+    language: php
+    expect: [{rule_id: ZS-PHP-019, min_count: 1}]
+  - file: cases/vuln_cmdi_passthru.php
+    language: php
+    expect: [{rule_id: ZS-PHP-020, min_count: 1}]
+  - file: cases/vuln_assert.php
+    language: php
+    expect: [{rule_id: ZS-PHP-021, min_count: 1}]
+  - file: cases/vuln_extract.php
+    language: php
+    expect: [{rule_id: ZS-PHP-022, min_count: 1}]
+  - file: cases/vuln_path_traversal_fopen.php
+    language: php
+    expect: [{rule_id: ZS-PHP-023, min_count: 1}]
+  - file: cases/vuln_file_write.php
+    language: php
+    expect: [{rule_id: ZS-PHP-024, min_count: 1}]
+  - file: cases/vuln_preg_replace_eval.php
+    language: php
+    expect: [{rule_id: ZS-PHP-025, min_count: 1}]
+  - file: cases/vuln_weak_cipher_openssl.php
+    language: php
+    expect: [{rule_id: ZS-PHP-026, min_count: 1}]
   - file: cases/clean.php
     language: php
     expect: []

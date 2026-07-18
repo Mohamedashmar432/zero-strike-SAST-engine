@@ -1,0 +1,37 @@
+id: ZS-CS-023
+lifecycle: released
+name: Insecure Newtonsoft TypeNameHandling
+version: "1.0.0"
+language: csharp
+category: deserialization
+severity: critical
+confidence: high
+cwe:
+  - CWE-502
+owasp:
+  - "A08:2025"
+rationale: |
+  Setting Newtonsoft.Json's TypeNameHandling to All, Auto, or Objects makes
+  the deserializer instantiate whatever .NET type the JSON's "$type" field
+  names. An attacker who controls the JSON can name gadget types
+  (ObjectDataProvider, WindowsIdentity, and the rest of the ysoserial.net
+  catalog) whose construction or property setters execute arbitrary code —
+  turning a simple JsonConvert.DeserializeObject call on request data into
+  remote code execution. This is the same trust flaw as BinaryFormatter,
+  reintroduced through a JSON library setting.
+description: |
+  Detects assignments of TypeNameHandling.All, Auto, or Objects to a
+  TypeNameHandling property (including object-initializer members, which
+  lower to assignment nodes). No taint tracking — the setting is dangerous
+  whenever the JSON can ever be attacker-influenced, so every enablement
+  is flagged.
+message: "TypeNameHandling.All/Auto/Objects enables polymorphic deserialization RCE — use TypeNameHandling.None"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html
+  - https://www.newtonsoft.com/json/help/html/SerializeTypeNameHandling.htm
+tags: [deserialization, newtonsoft, typenamehandling, rce]
+match:
+  kind: assignment
+  lhs_identifier: "TypeNameHandling$"
+  rhs_literal: "(All|Auto|Objects)"
+fix_suggestion: "Use TypeNameHandling.None (the default). If polymorphism is required, use a custom SerializationBinder that allowlists concrete types."

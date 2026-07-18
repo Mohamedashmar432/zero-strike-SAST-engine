@@ -1,0 +1,34 @@
+id: ZS-PY-054
+lifecycle: released
+name: XSS via markupsafe Markup() on Tainted Input
+version: "1.0.0"
+language: python
+category: xss
+severity: high
+confidence: medium
+cwe:
+  - CWE-79
+owasp:
+  - "A05:2025"
+rationale: |
+  markupsafe.Markup() marks a string as pre-escaped HTML, so template
+  engines (Jinja2, Flask) render it verbatim without autoescaping. Wrapping
+  attacker-controlled input in Markup() therefore re-opens the exact
+  cross-site-scripting hole autoescaping exists to close: injected
+  <script> or event-handler attributes execute in every victim's browser
+  session, enabling session theft and account takeover.
+description: |
+  Detects calls to Markup() where the argument traces back to an untrusted
+  source (intra-procedural taint tracking). Markup() on constant template
+  fragments does not fire.
+message: "Markup() wraps tainted input as safe HTML — escape user data with markupsafe.escape() instead"
+references:
+  - https://cwe.mitre.org/data/definitions/79.html
+  - https://markupsafe.palletsprojects.com/en/stable/escaping/
+tags: [xss, injection, markupsafe]
+match:
+  kind: call
+  callee: Markup
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Never wrap user input in Markup(); use markupsafe.escape(value) and rely on template autoescaping."

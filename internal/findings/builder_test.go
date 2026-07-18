@@ -78,7 +78,7 @@ func TestFingerprint_StableAcrossLineChanges(t *testing.T) {
 		Text:     callText,
 		Location: core.Location{File: "test.py", StartLine: 10, EndLine: 10},
 	}
-	f1 := findings.BuildFinding(engine.MatchResult{Rule: rule, Node: nodeAt10}, mc)
+	f1 := findings.BuildFinding(engine.MatchResult{Rule: rule, Node: nodeAt10}, mc, nil)
 
 	// Same finding shifted to line 15 (blank line inserted above)
 	nodeAt15 := &ir.IRNode{
@@ -86,7 +86,7 @@ func TestFingerprint_StableAcrossLineChanges(t *testing.T) {
 		Text:     callText,
 		Location: core.Location{File: "test.py", StartLine: 15, EndLine: 15},
 	}
-	f2 := findings.BuildFinding(engine.MatchResult{Rule: rule, Node: nodeAt15}, mc)
+	f2 := findings.BuildFinding(engine.MatchResult{Rule: rule, Node: nodeAt15}, mc, nil)
 
 	if f1.Fingerprint != f2.Fingerprint {
 		t.Errorf("Fingerprint changed when line number changed: %q vs %q", f1.Fingerprint, f2.Fingerprint)
@@ -123,11 +123,15 @@ func TestBuildFinding_RationaleAndRemediation(t *testing.T) {
 			Severity:      core.SeverityHigh,
 			Confidence:    core.ConfidenceHigh,
 			Rationale:     "eval() executes arbitrary code, allowing injection if input is attacker-controlled.",
+			Description:   "Detects calls to the eval() builtin regardless of taint.",
 			FixSuggestion: "Avoid eval(); use ast.literal_eval() or a safe parser instead.",
 		}
-		f := findings.BuildFinding(engine.MatchResult{Rule: rule, Node: node}, mc)
+		f := findings.BuildFinding(engine.MatchResult{Rule: rule, Node: node}, mc, nil)
 		if f.Rationale != rule.Rationale {
 			t.Errorf("Rationale = %q, want %q", f.Rationale, rule.Rationale)
+		}
+		if f.Description != rule.Description {
+			t.Errorf("Description = %q, want %q", f.Description, rule.Description)
 		}
 		if f.Remediation != rule.FixSuggestion {
 			t.Errorf("Remediation = %q, want %q", f.Remediation, rule.FixSuggestion)
@@ -141,7 +145,7 @@ func TestBuildFinding_RationaleAndRemediation(t *testing.T) {
 			Severity:   core.SeverityHigh,
 			Confidence: core.ConfidenceHigh,
 		}
-		f := findings.BuildFinding(engine.MatchResult{Rule: rule, Node: node}, mc)
+		f := findings.BuildFinding(engine.MatchResult{Rule: rule, Node: node}, mc, nil)
 		if f.Rationale != "" {
 			t.Errorf("Rationale = %q, want empty", f.Rationale)
 		}
@@ -182,7 +186,7 @@ func TestBuildFinding_TaintContext(t *testing.T) {
 			Text:     "cursor.execute(query)",
 			Location: core.Location{File: "test.py", StartLine: 12, EndLine: 12},
 		}
-		f := findings.BuildFinding(engine.MatchResult{Rule: rule, Node: node, TaintedVar: "query"}, mc)
+		f := findings.BuildFinding(engine.MatchResult{Rule: rule, Node: node, TaintedVar: "query"}, mc, nil)
 		if f.TaintContext == nil {
 			t.Fatal("expected TaintContext to be populated")
 		}
@@ -220,7 +224,7 @@ func TestBuildFinding_TaintContext(t *testing.T) {
 			Attrs:    map[string]any{"lhs": "el.innerHTML"},
 			Location: core.Location{File: "test.py", StartLine: 12, EndLine: 12},
 		}
-		f := findings.BuildFinding(engine.MatchResult{Rule: rule, Node: node, TaintedVar: "userInput"}, mc)
+		f := findings.BuildFinding(engine.MatchResult{Rule: rule, Node: node, TaintedVar: "userInput"}, mc, nil)
 		if f.TaintContext == nil {
 			t.Fatal("expected TaintContext to be populated")
 		}
@@ -245,7 +249,7 @@ func TestBuildFinding_TaintContext(t *testing.T) {
 			Text:     "cursor.execute(query)",
 			Location: core.Location{File: "test.py", StartLine: 12, EndLine: 12},
 		}
-		f := findings.BuildFinding(engine.MatchResult{Rule: rule, Node: node, TaintedVar: "query"}, mc)
+		f := findings.BuildFinding(engine.MatchResult{Rule: rule, Node: node, TaintedVar: "query"}, mc, nil)
 		if f.TaintContext == nil {
 			t.Fatal("expected TaintContext to be populated when TaintedVar is set, even without a TaintReasons entry")
 		}
@@ -275,9 +279,67 @@ func TestBuildFinding_TaintContext(t *testing.T) {
 			Text:     "eval(user_input)",
 			Location: core.Location{File: "test.py", StartLine: 10, EndLine: 10},
 		}
-		f := findings.BuildFinding(engine.MatchResult{Rule: rule, Node: node}, mc)
+		f := findings.BuildFinding(engine.MatchResult{Rule: rule, Node: node}, mc, nil)
 		if f.TaintContext != nil {
 			t.Errorf("TaintContext = %+v, want nil when TaintedVar is empty", f.TaintContext)
 		}
 	})
+}
+
+// TestBuildFinding_SnippetFallsBackToSourceLines verifies the fix for the bug where every real
+// finding had Evidence == nil: node.Text is only populated for tree-sitter leaf nodes, but every
+// rule matches on a compound node (call, assignment, try, ...), so node.Text is always "" in
+// practice. BuildFinding must fall back to slicing the snippet out of the file's source bytes
+// using the match's line range.
+func TestBuildFinding_SnippetFallsBackToSourceLines(t *testing.T) {
+	source := []byte("import requests\n\ndef fetch(url):\n    requests.get(url, verify=False)\n")
+
+	irRoot := &ir.IRNode{Kind: ir.NodeKindModule, Location: core.Location{StartLine: 1, EndLine: 4}}
+	irFile := &ir.IRFile{Language: core.LangPython, Path: "test.py", Root: irRoot}
+	syms := symboltable.NewBuilder().Build(irFile)
+	mc := &engine.MatchContext{File: &analyzer.AnalysisResult{IR: irFile, Symbols: syms}}
+
+	rule := &rules.Rule{
+		ID:         "ZS-PY-025",
+		Name:       "SSRF",
+		Severity:   core.SeverityHigh,
+		Confidence: core.ConfidenceHigh,
+		Match:      rules.MatchPattern{Kind: string(ir.NodeKindCall), Callee: "requests.get"},
+	}
+	// Text is deliberately empty here: this is what the real parser produces for a compound
+	// "call" node (see internal/parser/python/builder.go - Text is leaf-only).
+	node := &ir.IRNode{
+		Kind:     ir.NodeKindCall,
+		Text:     "",
+		Location: core.Location{File: "test.py", StartLine: 4, EndLine: 4},
+	}
+
+	f := findings.BuildFinding(engine.MatchResult{Rule: rule, Node: node}, mc, source)
+
+	wantSnippet := "    requests.get(url, verify=False)"
+	if len(f.Evidence) != 1 {
+		t.Fatalf("Evidence = %+v, want exactly one entry", f.Evidence)
+	}
+	if f.Evidence[0].Snippet != wantSnippet {
+		t.Errorf("Snippet = %q, want %q", f.Evidence[0].Snippet, wantSnippet)
+	}
+	if f.Evidence[0].StartLine != 4 || f.Evidence[0].EndLine != 4 {
+		t.Errorf("Evidence line range = %d-%d, want 4-4", f.Evidence[0].StartLine, f.Evidence[0].EndLine)
+	}
+	if f.Fingerprint == "" {
+		t.Error("Fingerprint must not be empty")
+	}
+
+	// Same rule, same enclosing scope, different line/snippet must NOT collide: this is the
+	// fingerprint half of the same bug (computeFingerprint was also fed the always-empty node.Text).
+	node2 := &ir.IRNode{
+		Kind:     ir.NodeKindCall,
+		Text:     "",
+		Location: core.Location{File: "test.py", StartLine: 4, EndLine: 4},
+	}
+	source2 := []byte("import requests\n\ndef fetch(url):\n    requests.get(other_url, verify=False)\n")
+	f2 := findings.BuildFinding(engine.MatchResult{Rule: rule, Node: node2}, mc, source2)
+	if f.Fingerprint == f2.Fingerprint {
+		t.Errorf("distinct snippets produced the same fingerprint %q — fingerprint is still collapsing on empty node.Text", f.Fingerprint)
+	}
 }

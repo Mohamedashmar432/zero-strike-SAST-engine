@@ -1,0 +1,38 @@
+id: ZS-JAVA-033
+lifecycle: released
+name: Weak TLS Protocol (SSLContext.getInstance)
+version: "1.0.0"
+language: java
+category: cryptography
+severity: high
+confidence: high
+cwe:
+  - CWE-327
+owasp:
+  - "A04:2025"
+rationale: |
+  SSL 2.0/3.0 and TLS 1.0/1.1 are deprecated protocols with practical
+  attacks: POODLE breaks SSLv3's CBC padding, BEAST and weak cipher
+  suites undermine TLS 1.0, and RFC 8996 formally prohibits TLS 1.0/1.1.
+  Pinning one of these via SSLContext.getInstance("SSLv3"/"TLSv1"/...)
+  lets a network attacker decrypt or tamper with traffic that both peers
+  believe is protected, and fails compliance baselines (PCI DSS requires
+  TLS 1.2+). This rule uses the argument_literal_matches filter to flag
+  only the broken protocol names, so SSLContext.getInstance("TLSv1.3") and
+  "TLSv1.2" are not reported.
+description: |
+  SSLContext.getInstance() is called with a string literal naming a
+  deprecated protocol: SSL, SSLv2, SSLv3, TLSv1, or TLSv1.1
+  (case-insensitive, exact-name match). Modern protocol names (TLSv1.2,
+  TLSv1.3, and the generic "TLS") are not flagged.
+message: "SSLContext.getInstance() called with a deprecated protocol (SSL/TLS < 1.2) — use TLSv1.2 or TLSv1.3"
+references:
+  - https://datatracker.ietf.org/doc/html/rfc8996
+  - https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Security_Cheat_Sheet.html
+tags: [weak-crypto, tls, transport-security]
+match:
+  kind: call
+  callee: SSLContext.getInstance
+  filters:
+    - argument_literal_matches: "(?i)^(SSL|SSLv2|SSLv3|TLSv1|TLSv1\\.1)$"
+fix_suggestion: "Request a modern protocol: SSLContext.getInstance(\"TLSv1.3\") (or \"TLSv1.2\" where 1.3 is unavailable), and disable legacy protocols on the engine/socket."

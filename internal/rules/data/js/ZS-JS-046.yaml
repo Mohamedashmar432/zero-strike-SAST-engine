@@ -1,0 +1,36 @@
+id: ZS-JS-046
+lifecycle: released
+name: DOM Open Redirect via location.href
+version: "1.0.0"
+language: javascript
+category: open-redirect
+severity: medium
+confidence: medium
+cwe:
+  - CWE-601
+owasp:
+  - "A01:2025"
+rationale: |
+  Assigning attacker-influenced data to location.href navigates the browser
+  to a URL the attacker chose. Links that appear to point at a trusted site
+  can silently forward victims to a phishing clone of its login page, and a
+  javascript: URL assigned to location.href executes script in the page,
+  escalating the redirect into DOM XSS. Because the redirect happens
+  client-side after the trusted page loads, URL-reputation checks and users
+  who inspected the original link are both bypassed.
+description: |
+  Detects assignments to location.href (including window.location.href and
+  document.location.href) where the assigned value traces back to an
+  untrusted source (intra-procedural taint tracking). Navigation via
+  location.assign()/replace() is not covered by this rule.
+message: "location.href assigned from a tainted value — open redirect; validate the target against an allowlist of paths"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
+  - https://cwe.mitre.org/data/definitions/601.html
+tags: [open-redirect, dom, navigation]
+match:
+  kind: assignment
+  lhs_identifier: "location\\.href$"
+  filters:
+    - tainted_rhs: true
+fix_suggestion: "Only navigate to same-origin relative paths taken from an allowlist; never assign a raw user-supplied value to location.href."

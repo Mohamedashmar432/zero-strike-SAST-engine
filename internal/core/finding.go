@@ -97,6 +97,7 @@ type Finding struct {
 	Dependency   *DependencyFinding // non-nil iff Kind == FindingKindSCA
 	Config       *ConfigFinding     // non-nil iff Kind == FindingKindConfig
 	Rationale    string             // reviewer-facing "why this is risky" explanation, from rule YAML
+	Description  string             // what the rule detects and its known limits, from rule YAML description
 	Remediation  string             // concrete fix guidance, from the rule's FixSuggestion (populated by internal/findings.BuildFinding)
 	TaintContext *TaintContext      // non-nil iff the finding depended on tainted-data tracking
 }

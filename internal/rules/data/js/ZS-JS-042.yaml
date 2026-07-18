@@ -1,0 +1,36 @@
+id: ZS-JS-042
+lifecycle: released
+name: Server-Side Template Injection (pug.render)
+version: "1.0.0"
+language: javascript
+category: ssti
+severity: high
+confidence: medium
+cwe:
+  - CWE-1336
+owasp:
+  - "A03:2025"
+rationale: |
+  pug.render() compiles and executes its template source as JavaScript on
+  the server. When that template source is derived from request input, the
+  attacker supplies the template itself, and Pug's inline-code syntax
+  (- var x = ..., #{expression}) lets them run arbitrary JavaScript in the
+  Node process: reading files, spawning processes, and exfiltrating
+  secrets. This is full remote code execution, not just HTML injection.
+description: |
+  Detects calls to pug.render() where an argument traces back to an
+  untrusted source (intra-procedural taint tracking). Matches the
+  conventional module binding name "pug"; a differently-named import
+  binding will not match. Tainted data passed only as template locals
+  (the second argument) is also flagged, a known over-approximation.
+message: "pug.render() called with a tainted template string — server-side template injection leads to RCE"
+references:
+  - https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/07-Input_Validation_Testing/18-Testing_for_Server-side_Template_Injection
+  - https://cwe.mitre.org/data/definitions/1336.html
+tags: [ssti, injection, pug, template]
+match:
+  kind: call
+  callee: pug.render
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Never build the template source from user input; render fixed template files and pass user data only through the locals object."

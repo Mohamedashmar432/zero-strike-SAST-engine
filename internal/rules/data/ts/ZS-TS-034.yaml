@@ -1,0 +1,42 @@
+id: ZS-TS-034
+lifecycle: released
+name: Server-Side Request Forgery (axios.post)
+version: "1.0.0"
+language: typescript
+category: ssrf
+severity: high
+confidence: medium
+cwe:
+  - CWE-918
+owasp:
+  - "A01:2025"
+rationale: |
+  When the URL passed to axios.post() is derived from request input, the
+  attacker chooses where the server sends its outbound request — and with
+  POST, also delivers a request body to that target. That is enough to hit
+  internal-only services (localhost admin APIs, cloud metadata endpoints),
+  trigger state-changing actions on services that trust intra-network
+  callers, or exfiltrate data to attacker-controlled hosts, all from the
+  server's own network position and credentials.
+
+  TypeScript is a fully separate language in this engine and inherits
+  nothing from ZS-JS-036, so this gap is total, not partial — axios ships
+  its own TypeScript type definitions and is the default HTTP client in
+  Express+TS/NestJS backends. Ported verbatim from ZS-JS-036, same match
+  shape.
+description: |
+  Detects calls to axios.post() where an argument traces back to an
+  untrusted source (intra-procedural taint tracking). Matches the
+  conventional module binding name "axios"; a differently-named import
+  binding will not match.
+message: "axios.post() called with a tainted URL — validate the target against an allowlist to prevent SSRF"
+references:
+  - https://owasp.org/Top10/A10_2021-Server-Side_Request_Forgery_%28SSRF%29/
+  - https://cwe.mitre.org/data/definitions/918.html
+tags: [ssrf, axios, http-client]
+match:
+  kind: call
+  callee: axios.post
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Validate the target URL against an allowlist of hosts and schemes before passing it to axios.post(); never post to a raw user-supplied URL."

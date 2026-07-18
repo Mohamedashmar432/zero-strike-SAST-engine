@@ -1,0 +1,36 @@
+id: ZS-CS-020
+lifecycle: released
+name: XXE via DtdProcessing.Parse
+version: "1.0.0"
+language: csharp
+category: xxe
+severity: high
+confidence: high
+cwe:
+  - CWE-611
+owasp:
+  - "A05:2025"
+rationale: |
+  Setting XmlReaderSettings.DtdProcessing to DtdProcessing.Parse turns on
+  DTD processing, so an XML document supplied by an attacker can declare
+  external entities that the parser resolves — reading local files
+  (file:///etc/passwd), reaching internal network endpoints (SSRF), or
+  exhausting memory via entity-expansion bombs ("billion laughs"). Any
+  endpoint that parses uploaded or posted XML with such a reader is
+  exploitable; secure defaults (Prohibit/Ignore) exist precisely to close
+  this hole, so opting into Parse is a deliberate downgrade.
+description: |
+  Detects assignments of DtdProcessing.Parse to a DtdProcessing property
+  (including object-initializer members, which lower to assignment nodes).
+  No taint tracking — enabling DTD parsing is flagged regardless of where
+  the XML being parsed comes from.
+message: "DtdProcessing.Parse enables DTD processing and XXE — use DtdProcessing.Prohibit or Ignore"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html
+  - https://learn.microsoft.com/en-us/dotnet/api/system.xml.dtdprocessing
+tags: [xxe, xml, dtd]
+match:
+  kind: assignment
+  lhs_identifier: "DtdProcessing$"
+  rhs_literal: "Parse"
+fix_suggestion: "Leave DtdProcessing at its secure default, or set it to DtdProcessing.Prohibit (or Ignore) and set XmlResolver = null."

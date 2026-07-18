@@ -1,0 +1,32 @@
+id: ZS-PY-050
+lifecycle: released
+name: yaml.unsafe_load Deserialization
+version: "1.0.0"
+language: python
+category: deserialization
+severity: high
+confidence: high
+cwe:
+  - CWE-502
+owasp:
+  - "A08:2025"
+rationale: |
+  yaml.unsafe_load() is the explicit alias PyYAML added for the legacy
+  full-object loader: it constructs arbitrary Python objects from tags such
+  as !!python/object/apply, so an attacker who controls the YAML document
+  can execute arbitrary code during parsing. The function name advertises
+  the danger — there is no safe reason to call it on data that crosses a
+  trust boundary.
+description: |
+  Detects calls to yaml.unsafe_load(). Parity sibling of ZS-PY-010, which
+  covers yaml.load(); the two callees are matched independently. No taint
+  tracking is applied — every call is reported.
+message: "yaml.unsafe_load() constructs arbitrary objects — use yaml.safe_load() instead"
+references:
+  - https://pyyaml.org/wiki/PyYAMLDocumentation#loading-yaml
+  - https://cwe.mitre.org/data/definitions/502.html
+tags: [deserialization, yaml, unsafe-load]
+match:
+  kind: call
+  callee: yaml.unsafe_load
+fix_suggestion: "Replace yaml.unsafe_load(stream) with yaml.safe_load(stream)."

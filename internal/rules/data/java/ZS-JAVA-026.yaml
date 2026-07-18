@@ -1,0 +1,40 @@
+id: ZS-JAVA-026
+lifecycle: released
+name: LDAP Injection (DirContext.search)
+version: "1.0.0"
+language: java
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-90
+owasp:
+  - "A05:2025"
+rationale: |
+  Building an LDAP search filter by concatenating untrusted input into
+  DirContext.search() lets an attacker inject filter metacharacters
+  (*, (, ), \, NUL) to rewrite the filter logic — turning a lookup like
+  (uid=<input>) into (uid=*) to enumerate the whole directory, or
+  (&(uid=x)(userPassword=*)) style probes to extract attribute values.
+  In authentication flows this commonly yields login bypass; in lookup
+  flows it discloses directory entries far beyond the intended scope.
+description: |
+  DirContext.search() is called with a search name or filter string that
+  traces back to an untrusted source (intra-procedural taint tracking),
+  indicating an LDAP filter built from attacker-influenced input.
+
+  Known limitation: the callee is a receiver-variable method call, so this
+  rule only fires when the javax.naming.directory.DirContext variable is
+  conventionally named "ctx". A companion rule for other receiver names is
+  a follow-up.
+message: "ctx.search() called with a tainted LDAP filter — escape LDAP metacharacters or use parameterized filter arguments"
+references:
+  - https://owasp.org/www-community/attacks/LDAP_Injection
+  - https://cheatsheetseries.owasp.org/cheatsheets/LDAP_Injection_Prevention_Cheat_Sheet.html
+tags: [ldap, injection]
+match:
+  kind: call
+  callee: ctx.search
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Pass user input via the filterArgs parameter of search(name, filterExpr, filterArgs, controls) using {0} placeholders, or escape it per RFC 4515 before building the filter."

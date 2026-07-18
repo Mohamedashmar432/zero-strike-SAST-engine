@@ -72,6 +72,36 @@ cases:
   - file: cases/vuln_format_string.java
     language: java
     expect: [{rule_id: ZS-JAVA-024, min_count: 1}]
+  - file: cases/vuln_xpath_injection.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-025, min_count: 1}]
+  - file: cases/vuln_ldap_injection.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-026, min_count: 1}]
+  - file: cases/vuln_jndi_injection.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-027, min_count: 1}]
+  - file: cases/vuln_unsafe_reflection.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-028, min_count: 1}]
+  - file: cases/vuln_snakeyaml_load.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-029, min_count: 1}]
+  - file: cases/vuln_xmldecoder.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-030, min_count: 1}]
+  - file: cases/vuln_xstream.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-031, min_count: 1}]
+  - file: cases/vuln_sensitive_log.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-032, min_count: 1}]
+  - file: cases/vuln_weak_tls.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-033, min_count: 1}]
+  - file: cases/vuln_spel_injection.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-034, min_count: 1}]
   - file: cases/clean.java
     language: java
     expect: []

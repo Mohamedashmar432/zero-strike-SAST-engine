@@ -68,10 +68,34 @@ func (b *IRBuilder) buildNode(node *sitter.Node, source []byte, parent *ir.IRNod
 	// Set text for leaf nodes
 	if node.ChildCount() == 0 {
 		irNode.Text = node.Content(source)
+	} else if irNode.Kind == ir.NodeKindLiteral {
+		// tree-sitter-python string nodes wrap their value in
+		// string_start/string_content/string_end children, so the leaf check
+		// above never fires and Text would stay empty — silently breaking any
+		// filter that reads a literal argument's value (e.g.
+		// argument_literal_matches on hashlib.new("md5")). Mirrors the same
+		// fix in the go/java/js/ts/csharp builders. Triple-quoted and
+		// f-strings only lose one quote layer — no current rule needs those.
+		irNode.Text = unquoteLiteral(node.Content(source))
 	}
 	extractAttrs(irNode, node, source)
 	irNode.Children = b.buildChildren(node, source, irNode, path, warnings)
 	return irNode
+}
+
+// unquoteLiteral strips one layer of matching outer quote characters (" or ')
+// from a literal's raw source text, so filters like argument_literal_matches
+// match the literal's actual value (e.g. md5) rather than its quoted source
+// form (e.g. "md5"). Anything not quote-delimited (a bare numeric/boolean/
+// None token) passes through unchanged.
+func unquoteLiteral(raw string) string {
+	if len(raw) >= 2 {
+		first, last := raw[0], raw[len(raw)-1]
+		if first == last && (first == '"' || first == '\'') {
+			return raw[1 : len(raw)-1]
+		}
+	}
+	return raw
 }
 
 // buildChildren iterates over all children and collects non-nil IRNodes.

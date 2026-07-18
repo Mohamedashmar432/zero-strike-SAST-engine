@@ -1,0 +1,43 @@
+id: ZS-TS-033
+lifecycle: released
+name: Server-Side Request Forgery (axios.get)
+version: "1.0.0"
+language: typescript
+category: ssrf
+severity: high
+confidence: medium
+cwe:
+  - CWE-918
+owasp:
+  - "A01:2025"
+rationale: |
+  When the URL passed to axios.get() is derived from request input, the
+  attacker chooses where the server sends its outbound request: internal-only
+  services (localhost admin panels, cloud metadata endpoints such as
+  169.254.169.254), other hosts inside the network perimeter, or arbitrary
+  external systems. The server's network position and its credentials are
+  turned against it, enabling internal port scanning, credential theft from
+  metadata services, and pivoting into systems the attacker cannot reach
+  directly.
+
+  TypeScript is a fully separate language in this engine and inherits
+  nothing from ZS-JS-035, so this gap is total, not partial — axios ships
+  its own TypeScript type definitions and is the default HTTP client in
+  Express+TS/NestJS backends. Ported verbatim from ZS-JS-035, same match
+  shape.
+description: |
+  Detects calls to axios.get() where an argument traces back to an
+  untrusted source (intra-procedural taint tracking). Matches the
+  conventional module binding name "axios"; a differently-named import
+  binding will not match.
+message: "axios.get() called with a tainted URL — validate the target against an allowlist to prevent SSRF"
+references:
+  - https://owasp.org/Top10/A10_2021-Server-Side_Request_Forgery_%28SSRF%29/
+  - https://cwe.mitre.org/data/definitions/918.html
+tags: [ssrf, axios, http-client]
+match:
+  kind: call
+  callee: axios.get
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Validate the target URL against an allowlist of hosts and schemes before passing it to axios.get(); never fetch a raw user-supplied URL."

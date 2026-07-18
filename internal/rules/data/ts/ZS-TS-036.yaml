@@ -1,0 +1,43 @@
+id: ZS-TS-036
+lifecycle: released
+name: Server-Side Request Forgery (http.get)
+version: "1.0.0"
+language: typescript
+category: ssrf
+severity: high
+confidence: medium
+cwe:
+  - CWE-918
+owasp:
+  - "A01:2025"
+rationale: |
+  Node's http.get() issues a plain-HTTP request to whatever URL or options
+  object it is given. When that target is derived from request input, the
+  attacker chooses where the server connects: internal-only services
+  (localhost admin panels, cloud metadata endpoints such as
+  169.254.169.254), hosts inside the network perimeter, or arbitrary
+  external systems. Because the http module speaks cleartext HTTP, exactly
+  the protocol internal metadata and admin services expect, it is a
+  favorite SSRF primitive for reaching them from the server's own network
+  position.
+
+  TypeScript is a fully separate language in this engine and inherits
+  nothing from ZS-JS-038, so this gap is total, not partial — the Node http
+  module is used identically from TypeScript via @types/node. Ported
+  verbatim from ZS-JS-038, same match shape.
+description: |
+  Detects calls to http.get() (the Node http module under its conventional
+  binding name "http") where an argument traces back to an untrusted source
+  (intra-procedural taint tracking). A differently-named module binding
+  will not match.
+message: "http.get() called with a tainted URL — validate the target against an allowlist to prevent SSRF"
+references:
+  - https://owasp.org/Top10/A10_2021-Server-Side_Request_Forgery_%28SSRF%29/
+  - https://cwe.mitre.org/data/definitions/918.html
+tags: [ssrf, http, http-client]
+match:
+  kind: call
+  callee: http.get
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Validate the target URL against an allowlist of hosts and schemes before passing it to http.get(); never request a raw user-supplied URL."

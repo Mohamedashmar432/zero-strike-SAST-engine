@@ -1,0 +1,37 @@
+id: ZS-CS-026
+lifecycle: released
+name: Arbitrary File Write via File.WriteAllText
+version: "1.0.0"
+language: csharp
+category: path-traversal
+severity: high
+confidence: medium
+cwe:
+  - CWE-22
+  - CWE-73
+owasp:
+  - "A01:2025"
+rationale: |
+  Calling File.WriteAllText with a path that traces back to request data
+  lets an attacker choose where the file lands: ../ sequences escape the
+  intended directory, so the write can plant a web shell under the
+  application root, overwrite configuration or startup files, or clobber
+  another user's data. A writable path is strictly more dangerous than the
+  readable-path case already covered by ZS-CS-015, because the attacker
+  controls content placement, not just disclosure.
+description: |
+  Detects calls to File.WriteAllText() where an argument traces back to an
+  untrusted source (intra-procedural taint tracking). Tainted content with
+  a constant path also matches (any-argument taint), which is the known
+  over-approximation of this filter.
+message: "File.WriteAllText() called with a tainted path — canonicalize and validate the path against an allowed base directory"
+references:
+  - https://owasp.org/www-community/attacks/Path_Traversal
+  - https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html
+tags: [path-traversal, file-write, arbitrary-file]
+match:
+  kind: call
+  callee: File.WriteAllText
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Resolve with Path.GetFullPath and verify the result starts with the allowed base directory; reject names containing path separators."

@@ -269,6 +269,8 @@ func (p *ScanPipeline) Run(ctx context.Context) (*ScanResult, error) {
 		all = kept
 	}
 
+	findings.Correlate(all)
+
 	result.Findings = all
 	return &result, nil
 }

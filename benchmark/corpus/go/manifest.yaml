@@ -64,6 +64,30 @@ cases:
   - file: testdata/vuln_cors.go
     language: go
     expect: [{rule_id: ZS-GO-020, min_count: 1}]
+  - file: testdata/vuln_skip_verify.go
+    language: go
+    expect: [{rule_id: ZS-GO-021, min_count: 1}]
+  - file: testdata/vuln_jwt_unverified.go
+    language: go
+    expect: [{rule_id: ZS-GO-022, min_count: 1}]
+  - file: testdata/vuln_sprintf_format.go
+    language: go
+    expect: [{rule_id: ZS-GO-023, min_count: 1}]
+  - file: testdata/vuln_writefile.go
+    language: go
+    expect: [{rule_id: ZS-GO-024, min_count: 1}]
+  - file: testdata/vuln_cmd_context.go
+    language: go
+    expect: [{rule_id: ZS-GO-025, min_count: 1}]
+  - file: testdata/vuln_chmod.go
+    language: go
+    expect: [{rule_id: ZS-GO-026, min_count: 1}]
+  - file: testdata/vuln_ssrf_post.go
+    language: go
+    expect: [{rule_id: ZS-GO-027, min_count: 1}]
+  - file: testdata/vuln_log_secret.go
+    language: go
+    expect: [{rule_id: ZS-GO-028, min_count: 1}]
   - file: testdata/clean.go
     language: go
     expect: []

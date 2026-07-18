@@ -1,0 +1,37 @@
+id: ZS-PHP-021
+lifecycle: released
+name: assert() Code Execution
+version: "1.0.0"
+language: php
+category: dangerous-functions
+severity: high
+confidence: medium
+cwe:
+  - CWE-95
+owasp:
+  - "A05:2025"
+rationale: |
+  When assert() receives a string (PHP < 8.0, or any PHP with legacy
+  assert.active configurations), the string is evaluated as PHP code —
+  making assert() a drop-in eval() that many code-audit greps miss, which
+  is exactly why webshell authors favor it (e.g. the classic
+  assert($_REQUEST['x']) one-liner backdoor). Tainted data reaching
+  assert() therefore means attacker-controlled code execution on
+  affected runtimes.
+description: |
+  Detects calls to assert() where an argument traces back to an untrusted
+  source (intra-procedural taint tracking, file-scoped). Confidence is
+  medium because on PHP >= 8.0 string arguments are no longer evaluated
+  as code, so exploitability depends on the runtime version and
+  assert configuration; on older runtimes this is equivalent to eval().
+message: "assert() called with tainted input — evaluated as PHP code on PHP < 8.0; replace with a real conditional check"
+references:
+  - https://www.php.net/manual/en/function.assert.php
+  - https://cwe.mitre.org/data/definitions/95.html
+tags: [code-injection, assert, rce]
+match:
+  kind: call
+  callee: assert
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Never pass user input to assert(). Use explicit validation (if (!condition) { ... }) and disable assertions in production with zend.assertions=-1."

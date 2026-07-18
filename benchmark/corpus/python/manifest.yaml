@@ -144,6 +144,42 @@ cases:
       - {rule_id: ZS-PY-032, min_count: 1}
       - {rule_id: ZS-PY-033, min_count: 1}
       - {rule_id: ZS-PY-034, min_count: 1}
+  - file: cases/vuln_tarfile_extractall.py
+    language: python
+    expect: [{rule_id: ZS-PY-045, min_count: 1}]
+  - file: cases/vuln_zipfile_extractall.py
+    language: python
+    expect: [{rule_id: ZS-PY-046, min_count: 1}]
+  - file: cases/vuln_marshal_loads.py
+    language: python
+    expect: [{rule_id: ZS-PY-047, min_count: 1}]
+  - file: cases/vuln_dill_loads.py
+    language: python
+    expect: [{rule_id: ZS-PY-048, min_count: 1}]
+  - file: cases/vuln_pickle_load.py
+    language: python
+    expect: [{rule_id: ZS-PY-049, min_count: 1}]
+  - file: cases/vuln_yaml_unsafe_load.py
+    language: python
+    expect: [{rule_id: ZS-PY-050, min_count: 1}]
+  - file: cases/vuln_ssl_unverified_context.py
+    language: python
+    expect: [{rule_id: ZS-PY-051, min_count: 1}]
+  - file: cases/vuln_paramiko_autoadd.py
+    language: python
+    expect: [{rule_id: ZS-PY-052, min_count: 1}]
+  - file: cases/vuln_lxml_xxe.py
+    language: python
+    expect: [{rule_id: ZS-PY-053, min_count: 1}]
+  - file: cases/vuln_markupsafe_xss.py
+    language: python
+    expect: [{rule_id: ZS-PY-054, min_count: 1}]
+  - file: cases/vuln_log_injection.py
+    language: python
+    expect: [{rule_id: ZS-PY-055, min_count: 1}]
+  - file: cases/vuln_hashlib_new_weak.py
+    language: python
+    expect: [{rule_id: ZS-PY-056, min_count: 1}]
   - file: cases/clean.py
     language: python
     expect: []

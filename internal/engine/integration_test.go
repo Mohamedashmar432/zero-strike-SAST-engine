@@ -209,7 +209,7 @@ func buildFindingForRule(t *testing.T, idx *engine.RuleIndex, src string, enable
 	}
 	for _, r := range results {
 		if r.Rule.ID == ruleID {
-			return findings.BuildFinding(r, mc)
+			return findings.BuildFinding(r, mc, []byte(src))
 		}
 	}
 	t.Fatalf("no match result for rule %s", ruleID)

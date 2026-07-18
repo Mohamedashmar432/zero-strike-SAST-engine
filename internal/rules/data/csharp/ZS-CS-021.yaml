@@ -1,0 +1,36 @@
+id: ZS-CS-021
+lifecycle: released
+name: TLS Certificate Validation Disabled (ServerCertificateValidationCallback)
+version: "1.0.0"
+language: csharp
+category: security-misconfiguration
+severity: high
+confidence: high
+cwe:
+  - CWE-295
+owasp:
+  - "A02:2025"
+rationale: |
+  Overriding ServerCertificateValidationCallback (typically with a callback
+  that returns true) disables TLS certificate validation for outbound
+  connections, so the client will happily complete a handshake with any
+  server presenting any certificate. A man-in-the-middle on the network
+  path can then impersonate the real endpoint and read or modify all
+  traffic — credentials, tokens, and API payloads — without triggering any
+  error. "Fix the cert error later" callbacks routinely ship to production,
+  which is exactly the failure mode this rule exists to catch.
+description: |
+  Detects assignments to a ServerCertificateValidationCallback property
+  (e.g. on ServicePointManager or HttpWebRequest). Any assignment is
+  flagged: replacing the platform's certificate validation with a custom
+  callback is almost always used to bypass it, and a correct custom
+  validator is rare enough to justify review.
+message: "ServerCertificateValidationCallback overridden — TLS certificate validation is likely disabled; remove the callback"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Security_Cheat_Sheet.html
+  - https://learn.microsoft.com/en-us/dotnet/api/system.net.servicepointmanager.servercertificatevalidationcallback
+tags: [tls, certificate-validation, mitm]
+match:
+  kind: assignment
+  lhs_identifier: "ServerCertificateValidationCallback$"
+fix_suggestion: "Remove the custom callback and let .NET validate certificates; for private CAs, install the CA certificate in the trust store instead."

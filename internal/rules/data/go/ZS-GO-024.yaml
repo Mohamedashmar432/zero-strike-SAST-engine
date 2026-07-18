@@ -1,0 +1,37 @@
+id: ZS-GO-024
+lifecycle: released
+name: Path Traversal File Write (os.WriteFile)
+version: "1.0.0"
+language: go
+category: path-traversal
+severity: high
+confidence: medium
+cwe:
+  - CWE-22
+owasp:
+  - "A01:2025"
+rationale: |
+  Writing to a path derived from request input lets an attacker use ../
+  sequences or absolute paths to place file content anywhere the process
+  can write — overwriting configuration, planting a web shell in a served
+  directory, corrupting other users' uploads, or clobbering data files.
+  A tainted WRITE path is generally more dangerous than the tainted reads
+  ZS-GO-003/ZS-GO-006 flag, because the attacker controls where content
+  lands rather than merely what is disclosed; combined with any control
+  over the content it is often a direct route to code execution.
+description: |
+  Detects calls to os.WriteFile() where an argument traces back to an
+  untrusted source (intra-procedural taint tracking). The filter checks
+  any argument, so a tainted content argument with a constant path also
+  matches — review which argument is attacker-controlled.
+message: "os.WriteFile() called with a tainted argument — sanitize the destination path (filepath.Clean + base-directory containment) before writing"
+references:
+  - https://owasp.org/www-community/attacks/Path_Traversal
+  - https://cwe.mitre.org/data/definitions/22.html
+tags: [path-traversal, file-write]
+match:
+  kind: call
+  callee: os.WriteFile
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Resolve the target with filepath.Clean, verify it stays inside the intended base directory (strings.HasPrefix after filepath.Abs, or os.Root on Go 1.24+), and reject names containing path separators."

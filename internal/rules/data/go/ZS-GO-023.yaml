@@ -1,0 +1,49 @@
+id: ZS-GO-023
+lifecycle: released
+name: Tainted Format String (fmt.Sprintf)
+version: "1.0.0"
+language: go
+category: format-string
+severity: low
+confidence: low
+cwe:
+  - CWE-134
+owasp:
+  - "A05:2025"
+rationale: |
+  When the format-string template itself is built from attacker-controlled
+  input — e.g. fmt.Sprintf(userSuppliedTemplate, ...) rather than a fixed
+  literal — the attacker can inject their own verbs (%s, %d, %x, %v) to
+  produce unexpected output or trigger Go's noisy %!verb(MISSING)/EXTRA
+  error annotations, corrupting log lines, protocol messages, or values
+  built from the result. Go is memory-safe, so this cannot become the
+  classic C-style memory corruption, but attacker-controlled templates
+  are still an output-integrity and information-disclosure risk.
+
+  Known limitation, documented deliberately rather than hidden (mirroring
+  ZS-JAVA-024): the engine's tainted_argument filter checks whether ANY
+  argument to the call is tainted, with no way to require it be
+  specifically the first (format-string) argument. As a result this rule
+  ALSO fires on the extremely common, entirely safe placeholder idiom
+  fmt.Sprintf("User: %s", username) — where only the interpolated value,
+  not the template, is tainted. This rule is intentionally imprecise for
+  that reason; every hit needs manual verification of which argument is
+  actually tainted.
+description: |
+  fmt.Sprintf() is called with an argument that traces back to an
+  untrusted source (intra-procedural taint tracking). This flags any
+  tainted argument to the call, not specifically the format-string
+  template — see the known-limitation note in the rationale above; most
+  matches will be the safe "tainted value substituted into a fixed
+  template" case and need manual review to confirm whether the template
+  itself is attacker-controlled.
+message: "fmt.Sprintf() called with a tainted argument — verify whether the format template itself (not just an interpolated value) is attacker-controlled"
+references:
+  - https://cwe.mitre.org/data/definitions/134.html
+tags: [format-string, injection]
+match:
+  kind: call
+  callee: fmt.Sprintf
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Never build the format-string template from untrusted input; use a fixed literal template and pass tainted data only as substitution arguments."

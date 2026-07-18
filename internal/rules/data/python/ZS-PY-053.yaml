@@ -1,0 +1,35 @@
+id: ZS-PY-053
+lifecycle: released
+name: XML External Entity (XXE) via lxml etree.fromstring
+version: "1.0.0"
+language: python
+category: xxe
+severity: high
+confidence: medium
+cwe:
+  - CWE-611
+owasp:
+  - "A05:2025"
+rationale: |
+  lxml's etree.fromstring() resolves external entities by default (libxml2
+  behaviour unless a hardened XMLParser is supplied), so a crafted document
+  with a DOCTYPE declaring an external or parameter entity can read local
+  files, reach internal network endpoints (SSRF via the entity URI), or
+  exhaust memory through entity expansion. This is exploitable wherever XML
+  from a request body, upload, or webhook payload is parsed directly.
+description: |
+  Detects calls to etree.fromstring() (the conventional alias for
+  lxml.etree) where the XML argument traces back to an untrusted source
+  (intra-procedural taint tracking). Sibling to ZS-PY-032, which covers the
+  standard-library alias ET.fromstring.
+message: "etree.fromstring() called with a tainted argument — XXE risk, use defusedxml or a no-entities XMLParser"
+references:
+  - https://cwe.mitre.org/data/definitions/611.html
+  - https://pypi.org/project/defusedxml/
+tags: [xxe, injection, xml, lxml]
+match:
+  kind: call
+  callee: etree.fromstring
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Parse untrusted XML with defusedxml, or pass etree.XMLParser(resolve_entities=False, no_network=True) explicitly."

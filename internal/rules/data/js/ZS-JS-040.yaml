@@ -1,0 +1,37 @@
+id: ZS-JS-040
+lifecycle: released
+name: Prototype Pollution via __proto__ Assignment
+version: "1.0.0"
+language: javascript
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-1321
+owasp:
+  - "A05:2025"
+rationale: |
+  Assigning attacker-influenced data to an object's __proto__ writes
+  through to Object.prototype (or another shared prototype), so properties
+  the attacker chooses appear on effectively every object in the process.
+  Depending on what the application reads from those objects, that
+  escalates to authorization bypass (e.g. a polluted isAdmin flag), denial
+  of service, or — when a polluted property later reaches a code-execution
+  gadget such as a template engine or child_process option — full remote
+  code execution.
+description: |
+  Detects assignments whose left-hand side is a __proto__ property and
+  whose assigned value traces back to an untrusted source (intra-procedural
+  taint tracking). Pollution via computed keys (obj[key] where key is
+  "__proto__") or Object.assign is not covered.
+message: "__proto__ assigned from a tainted value — prototype pollution; use a null-prototype object or block the __proto__ key"
+references:
+  - https://cwe.mitre.org/data/definitions/1321.html
+  - https://cheatsheetseries.owasp.org/cheatsheets/Prototype_Pollution_Prevention_Cheat_Sheet.html
+tags: [prototype-pollution, injection, object-injection]
+match:
+  kind: assignment
+  lhs_identifier: "__proto__"
+  filters:
+    - tainted_rhs: true
+fix_suggestion: "Never assign user input to __proto__; create objects with Object.create(null) and reject __proto__/constructor/prototype keys when merging untrusted data."

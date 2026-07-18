@@ -1,0 +1,39 @@
+id: ZS-GO-027
+lifecycle: released
+name: Server-Side Request Forgery (http.Post)
+version: "1.0.0"
+language: go
+category: ssrf
+severity: medium
+confidence: medium
+cwe:
+  - CWE-918
+owasp:
+  - "A01:2025"
+rationale: |
+  Passing a request-derived URL straight to http.Post() lets an attacker
+  redirect the server's own outbound request to internal-only services,
+  loopback addresses, or cloud metadata endpoints (e.g. 169.254.169.254)
+  that are normally unreachable from outside the network. POST-based SSRF
+  is often WORSE than the http.Get case ZS-GO-012 covers, because the
+  attacker gets a state-changing request with a body — enough to invoke
+  unauthenticated internal admin APIs, not merely read from them. This is
+  exploitable in any feature that delivers to a user-supplied endpoint,
+  webhooks being the canonical example; taint-gating keeps precision
+  acceptable since http.Post with a fixed URL is an ordinary, safe call.
+description: |
+  Detects calls to http.Post() where an argument traces back to an
+  untrusted source (intra-procedural taint tracking). Sibling of
+  ZS-GO-012 (http.Get); the filter checks any argument, so a tainted
+  body with a constant URL also matches — review which argument is
+  attacker-controlled.
+message: "http.Post() called with a tainted URL — validate and allowlist URLs before use"
+references:
+  - https://owasp.org/www-community/attacks/Server_Side_Request_Forgery
+tags: [ssrf, http]
+match:
+  kind: call
+  callee: http.Post
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Validate the URL against an allowlist. Reject internal/private IPs and non-http(s) schemes before posting."

@@ -1,0 +1,37 @@
+id: ZS-JAVA-032
+lifecycle: released
+name: Sensitive Value Logged
+version: "1.0.0"
+language: java
+category: logging
+severity: medium
+confidence: low
+cwe:
+  - CWE-532
+owasp:
+  - "A09:2025"
+rationale: |
+  Passwords, API keys, and tokens written to application logs persist in log
+  files, log-aggregation platforms, and monitoring dashboards that are often
+  readable by a much broader audience (ops staff, third-party log SaaS,
+  anyone with log-storage access) than the credential's intended scope. Once
+  logged, the secret is effectively exposed for as long as log retention and
+  backups keep it around, which is typically far longer than an
+  application's primary datastore.
+description: |
+  A variable whose name suggests sensitive data (password, passwd, secret,
+  token, api_key, apikey) is passed directly to logger.info(). Note: only
+  logger.info() on a receiver conventionally named "logger" is covered —
+  other levels (debug/warn/error) and other logger variable names are not
+  yet detected by this single rule. No taint tracking is applied; the
+  variable name alone is the signal, so confidence is low.
+message: "Sensitive-looking value passed to logger.info() — avoid logging credentials"
+references:
+  - https://cwe.mitre.org/data/definitions/532.html
+tags: [logging, information-disclosure]
+match:
+  kind: call
+  callee: logger.info
+  filters:
+    - argument_identifier_matches: "(?i)(password|passwd|secret|token|api_key|apikey)"
+fix_suggestion: "Redact or omit sensitive values before logging; log an identifier instead of the secret itself."

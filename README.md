@@ -295,6 +295,8 @@ Every scan writes to `<root>/.zerostrike/cache/`: an **AST cache** (serialized I
 
 ## CI/CD Integration
 
+> **Exit code `1` means "findings were found" — not a scan failure.** Always tolerate it explicitly (`|| [ $? -eq 1 ]`) and only let exit code `2` (a real engine/upload error) fail the job. Omitting this is the most common reason a first CI run "fails" unexpectedly — see [Quick Start](#quick-start).
+
 This repository's own [`.github/workflows/ci.yml`](.github/workflows/ci.yml) is a working example:
 
 - **lint** — `go vet ./...` + build
@@ -314,13 +316,23 @@ A minimal drop-in for your own repo:
     chmod +x zerostrike
 
 - name: Scan
-  run: ./zerostrike scan . --enable-secrets --enable-sca --format sarif --output results.sarif
+  run: |
+    ./zerostrike scan . --enable-secrets --enable-sca --format sarif --output results.sarif || [ $? -eq 1 ]
 
 - name: Upload SARIF to GitHub Code Scanning
   if: always()
   uses: github/codeql-action/upload-sarif@v3
   with:
     sarif_file: results.sarif
+```
+
+If you're pushing to a self-hosted portal with `--server`/`--token` instead of (or alongside) SARIF/Code Scanning, pair `--output` with the same exit-code guard. Without `--output` the report renders straight to stdout — dumping the full JSON into your CI log — and without `|| [ $? -eq 1 ]` the step fails on the very first finding:
+
+```yaml
+- name: Scan and upload to portal
+  run: |
+    ./zerostrike scan . --server https://portal.internal --token ${{ secrets.ZS_TOKEN }} \
+      --output results.json || [ $? -eq 1 ]
 ```
 
 ## Accuracy Benchmarking

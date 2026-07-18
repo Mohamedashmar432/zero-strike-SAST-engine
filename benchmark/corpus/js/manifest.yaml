@@ -99,3 +99,45 @@ cases:
   - file: cases/clean.js
     language: javascript
     expect: []
+  - file: cases/vuln_ssrf_axios_get.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-035, min_count: 1}]
+  - file: cases/vuln_ssrf_axios_post.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-036, min_count: 1}]
+  - file: cases/vuln_ssrf_fetch.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-037, min_count: 1}]
+  - file: cases/vuln_ssrf_http_get.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-038, min_count: 1}]
+  - file: cases/vuln_nosqli_collection_find.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-039, min_count: 1}]
+  - file: cases/vuln_proto_pollution.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-040, min_count: 1}]
+  - file: cases/vuln_ssti_ejs.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-041, min_count: 1}]
+  - file: cases/vuln_ssti_pug.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-042, min_count: 1}]
+  - file: cases/vuln_vm_run_in_new_context.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-043, min_count: 1}]
+  - file: cases/vuln_weak_cipher.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-044, min_count: 1}]
+  - file: cases/vuln_execsync_cmdi.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-045, min_count: 1}]
+  - file: cases/vuln_location_href_redirect.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-046, min_count: 1}]
+  - file: cases/vuln_insert_adjacent_html.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-047, min_count: 1}]
+  - file: cases/vuln_jwt_alg_none.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-048, min_count: 1}]

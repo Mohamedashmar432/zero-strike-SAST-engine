@@ -194,7 +194,8 @@ func TestSARIF_Render_EnrichedFields(t *testing.T) {
 	if enriched.FullDescription == nil || enriched.FullDescription.Text != "eval() with untrusted input allows arbitrary code execution." {
 		t.Errorf("fullDescription.text = %+v, want rationale text", enriched.FullDescription)
 	}
-	wantHelp := "eval() with untrusted input allows arbitrary code execution.\n\nRemediation: Use ast.literal_eval() instead of eval() when parsing user data."
+	wantHelp := "eval() with untrusted input allows arbitrary code execution.\n\nRemediation: Use ast.literal_eval() instead of eval() when parsing user data." +
+		"\n\nReferences:\n- https://owasp.org/Top10/2025/A05_2025-Injection/\n- https://example.com/other"
 	if enriched.Help == nil || enriched.Help.Text != wantHelp {
 		t.Errorf("help.text = %+v, want %q", enriched.Help, wantHelp)
 	}

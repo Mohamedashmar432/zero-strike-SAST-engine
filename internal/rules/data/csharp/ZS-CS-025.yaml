@@ -1,0 +1,38 @@
+id: ZS-CS-025
+lifecycle: released
+name: XPath Injection via SelectNodes
+version: "1.0.0"
+language: csharp
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-643
+owasp:
+  - "A05:2025"
+rationale: |
+  Passing an XPath expression built from attacker-controlled data to
+  XmlDocument.SelectNodes lets an attacker break out of the intended
+  predicate with quotes and boolean operators — turning a lookup like
+  //user[login='NAME'] into //user[login='x' or '1'='1'], which matches
+  every user. Because XPath has no parameterization in this API, injection
+  yields authentication bypass and disclosure of any data in the XML
+  document, including nodes the query was never meant to reach.
+description: |
+  Detects calls to doc.SelectNodes() where an argument traces back to an
+  untrusted source (intra-procedural taint tracking). The callee match
+  relies on the conventional receiver name "doc" for an XmlDocument — a
+  document held under a different variable name will not be matched, the
+  same receiver-name tradeoff accepted for httpClient.GetAsync
+  (ZS-CS-016).
+message: "doc.SelectNodes() called with a tainted XPath expression — sanitize or avoid string-built XPath"
+references:
+  - https://owasp.org/www-community/attacks/XPATH_Injection
+  - https://learn.microsoft.com/en-us/dotnet/api/system.xml.xmldocument.selectnodes
+tags: [xpath, injection, xml]
+match:
+  kind: call
+  callee: doc.SelectNodes
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Validate the value against a strict allowlist (e.g. ^[a-zA-Z0-9_-]+$) or escape quotes before splicing it into the XPath string."

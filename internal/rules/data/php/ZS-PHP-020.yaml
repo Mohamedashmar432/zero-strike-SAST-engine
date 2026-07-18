@@ -1,0 +1,36 @@
+id: ZS-PHP-020
+lifecycle: released
+name: passthru() Command Injection
+version: "1.0.0"
+language: php
+category: injection
+severity: high
+confidence: high
+cwe:
+  - CWE-78
+owasp:
+  - "A05:2025"
+rationale: |
+  passthru() executes its argument through the system shell and streams
+  the raw output straight to the response body, so attacker-controlled
+  shell metacharacters (;, |, &&, backticks, $()) yield arbitrary command
+  execution AND immediate exfiltration of the command's output to the
+  attacker in one step. It is commonly found where binary output is
+  proxied to the client (image thumbnails, file downloads, PDF
+  generation) with a request-derived path or option spliced into the
+  command string.
+description: |
+  Detects calls to passthru() where an argument traces back to an
+  untrusted source (intra-procedural taint tracking, file-scoped).
+  passthru() with a fixed command string is not flagged.
+message: "passthru() detected with a tainted argument — escape with escapeshellarg() or use a fixed allowlisted command"
+references:
+  - https://owasp.org/www-community/attacks/Command_Injection
+  - https://www.php.net/manual/en/function.passthru.php
+tags: [command-injection, injection, passthru]
+match:
+  kind: call
+  callee: passthru
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Do not build passthru() commands from user input; wrap user-derived arguments in escapeshellarg() and serve files via readfile() with a validated path instead of shelling out."

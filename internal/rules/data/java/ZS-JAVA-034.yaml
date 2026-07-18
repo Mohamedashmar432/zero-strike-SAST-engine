@@ -1,0 +1,41 @@
+id: ZS-JAVA-034
+lifecycle: released
+name: SpEL Expression Injection
+version: "1.0.0"
+language: java
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-1336
+owasp:
+  - "A05:2025"
+rationale: |
+  Spring Expression Language expressions are a full object-navigation and
+  method-invocation language: an expression like
+  T(java.lang.Runtime).getRuntime().exec('...') executes arbitrary code
+  when evaluated. Passing attacker-influenced input to
+  ExpressionParser.parseExpression() therefore turns any subsequent
+  getValue()/setValue() call into remote code execution — the same
+  vulnerability class behind CVE-2022-22963 (Spring Cloud Function) and
+  numerous Spring-ecosystem SpEL injection CVEs.
+description: |
+  ExpressionParser.parseExpression() is called with an expression string
+  that traces back to an untrusted source (intra-procedural taint
+  tracking), indicating an attacker-controlled SpEL expression.
+
+  Known limitation: the callee is a receiver-variable method call, so this
+  rule only fires when the ExpressionParser variable is conventionally
+  named "parser". A companion rule for other receiver names is a
+  follow-up.
+message: "parser.parseExpression() called with a tainted expression — never evaluate user input as SpEL; use SimpleEvaluationContext at minimum"
+references:
+  - https://cwe.mitre.org/data/definitions/1336.html
+  - https://docs.spring.io/spring-framework/reference/core/expressions.html
+tags: [spel, injection, rce]
+match:
+  kind: call
+  callee: parser.parseExpression
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Do not build SpEL expressions from user input; treat user data as values via EvaluationContext variables and evaluate with SimpleEvaluationContext.forReadOnlyDataBinding()."

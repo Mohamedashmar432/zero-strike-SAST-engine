@@ -177,7 +177,7 @@ func (s *SASTScanner) processFile(ctx context.Context, entry walker.FileEntry) (
 
 	fileFindings := make([]core.Finding, 0, len(matchResults))
 	for _, mr := range matchResults {
-		fileFindings = append(fileFindings, findings.BuildFinding(mr, mc))
+		fileFindings = append(fileFindings, findings.BuildFinding(mr, mc, source))
 	}
 
 	// Write-through to the finding cache. PutRecord stores the Entry and its

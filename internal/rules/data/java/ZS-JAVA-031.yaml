@@ -1,0 +1,40 @@
+id: ZS-JAVA-031
+lifecycle: released
+name: XStream Deserialization of Tainted XML
+version: "1.0.0"
+language: java
+category: deserialization
+severity: critical
+confidence: medium
+cwe:
+  - CWE-502
+owasp:
+  - "A08:2025"
+rationale: |
+  XStream.fromXML() reconstructs arbitrary Java object graphs from XML,
+  and without a strict type allowlist an attacker who controls the
+  document can instantiate gadget classes — XStream has a long CVE history
+  (e.g. CVE-2021-39144 and the ysoserial-style EventHandler/dynamic-proxy
+  payloads) where a crafted document yields remote code execution during
+  deserialization. Feeding request-derived XML to fromXML() hands the
+  attacker that instantiation primitive directly.
+description: |
+  XStream.fromXML() is called with XML that traces back to an untrusted
+  source (intra-procedural taint tracking), indicating deserialization of
+  attacker-controlled content.
+
+  Known limitation: the callee is a receiver-variable method call, so this
+  rule only fires when the com.thoughtworks.xstream.XStream variable is
+  conventionally named "xstream". A companion rule for other receiver
+  names is a follow-up.
+message: "xstream.fromXML() called with tainted XML — configure a strict allowlist (allowTypes) before deserializing external input"
+references:
+  - https://x-stream.github.io/security.html
+  - https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html
+tags: [deserialization, xstream, rce]
+match:
+  kind: call
+  callee: xstream.fromXML
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Call xstream.allowTypes()/allowTypesByWildcard() with only the expected classes (deny-all default via XStream.setupDefaultSecurity or 1.4.18+), or switch to a data-only format for external input."

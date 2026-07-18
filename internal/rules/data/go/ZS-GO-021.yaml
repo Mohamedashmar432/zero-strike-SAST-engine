@@ -1,0 +1,39 @@
+id: ZS-GO-021
+lifecycle: released
+name: TLS Certificate Verification Disabled (InsecureSkipVerify)
+version: "1.0.0"
+language: go
+category: security-misconfiguration
+severity: high
+confidence: high
+cwe:
+  - CWE-295
+owasp:
+  - "A02:2025"
+rationale: |
+  Setting InsecureSkipVerify on a tls.Config disables verification of the
+  server's certificate chain and host name, so the client will complete a
+  TLS handshake with ANY certificate an endpoint presents — including one
+  minted on the spot by a man-in-the-middle. Every guarantee TLS is meant
+  to provide against an active network attacker (knowing who you are
+  talking to) is silently forfeited: credentials, session tokens, and
+  request bodies can be intercepted or modified in transit while the
+  connection still "looks" encrypted. This commonly ships to production
+  after being added as a quick workaround for a self-signed or expired
+  certificate in development.
+description: |
+  Detects the InsecureSkipVerify field identifier wherever it is set —
+  struct-literal fields lower to identifier nodes in the engine's IR, so
+  this rule flags both &tls.Config{InsecureSkipVerify: true} composite
+  literals and cfg.InsecureSkipVerify = true assignments. No value check
+  is performed (an explicit `InsecureSkipVerify: false` also matches);
+  in practice the field is essentially only ever written to enable it.
+message: "InsecureSkipVerify set on tls.Config — certificate verification is disabled, enabling man-in-the-middle attacks; remove it or pin the expected certificate"
+references:
+  - https://cwe.mitre.org/data/definitions/295.html
+  - https://pkg.go.dev/crypto/tls#Config
+tags: [tls, certificate-validation, security-misconfiguration]
+match:
+  kind: identifier
+  identifier: InsecureSkipVerify
+fix_suggestion: "Remove InsecureSkipVerify; trust the proper CA bundle, or for private CAs add the root certificate to tls.Config.RootCAs instead of disabling verification."

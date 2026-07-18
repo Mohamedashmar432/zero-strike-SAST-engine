@@ -1,0 +1,40 @@
+id: ZS-JAVA-025
+lifecycle: released
+name: XPath Injection
+version: "1.0.0"
+language: java
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-643
+owasp:
+  - "A05:2025"
+rationale: |
+  Concatenating untrusted input into an XPath expression evaluated via
+  XPath.evaluate() lets an attacker reshape the query with quote-breaking
+  payloads such as ' or '1'='1, bypassing authentication checks or reading
+  nodes of the XML document (user records, credentials, configuration) that
+  the original expression never intended to expose. Unlike SQL, XPath has no
+  parameterized-query mechanism in the standard javax.xml.xpath API, so any
+  string concatenation of request data into the expression is directly
+  attacker-controllable.
+description: |
+  XPath.evaluate() is called with an expression string that traces back to an
+  untrusted source (intra-procedural taint tracking), indicating an XPath
+  query built from attacker-influenced input.
+
+  Known limitation: the callee is a receiver-variable method call, so this
+  rule only fires when the javax.xml.xpath.XPath variable is conventionally
+  named "xpath". A companion rule for other receiver names is a follow-up.
+message: "xpath.evaluate() called with a tainted expression — sanitize the input or use a variable-resolver instead of string concatenation"
+references:
+  - https://owasp.org/www-community/attacks/XPATH_Injection
+  - https://cwe.mitre.org/data/definitions/643.html
+tags: [xpath, injection]
+match:
+  kind: call
+  callee: xpath.evaluate
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Bind user input through XPathVariableResolver (declare a variable in the expression and resolve it), or strictly validate/escape quotes before building the XPath string."

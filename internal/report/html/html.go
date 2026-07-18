@@ -70,18 +70,18 @@ const htmlTmpl = `<!DOCTYPE html>
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8f9fa;color:#212529;padding:2rem}
 h1{font-size:1.5rem;margin-bottom:1.5rem}
 h2{font-size:1.1rem;margin:1.5rem 0 .75rem}
-.meta{background:#fff;border:1px solid #dee2e6;border-radius:6px;padding:1rem 1.25rem;margin-bottom:1.5rem;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.5rem}
+.meta{background:#fff;border:1px solid #dee2e6;border-radius:0;padding:1rem 1.25rem;margin-bottom:1.5rem;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.5rem}
 .meta dt{font-size:.75rem;color:#6c757d;text-transform:uppercase;letter-spacing:.04em}
 .meta dd{font-size:.875rem;font-weight:500}
 .stats{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1.5rem}
-.stat-card{background:#fff;border:1px solid #dee2e6;border-radius:6px;padding:.75rem 1rem;min-width:120px}
+.stat-card{background:#fff;border:1px solid #dee2e6;border-radius:0;padding:.75rem 1rem;min-width:120px}
 .stat-card .n{font-size:1.5rem;font-weight:700}
 .stat-card .l{font-size:.75rem;color:#6c757d}
-table{width:100%;border-collapse:collapse;background:#fff;border:1px solid #dee2e6;border-radius:6px;overflow:hidden;margin-bottom:1.5rem}
+table{width:100%;border-collapse:collapse;background:#fff;border:1px solid #dee2e6;border-radius:0;overflow:hidden;margin-bottom:1.5rem}
 thead{background:#f1f3f5}
 th{padding:.6rem .75rem;text-align:left;font-size:.8rem;text-transform:uppercase;letter-spacing:.04em;color:#495057}
 td{padding:.6rem .75rem;font-size:.875rem;border-top:1px solid #dee2e6;vertical-align:top}
-.badge{display:inline-block;padding:.2em .5em;border-radius:4px;font-size:.75rem;font-weight:600;text-transform:uppercase}
+.badge{display:inline-block;padding:.2em .5em;border-radius:0;font-size:.75rem;font-weight:600;text-transform:uppercase}
 .badge.critical{background:#ffe0e0;color:#c0392b}
 .badge.high{background:#fff3cd;color:#e65100}
 .badge.medium{background:#fffde7;color:#795548}
@@ -89,6 +89,9 @@ td{padding:.6rem .75rem;font-size:.875rem;border-top:1px solid #dee2e6;vertical-
 .badge.info{background:#f0f0f0;color:#555}
 .loc{font-family:monospace;font-size:.8rem;color:#6c757d}
 .sub{font-family:monospace;font-size:.8rem;color:#6c757d;display:block;margin-top:.2em}
+.tag{display:inline-block;padding:.1em .4em;margin:.15em .25em 0 0;border:1px solid #ced4da;background:#f1f3f5;color:#495057;font-size:.7rem;font-family:monospace}
+.snippet{font-family:monospace;font-size:.78rem;background:#f8f9fa;border:1px solid #dee2e6;border-left:3px solid #adb5bd;padding:.4rem .6rem;margin-top:.35em;overflow-x:auto;white-space:pre}
+.chain{color:#9c27b0;font-weight:600}
 .empty{color:#6c757d;font-style:italic;padding:2rem;text-align:center}
 </style>
 </head>
@@ -116,7 +119,10 @@ td{padding:.6rem .75rem;font-size:.875rem;border-top:1px solid #dee2e6;vertical-
   <tr>
     <td>{{.RuleID}}</td>
     <td><span class="badge {{.Severity}}">{{.Severity}}</span></td>
-    <td>{{.Message}}{{if .Rationale}}<span class="sub">{{.Rationale}}</span>{{end}}{{if .Remediation}}<span class="sub">Fix: {{.Remediation}}</span>{{end}}{{if .TaintContext}}<span class="sub">Tainted: {{.TaintContext.SourceVar}}{{if .TaintContext.SourceExpr}} &#8592; {{.TaintContext.SourceExpr}}{{end}} &#8594; {{.TaintContext.Sink}}</span>{{end}}</td>
+    <td>{{.Message}}
+      <div>{{range .CWE}}<span class="tag">{{.}}</span>{{end}}{{range .OWASP}}<span class="tag">OWASP {{.}}</span>{{end}}{{if .Category}}<span class="tag">{{.Category}}</span>{{end}}{{if .Confidence}}<span class="tag">confidence: {{.Confidence}}</span>{{end}}</div>
+      {{if .Evidence}}<pre class="snippet">{{(index .Evidence 0).Snippet}}</pre>{{end}}
+      {{if .Rationale}}<span class="sub">{{.Rationale}}</span>{{end}}{{if .Remediation}}<span class="sub">Fix: {{.Remediation}}</span>{{end}}{{if .TaintContext}}<span class="sub">Tainted: {{.TaintContext.SourceVar}}{{if .TaintContext.SourceExpr}} &#8592; {{.TaintContext.SourceExpr}}{{end}} &#8594; {{.TaintContext.Sink}}</span>{{if .TaintContext.Path}}<span class="sub">Path: {{range $i, $p := .TaintContext.Path}}{{if $i}} &#8594; {{end}}{{$p.File}}:{{$p.StartLine}}{{end}}</span>{{end}}{{end}}{{$md := .Metadata}}{{if $md}}{{with index $md "chain_size"}}<span class="sub chain">&#9939; Taint chain: source &quot;{{index $md "chain_source"}}&quot; reaches {{.}} sinks ({{index $md "chain_rules"}})</span>{{end}}{{end}}</td>
     <td class="loc">{{.Location.File}}:{{.Location.StartLine}}</td>
   </tr>{{end}}
   </tbody>

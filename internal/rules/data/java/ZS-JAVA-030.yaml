@@ -1,0 +1,40 @@
+id: ZS-JAVA-030
+lifecycle: released
+name: XMLDecoder Unsafe Deserialization
+version: "1.0.0"
+language: java
+category: deserialization
+severity: critical
+confidence: high
+cwe:
+  - CWE-502
+owasp:
+  - "A08:2025"
+rationale: |
+  java.beans.XMLDecoder.readObject() executes the XML it reads: the
+  format's <object>/<void> elements describe arbitrary constructor calls
+  and method invocations, so a payload like
+  <object class="java.lang.ProcessBuilder"> ... <void method="start"/>
+  runs commands directly during decoding. There is no type allowlist and
+  no safe mode — decoding any attacker-influenced document is remote code
+  execution by design, which is why XMLDecoder must never be used on data
+  that crosses a trust boundary.
+description: |
+  XMLDecoder.readObject() is called. The rule flags the call itself
+  without requiring proven taint (matching how ZS-JAVA-002 flags
+  ObjectInputStream.readObject() unconditionally), because there is no
+  safe way to expose XMLDecoder to external input.
+
+  Known limitation: the callee is a receiver-variable method call, so this
+  rule only fires when the java.beans.XMLDecoder variable is
+  conventionally named "decoder". A companion rule for other receiver
+  names is a follow-up.
+message: "decoder.readObject() (java.beans.XMLDecoder) detected — XMLDecoder executes arbitrary method calls from the XML; never decode untrusted documents"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html
+  - https://cwe.mitre.org/data/definitions/502.html
+tags: [deserialization, xmldecoder, rce]
+match:
+  kind: call
+  callee: decoder.readObject
+fix_suggestion: "Replace XMLDecoder with a data-only format (JSON via Jackson/Gson with default typing disabled, or JAXB bound to explicit classes); never feed XMLDecoder externally supplied XML."

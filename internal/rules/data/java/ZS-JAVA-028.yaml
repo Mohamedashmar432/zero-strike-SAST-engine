@@ -1,0 +1,35 @@
+id: ZS-JAVA-028
+lifecycle: released
+name: Unsafe Reflection (Class.forName with Tainted Name)
+version: "1.0.0"
+language: java
+category: dangerous-functions
+severity: high
+confidence: medium
+cwe:
+  - CWE-470
+owasp:
+  - "A05:2025"
+rationale: |
+  Loading a class whose name comes from untrusted input lets an attacker
+  select any class on the classpath. Class.forName() runs the chosen
+  class's static initializers immediately, and the loaded Class object is
+  almost always instantiated or invoked afterwards, so the attacker can
+  reach gadget classes with dangerous constructors or side effects —
+  escalating to denial of service, security-check bypass, or remote code
+  execution depending on what is available on the classpath.
+description: |
+  Class.forName() is called with a class name that traces back to an
+  untrusted source (intra-procedural taint tracking), indicating
+  attacker-controlled class selection (unsafe reflection).
+message: "Class.forName() called with a tainted class name — resolve the class from a hardcoded allowlist instead of user input"
+references:
+  - https://cwe.mitre.org/data/definitions/470.html
+  - https://owasp.org/www-community/vulnerabilities/Unsafe_use_of_Reflection
+tags: [reflection, dangerous-functions]
+match:
+  kind: call
+  callee: Class.forName
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Map user input to classes through an explicit allowlist (e.g. a Map<String, Class<?>> of permitted implementations) instead of passing the raw name to Class.forName()."

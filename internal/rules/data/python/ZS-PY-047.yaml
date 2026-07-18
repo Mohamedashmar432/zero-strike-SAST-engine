@@ -1,0 +1,32 @@
+id: ZS-PY-047
+lifecycle: released
+name: Insecure marshal.loads Deserialization
+version: "1.0.0"
+language: python
+category: deserialization
+severity: high
+confidence: high
+cwe:
+  - CWE-502
+owasp:
+  - "A08:2025"
+rationale: |
+  marshal is Python's internal bytecode serialization format and is
+  explicitly documented as unsafe against erroneous or maliciously
+  constructed data. marshal.loads() can deserialize code objects, which a
+  caller frequently passes straight to exec() or types.FunctionType —
+  handing an attacker who controls the bytes arbitrary code execution — and
+  crafted input can crash the interpreter outright.
+description: |
+  Detects calls to marshal.loads(). The rule does not trace the byte source
+  back to a taint origin, so every call is reported regardless of whether
+  the input is verified as trusted.
+message: "Insecure deserialization via marshal.loads() — never unmarshal untrusted bytes, use JSON instead"
+references:
+  - https://docs.python.org/3/library/marshal.html
+  - https://cwe.mitre.org/data/definitions/502.html
+tags: [deserialization, rce, marshal]
+match:
+  kind: call
+  callee: marshal.loads
+fix_suggestion: "Replace marshal with json (data) or a signed/validated format; never load marshal data that crossed a trust boundary."

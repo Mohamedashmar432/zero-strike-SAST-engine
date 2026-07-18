@@ -1,0 +1,42 @@
+id: ZS-TS-039
+lifecycle: released
+name: Server-Side Template Injection (ejs.render)
+version: "1.0.0"
+language: typescript
+category: ssti
+severity: high
+confidence: medium
+cwe:
+  - CWE-1336
+owasp:
+  - "A03:2025"
+rationale: |
+  ejs.render() compiles and executes its template string as JavaScript on
+  the server. When that template string is derived from request input, the
+  attacker is no longer supplying data to a template — they are supplying
+  the template itself, and EJS scriptlet tags (<% ... %>) let them run
+  arbitrary JavaScript in the Node process: reading files, spawning
+  processes, and exfiltrating secrets. This is full remote code execution,
+  not just HTML injection.
+
+  TypeScript is a fully separate language in this engine and inherits
+  nothing from ZS-JS-041, so this gap is total, not partial — EJS is used
+  identically from TypeScript backends via @types/ejs. Ported verbatim
+  from ZS-JS-041, same match shape.
+description: |
+  Detects calls to ejs.render() where an argument traces back to an
+  untrusted source (intra-procedural taint tracking). Matches the
+  conventional module binding name "ejs"; a differently-named import
+  binding will not match. Tainted data passed only as template context
+  (the second argument) is also flagged, a known over-approximation.
+message: "ejs.render() called with a tainted template string — server-side template injection leads to RCE"
+references:
+  - https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/07-Input_Validation_Testing/18-Testing_for_Server-side_Template_Injection
+  - https://cwe.mitre.org/data/definitions/1336.html
+tags: [ssti, injection, ejs, template]
+match:
+  kind: call
+  callee: ejs.render
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Never build the template string from user input; render fixed template files and pass user data only through the template context object."

@@ -1,0 +1,43 @@
+id: ZS-TS-041
+lifecycle: released
+name: Dynamic Code Execution via vm.runInNewContext
+version: "1.0.0"
+language: typescript
+category: dangerous-functions
+severity: high
+confidence: medium
+cwe:
+  - CWE-95
+owasp:
+  - "A05:2025"
+rationale: |
+  vm.runInNewContext() compiles and executes an arbitrary string as
+  JavaScript. Despite running in a "new context", the Node vm module is
+  explicitly not a security sandbox — well-known escapes via the
+  constructor chain (e.g. this.constructor.constructor('return
+  process')()) give the evaluated code access to the real process object.
+  When the code string is derived from request input, this is direct remote
+  code execution: the attacker reads files, spawns processes, and
+  exfiltrates credentials with the privileges of the Node process.
+
+  TypeScript is a fully separate language in this engine and inherits
+  nothing from ZS-JS-043, so this gap is total, not partial — the vm module
+  is used identically from TypeScript via @types/node, and the evaluated
+  string is never type-checked. Ported verbatim from ZS-JS-043, same match
+  shape.
+description: |
+  Detects calls to vm.runInNewContext() (the Node vm module under its
+  conventional binding name "vm") where an argument traces back to an
+  untrusted source (intra-procedural taint tracking). A differently-named
+  module binding will not match.
+message: "vm.runInNewContext() called with a tainted code string — the vm module is not a sandbox; this is remote code execution"
+references:
+  - https://nodejs.org/api/vm.html
+  - https://cwe.mitre.org/data/definitions/95.html
+tags: [code-injection, dangerous-functions, vm]
+match:
+  kind: call
+  callee: vm.runInNewContext
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Never evaluate user-supplied code; if dynamic logic is unavoidable, use a purpose-built policy language or an isolated worker with no ambient authority instead of the vm module."

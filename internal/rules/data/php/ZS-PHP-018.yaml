@@ -1,0 +1,37 @@
+id: ZS-PHP-018
+lifecycle: released
+name: eval() Code Injection
+version: "1.0.0"
+language: php
+category: dangerous-functions
+severity: critical
+confidence: high
+cwe:
+  - CWE-95
+owasp:
+  - "A05:2025"
+rationale: |
+  eval() compiles and executes its string argument as PHP code inside the
+  current scope, so any attacker-controlled data reaching it is equivalent
+  to letting the attacker upload and run a webshell: they can call any
+  function, read or write any file the process can, and pivot to full
+  remote code execution. Unlike command injection, no shell metacharacter
+  tricks are needed — the payload IS the code — which is why tainted
+  eval() is treated as critical rather than merely high severity.
+description: |
+  Detects calls to eval() where an argument traces back to an untrusted
+  source such as $_GET/$_POST/$_REQUEST (intra-procedural taint tracking,
+  file-scoped). eval() with a fixed, developer-authored string is not
+  flagged; cross-function and cross-file flows are out of scope for this
+  engine.
+message: "eval() called with tainted input — remote code execution; remove eval() and use safe alternatives (json_decode, call_user_func on an allowlist)"
+references:
+  - https://cwe.mitre.org/data/definitions/95.html
+  - https://www.php.net/manual/en/function.eval.php
+tags: [code-injection, eval, rce]
+match:
+  kind: call
+  callee: eval
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Never pass user input to eval(). Replace dynamic code with data-driven logic: json_decode() for data, a hardcoded allowlist map for dispatching behavior."

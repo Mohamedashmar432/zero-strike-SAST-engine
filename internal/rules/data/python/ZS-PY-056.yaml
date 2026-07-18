@@ -1,0 +1,35 @@
+id: ZS-PY-056
+lifecycle: released
+name: hashlib.new With Weak Algorithm (MD5/SHA1)
+version: "1.0.0"
+language: python
+category: cryptography
+severity: medium
+confidence: high
+cwe:
+  - CWE-327
+owasp:
+  - "A04:2025"
+rationale: |
+  hashlib.new("md5") and hashlib.new("sha1") select algorithms with
+  practical collision attacks: MD5 collisions are computable in seconds and
+  SHA-1 collisions have been publicly demonstrated. Used for signatures,
+  integrity checks, or password hashing, they let an attacker forge
+  colliding content or brute-force leaked digests at GPU speed — the same
+  risk ZS-PY-007/ZS-PY-011 flag for the direct hashlib.md5()/sha1()
+  constructors, reached via the string-name API instead.
+description: |
+  Detects hashlib.new() calls whose algorithm-name string literal is md5 or
+  sha1 (case-insensitive). Calls selecting a strong algorithm such as
+  hashlib.new("sha256"), or passing the name via a variable, do not fire.
+message: "hashlib.new() with a weak algorithm (md5/sha1) — use sha256 or stronger"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+  - https://cwe.mitre.org/data/definitions/327.html
+tags: [weak-crypto, md5, sha1, hashlib]
+match:
+  kind: call
+  callee: hashlib.new
+  filters:
+    - argument_literal_matches: "(?i)^(md5|sha1)$"
+fix_suggestion: "Call hashlib.new('sha256') (or hashlib.sha256() directly); for passwords use bcrypt/argon2."

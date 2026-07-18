@@ -1,0 +1,39 @@
+id: ZS-GO-026
+lifecycle: released
+name: World-Writable File Permissions (os.Chmod)
+version: "1.0.0"
+language: go
+category: security-misconfiguration
+severity: medium
+confidence: high
+cwe:
+  - CWE-732
+owasp:
+  - "A02:2025"
+rationale: |
+  Calling os.Chmod() with mode 0777 or 0666 makes the file writable by
+  every local user and process. Any co-resident attacker (another
+  compromised service, a lower-privileged account, a container escapee on
+  a shared host) can then tamper with the file's contents — swapping a
+  config for a malicious one, appending to a script that later runs, or
+  planting content the application will trust because it "owns" the file.
+  0777 additionally marks the file executable for everyone, turning a
+  writable file into a directly runnable payload. Permission bits are the
+  last defense once an attacker has any local foothold, and these modes
+  remove it entirely.
+description: |
+  Detects calls to os.Chmod() where a literal argument is the octal mode
+  0777 or 0666 (both the classic 0777 and Go's 0o777 spellings). Only
+  literal modes are checked — a mode held in a variable or built with
+  bit-ORs is not evaluated, and os.OpenFile/os.Mkdir perm arguments are
+  not covered by this rule.
+message: "os.Chmod() sets world-writable permissions (0777/0666) — any local user can modify the file; use 0600/0644 (or 0700/0755 for executables)"
+references:
+  - https://cwe.mitre.org/data/definitions/732.html
+tags: [file-permissions, security-misconfiguration]
+match:
+  kind: call
+  callee: os.Chmod
+  filters:
+    - argument_literal_matches: "^0o?(777|666)$"
+fix_suggestion: "Grant the minimum permissions needed: 0600 (owner read/write) for data and secrets, 0644 if others truly need read access, 0700/0755 for executables — never world-writable modes."
