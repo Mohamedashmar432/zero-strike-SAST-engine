@@ -12,6 +12,7 @@ import (
 	// under CGO_ENABLED=0 these packages are importable but empty).
 	_ "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/parser/csharp"
 	_ "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/parser/golang"
+	_ "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/parser/html"
 	_ "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/parser/java"
 	_ "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/parser/javascript"
 	_ "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/parser/php"

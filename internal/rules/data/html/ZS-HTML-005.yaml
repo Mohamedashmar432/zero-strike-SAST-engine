@@ -1,0 +1,41 @@
+id: ZS-HTML-005
+lifecycle: released
+name: External Script Without Subresource Integrity
+version: "1.0.0"
+language: html
+category: supply-chain
+severity: medium
+confidence: high
+cwe:
+  - CWE-353
+owasp:
+  - "A08:2025"
+rationale: |
+  A <script> loaded from an absolute http(s) origin with no integrity attribute
+  executes whatever bytes that origin returns. If the CDN or third-party host is
+  compromised — or DNS/TLS is subverted — the attacker runs arbitrary JavaScript
+  in this page's origin. A Subresource Integrity (SRI) hash makes the browser
+  refuse any script whose contents don't match the expected digest, turning a
+  host compromise into a load failure instead of a full page takeover.
+description: |
+  Flags <script src="http(s)://..."> elements (absolute cross-origin scripts)
+  that have no integrity attribute. Relative/same-origin script sources are not
+  flagged, as SRI is aimed at third-party delivery.
+message: "External <script> without an integrity (SRI) attribute — a compromised host serves arbitrary JS into this origin"
+references:
+  - https://cwe.mitre.org/data/definitions/353.html
+  - https://developer.mozilla.org/en-US/docs/Web/Security/Subresource_Integrity
+tags: [supply-chain, sri, integrity, html]
+match:
+  kind: call
+  callee: script
+  filters:
+    - kwarg:
+        name: src
+        value_pattern: "(?i)^https?://"
+    - not:
+        kind: call
+        filters:
+          - kwarg:
+              name: integrity
+fix_suggestion: "Add integrity=\"sha384-...\" (and crossorigin=\"anonymous\") to the script tag, or self-host the dependency."

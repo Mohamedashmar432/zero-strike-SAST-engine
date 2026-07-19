@@ -1,0 +1,38 @@
+id: ZS-HTML-004
+lifecycle: released
+name: iframe Without sandbox Attribute
+version: "1.0.0"
+language: html
+category: misconfiguration
+severity: medium
+confidence: medium
+cwe:
+  - CWE-1021
+owasp:
+  - "A05:2025"
+rationale: |
+  An <iframe> with no sandbox attribute runs the embedded document with full
+  privileges: it can execute scripts, submit forms, run plugins, navigate the
+  top-level window, and use the same origin as the parent when same-origin. If
+  the framed content is third-party or attacker-influenced, that is a foothold
+  for clickjacking, drive-by navigation, and script execution against the host
+  page. sandbox re-grants only the capabilities the frame actually needs.
+description: |
+  Flags <iframe> elements that have no sandbox attribute at all. Iframes that
+  declare sandbox (with any token set) are not flagged by this rule — see
+  ZS-HTML-010 for a dangerous sandbox token combination.
+message: "<iframe> without a sandbox attribute — embedded content runs unrestricted (clickjacking / script-execution risk)"
+references:
+  - https://cwe.mitre.org/data/definitions/1021.html
+  - https://developer.mozilla.org/en-US/docs/Web/HTML/Element/iframe#sandbox
+tags: [clickjacking, sandbox, misconfiguration, html]
+match:
+  kind: call
+  callee: iframe
+  filters:
+    - not:
+        kind: call
+        filters:
+          - kwarg:
+              name: sandbox
+fix_suggestion: "Add a sandbox attribute granting only the tokens the frame needs (e.g. sandbox=\"allow-scripts\"), and never combine allow-scripts with allow-same-origin for untrusted content."

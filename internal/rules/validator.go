@@ -53,8 +53,13 @@ func (v *defaultValidator) Validate(rule *Rule) []string {
 		errs = append(errs, "match.kind: required")
 	case !validNodeKinds[rule.Match.Kind]:
 		errs = append(errs, fmt.Sprintf("match.kind: unknown value %q", rule.Match.Kind))
-	case rule.Match.Kind == string(ir.NodeKindCall) && rule.Match.Callee == "":
-		errs = append(errs, "match.callee: required for kind=call")
+	case rule.Match.Kind == string(ir.NodeKindCall) && rule.Match.Callee == "" && len(rule.Match.Filters) == 0:
+		// A call rule with no callee AND no filters would match every call
+		// node in every file — the footgun this guard exists to prevent. A
+		// filter-constrained call rule (e.g. kwarg_name_matches "^on[a-z]+$"
+		// for inline HTML event handlers, which must be tag-agnostic) is
+		// legitimately callee-less and allowed.
+		errs = append(errs, "match.callee: required for kind=call unless filters constrain the match")
 	}
 	if rule.Match.CalleeSuffix && !strings.Contains(rule.Match.Callee, ".") {
 		errs = append(errs, fmt.Sprintf(

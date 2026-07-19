@@ -1,0 +1,42 @@
+id: ZS-HTML-001
+lifecycle: released
+name: target=_blank Link Without rel=noopener
+version: "1.0.0"
+language: html
+category: misconfiguration
+severity: medium
+confidence: medium
+cwe:
+  - CWE-1022
+owasp:
+  - "A01:2025"
+rationale: |
+  A link that opens in a new browsing context with target="_blank" gives the
+  newly opened page a reference to the opener via window.opener. Without
+  rel="noopener" (and, for older browsers, rel="noreferrer"), the destination
+  page can navigate the original tab to an attacker-controlled URL — reverse
+  tabnabbing — so a user who returns to the first tab lands on a convincing
+  phishing page they believe they never left.
+description: |
+  Flags anchor elements with target="_blank" that do not carry a rel attribute
+  containing "noopener". Applies to <a>; <area target=_blank> is not covered by
+  this rule.
+message: "<a target=\"_blank\"> without rel=\"noopener\" — the opened page can hijack this tab (reverse tabnabbing)"
+references:
+  - https://cwe.mitre.org/data/definitions/1022.html
+  - https://owasp.org/www-community/attacks/Reverse_Tabnabbing
+tags: [tabnabbing, misconfiguration, html]
+match:
+  kind: call
+  callee: a
+  filters:
+    - kwarg:
+        name: target
+        value_pattern: "(?i)^_blank$"
+    - not:
+        kind: call
+        filters:
+          - kwarg:
+              name: rel
+              value_pattern: "(?i)noopener"
+fix_suggestion: "Add rel=\"noopener noreferrer\" to every target=\"_blank\" link (or drop target=\"_blank\" if a new tab isn't needed)."

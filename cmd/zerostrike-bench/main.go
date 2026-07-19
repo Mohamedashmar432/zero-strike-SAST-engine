@@ -18,6 +18,7 @@ import (
 	// internal/langreg — same requirement as cmd/zerostrike/main.go.
 	_ "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/parser/csharp"
 	_ "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/parser/golang"
+	_ "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/parser/html"
 	_ "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/parser/java"
 	_ "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/parser/javascript"
 	_ "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/parser/php"

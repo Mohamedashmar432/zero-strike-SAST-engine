@@ -1,0 +1,33 @@
+id: ZS-HTML-007
+lifecycle: released
+name: Form Submits Over Insecure http://
+version: "1.0.0"
+language: html
+category: insecure-transport
+severity: high
+confidence: high
+cwe:
+  - CWE-319
+owasp:
+  - "A02:2025"
+rationale: |
+  A <form> whose action posts to an http:// URL sends every submitted field —
+  including passwords, tokens, and personal data — in cleartext. A network
+  attacker can read the credentials and silently alter the destination. The lock
+  icon on the page hosting the form is irrelevant: it is the action URL's scheme
+  that decides how the data leaves the browser.
+description: |
+  Flags <form> elements whose action attribute uses the http:// scheme.
+message: "<form> action posts over insecure http:// — submitted data (incl. credentials) is sent in cleartext"
+references:
+  - https://cwe.mitre.org/data/definitions/319.html
+  - https://owasp.org/www-community/vulnerabilities/Insecure_Transport
+tags: [insecure-transport, credentials, html]
+match:
+  kind: call
+  callee: form
+  filters:
+    - kwarg:
+        name: action
+        value_pattern: "(?i)^http://"
+fix_suggestion: "Point the form action at an https:// endpoint (or a relative URL served over https)."

@@ -1,0 +1,35 @@
+id: ZS-HTML-002
+lifecycle: released
+name: "javascript: URI in HTML Attribute"
+version: "1.0.0"
+language: html
+category: xss
+severity: high
+confidence: high
+cwe:
+  - CWE-79
+owasp:
+  - "A03:2025"
+rationale: |
+  A URL-bearing attribute whose value uses the javascript: scheme executes
+  arbitrary script when the element is activated (a link clicked, an iframe
+  loaded, a form submitted). It is a direct script-execution sink: any portion
+  of that URL derived from untrusted input becomes cross-site scripting, and
+  even a static javascript: URL is a code path that Content-Security-Policy is
+  meant to eliminate.
+description: |
+  Flags any element whose href, src, action, formaction, xlink:href, poster,
+  cite, or data attribute begins with the javascript: scheme (leading
+  whitespace tolerated).
+message: "javascript: URI in an HTML attribute — executes script on activation (XSS sink)"
+references:
+  - https://cwe.mitre.org/data/definitions/79.html
+  - https://owasp.org/www-community/attacks/xss/
+tags: [xss, injection, html]
+match:
+  kind: call
+  filters:
+    - kwarg:
+        name_pattern: "^(href|src|action|formaction|xlink:href|poster|cite|data)$"
+        value_pattern: "(?i)^\\s*javascript:"
+fix_suggestion: "Replace the javascript: URL with a real URL and attach behavior via an addEventListener handler in a CSP-allowed script."

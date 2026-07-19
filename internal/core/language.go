@@ -11,6 +11,7 @@ const (
 	LangGo         Language = "go"
 	LangPHP        Language = "php"
 	LangJava       Language = "java"
+	LangHTML       Language = "html"
 	LangUnknown    Language = "unknown"
 )
 

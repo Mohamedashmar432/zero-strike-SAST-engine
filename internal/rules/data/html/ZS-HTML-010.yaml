@@ -1,0 +1,38 @@
+id: ZS-HTML-010
+lifecycle: released
+name: iframe sandbox Escape (allow-scripts + allow-same-origin)
+version: "1.0.0"
+language: html
+category: misconfiguration
+severity: high
+confidence: high
+cwe:
+  - CWE-1021
+owasp:
+  - "A05:2025"
+rationale: |
+  Combining allow-scripts and allow-same-origin in an iframe sandbox defeats the
+  sandbox: scripts run AND the frame keeps the embedder's origin, so the framed
+  document can reach into the parent's DOM, cookies, and storage and simply
+  remove its own sandbox attribute to escape entirely. For untrusted content the
+  two tokens must never appear together — that pairing is equivalent to no
+  sandbox at all, while looking like a hardened one.
+description: |
+  Flags <iframe> elements whose sandbox attribute value contains both
+  allow-scripts and allow-same-origin tokens.
+message: "iframe sandbox grants both allow-scripts and allow-same-origin — the frame can escape the sandbox (treat as unsandboxed)"
+references:
+  - https://cwe.mitre.org/data/definitions/1021.html
+  - https://developer.mozilla.org/en-US/docs/Web/HTML/Element/iframe#sandbox
+tags: [sandbox-escape, clickjacking, misconfiguration, html]
+match:
+  kind: call
+  callee: iframe
+  filters:
+    - kwarg:
+        name: sandbox
+        value_pattern: "allow-scripts"
+    - kwarg:
+        name: sandbox
+        value_pattern: "allow-same-origin"
+fix_suggestion: "Drop allow-same-origin (or serve the framed content from a distinct, null origin) so the sandbox actually isolates untrusted content."

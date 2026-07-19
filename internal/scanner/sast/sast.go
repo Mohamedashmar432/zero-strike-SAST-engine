@@ -17,6 +17,7 @@ import (
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/findings"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/ir"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/langreg"
+	htmlparser "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/parser/html"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/rules"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/walker"
 
@@ -180,6 +181,12 @@ func (s *SASTScanner) processFile(ctx context.Context, entry walker.FileEntry) (
 		fileFindings = append(fileFindings, findings.BuildFinding(mr, mc, source))
 	}
 
+	// HTML files additionally get their inline <script> bodies scanned with the
+	// JavaScript rule pack, with finding locations rebased into this .html file.
+	if lang == core.LangHTML {
+		fileFindings = append(fileFindings, s.scanEmbeddedScripts(ctx, entry.Path, source)...)
+	}
+
 	// Write-through to the finding cache. PutRecord stores the Entry and its
 	// Findings as a single atomic write - unlike calling Set and PutFindings
 	// independently, it can never leave a fresh Entry paired with stale or
@@ -189,6 +196,72 @@ func (s *SASTScanner) processFile(ctx context.Context, entry walker.FileEntry) (
 	_ = s.findingCache.PutRecord(cache.Entry{FilePath: entry.Path, SHA256: contentHash}, fileFindings)
 
 	return fileFindings, diags
+}
+
+// scanEmbeddedScripts extracts each inline <script> body from an HTML document,
+// parses it with the JavaScript builder, rebases its IR node locations to the
+// script's position in the .html file, and runs the standard JS analysis +
+// rule matching over it. This reuses the full JavaScript rule pack and taint
+// model unchanged; only the location rebasing is HTML-specific. The full HTML
+// source is passed to BuildFinding so snippets and reported locations both land
+// on the real .html lines. Embedded scripts are re-parsed each scan (not
+// separately AST-cached); the HTML file's own finding-cache entry still
+// short-circuits unchanged files.
+func (s *SASTScanner) scanEmbeddedScripts(ctx context.Context, path string, source []byte) []core.Finding {
+	jsEntry, ok := langreg.Get(core.LangJavaScript)
+	if !ok {
+		return nil // JS parser not registered (e.g. CGO_ENABLED=0 build) — nothing to do
+	}
+	var out []core.Finding
+	for _, blk := range htmlparser.ExtractScripts(source) {
+		irFile, _, err := jsEntry.NewBuilder().Build(path, blk.JS)
+		if err != nil || irFile == nil || irFile.Root == nil {
+			continue
+		}
+		rebaseIR(irFile.Root, blk.StartLine, blk.StartCol)
+
+		analysisResult, err := analyzer.New(s.enableGraphs).Analyze(ctx, irFile)
+		if err != nil {
+			continue
+		}
+		mc := &engine.MatchContext{
+			Index:   s.ruleIndex,
+			File:    analysisResult,
+			Project: &engine.Project{Root: s.rootPath},
+		}
+		matchResults, err := s.eng.Match(ctx, mc)
+		if err != nil {
+			continue
+		}
+		for _, mr := range matchResults {
+			out = append(out, findings.BuildFinding(mr, mc, source))
+		}
+	}
+	return out
+}
+
+// rebaseIR shifts every node's Location from script-fragment coordinates to
+// coordinates within the enclosing HTML file: fragment line 1 maps to the
+// script body's start line, and the start-column offset applies only to nodes
+// on fragment line 1 (later lines begin at column 0 of the HTML file).
+func rebaseIR(n *ir.IRNode, startLine, startCol int) {
+	if n == nil {
+		return
+	}
+	loc := &n.Location
+	if loc.StartLine >= 1 {
+		if loc.StartLine == 1 {
+			loc.StartCol += startCol
+		}
+		if loc.EndLine == 1 {
+			loc.EndCol += startCol
+		}
+		loc.StartLine += startLine - 1
+		loc.EndLine += startLine - 1
+	}
+	for _, c := range n.Children {
+		rebaseIR(c, startLine, startCol)
+	}
 }
 
 // loadOrBuildIR returns the IR for path, preferring the AST cache over a

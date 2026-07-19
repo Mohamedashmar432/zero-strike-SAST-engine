@@ -1,0 +1,33 @@
+id: ZS-HTML-003
+lifecycle: released
+name: Inline Event-Handler Attribute
+version: "1.0.0"
+language: html
+category: xss
+severity: medium
+confidence: medium
+cwe:
+  - CWE-79
+owasp:
+  - "A03:2025"
+rationale: |
+  An inline on* event-handler attribute (onclick, onerror, onload, onmouseover,
+  ...) embeds executable JavaScript directly in markup. It is the primary reason
+  a page cannot adopt a strict, nonce/hash-based Content-Security-Policy, and any
+  such handler whose surrounding markup is assembled from untrusted input is a
+  ready-made XSS injection point (e.g. an attacker-supplied value that closes the
+  attribute and opens onerror=).
+description: |
+  Flags any element carrying an attribute whose name matches ^on[a-z]+$ — the
+  full family of inline DOM event handlers — regardless of tag.
+message: "Inline event-handler attribute (on*) — moves executable JS into markup and blocks a strict CSP (XSS risk)"
+references:
+  - https://cwe.mitre.org/data/definitions/79.html
+  - https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP
+tags: [xss, csp, inline-handler, html]
+match:
+  kind: call
+  filters:
+    - kwarg:
+        name_pattern: "^on[a-z]+$"
+fix_suggestion: "Remove the inline handler and bind the event in an external/CSP-allowed script with addEventListener, then serve a strict Content-Security-Policy."

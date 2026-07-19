@@ -46,6 +46,7 @@ type matchYAML struct {
 
 type kwargYAML struct {
 	Name         string `yaml:"name"`
+	NamePattern  string `yaml:"name_pattern"`
 	ValuePattern string `yaml:"value_pattern"`
 }
 
@@ -151,16 +152,7 @@ func (l *defaultLoader) parseYAML(source string, data []byte) ([]*Rule, error) {
 		FixSuggestion: ry.FixSuggestion,
 		Rationale:     ry.Rationale,
 		Lifecycle:     ry.Lifecycle,
-		Match: MatchPattern{
-			Kind:          ry.Match.Kind,
-			Callee:        ry.Match.Callee,
-			CalleeSuffix:  ry.Match.CalleeSuffix,
-			Identifier:    ry.Match.Identifier,
-			Literal:       ry.Match.Literal,
-			LHSIdentifier: ry.Match.LHSIdentifier,
-			RHSLiteral:    ry.Match.RHSLiteral,
-			Filters:       convertFilters(ry.Match.Filters),
-		},
+		Match:         convertMatch(ry.Match),
 	}
 
 	if errs := l.validator.Validate(rule); len(errs) > 0 {
@@ -168,6 +160,23 @@ func (l *defaultLoader) parseYAML(source string, data []byte) ([]*Rule, error) {
 	}
 
 	return []*Rule{rule}, nil
+}
+
+// convertMatch converts a matchYAML into a MatchPattern, recursing through any
+// nested filters. Shared by the top-level match and each filter's `not`
+// sub-pattern so that a `not` carries its full match shape (including its own
+// filters), not just kind/callee/identifier/literal.
+func convertMatch(m matchYAML) MatchPattern {
+	return MatchPattern{
+		Kind:          m.Kind,
+		Callee:        m.Callee,
+		CalleeSuffix:  m.CalleeSuffix,
+		Identifier:    m.Identifier,
+		Literal:       m.Literal,
+		LHSIdentifier: m.LHSIdentifier,
+		RHSLiteral:    m.RHSLiteral,
+		Filters:       convertFilters(m.Filters),
+	}
 }
 
 func convertFilters(fyamls []filterYAML) []Filter {
@@ -187,15 +196,10 @@ func convertFilters(fyamls []filterYAML) []Filter {
 			HasEmptyExceptHandler:     f.HasEmptyExceptHandler,
 		}
 		if f.Kwarg != nil {
-			filter.Kwarg = &KwargPattern{Name: f.Kwarg.Name, ValuePattern: f.Kwarg.ValuePattern}
+			filter.Kwarg = &KwargPattern{Name: f.Kwarg.Name, NamePattern: f.Kwarg.NamePattern, ValuePattern: f.Kwarg.ValuePattern}
 		}
 		if f.Not != nil {
-			mp := MatchPattern{
-				Kind:       f.Not.Kind,
-				Callee:     f.Not.Callee,
-				Identifier: f.Not.Identifier,
-				Literal:    f.Not.Literal,
-			}
+			mp := convertMatch(*f.Not)
 			filter.Not = &mp
 		}
 		out = append(out, filter)

@@ -1,0 +1,36 @@
+id: ZS-HTML-006
+lifecycle: released
+name: Insecure (http://) Subresource URL
+version: "1.0.0"
+language: html
+category: insecure-transport
+severity: medium
+confidence: high
+cwe:
+  - CWE-319
+owasp:
+  - "A02:2025"
+rationale: |
+  A subresource loaded over plain http:// travels unauthenticated and
+  unencrypted. On an https page browsers block or downgrade such mixed content,
+  and on any page a network attacker can read or rewrite the response — swapping
+  a script or image for a malicious payload that then runs in the page's origin.
+  Loading resources over http:// is a cleartext-transmission weakness and a
+  mixed-content failure.
+description: |
+  Flags any element with a src attribute whose value uses the http:// scheme
+  (scripts, images, iframes, media, etc.). Plain <a href="http://..."> links
+  (navigations, not subresources) are intentionally not flagged; see ZS-HTML-007
+  for insecure form actions.
+message: "Subresource loaded over insecure http:// — mixed content, tamperable in transit (use https://)"
+references:
+  - https://cwe.mitre.org/data/definitions/319.html
+  - https://developer.mozilla.org/en-US/docs/Web/Security/Mixed_content
+tags: [mixed-content, insecure-transport, html]
+match:
+  kind: call
+  filters:
+    - kwarg:
+        name: src
+        value_pattern: "(?i)^http://"
+fix_suggestion: "Serve the resource over https:// (or use a protocol-relative/relative URL on an https origin)."

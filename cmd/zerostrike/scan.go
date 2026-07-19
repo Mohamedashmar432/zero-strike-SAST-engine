@@ -48,6 +48,8 @@ func parseLanguages(raw []string) []core.Language {
 			langs = append(langs, core.LangPHP)
 		case "java":
 			langs = append(langs, core.LangJava)
+		case "html", "htm":
+			langs = append(langs, core.LangHTML)
 		}
 	}
 	return langs

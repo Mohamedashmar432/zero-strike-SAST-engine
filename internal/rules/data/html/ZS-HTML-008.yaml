@@ -1,0 +1,41 @@
+id: ZS-HTML-008
+lifecycle: released
+name: Password Field Without Safe autocomplete
+version: "1.0.0"
+language: html
+category: sensitive-data
+severity: low
+confidence: medium
+cwe:
+  - CWE-522
+owasp:
+  - "A07:2025"
+rationale: |
+  A password <input> that does not declare a controlled autocomplete value
+  (off, new-password, or current-password) lets the browser and any installed
+  form-fillers cache the secret with default heuristics — persisting credentials
+  in shared-machine profiles and browser stores where they can later be
+  recovered. Declaring the intended autocomplete behavior is the documented way
+  to keep control of how a credential field is remembered.
+description: |
+  Flags <input type="password"> elements whose autocomplete attribute is absent
+  or set to anything other than off, new-password, or current-password.
+message: "Password <input> without a controlled autocomplete (off/new-password/current-password) — credential may be cached insecurely"
+references:
+  - https://cwe.mitre.org/data/definitions/522.html
+  - https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/autocomplete
+tags: [sensitive-data, credentials, autocomplete, html]
+match:
+  kind: call
+  callee: input
+  filters:
+    - kwarg:
+        name: type
+        value_pattern: "(?i)^password$"
+    - not:
+        kind: call
+        filters:
+          - kwarg:
+              name: autocomplete
+              value_pattern: "(?i)^(off|new-password|current-password)$"
+fix_suggestion: "Set autocomplete=\"new-password\" on sign-up/change forms and autocomplete=\"current-password\" on login forms (or \"off\" to opt out)."

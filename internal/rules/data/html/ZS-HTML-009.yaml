@@ -1,0 +1,38 @@
+id: ZS-HTML-009
+lifecycle: released
+name: meta refresh Redirect to a URL
+version: "1.0.0"
+language: html
+category: open-redirect
+severity: medium
+confidence: medium
+cwe:
+  - CWE-601
+owasp:
+  - "A01:2025"
+rationale: |
+  A <meta http-equiv="refresh" content="0;url=..."> performs a client-side
+  redirect that runs with no server-side allowlist and is easy to overlook in
+  review. When the destination is templated from untrusted input it is a
+  classic open redirect used to lend a trusted domain's authority to a phishing
+  link; even when static, it is an unauthenticated navigation primitive that
+  belongs in a controlled redirect handler, not in markup.
+description: |
+  Flags <meta http-equiv="refresh"> elements whose content attribute contains a
+  url= target (i.e. a redirect, as opposed to a plain timed page reload).
+message: "<meta http-equiv=\"refresh\"> redirect — client-side navigation with no allowlist (open-redirect / phishing risk)"
+references:
+  - https://cwe.mitre.org/data/definitions/601.html
+  - https://owasp.org/www-community/attacks/Unvalidated_Redirects_and_Forwards_Cheat_Sheet
+tags: [open-redirect, phishing, html]
+match:
+  kind: call
+  callee: meta
+  filters:
+    - kwarg:
+        name: http-equiv
+        value_pattern: "(?i)^refresh$"
+    - kwarg:
+        name: content
+        value_pattern: "(?i);\\s*url="
+fix_suggestion: "Perform redirects server-side against an allowlist of known-safe destinations instead of a meta refresh."

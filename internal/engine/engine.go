@@ -256,8 +256,13 @@ func evalFilter(f rules.Filter, n *ir.IRNode, taintedVars map[string]bool, lang 
 				return false
 			}
 			name, _ := a.Attrs["kwarg_name"].(string)
-			if name != f.Kwarg.Name {
+			if f.Kwarg.Name != "" && name != f.Kwarg.Name {
 				return false
+			}
+			if f.Kwarg.NamePattern != "" {
+				if m, err := regexp.MatchString(f.Kwarg.NamePattern, name); err != nil || !m {
+					return false
+				}
 			}
 			value, _ := a.Attrs["kwarg_value"].(string)
 			matched, err := regexp.MatchString(f.Kwarg.ValuePattern, value)

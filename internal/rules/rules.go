@@ -2,10 +2,15 @@ package rules
 
 import "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
 
-// KwargPattern matches a call's keyword argument by name and value.
+// KwargPattern matches a call's keyword argument by name and value. Name and
+// NamePattern are both optional (an empty one imposes no constraint); when both
+// are empty the pattern matches on value alone, which — combined with an empty
+// ValuePattern that matches anything — lets a rule select an argument purely by
+// a name regex (e.g. NamePattern "^on[a-z]+$" for inline HTML event handlers).
 type KwargPattern struct {
-	Name         string // keyword argument name, e.g. "debug"
-	ValuePattern string // regex against the argument's value text, e.g. "^True$"
+	Name         string // exact keyword argument name, e.g. "debug" ("" = any)
+	NamePattern  string // regex against the argument name, e.g. "^on[a-z]+$" ("" = any)
+	ValuePattern string // regex against the argument's value text, e.g. "^True$" ("" = any)
 }
 
 // Filter is a typed constraint on a match pattern.
@@ -21,8 +26,9 @@ type Filter struct {
 	// assignment-based sinks (e.g. element.innerHTML = ...) where TaintedArgument
 	// (call-argument-only) doesn't apply.
 	TaintedRHS bool
-	// Kwarg requires a keyword argument matching Name whose value matches ValuePattern
-	// to appear anywhere in the call's argument list, e.g. debug=True.
+	// Kwarg requires a keyword argument matching the KwargPattern (by exact name,
+	// name regex, and/or value regex) to appear anywhere in the call's argument
+	// list, e.g. debug=True, or any inline HTML on* handler attribute.
 	Kwarg *KwargPattern
 	// ArgumentIdentifierMatches requires at least one identifier anywhere in the call's
 	// argument list to match this regex, e.g. a variable named "password" passed to print().

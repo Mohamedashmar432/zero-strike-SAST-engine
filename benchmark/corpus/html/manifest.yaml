@@ -1,0 +1,42 @@
+version: "1"
+# HTML fixtures for the OWASP-aligned markup rule pack (ZS-HTML-001..010) plus
+# one embedded-<script> case proving the JavaScript rule pack fires on inline
+# code with locations rebased into the .html file. Each vuln fixture is crafted
+# to fire exactly one rule; clean.html must fire none (true negative).
+cases:
+  - file: cases/vuln_001_tabnabbing.html
+    language: html
+    expect: [{rule_id: ZS-HTML-001, min_count: 1}]
+  - file: cases/vuln_002_javascript_uri.html
+    language: html
+    expect: [{rule_id: ZS-HTML-002, min_count: 1}]
+  - file: cases/vuln_003_inline_handler.html
+    language: html
+    expect: [{rule_id: ZS-HTML-003, min_count: 1}]
+  - file: cases/vuln_004_iframe_no_sandbox.html
+    language: html
+    expect: [{rule_id: ZS-HTML-004, min_count: 1}]
+  - file: cases/vuln_005_script_no_sri.html
+    language: html
+    expect: [{rule_id: ZS-HTML-005, min_count: 1}]
+  - file: cases/vuln_006_mixed_content.html
+    language: html
+    expect: [{rule_id: ZS-HTML-006, min_count: 1}]
+  - file: cases/vuln_007_form_http.html
+    language: html
+    expect: [{rule_id: ZS-HTML-007, min_count: 1}]
+  - file: cases/vuln_008_password_autocomplete.html
+    language: html
+    expect: [{rule_id: ZS-HTML-008, min_count: 1}]
+  - file: cases/vuln_009_meta_refresh.html
+    language: html
+    expect: [{rule_id: ZS-HTML-009, min_count: 1}]
+  - file: cases/vuln_010_sandbox_escape.html
+    language: html
+    expect: [{rule_id: ZS-HTML-010, min_count: 1}]
+  - file: cases/vuln_011_inline_script.html
+    language: html
+    expect: [{rule_id: ZS-JS-001, min_count: 1}]
+  - file: cases/clean.html
+    language: html
+    expect: []
