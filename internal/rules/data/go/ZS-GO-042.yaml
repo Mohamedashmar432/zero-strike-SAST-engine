@@ -1,0 +1,35 @@
+id: ZS-GO-042
+lifecycle: released
+name: bcrypt Cost Factor Too Low
+version: "1.0.0"
+language: go
+category: cryptography
+severity: medium
+confidence: high
+cwe:
+  - CWE-916
+owasp:
+  - "A04:2025"
+rationale: |
+  bcrypt's work factor is the only thing standing between a leaked
+  password hash and offline brute force: each increment doubles the
+  attacker's cost. A cost below 10 (bcrypt.DefaultCost) - values like 4
+  through 9 appear in copied tutorials and tests that leak to
+  production - makes GPU cracking of typical passwords practical in
+  hours to days, turning a database leak into mass account takeover.
+description: |
+  Detects calls to bcrypt.GenerateFromPassword() where a single-digit
+  integer literal (4-9) appears as an argument - the cost position.
+  bcrypt.MinCost is 4 and DefaultCost is 10, so every literal this rule
+  matches is below the recommended work factor. Costs passed as
+  constants or variables are not resolved.
+message: "bcrypt.GenerateFromPassword() with a low cost factor (< 10) - password hashes will be cheap to crack"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+tags: [weak-crypto, password-hashing, bcrypt]
+match:
+  kind: call
+  callee: bcrypt.GenerateFromPassword
+  filters:
+    - argument_literal_matches: "^[4-9]$"
+fix_suggestion: "Use bcrypt.DefaultCost (10) or higher (12+ for new systems); never hardcode a cost below 10."

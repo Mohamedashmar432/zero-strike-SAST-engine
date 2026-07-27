@@ -1,0 +1,36 @@
+id: ZS-JS-062
+lifecycle: released
+name: Arbitrary File Write via fs.writeFile()
+version: "1.0.0"
+language: javascript
+category: path-traversal
+severity: high
+confidence: medium
+cwe:
+  - CWE-22
+owasp:
+  - "A01:2025"
+rationale: |
+  Writing a file whose path traces back to untrusted input lets an
+  attacker use ../ sequences or absolute paths to escape the intended
+  directory and overwrite arbitrary files the process can write —
+  application code, configuration, cron entries, or authorized_keys —
+  turning a file-write primitive into remote code execution or persistent
+  access. This is exploitable wherever an upload filename, export name,
+  or template path from a request reaches fs.writeFile() without
+  confinement to a base directory.
+description: |
+  Detects calls to fs.writeFile() (the standard Node.js `const fs =
+  require('fs')` convention) where the path argument traces back to an
+  untrusted source (intra-procedural taint tracking). Sibling of
+  ZS-JS-024/025 (fs.readFile/readFileSync).
+message: "fs.writeFile() called with a tainted path — validate and confine the path before writing"
+references:
+  - https://owasp.org/www-community/attacks/Path_Traversal
+tags: [path-traversal, file-write, node-fs]
+match:
+  kind: call
+  callee: fs.writeFile
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Resolve the path with path.resolve and confirm it stays within the allowed base directory before writing."

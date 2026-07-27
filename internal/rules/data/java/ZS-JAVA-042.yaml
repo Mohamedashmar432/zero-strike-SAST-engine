@@ -1,0 +1,34 @@
+id: ZS-JAVA-042
+lifecycle: released
+name: Weak Cipher Algorithm (SecretKeySpec)
+version: "1.0.0"
+language: java
+category: cryptography
+severity: medium
+confidence: high
+cwe:
+  - CWE-327
+owasp:
+  - "A04:2025"
+rationale: |
+  Building a SecretKeySpec for DES, 3DES (DESede), RC2, RC4, or Blowfish
+  commits the application to a broken or obsolete cipher: DES's 56-bit
+  key is brute-forceable in hours, RC4 keystream biases allow plaintext
+  recovery, and 64-bit-block ciphers enable Sweet32-style birthday
+  attacks on long-lived sessions. Anything encrypted under such a key
+  should be treated as recoverable by a resourced attacker.
+description: |
+  Detects SecretKeySpec construction with a weak algorithm name literal
+  (des, desede, rc2, rc4, blowfish) in the algorithm argument.
+  ZS-JAVA-004 covers the DESKeySpec form; ZS-JAVA-035 covers
+  Cipher.getInstance.
+message: "SecretKeySpec with a weak algorithm (DES/3DES/RC2/RC4/Blowfish) - use AES"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+tags: [cryptography, weak-cipher, des]
+match:
+  kind: call
+  callee: SecretKeySpec
+  filters:
+    - argument_literal_matches: "(?i)^(des|desede|rc2|rc4|blowfish)$"
+fix_suggestion: "Use new SecretKeySpec(key, \"AES\") with a 256-bit key and an AEAD mode."

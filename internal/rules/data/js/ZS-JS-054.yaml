@@ -1,0 +1,36 @@
+id: ZS-JS-054
+lifecycle: released
+name: "javascript: URL Built from Tainted Data"
+version: "1.0.0"
+language: javascript
+category: xss
+severity: high
+confidence: high
+cwe:
+  - CWE-79
+owasp:
+  - "A05:2025"
+rationale: |
+  Building a javascript: URL that embeds attacker-controlled data and
+  assigning it to an href makes script execution one click away: when the
+  victim activates the link, the URL's script runs in the page's origin
+  with full access to cookies and DOM. The tainted portion is inside a
+  quoted or concatenated script context, so even partial control of the
+  URL body is enough to break out and inject arbitrary statements.
+description: |
+  Detects assignments to any property path ending in .href where the
+  right-hand side begins with a javascript: scheme literal and the value
+  traces back to an untrusted source (intra-procedural taint tracking).
+  Static javascript: URLs without tainted data and plain location.href
+  redirects (ZS-JS-046) are not flagged by this rule.
+message: "javascript: URL built with tainted data assigned to href — script executes on activation (XSS)"
+references:
+  - https://owasp.org/www-community/attacks/xss/
+tags: [xss, javascript-uri, dom]
+match:
+  kind: assignment
+  lhs_identifier: "\\.href$"
+  rhs_literal: "^[\"']\\s*javascript:"
+  filters:
+    - tainted_rhs: true
+fix_suggestion: "Never construct javascript: URLs from user data; navigate to validated http(s) URLs or attach an event handler instead."

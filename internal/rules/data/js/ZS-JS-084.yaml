@@ -1,0 +1,33 @@
+id: ZS-JS-084
+lifecycle: released
+name: SSRF via axios.put()
+version: "1.0.0"
+language: javascript
+category: ssrf
+severity: high
+confidence: medium
+cwe:
+  - CWE-918
+owasp:
+  - "A01:2025"
+rationale: |
+  Passing an attacker-controlled URL to axios.put() makes the server issue
+  an HTTP PUT to a destination the attacker chose — internal admin APIs
+  and infrastructure services that trust the server's network position —
+  and the PUT verb can create or overwrite resources there. This is
+  exploitable wherever a callback, webhook, or sync-target URL comes from
+  request data without scheme/host allowlisting.
+description: |
+  Detects calls to axios.put() where an argument traces back to an
+  untrusted source (intra-procedural taint tracking). Sibling of
+  ZS-JS-035/036 (axios.get/post).
+message: "axios.put() called with a tainted URL — validate scheme and host against an allowlist"
+references:
+  - https://owasp.org/www-community/attacks/Server_Side_Request_Forgery
+tags: [ssrf, axios]
+match:
+  kind: call
+  callee: axios.put
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Validate the URL's scheme and host against an allowlist before issuing the request; never pass raw user input as the URL."

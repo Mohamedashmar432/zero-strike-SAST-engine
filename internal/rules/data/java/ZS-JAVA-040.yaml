@@ -1,0 +1,34 @@
+id: ZS-JAVA-040
+lifecycle: released
+name: SSRF via RestTemplate.postForObject()
+version: "1.0.0"
+language: java
+category: ssrf
+severity: high
+confidence: medium
+cwe:
+  - CWE-918
+owasp:
+  - "A01:2025"
+rationale: |
+  Passing an attacker-controlled URL to restTemplate.postForObject()
+  makes the server issue an HTTP POST to a destination the attacker
+  chose - internal services behind the firewall, cloud metadata
+  endpoints, or third-party hosts - with the response body returned to
+  whatever the attacker can observe. This is exploitable wherever a
+  callback, webhook, or sync-target URL comes from request data without
+  scheme/host allowlisting.
+description: |
+  Detects calls to restTemplate.postForObject() where an argument traces
+  back to an untrusted source (intra-procedural taint tracking). Sibling
+  of ZS-JAVA-020 (restTemplate.getForObject).
+message: "restTemplate.postForObject() called with a tainted URL - validate scheme and host against an allowlist"
+references:
+  - https://owasp.org/www-community/attacks/Server_Side_Request_Forgery
+tags: [ssrf, spring, resttemplate]
+match:
+  kind: call
+  callee: restTemplate.postForObject
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Validate the URL's scheme and host against an allowlist before issuing the request; never pass raw user input as the URL."

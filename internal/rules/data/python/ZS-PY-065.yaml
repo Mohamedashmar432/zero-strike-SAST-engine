@@ -1,0 +1,33 @@
+id: ZS-PY-065
+lifecycle: released
+name: Arbitrary Directory Deletion via shutil.rmtree()
+version: "1.0.0"
+language: python
+category: path-traversal
+severity: high
+confidence: medium
+cwe:
+  - CWE-73
+owasp:
+  - "A01:2025"
+rationale: |
+  shutil.rmtree() recursively deletes an entire directory tree, so
+  attacker-controlled input reaching it is strictly more destructive than
+  a single-file delete: a crafted path of "." , "..", or an absolute path
+  can wipe the application directory, user data roots, or anything else
+  the process can write. This is exploitable wherever a workspace name,
+  session id, or upload identifier from a request is used to build the
+  tree passed to rmtree() without confinement to a known base directory.
+description: |
+  Detects calls to shutil.rmtree() where the path argument traces back to
+  an untrusted source (intra-procedural taint tracking).
+message: "shutil.rmtree() called with a tainted path — recursive delete on user-controlled input"
+references:
+  - https://owasp.org/www-community/attacks/Path_Traversal
+tags: [path-traversal, file-deletion]
+match:
+  kind: call
+  callee: shutil.rmtree
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Never pass request data to rmtree(); compute the directory from a fixed base plus a validated identifier (e.g. a UUID you generated)."

@@ -1,0 +1,36 @@
+id: ZS-PY-071
+lifecycle: released
+name: Django CORS Allow-All Origins
+version: "1.0.0"
+language: python
+category: security-misconfiguration
+severity: medium
+confidence: high
+cwe:
+  - CWE-942
+owasp:
+  - "A02:2025"
+rationale: |
+  Setting CORS_ALLOW_ALL_ORIGINS (or the legacy CORS_ORIGIN_ALLOW_ALL) to
+  True makes django-cors-headers return Access-Control-Allow-Origin for
+  every requesting origin, disabling the same-origin policy's protection
+  for the entire API. Any malicious site can then make cross-origin
+  requests and read responses on behalf of visitors — and combined with
+  CORS_ALLOW_CREDENTIALS those responses carry the victim's authenticated
+  session data. This is exploitable by default whenever it ships to
+  production, no other vulnerability required.
+description: |
+  Detects Django settings assignments that enable allow-all CORS origins
+  (CORS_ALLOW_ALL_ORIGINS = True or the pre-3.0 name
+  CORS_ORIGIN_ALLOW_ALL = True). Allowlist-style settings
+  (CORS_ALLOWED_ORIGINS) are not flagged.
+message: "Django CORS allow-all origins enabled — restrict to an explicit CORS_ALLOWED_ORIGINS list"
+references:
+  - https://cwe.mitre.org/data/definitions/942.html
+  - https://portswigger.net/web-security/cors
+tags: [cors, misconfiguration, django]
+match:
+  kind: assignment
+  lhs_identifier: "^(CORS_ALLOW_ALL_ORIGINS|CORS_ORIGIN_ALLOW_ALL)$"
+  rhs_literal: "^True$"
+fix_suggestion: "Set CORS_ALLOW_ALL_ORIGINS = False and enumerate trusted origins in CORS_ALLOWED_ORIGINS."

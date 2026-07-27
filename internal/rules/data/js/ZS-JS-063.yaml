@@ -1,0 +1,32 @@
+id: ZS-JS-063
+lifecycle: released
+name: Arbitrary File Write via fs.writeFileSync()
+version: "1.0.0"
+language: javascript
+category: path-traversal
+severity: high
+confidence: medium
+cwe:
+  - CWE-22
+owasp:
+  - "A01:2025"
+rationale: |
+  Writing a file whose path traces back to untrusted input lets an
+  attacker escape the intended directory with ../ sequences or an absolute
+  path and overwrite arbitrary files the process can write — application
+  code, configuration, or startup scripts — escalating a file-write
+  primitive to code execution. This is the synchronous sibling of
+  ZS-JS-062, covering the sync form used in startup and tooling code.
+description: |
+  Detects calls to fs.writeFileSync() where the path argument traces back
+  to an untrusted source (intra-procedural taint tracking).
+message: "fs.writeFileSync() called with a tainted path — validate and confine the path before writing"
+references:
+  - https://owasp.org/www-community/attacks/Path_Traversal
+tags: [path-traversal, file-write, node-fs]
+match:
+  kind: call
+  callee: fs.writeFileSync
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Resolve the path with path.resolve and confirm it stays within the allowed base directory before writing."

@@ -1,0 +1,32 @@
+id: ZS-JAVA-043
+lifecycle: released
+name: Weak Hash via DigestUtils.md5()
+version: "1.0.0"
+language: java
+category: cryptography
+severity: medium
+confidence: high
+cwe:
+  - CWE-327
+owasp:
+  - "A04:2025"
+rationale: |
+  MD5 is broken for collision resistance: collisions are generatable in
+  seconds on commodity hardware, so an attacker can forge a second input
+  that hashes identically to a trusted one - undermining signatures,
+  file-integrity checks, and fingerprinting. As a password hash it is
+  fast enough for GPUs to brute-force billions of guesses per second.
+  Commons-codec's DigestUtils.md5() makes the broken primitive a
+  one-liner, which is exactly why it spreads through codebases.
+description: |
+  Detects calls to DigestUtils.md5() (Apache Commons Codec). MD5 is
+  broken regardless of input, so no argument filter is needed. Sibling
+  of ZS-JAVA-022 (MessageDigest.getInstance with MD5/SHA-1).
+message: "DigestUtils.md5() detected - MD5 is broken; use DigestUtils.sha256() or stronger"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+tags: [cryptography, weak-crypto, md5]
+match:
+  kind: call
+  callee: DigestUtils.md5
+fix_suggestion: "Use DigestUtils.sha256() (or bcrypt/argon2 for passwords)."

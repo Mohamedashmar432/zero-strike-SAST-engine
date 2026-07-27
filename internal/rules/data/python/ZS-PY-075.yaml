@@ -1,0 +1,34 @@
+id: ZS-PY-075
+lifecycle: released
+name: Django Session Cookie Missing HttpOnly
+version: "1.0.0"
+language: python
+category: security-misconfiguration
+severity: medium
+confidence: high
+cwe:
+  - CWE-1004
+owasp:
+  - "A02:2025"
+rationale: |
+  With SESSION_COOKIE_HTTPONLY set to False, the session cookie is
+  readable from JavaScript via document.cookie, so any XSS flaw anywhere
+  in the application — even a minor reflected one — immediately becomes
+  full session hijacking: the attacker reads the cookie and impersonates
+  the victim. HttpOnly exists precisely to keep session tokens out of
+  script reach; disabling it removes the last line of defense after an
+  XSS bug is found.
+description: |
+  Detects Django settings assignments SESSION_COOKIE_HTTPONLY = False.
+  The framework default is True, so an explicit False is always a
+  deliberate, and dangerous, override. Sibling of ZS-PY-035
+  (SESSION_COOKIE_SECURE).
+message: "SESSION_COOKIE_HTTPONLY = False — session cookie readable from JavaScript (XSS → session theft)"
+references:
+  - https://cwe.mitre.org/data/definitions/1004.html
+tags: [misconfiguration, django, cookie, session]
+match:
+  kind: assignment
+  lhs_identifier: "^SESSION_COOKIE_HTTPONLY$"
+  rhs_literal: "^False$"
+fix_suggestion: "Remove the override (Django defaults to True) or set SESSION_COOKIE_HTTPONLY = True."

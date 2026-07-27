@@ -1,0 +1,33 @@
+id: ZS-TS-062
+lifecycle: released
+name: Arbitrary File Write via fs.createWriteStream()
+version: "1.0.0"
+language: typescript
+category: path-traversal
+severity: high
+confidence: medium
+cwe:
+  - CWE-22
+owasp:
+  - "A01:2025"
+rationale: |
+  Opening a write stream on a path built from untrusted input lets an
+  attacker redirect streamed output (uploads, generated reports, log
+  exports) outside the intended directory with ../ sequences or an
+  absolute path, overwriting files the process can write — including
+  application code and configuration — a file-write primitive that
+  escalates to code execution.
+description: |
+  Detects calls to fs.createWriteStream() where the path argument traces
+  back to an untrusted source (intra-procedural taint tracking).
+  Ported verbatim from ZS-JS-064, same match shape.
+message: "fs.createWriteStream() called with a tainted path — validate and confine the path before streaming"
+references:
+  - https://owasp.org/www-community/attacks/Path_Traversal
+tags: [path-traversal, file-write, node-fs]
+match:
+  kind: call
+  callee: fs.createWriteStream
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Resolve the path with path.resolve and confirm it stays within the allowed base directory before opening the stream."

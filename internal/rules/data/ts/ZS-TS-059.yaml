@@ -1,0 +1,35 @@
+id: ZS-TS-059
+lifecycle: released
+name: NoSQL Injection via MongoDB aggregate()
+version: "1.0.0"
+language: typescript
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-943
+owasp:
+  - "A05:2025"
+rationale: |
+  Aggregation pipelines expose MongoDB's richest operator surface —
+  $match, $where, $function, $accumulator — several of which evaluate
+  JavaScript inside the database process, so a pipeline stage built from
+  request data can escalate from filter bypass to server-side code
+  execution. This is exploitable wherever report parameters or search
+  filters from a request are embedded into the pipeline passed to
+  aggregate().
+description: |
+  Detects calls to collection.aggregate() (the conventional MongoDB
+  driver receiver name, matching ZS-JS-039's convention) where an argument
+  traces back to an untrusted source (intra-procedural taint tracking).
+  Ported verbatim from ZS-JS-061, same match shape.
+message: "collection.aggregate() called with a tainted pipeline — validate stages and coerce user values to scalars"
+references:
+  - https://owasp.org/www-community/attacks/NoSQL_injection
+tags: [nosql-injection, injection, mongodb]
+match:
+  kind: call
+  callee: collection.aggregate
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Build pipeline stages from fixed templates and pass user values as scalars; never let request data supply $where/$function bodies."

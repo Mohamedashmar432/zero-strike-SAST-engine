@@ -1,0 +1,33 @@
+id: ZS-GO-033
+lifecycle: released
+name: Path Traversal via http.ServeFile()
+version: "1.0.0"
+language: go
+category: path-traversal
+severity: high
+confidence: medium
+cwe:
+  - CWE-22
+owasp:
+  - "A01:2025"
+rationale: |
+  http.ServeFile() resolves and returns whatever file path it is given;
+  a path derived from request data lets an attacker use ../ sequences or
+  an absolute path to escape the intended directory and download
+  arbitrary files the process can read - configuration with secrets,
+  other users' data, or application source. ServeFile's own documentation
+  warns it does not protect against traversal in the provided file name.
+description: |
+  Detects calls to http.ServeFile() where an argument traces back to an
+  untrusted source (intra-procedural taint tracking). Sibling of
+  ZS-GO-003/006/024 (os.Open/ReadFile/WriteFile).
+message: "http.ServeFile() called with a tainted path - confine the path to an allowed base directory"
+references:
+  - https://owasp.org/www-community/attacks/Path_Traversal
+tags: [path-traversal, file-access, net-http]
+match:
+  kind: call
+  callee: http.ServeFile
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Clean the path with filepath.Clean and verify it stays within the served root, or serve from an embedded/allowlisted file set."

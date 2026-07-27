@@ -1,0 +1,34 @@
+id: ZS-TS-072
+lifecycle: released
+name: Development Error Handler Middleware (Verbose Errors)
+version: "1.0.0"
+language: typescript
+category: security-misconfiguration
+severity: medium
+confidence: medium
+cwe:
+  - CWE-209
+owasp:
+  - "A05:2025"
+rationale: |
+  The errorhandler middleware renders full stack traces — file paths,
+  source lines, environment details — into HTTP responses for every
+  unhandled error. That output tells an attacker exactly which framework
+  and versions are in use, where interesting code lives on disk, and
+  sometimes leaks secrets present in local variables, dramatically
+  lowering the cost of finding the next vulnerability. The package itself
+  documents it as development-only; its presence in production wiring is a
+  misconfiguration.
+description: |
+  Detects any call to errorhandler() (the npm development error-handler
+  middleware). Unlike Express's default error handling, this middleware is
+  verbose by design and must never be mounted outside local development.
+  Ported verbatim from ZS-JS-074, same match shape.
+message: "errorhandler() middleware detected — development-only; leaks stack traces in responses"
+references:
+  - https://cwe.mitre.org/data/definitions/209.html
+tags: [misconfiguration, express, error-handling, information-disclosure]
+match:
+  kind: call
+  callee: errorhandler
+fix_suggestion: "Remove errorhandler() from production wiring; use a custom error middleware that logs details server-side and returns a generic message."

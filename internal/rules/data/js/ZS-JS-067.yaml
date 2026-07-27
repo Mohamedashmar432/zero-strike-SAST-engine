@@ -1,0 +1,31 @@
+id: ZS-JS-067
+lifecycle: released
+name: Deprecated crypto.createDecipher() (No Random IV)
+version: "1.0.0"
+language: javascript
+category: cryptography
+severity: medium
+confidence: high
+cwe:
+  - CWE-327
+owasp:
+  - "A04:2025"
+rationale: |
+  crypto.createDecipher() pairs with the deprecated createCipher(): it
+  derives key and IV from a password via the broken single-round-MD5
+  EVP_BytesToKey KDF with no salt and no random IV, so data protected this
+  way offers far less confidentiality than expected and no integrity at
+  all. Its presence means encrypted-at-rest data is decryptable by
+  attackers who brute-force the password offline against captured
+  ciphertext.
+description: |
+  Detects any call to crypto.createDecipher() — deprecated and insecure
+  regardless of algorithm. Sibling of ZS-JS-066 (crypto.createCipher).
+message: "crypto.createDecipher() is deprecated and insecure — migrate data to crypto.createDecipheriv()"
+references:
+  - https://nodejs.org/api/crypto.html#cryptocreatedecipheralgorithm-password-options
+tags: [cryptography, weak-crypto, deprecated-api]
+match:
+  kind: call
+  callee: crypto.createDecipher
+fix_suggestion: "Re-encrypt stored data with crypto.createCipheriv() using aes-256-gcm and a random IV, with a proper KDF (scrypt/argon2) for password-derived keys."

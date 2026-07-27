@@ -1,0 +1,34 @@
+id: ZS-GO-035
+lifecycle: released
+name: Path Traversal via ioutil.ReadFile()
+version: "1.0.0"
+language: go
+category: path-traversal
+severity: high
+confidence: medium
+cwe:
+  - CWE-22
+owasp:
+  - "A01:2025"
+rationale: |
+  ioutil.ReadFile() is the pre-Go-1.16 name for os.ReadFile, and a path
+  derived from request data lets an attacker escape the intended
+  directory with ../ sequences or an absolute path to read arbitrary
+  files the process can access - configuration with secrets, other
+  users' data, or application source. Older codebases (the ones most
+  likely to carry ioutil) are exactly where unreviewed path handling
+  survives.
+description: |
+  Detects calls to ioutil.ReadFile() where an argument traces back to an
+  untrusted source (intra-procedural taint tracking). Sibling of
+  ZS-GO-006 (os.ReadFile), which covers the modern name.
+message: "ioutil.ReadFile() called with a tainted path - validate and confine the path before reading"
+references:
+  - https://owasp.org/www-community/attacks/Path_Traversal
+tags: [path-traversal, file-access, ioutil]
+match:
+  kind: call
+  callee: ioutil.ReadFile
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Resolve the path and confirm it stays within the allowed base directory before reading; upgrade to os.ReadFile while touching the code."

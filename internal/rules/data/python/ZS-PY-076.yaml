@@ -1,0 +1,31 @@
+id: ZS-PY-076
+lifecycle: released
+name: Flask Session Cookie Missing HttpOnly
+version: "1.0.0"
+language: python
+category: security-misconfiguration
+severity: medium
+confidence: high
+cwe:
+  - CWE-1004
+owasp:
+  - "A02:2025"
+rationale: |
+  Setting app.config['SESSION_COOKIE_HTTPONLY'] to False exposes Flask's
+  session cookie to document.cookie, so any XSS flaw in the application
+  immediately escalates to session hijacking — the attacker reads the
+  cookie value and replays it as the victim. Flask ships with this flag
+  True by default, so an explicit False is a deliberate override that
+  removes the safety net for the exact moment an XSS bug is discovered.
+description: |
+  Detects assignments of False to app.config['SESSION_COOKIE_HTTPONLY'].
+  Sibling of ZS-PY-039 (Flask SESSION_COOKIE_SECURE).
+message: "app.config['SESSION_COOKIE_HTTPONLY'] = False — session cookie readable from JavaScript"
+references:
+  - https://cwe.mitre.org/data/definitions/1004.html
+tags: [misconfiguration, flask, cookie, session]
+match:
+  kind: assignment
+  lhs_identifier: "config\\[['\"]SESSION_COOKIE_HTTPONLY['\"]\\]"
+  rhs_literal: "^False$"
+fix_suggestion: "Remove the override (Flask defaults to True) or set it to True."

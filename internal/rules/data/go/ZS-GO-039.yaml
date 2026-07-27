@@ -1,0 +1,31 @@
+id: ZS-GO-039
+lifecycle: released
+name: Weak PRNG (math/rand Intn)
+version: "1.0.0"
+language: go
+category: cryptography
+severity: medium
+confidence: medium
+cwe:
+  - CWE-338
+owasp:
+  - "A04:2025"
+rationale: |
+  math/rand's generator is deterministic and seeded from a small state
+  space, so an attacker who observes a few outputs - or roughly knows
+  when the process started - can reconstruct its state and predict every
+  future value. Using rand.Intn() for session tokens, password-reset
+  codes, OTPs, or API keys makes those values guessable, defeating
+  whatever control they were meant to enforce.
+description: |
+  Detects calls to rand.Intn() from math/rand. crypto/rand has no Intn
+  function, so the callee is unambiguous without an argument filter.
+  Sibling of ZS-GO-010 (rand.Int).
+message: "math/rand.Intn() detected - not cryptographically secure; use crypto/rand"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+tags: [weak-crypto, weak-prng, math-rand]
+match:
+  kind: call
+  callee: rand.Intn
+fix_suggestion: "Use crypto/rand (rand.Int with a big.Int bound) for tokens, keys, and codes; math/rand is fine only for non-security randomness."

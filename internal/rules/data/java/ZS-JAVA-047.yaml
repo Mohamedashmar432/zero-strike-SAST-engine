@@ -1,0 +1,35 @@
+id: ZS-JAVA-047
+lifecycle: released
+name: LDAP Injection via DirContext.search()
+version: "1.0.0"
+language: java
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-90
+owasp:
+  - "A05:2025"
+rationale: |
+  Passing an attacker-controlled filter to DirContext.search() lets the
+  attacker inject LDAP filter operators that rewrite the query's logic -
+  turning an authentication lookup into an always-true match, or running
+  blind boolean queries that extract directory contents (usernames,
+  emails, password hashes where readable) one bit at a time. JNDI
+  DirContext performs no escaping on filter text, so concatenated
+  request data is directly exploitable.
+description: |
+  Detects calls to dirContext.search() (the conventional fully-spelled
+  receiver name; ZS-JAVA-026 covers the short "ctx" convention) where an
+  argument traces back to an untrusted source (intra-procedural taint
+  tracking).
+message: "dirContext.search() called with a tainted filter - escape values before building LDAP filters"
+references:
+  - https://owasp.org/www-community/attacks/LDAP_injection
+tags: [ldap-injection, injection, jndi]
+match:
+  kind: call
+  callee: dirContext.search
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Escape user values for LDAP (e.g. LdapEncoder.filterEncode()) and never concatenate raw request data into filters."

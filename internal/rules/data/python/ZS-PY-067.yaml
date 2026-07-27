@@ -1,0 +1,31 @@
+id: ZS-PY-067
+lifecycle: released
+name: RC4 Stream Cipher (ARC4.new)
+version: "1.0.0"
+language: python
+category: cryptography
+severity: medium
+confidence: high
+cwe:
+  - CWE-327
+owasp:
+  - "A04:2025"
+rationale: |
+  RC4's keystream has well-documented statistical biases that let an
+  attacker recover plaintext from enough captured ciphertexts — the attack
+  class that killed RC4 in TLS (RFC 7465 prohibits it). It also provides
+  no integrity protection, so ciphertexts are trivially malleable. Data
+  encrypted with RC4 today should be treated as recoverable by a resourced
+  attacker, which defeats the purpose of encrypting it at all.
+description: |
+  Detects ARC4.new() calls (pycryptodome / pycrypto RC4). RC4 is broken
+  regardless of key length or usage pattern, so no argument filter is
+  needed.
+message: "ARC4.new() detected — RC4 is broken; use AES-GCM or ChaCha20-Poly1305"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+tags: [cryptography, weak-cipher, rc4]
+match:
+  kind: call
+  callee: ARC4.new
+fix_suggestion: "Replace RC4 with AES-GCM or ChaCha20-Poly1305 via a maintained library (cryptography, pycryptodome)."

@@ -1,0 +1,33 @@
+id: ZS-TS-055
+lifecycle: released
+name: setInterval() with Tainted String (Code Injection)
+version: "1.0.0"
+language: typescript
+category: dangerous-functions
+severity: high
+confidence: medium
+cwe:
+  - CWE-95
+owasp:
+  - "A05:2025"
+rationale: |
+  setInterval() with a string first argument eval()s that string on every
+  tick — a repeating code-execution sink. Attacker-controlled data
+  reaching it executes arbitrary JavaScript in the page or Node process
+  with the privileges of the application, over and over, giving the
+  attacker a persistent foothold rather than a one-shot execution.
+description: |
+  Detects calls to setInterval() where an argument traces back to an
+  untrusted source (intra-procedural taint tracking). Sibling of
+  ZS-JS-056 (setTimeout).
+  Ported verbatim from ZS-JS-057, same match shape.
+message: "setInterval() called with a tainted argument — string arguments are eval'd; pass a function instead"
+references:
+  - https://developer.mozilla.org/en-US/docs/Web/API/Window/setInterval#security_considerations
+tags: [code-injection, eval-like, dom]
+match:
+  kind: call
+  callee: setInterval
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Always pass a function to setInterval(); never a string built from user input."

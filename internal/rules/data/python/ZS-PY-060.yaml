@@ -1,0 +1,39 @@
+id: ZS-PY-060
+lifecycle: released
+name: SQLAlchemy text() with Tainted SQL
+version: "1.0.0"
+language: python
+category: injection
+severity: high
+confidence: low
+cwe:
+  - CWE-89
+owasp:
+  - "A05:2025"
+rationale: |
+  SQLAlchemy's text() wraps a raw SQL string for execution via
+  session.execute()/connection.execute(), and the library's
+  parameterization only applies to :name bind parameters written into the
+  string — interpolating attacker input into the string itself leaves the
+  query wide open to structure-altering injection, exactly as if no ORM
+  were in use. This is exploitable wherever request data is formatted into
+  the text() argument, and it appears constantly in codebases that "use an
+  ORM" and therefore skip injection review.
+description: |
+  Detects calls to text() (the conventional `from sqlalchemy import text`
+  form) where an argument traces back to an untrusted source
+  (intra-procedural taint tracking).
+
+  Confidence is low: the bare callee name "text" can collide with
+  unrelated user-defined functions, so this rule may fire on non-SQLAlchemy
+  callables named text that receive tainted input.
+message: "text() called with a tainted SQL fragment — use bind parameters (:name) instead of interpolating input"
+references:
+  - https://docs.sqlalchemy.org/en/20/core/sqlelement.html#sqlalchemy.sql.expression.text
+tags: [sqli, injection, sqlalchemy]
+match:
+  kind: call
+  callee: text
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Keep the SQL string static and pass user values as bound parameters: text('... WHERE name = :name'), {'name': name}."

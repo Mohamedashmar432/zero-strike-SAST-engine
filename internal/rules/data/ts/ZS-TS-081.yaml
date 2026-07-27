@@ -1,0 +1,39 @@
+id: ZS-TS-081
+lifecycle: released
+name: Log Injection via console.log()
+version: "1.0.0"
+language: typescript
+category: logging
+severity: medium
+confidence: low
+cwe:
+  - CWE-117
+owasp:
+  - "A09:2025"
+rationale: |
+  Writing attacker-controlled data straight to logs lets the attacker
+  forge log entries: embedded newlines (CR/LF) split one entry into many,
+  fabricating events that never happened or erasing the trail of an
+  attack, and crafted control sequences (ANSI escapes) can corrupt log
+  viewers or exploit terminal-parsing bugs in whoever reads the logs. In
+  incident response, poisoned logs mean the real attack goes unseen.
+description: |
+  Detects calls to console.log() where an argument traces back to an
+  untrusted source (intra-procedural taint tracking). ZS-JS-009 covers the
+  distinct problem of logging credential-shaped values; this rule covers
+  log forging with untrusted input.
+
+  Confidence is low: logging request-derived values is common and often
+  benign, so findings should be triaged for whether output is structured
+  and newline-escaped.
+  Ported verbatim from ZS-JS-083, same match shape.
+message: "console.log() called with a tainted value — escape newlines/control chars to prevent log forging"
+references:
+  - https://cwe.mitre.org/data/definitions/117.html
+tags: [logging, log-injection, crlf]
+match:
+  kind: call
+  callee: console.log
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Log structured fields (JSON.stringify of an object) or strip CR/LF and control characters from user-derived values before logging."

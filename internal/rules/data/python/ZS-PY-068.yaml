@@ -1,0 +1,31 @@
+id: ZS-PY-068
+lifecycle: released
+name: Triple DES Cipher (DES3.new)
+version: "1.0.0"
+language: python
+category: cryptography
+severity: medium
+confidence: high
+cwe:
+  - CWE-327
+owasp:
+  - "A04:2025"
+rationale: |
+  Triple DES (3DES/TDEA) is deprecated: its 64-bit block size enables
+  birthday-bound attacks like Sweet32 that recover plaintext from
+  long-lived encrypted sessions, and NIST withdrew approval for new
+  encryption with 3DES after 2023. Its effective 112-bit security is also
+  well below modern requirements. ZS-PY-029 covers single DES; this rule
+  covers the still-common "upgrade" that is itself obsolete.
+description: |
+  Detects DES3.new() calls (pycryptodome Triple DES). 3DES is deprecated
+  regardless of keying option or mode, so no argument filter is needed.
+message: "DES3.new() detected — 3DES is deprecated (Sweet32, NIST withdrawal); use AES-GCM"
+references:
+  - https://sweet32.info/
+  - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+tags: [cryptography, weak-cipher, 3des]
+match:
+  kind: call
+  callee: DES3.new
+fix_suggestion: "Replace 3DES with AES-GCM (or AES-CBC + HMAC for legacy interop during migration)."

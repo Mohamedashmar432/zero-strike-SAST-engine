@@ -1,0 +1,35 @@
+id: ZS-JAVA-035
+lifecycle: released
+name: Weak Cipher Algorithm (Cipher.getInstance)
+version: "1.0.0"
+language: java
+category: cryptography
+severity: medium
+confidence: high
+cwe:
+  - CWE-327
+owasp:
+  - "A04:2025"
+rationale: |
+  DES, 3DES (DESede), RC2, RC4, and Blowfish are broken or obsolete
+  ciphers: DES's 56-bit key is brute-forceable in hours, RC4 keystream
+  biases allow plaintext recovery, and the 64-bit block size of
+  DES/3DES/Blowfish enables birthday-bound attacks like Sweet32. Data
+  encrypted with them should be treated as recoverable by a resourced
+  attacker, which defeats the purpose of encrypting it at all.
+description: |
+  Detects Cipher.getInstance() called with a weak algorithm name or
+  transformation (des, desede, rc2, rc4, blowfish), matched as a string
+  literal including transformation form (e.g. "DESede/CBC/PKCS5Padding").
+  Algorithm names supplied via variables are not resolved. ZS-JAVA-004
+  covers the DESKeySpec key-construction form.
+message: "Cipher.getInstance() with a weak cipher (DES/3DES/RC2/RC4/Blowfish) - use AES/GCM"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+tags: [cryptography, weak-cipher, des, rc4]
+match:
+  kind: call
+  callee: Cipher.getInstance
+  filters:
+    - argument_literal_matches: "(?i)^(des|desede|rc2|rc4|blowfish)($|/)"
+fix_suggestion: "Use Cipher.getInstance(\"AES/GCM/NoPadding\") with a random per-message IV."

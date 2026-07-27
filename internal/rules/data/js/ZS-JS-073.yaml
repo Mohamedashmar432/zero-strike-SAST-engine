@@ -1,0 +1,36 @@
+id: ZS-JS-073
+lifecycle: released
+name: "res.cookie() with httpOnly: false"
+version: "1.0.0"
+language: javascript
+category: security-misconfiguration
+severity: medium
+confidence: medium
+cwe:
+  - CWE-1004
+owasp:
+  - "A02:2025"
+rationale: |
+  A cookie set with httpOnly: false is readable from JavaScript via
+  document.cookie, so any XSS flaw anywhere in the application immediately
+  becomes session theft: the injected script reads the cookie and ships it
+  to the attacker, who replays it as the victim. httpOnly exists to keep
+  credentials out of script reach; explicitly disabling it removes the
+  last line of defense after an XSS bug is found.
+description: |
+  Detects calls to res.cookie() where the options object explicitly sets
+  httpOnly: false. Complements ZS-JS-019 (express-session's
+  cookie.httpOnly), which covers the session middleware rather than
+  individual cookie calls.
+message: "res.cookie() with httpOnly: false — cookie readable from JavaScript (XSS → theft)"
+references:
+  - https://cwe.mitre.org/data/definitions/1004.html
+tags: [misconfiguration, cookie, express]
+match:
+  kind: call
+  callee: res.cookie
+  filters:
+    - kwarg:
+        name: httpOnly
+        value_pattern: "^false$"
+fix_suggestion: "Set httpOnly: true for any cookie carrying credentials; only cookies that JavaScript genuinely must read should be script-accessible."

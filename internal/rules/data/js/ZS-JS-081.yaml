@@ -1,0 +1,33 @@
+id: ZS-JS-081
+lifecycle: released
+name: Server-Side Template Injection (nunjucks.renderString)
+version: "1.0.0"
+language: javascript
+category: ssti
+severity: high
+confidence: medium
+cwe:
+  - CWE-1336
+owasp:
+  - "A03:2025"
+rationale: |
+  nunjucks.renderString() compiles its first argument as a template, so
+  attacker-controlled template text reaches the engine's full expression
+  power: Nunjucks templates can call functions and traverse object
+  prototypes, and known sandbox escapes turn that into arbitrary
+  JavaScript execution on the server. This is exploitable wherever
+  template text — as opposed to render variables — comes from request
+  data.
+description: |
+  Detects calls to nunjucks.renderString() where the template argument
+  traces back to an untrusted source (intra-procedural taint tracking).
+message: "nunjucks.renderString() called with a tainted template — server-side template injection risk"
+references:
+  - https://owasp.org/www-community/attacks/Server_Side_Template_Injection
+tags: [ssti, injection, nunjucks]
+match:
+  kind: call
+  callee: nunjucks.renderString
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Keep template source static (render() with files); pass user data only as the render context."

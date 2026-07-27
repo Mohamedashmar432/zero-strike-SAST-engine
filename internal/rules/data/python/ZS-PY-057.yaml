@@ -1,0 +1,36 @@
+id: ZS-PY-057
+lifecycle: released
+name: subprocess.Popen() with Tainted Command
+version: "1.0.0"
+language: python
+category: command-injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-78
+owasp:
+  - "A05:2025"
+rationale: |
+  subprocess.Popen() is the low-level process-spawning primitive that
+  run()/call()/check_output() all wrap, and it carries the same injection
+  risk: with shell=True (or a string command on POSIX), the command text is
+  interpreted by /bin/sh, so attacker-controlled input containing shell
+  metacharacters (;, |, &&, backticks, $()) lets the attacker chain or
+  substitute arbitrary commands with the privileges of the Python process.
+  This is exploitable wherever a request-derived value — a filename, host,
+  or search term — is concatenated into the command passed to Popen.
+description: |
+  subprocess.Popen() is called with an argument that traces back to an
+  untrusted source (intra-procedural taint tracking). ZS-PY-003/012/031
+  cover subprocess.run/call/check_output; this rule covers the underlying
+  Popen primitive those wrappers delegate to.
+message: "subprocess.Popen() called with a tainted command — pass a list of arguments and shell=False"
+references:
+  - https://docs.python.org/3/library/subprocess.html#security-considerations
+tags: [command-injection, subprocess, popen]
+match:
+  kind: call
+  callee: subprocess.Popen
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Pass a list of strings (subprocess.Popen([prog, arg])) with shell=False, and allowlist any user-derived values."

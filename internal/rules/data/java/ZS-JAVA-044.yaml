@@ -1,0 +1,31 @@
+id: ZS-JAVA-044
+lifecycle: released
+name: Weak Hash via DigestUtils.sha1()
+version: "1.0.0"
+language: java
+category: cryptography
+severity: medium
+confidence: high
+cwe:
+  - CWE-327
+owasp:
+  - "A04:2025"
+rationale: |
+  SHA-1 is broken for collision resistance: practical chosen-prefix
+  collisions (SHAttered, 2017) let an attacker craft two inputs that
+  hash identically, undermining signatures, integrity checks, and
+  certificate validation. As a password hash it is fast enough for GPUs
+  to brute-force billions of guesses per second. Commons-codec's
+  DigestUtils.sha1() keeps the deprecated primitive in everyday use.
+description: |
+  Detects calls to DigestUtils.sha1() (Apache Commons Codec). SHA-1 is
+  deprecated for security use regardless of input, so no argument filter
+  is needed. Sibling of ZS-JAVA-022 (MessageDigest.getInstance).
+message: "DigestUtils.sha1() detected - SHA-1 is broken; use DigestUtils.sha256() or stronger"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+tags: [cryptography, weak-crypto, sha1]
+match:
+  kind: call
+  callee: DigestUtils.sha1
+fix_suggestion: "Use DigestUtils.sha256() (or bcrypt/argon2 for passwords)."

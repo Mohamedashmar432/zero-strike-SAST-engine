@@ -1,0 +1,35 @@
+id: ZS-TS-066
+lifecycle: released
+name: ECB Cipher Mode (crypto.createCipheriv)
+version: "1.0.0"
+language: typescript
+category: cryptography
+severity: medium
+confidence: high
+cwe:
+  - CWE-327
+owasp:
+  - "A04:2025"
+rationale: |
+  ECB mode encrypts each block independently with the same key, so
+  identical plaintext blocks yield identical ciphertext blocks — structure
+  in the data (record layouts, repeated fields, headers) survives
+  encryption, and an attacker can cut, replay, or splice blocks to forge
+  messages. AES itself is strong; AES-ECB discards the secrecy properties
+  the cipher is meant to provide, which is why no modern protocol permits
+  it.
+description: |
+  Detects crypto.createCipheriv() called with an algorithm name ending in
+  -ecb (e.g. aes-128-ecb, aes-256-ecb), matched as a string literal.
+  Authenticated modes such as aes-256-gcm do not fire this rule.
+  Ported verbatim from ZS-JS-068, same match shape.
+message: "crypto.createCipheriv() with an ECB-mode algorithm — ECB leaks plaintext structure; use aes-256-gcm"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+tags: [cryptography, weak-crypto, ecb]
+match:
+  kind: call
+  callee: crypto.createCipheriv
+  filters:
+    - argument_literal_matches: "(?i)-ecb$"
+fix_suggestion: "Switch to aes-256-gcm (authenticated) with a random per-message IV, or CBC plus a separate MAC for legacy interop."

@@ -1,0 +1,35 @@
+id: ZS-TS-056
+lifecycle: released
+name: MySQL connection.query() SQL Injection
+version: "1.0.0"
+language: typescript
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-89
+owasp:
+  - "A05:2025"
+rationale: |
+  Building a SQL string with attacker-controlled input before passing it
+  to connection.query() lets an attacker terminate the intended query and
+  append arbitrary SQL — bypassing authentication, reading other tables
+  via UNION SELECT, or modifying and deleting data. This is exploitable
+  wherever a request value reaches the raw query string, and is fully
+  avoidable with mysql/mysql2's ? placeholders.
+description: |
+  Detects calls to connection.query() — the conventional mysql/mysql2
+  connection receiver name (the pool and client receivers are covered by
+  ZS-JS-021/022) — where an argument traces back to an untrusted source
+  (intra-procedural taint tracking).
+  Ported verbatim from ZS-JS-058, same match shape.
+message: "connection.query() called with a tainted query string — use ? placeholders"
+references:
+  - https://owasp.org/www-community/attacks/SQL_Injection
+tags: [sqli, injection, mysql]
+match:
+  kind: call
+  callee: connection.query
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Use parameterized queries: connection.query('SELECT ... WHERE id = ?', [id]) instead of concatenating input."

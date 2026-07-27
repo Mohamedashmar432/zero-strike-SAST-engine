@@ -1,0 +1,33 @@
+id: ZS-JS-049
+lifecycle: released
+name: document.writeln() (DOM XSS)
+version: "1.0.0"
+language: javascript
+category: xss
+severity: high
+confidence: medium
+cwe:
+  - CWE-79
+owasp:
+  - "A05:2025"
+rationale: |
+  document.writeln() parses its argument as raw HTML into the document
+  while it loads, so attacker-controlled data reaching it injects script
+  tags, event handlers, or forged UI that execute in the page's origin —
+  enabling cookie theft, session hijacking, and phishing overlays. This is
+  exploitable wherever URL fragments, query parameters, or postMessage
+  data are written into the page this way.
+description: |
+  Detects calls to document.writeln() where an argument traces back to an
+  untrusted source (intra-procedural taint tracking). Sibling of
+  ZS-JS-003 (document.write).
+message: "document.writeln() called with a tainted value — sanitize or use safe DOM APIs"
+references:
+  - https://owasp.org/www-community/attacks/xss/
+tags: [xss, dom-injection, document-write]
+match:
+  kind: call
+  callee: document.writeln
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Use textContent/createElement instead of document.writeln, or sanitize with DOMPurify first."

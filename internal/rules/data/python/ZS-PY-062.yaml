@@ -1,0 +1,35 @@
+id: ZS-PY-062
+lifecycle: released
+name: NoSQL Injection via MongoDB find_one()
+version: "1.0.0"
+language: python
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-943
+owasp:
+  - "A05:2025"
+rationale: |
+  A tainted filter passed to find_one() lets an attacker inject MongoDB
+  query operators — $ne/$gt to bypass equality checks on credentials, $where
+  to run server-side JavaScript, or $regex to enumerate field values
+  character by character — so a login lookup or document fetch returns
+  records the caller was never meant to see. This is exploitable wherever
+  request data (form fields, JSON bodies, query parameters) is embedded in
+  the filter document without constraining values to plain scalars.
+description: |
+  Detects calls to collection.find_one() (the conventional PyMongo
+  receiver name, matching ZS-PY-041's convention for collection.find())
+  where an argument traces back to an untrusted source (intra-procedural
+  taint tracking).
+message: "collection.find_one() called with a tainted filter — coerce values to scalars and reject operator keys"
+references:
+  - https://owasp.org/www-community/attacks/NoSQL_injection
+tags: [nosql-injection, injection, mongodb]
+match:
+  kind: call
+  callee: collection.find_one
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Cast user values with str()/int() before building filters and reject dict-shaped input containing $-prefixed operator keys."

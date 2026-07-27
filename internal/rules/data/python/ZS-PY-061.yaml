@@ -1,0 +1,35 @@
+id: ZS-PY-061
+lifecycle: released
+name: XPath Injection via lxml etree.XPath()
+version: "1.0.0"
+language: python
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-643
+owasp:
+  - "A05:2025"
+rationale: |
+  Compiling an XPath expression with attacker-controlled text lets the
+  attacker change the expression's semantics: quote termination turns a
+  name lookup into an arbitrarily deep document traversal, and boolean
+  operator injection (or '1'='1) turns per-record existence checks into a
+  bit-by-bit extraction oracle for any data in the document — the XPath
+  equivalent of SQL injection. This is exploitable wherever a username,
+  search term, or filter value from a request is concatenated into the
+  expression passed to etree.XPath() or a compiled xpath call.
+description: |
+  Detects calls to etree.XPath() (the conventional
+  `from lxml import etree` form) where the expression argument traces back
+  to an untrusted source (intra-procedural taint tracking).
+message: "etree.XPath() called with a tainted expression — use XPath variables instead of string interpolation"
+references:
+  - https://owasp.org/www-community/attacks/XPATH_Injection
+tags: [xpath-injection, injection, lxml]
+match:
+  kind: call
+  callee: etree.XPath
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Keep the XPath static and pass user values as XPath variables: etree.XPath('//user[name=$n]')(root, n=name)."

@@ -1,0 +1,33 @@
+id: ZS-JS-053
+lifecycle: released
+name: iframe srcdoc Assignment (DOM XSS)
+version: "1.0.0"
+language: javascript
+category: xss
+severity: high
+confidence: medium
+cwe:
+  - CWE-79
+owasp:
+  - "A05:2025"
+rationale: |
+  Assigning attacker-controlled data to an iframe's srcdoc property makes
+  the browser parse that string as a complete HTML document inside the
+  frame — including any <script> the attacker embedded. Unless the iframe
+  also carries a tight sandbox attribute, the injected document runs with
+  the embedding page's origin, so script in the srcdoc can reach into the
+  parent DOM, cookies, and session storage.
+description: |
+  Detects assignments to any property path ending in .srcdoc where the
+  assigned value traces back to an untrusted source (intra-procedural
+  taint tracking).
+message: "iframe srcdoc assigned from a tainted value — sanitize or avoid srcdoc with user content"
+references:
+  - https://owasp.org/www-community/attacks/xss/
+tags: [xss, dom-injection, iframe]
+match:
+  kind: assignment
+  lhs_identifier: "\\.srcdoc$"
+  filters:
+    - tainted_rhs: true
+fix_suggestion: "Never build srcdoc content from user input; if unavoidable, sanitize with DOMPurify and add a restrictive sandbox attribute."

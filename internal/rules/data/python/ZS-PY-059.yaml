@@ -1,0 +1,39 @@
+id: ZS-PY-059
+lifecycle: released
+name: Django ORM raw() SQL Injection
+version: "1.0.0"
+language: python
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-89
+owasp:
+  - "A05:2025"
+rationale: |
+  Django's Model.objects.raw() executes the given SQL verbatim and maps
+  rows back onto model instances, so interpolating attacker-controlled
+  input into the query string defeats the ORM's built-in escaping entirely
+  — an attacker can terminate the intended query and append clauses or
+  UNION SELECT statements to read or modify arbitrary tables. This is
+  exploitable wherever a search term or filter value from a request is
+  concatenated into a raw() query instead of passed through its params
+  sequence, and it bypasses the mental model of "the ORM protects me".
+description: |
+  Detects calls to objects.raw() (the conventional Django manager
+  receiver) where the SQL argument traces back to an untrusted source
+  (intra-procedural taint tracking).
+
+  callee_suffix: matches any manager attribute path ending in .objects.raw
+  (e.g. User.objects.raw, self.model.objects.raw) at a dot boundary.
+message: "objects.raw() called with a tainted SQL string — use the params argument for values"
+references:
+  - https://docs.djangoproject.com/en/stable/topics/db/sql/#passing-parameters-into-raw
+tags: [sqli, injection, django, orm]
+match:
+  kind: call
+  callee: objects.raw
+  callee_suffix: true
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Use raw('SELECT ... WHERE name = %s', [name]) so values are bound by the driver, or use the ORM filter APIs."

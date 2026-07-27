@@ -1,0 +1,35 @@
+id: ZS-JAVA-045
+lifecycle: released
+name: Sensitive Value Logged at Error Level
+version: "1.0.0"
+language: java
+category: logging
+severity: medium
+confidence: low
+cwe:
+  - CWE-532
+owasp:
+  - "A09:2025"
+rationale: |
+  Passing a credential-shaped value to logger.error() writes it in
+  plaintext wherever error output lands - log files, aggregation
+  services, alerting pipelines - which are typically readable by far
+  more people (and for far longer) than the system the credential
+  protects. An attacker with access to those logs extracts the secret
+  and reuses it to authenticate as the application or the affected user.
+  Error logs are additionally the first place responders look after a
+  breach, maximizing exposure.
+description: |
+  A variable whose name suggests sensitive data (password, secret,
+  token, api key) is passed to logger.error() (the conventional SLF4J
+  receiver name, matching ZS-JAVA-032's convention for logger.info).
+message: "Sensitive-looking value passed to logger.error() - avoid logging credentials"
+references:
+  - https://cwe.mitre.org/data/definitions/532.html
+tags: [logging, information-disclosure]
+match:
+  kind: call
+  callee: logger.error
+  filters:
+    - argument_identifier_matches: "(?i)(password|passwd|secret|token|api_key|apikey)"
+fix_suggestion: "Redact or omit sensitive values before logging; log an identifier instead of the secret itself."

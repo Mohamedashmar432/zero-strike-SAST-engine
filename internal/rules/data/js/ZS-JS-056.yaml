@@ -1,0 +1,33 @@
+id: ZS-JS-056
+lifecycle: released
+name: setTimeout() with Tainted String (Code Injection)
+version: "1.0.0"
+language: javascript
+category: dangerous-functions
+severity: high
+confidence: medium
+cwe:
+  - CWE-95
+owasp:
+  - "A05:2025"
+rationale: |
+  setTimeout() with a string first argument eval()s that string when the
+  timer fires — the same code-execution sink as eval() with a delay.
+  Attacker-controlled data reaching it executes arbitrary JavaScript in
+  the page (DOM context) or process (Node context), with full access to
+  cookies, storage, and the application itself.
+description: |
+  Detects calls to setTimeout() where an argument traces back to an
+  untrusted source (intra-procedural taint tracking). Calls whose first
+  argument is a function reference are the safe form and, being neither
+  tainted variables nor source expressions, do not fire this rule.
+message: "setTimeout() called with a tainted argument — string arguments are eval'd; pass a function instead"
+references:
+  - https://developer.mozilla.org/en-US/docs/Web/API/Window/setTimeout#security_considerations
+tags: [code-injection, eval-like, dom]
+match:
+  kind: call
+  callee: setTimeout
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Always pass a function to setTimeout(); never a string built from user input."

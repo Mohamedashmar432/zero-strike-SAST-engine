@@ -1,0 +1,34 @@
+id: ZS-JS-055
+lifecycle: released
+name: postMessage() with Wildcard Target Origin
+version: "1.0.0"
+language: javascript
+category: security-misconfiguration
+severity: medium
+confidence: medium
+cwe:
+  - CWE-346
+owasp:
+  - "A05:2025"
+rationale: |
+  postMessage(data, "*") delivers the message to whatever origin happens
+  to be loaded in the target frame or window, with no check on who
+  receives it. If the navigated frame has been redirected to an attacker
+  site (via an open redirect, a compromised ad, or a malicious link the
+  user followed), any data in that message — tokens, PII, credentials —
+  is handed to the attacker. Origin restriction is the only control that
+  keeps cross-frame messaging confidential.
+description: |
+  Detects calls to postMessage() (bare window-scope form) where any
+  argument is the string literal "*". Receiver-qualified forms
+  (win.postMessage, parent.postMessage) are not matched by this rule.
+message: "postMessage() with target origin \"*\" — any origin can receive the message; specify an exact origin"
+references:
+  - https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage#security_concerns
+tags: [postmessage, origin-validation, browser-security]
+match:
+  kind: call
+  callee: postMessage
+  filters:
+    - argument_literal_matches: "^\\*$"
+fix_suggestion: "Pass the exact expected origin (e.g. 'https://app.example.com') as targetOrigin instead of \"*\"."

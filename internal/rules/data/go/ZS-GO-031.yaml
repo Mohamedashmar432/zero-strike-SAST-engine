@@ -1,0 +1,32 @@
+id: ZS-GO-031
+lifecycle: released
+name: Deprecated TLS 1.0 (tls.VersionTLS10)
+version: "1.0.0"
+language: go
+category: cryptography
+severity: medium
+confidence: high
+cwe:
+  - CWE-327
+owasp:
+  - "A04:2025"
+rationale: |
+  TLS 1.0 is formally deprecated (RFC 8996): it supports only broken or
+  weak primitives (CBC-mode ciphers vulnerable to BEAST-style padding
+  and POODLE-variant attacks, MD5/SHA-1 in the handshake) and lacks
+  modern authenticated ciphers, so connections negotiated at this version
+  offer little real confidentiality. Configuring it as MinVersion or
+  MaxVersion opts every client or server into that weakened posture.
+description: |
+  Detects any use of the tls.VersionTLS10 constant, matched as an
+  identifier so it fires in tls.Config composite literals, assignments,
+  and comparisons alike - the same approach as ZS-GO-021
+  (InsecureSkipVerify) and ZS-GO-009 (VersionSSL30).
+message: "tls.VersionTLS10 detected - TLS 1.0 is deprecated (RFC 8996); require TLS 1.2+"
+references:
+  - https://www.rfc-editor.org/rfc/rfc8996.html
+tags: [weak-crypto, tls, deprecated-protocol]
+match:
+  kind: identifier
+  identifier: VersionTLS10
+fix_suggestion: "Set MinVersion to tls.VersionTLS12 (or leave the Go default, which tracks current best practice)."

@@ -1,0 +1,35 @@
+id: ZS-JAVA-046
+lifecycle: released
+name: LDAP Injection via LdapTemplate.search()
+version: "1.0.0"
+language: java
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-90
+owasp:
+  - "A05:2025"
+rationale: |
+  Building an LDAP filter with attacker-controlled input lets the
+  attacker inject filter operators - *)(uid=*))(|(uid=* and friends -
+  that rewrite the query's logic: authentication checks return true for
+  any password, and blind boolean probes extract directory entries
+  attribute by attribute. Spring's LdapTemplate offers no automatic
+  escaping for filter text, so concatenated filters from request data
+  are directly exploitable.
+description: |
+  Detects calls to ldapTemplate.search() (the conventional Spring LDAP
+  receiver name) where an argument traces back to an untrusted source
+  (intra-procedural taint tracking). Sibling of ZS-JAVA-026 (ctx.search)
+  and ZS-JAVA-047 (dirContext.search).
+message: "ldapTemplate.search() called with a tainted filter - encode values with LdapEncoder.filterEncode()"
+references:
+  - https://owasp.org/www-community/attacks/LDAP_injection
+tags: [ldap-injection, injection, spring]
+match:
+  kind: call
+  callee: ldapTemplate.search
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Build filters with LdapEncoder.filterEncode() on user values, or use LdapQueryBuilder with parameterized conditions."

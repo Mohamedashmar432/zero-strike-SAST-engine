@@ -1,0 +1,35 @@
+id: ZS-PY-066
+lifecycle: released
+name: AES in ECB Mode (Insecure Block Cipher Mode)
+version: "1.0.0"
+language: python
+category: cryptography
+severity: medium
+confidence: high
+cwe:
+  - CWE-327
+owasp:
+  - "A04:2025"
+rationale: |
+  ECB mode encrypts each plaintext block independently with the same key,
+  so identical plaintext blocks produce identical ciphertext blocks — the
+  classic "ECB penguin" leak. Structure in the data (headers, repeated
+  records, aligned fields) survives encryption, and an attacker can also
+  cut, replay, or splice whole blocks to forge messages the application
+  accepts. AES itself is strong; AES-ECB throws away the secrecy
+  properties the cipher is supposed to provide.
+description: |
+  Detects AES.new() called with the MODE_ECB constant (pycryptodome /
+  pycrypto). CBC without authentication is also discouraged, but only the
+  explicitly insecure ECB mode is flagged. DES.new() with MODE_ECB is
+  already covered by ZS-PY-029 (weak cipher regardless of mode).
+message: "AES.new() with MODE_ECB — ECB leaks plaintext structure; use GCM or CBC+HMAC"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+tags: [cryptography, weak-crypto, ecb]
+match:
+  kind: call
+  callee: AES.new
+  filters:
+    - argument_identifier_matches: "MODE_ECB"
+fix_suggestion: "Use AES.MODE_GCM (authenticated) with a random nonce per message, or CBC plus a separate MAC."

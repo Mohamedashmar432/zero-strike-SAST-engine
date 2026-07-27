@@ -1,0 +1,33 @@
+id: ZS-GO-038
+lifecycle: released
+name: tx.QueryRow() SQL Injection
+version: "1.0.0"
+language: go
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-89
+owasp:
+  - "A05:2025"
+rationale: |
+  tx.QueryRow() executes SQL inside a transaction, so a concatenated
+  query built from attacker-controlled input injects with the same
+  consequences as any other SQL sink - authentication bypass, UNION
+  SELECT extraction, data modification - and additionally runs inside a
+  transaction the attacker can potentially influence (forcing rollbacks
+  or commits at chosen points via error-triggering payloads).
+description: |
+  Detects calls to tx.QueryRow() (the conventional *sql.Tx receiver
+  name, matching ZS-GO-014/015's convention) where an argument traces
+  back to an untrusted source (intra-procedural taint tracking).
+message: "tx.QueryRow() called with a tainted query string - use $1 placeholders"
+references:
+  - https://owasp.org/www-community/attacks/SQL_Injection
+tags: [sqli, injection, database-sql]
+match:
+  kind: call
+  callee: tx.QueryRow
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Use parameterized placeholders: tx.QueryRow('SELECT ... WHERE id = $1', id) instead of concatenating input."

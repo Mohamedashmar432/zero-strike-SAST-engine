@@ -1,0 +1,36 @@
+id: ZS-TS-074
+lifecycle: released
+name: execFileSync() with Tainted Command
+version: "1.0.0"
+language: typescript
+category: command-injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-78
+owasp:
+  - "A05:2025"
+rationale: |
+  child_process.execFileSync() runs the named program directly, but when
+  the attacker controls the program path itself — or an argument passed to
+  a shell wrapper — they execute an arbitrary binary or smuggle shell
+  metacharacters into a command line. This is exploitable wherever a
+  request-derived value selects or is concatenated into the file being
+  executed (conversion tools, admin utilities invoked by name from user
+  input).
+description: |
+  Detects calls to execFileSync() (child_process, commonly destructured as
+  execFileSync) where an argument traces back to an untrusted source
+  (intra-procedural taint tracking). Sibling of ZS-JS-030 (execFile) and
+  ZS-JS-045 (execSync).
+  Ported verbatim from ZS-JS-076, same match shape.
+message: "execFileSync() called with a tainted argument — pin the executable and validate all inputs"
+references:
+  - https://owasp.org/www-community/attacks/Command_Injection
+tags: [command-injection, child-process]
+match:
+  kind: call
+  callee: execFileSync
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Use a fixed executable path and pass user data only as validated, individually-quoted arguments."

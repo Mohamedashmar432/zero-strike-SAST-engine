@@ -1,0 +1,35 @@
+id: ZS-PY-073
+lifecycle: released
+name: SSRF via requests.put()
+version: "1.0.0"
+language: python
+category: ssrf
+severity: high
+confidence: medium
+cwe:
+  - CWE-918
+owasp:
+  - "A01:2025"
+rationale: |
+  Passing an attacker-controlled URL to requests.put() makes the server
+  issue an HTTP PUT to a destination the attacker chose: internal services
+  reachable only from the server's network position (metadata endpoints,
+  admin APIs, message queues) become reachable from the internet, and the
+  PUT verb can create or overwrite resources on them. This is exploitable
+  wherever a webhook URL, callback address, or remote resource locator
+  comes from request data without scheme/host allowlisting.
+description: |
+  Detects calls to requests.put() where an argument traces back to an
+  untrusted source (intra-procedural taint tracking). Sibling of
+  ZS-PY-025/026 (requests.get/post); the PUT verb completes the common
+  requests-method sink family.
+message: "requests.put() called with a tainted URL — validate scheme and host against an allowlist"
+references:
+  - https://owasp.org/www-community/attacks/Server_Side_Request_Forgery
+tags: [ssrf, requests]
+match:
+  kind: call
+  callee: requests.put
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Validate the URL's scheme and host against an allowlist before issuing the request; never pass raw user input as the URL."

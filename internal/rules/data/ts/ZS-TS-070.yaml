@@ -1,0 +1,36 @@
+id: ZS-TS-070
+lifecycle: released
+name: "res.cookie() with secure: false"
+version: "1.0.0"
+language: typescript
+category: security-misconfiguration
+severity: medium
+confidence: medium
+cwe:
+  - CWE-614
+owasp:
+  - "A02:2025"
+rationale: |
+  A cookie set with secure: false travels over plain HTTP as well as
+  HTTPS, so anyone on the network path — a hostile Wi-Fi hotspot, a
+  compromised router — can read it in transit. When that cookie carries a
+  session id or token, the attacker replays it and hijacks the account,
+  even if the site itself is HTTPS-only: the browser will still send the
+  cookie to the http:// origin if one is ever reached.
+description: |
+  Detects calls to res.cookie() where the options object explicitly sets
+  secure: false. Complements ZS-JS-018 (express-session's cookie.secure),
+  which covers the session middleware rather than individual cookie calls.
+  Ported verbatim from ZS-JS-072, same match shape.
+message: "res.cookie() with secure: false — cookie will be sent over plain HTTP"
+references:
+  - https://cwe.mitre.org/data/definitions/614.html
+tags: [misconfiguration, cookie, express]
+match:
+  kind: call
+  callee: res.cookie
+  filters:
+    - kwarg:
+        name: secure
+        value_pattern: "^false$"
+fix_suggestion: "Set secure: true for any cookie carrying sensitive data; omit the option only for non-sensitive cookies on HTTPS-only sites."

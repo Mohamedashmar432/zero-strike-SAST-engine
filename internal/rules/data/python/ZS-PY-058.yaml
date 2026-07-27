@@ -1,0 +1,42 @@
+id: ZS-PY-058
+lifecycle: released
+name: SQL Injection via executescript()
+version: "1.0.0"
+language: python
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-89
+owasp:
+  - "A05:2025"
+rationale: |
+  executescript() runs an entire batch of semicolon-separated SQL
+  statements with no parameter-binding support at all, so any
+  attacker-controlled value interpolated into the script can not only alter
+  the intended statement but append whole new ones — stacked INSERT/UPDATE/
+  DROP statements — turning a read-only-looking query into arbitrary
+  database modification. This is exploitable wherever request data is
+  string-formatted into a script passed to executescript(), which by design
+  cannot be made safe with placeholders the way execute() can.
+description: |
+  Detects calls to executescript() where the script argument traces back
+  to an untrusted source (intra-procedural taint tracking).
+
+  callee_suffix: DB-API cursors are reached through connection objects of
+  many names (conn.cursor().executescript, cur.executescript,
+  self.cursor.executescript), so suffix matching catches any receiver
+  ending in .executescript — the same approach as ZS-PY-004's
+  cursor.execute. Dot-boundary matching keeps it distinct from .execute
+  itself (covered by ZS-PY-004).
+message: "executescript() called with a tainted SQL script — use parameterized execute() calls instead"
+references:
+  - https://owasp.org/www-community/attacks/SQL_Injection
+tags: [sqli, injection, sqlite]
+match:
+  kind: call
+  callee: cursor.executescript
+  callee_suffix: true
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Never interpolate user input into a script; use execute() with bound parameters for each statement instead of executescript()."

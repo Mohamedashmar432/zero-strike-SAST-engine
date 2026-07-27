@@ -1,0 +1,30 @@
+id: ZS-GO-032
+lifecycle: released
+name: Deprecated TLS 1.1 (tls.VersionTLS11)
+version: "1.0.0"
+language: go
+category: cryptography
+severity: medium
+confidence: high
+cwe:
+  - CWE-327
+owasp:
+  - "A04:2025"
+rationale: |
+  TLS 1.1 is formally deprecated alongside 1.0 (RFC 8996): it fixes only
+  the explicit-IV issue of 1.0 and still lacks authenticated encryption
+  modes and modern key exchange, leaving connections exposed to the same
+  protocol-downgrade and padding-attack classes. Configuring it as an
+  acceptable version weakens the entire service's transport security.
+description: |
+  Detects any use of the tls.VersionTLS11 constant, matched as an
+  identifier so it fires in tls.Config composite literals, assignments,
+  and comparisons alike. Sibling of ZS-GO-031 (VersionTLS10).
+message: "tls.VersionTLS11 detected - TLS 1.1 is deprecated (RFC 8996); require TLS 1.2+"
+references:
+  - https://www.rfc-editor.org/rfc/rfc8996.html
+tags: [weak-crypto, tls, deprecated-protocol]
+match:
+  kind: identifier
+  identifier: VersionTLS11
+fix_suggestion: "Set MinVersion to tls.VersionTLS12 (or leave the Go default, which tracks current best practice)."

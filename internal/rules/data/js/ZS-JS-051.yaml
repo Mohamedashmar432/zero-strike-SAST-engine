@@ -1,0 +1,32 @@
+id: ZS-JS-051
+lifecycle: released
+name: DOM Open Redirect via location.replace()
+version: "1.0.0"
+language: javascript
+category: open-redirect
+severity: medium
+confidence: medium
+cwe:
+  - CWE-601
+owasp:
+  - "A01:2025"
+rationale: |
+  Passing attacker-controlled data to location.replace() navigates the
+  browser to an attacker-chosen URL — and because replace() overwrites the
+  current history entry, the victim cannot even use the back button to
+  return to the trusted page, making phishing flows harder to escape. A
+  javascript: URL escalates the redirect into DOM XSS.
+description: |
+  Detects calls to location.replace() where the destination traces back to
+  an untrusted source (intra-procedural taint tracking). Sibling of
+  ZS-JS-050 (location.assign) and ZS-JS-046 (location.href assignment).
+message: "location.replace() called with a tainted destination — validate against an allowlist of paths"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
+tags: [open-redirect, dom, navigation]
+match:
+  kind: call
+  callee: location.replace
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Only navigate to same-origin relative paths from an allowlist; never pass raw user input to location.replace()."

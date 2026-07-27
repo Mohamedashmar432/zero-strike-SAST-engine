@@ -1,0 +1,33 @@
+id: ZS-JAVA-048
+lifecycle: released
+name: Path Traversal via FileInputStream()
+version: "1.0.0"
+language: java
+category: path-traversal
+severity: high
+confidence: medium
+cwe:
+  - CWE-22
+owasp:
+  - "A01:2025"
+rationale: |
+  Opening a FileInputStream on a path built from untrusted input lets an
+  attacker use ../ sequences or an absolute path to escape the intended
+  directory and read arbitrary files the process can access -
+  configuration with secrets, other users' data, or application source -
+  and stream them back through whatever feature triggered the read
+  (download endpoints, report viewers, import handlers).
+description: |
+  Detects calls to new FileInputStream() where an argument traces back
+  to an untrusted source (intra-procedural taint tracking). Sibling of
+  ZS-JAVA-006 (new File()).
+message: "new FileInputStream() called with a tainted path - validate and confine the path before opening"
+references:
+  - https://owasp.org/www-community/attacks/Path_Traversal
+tags: [path-traversal, file-access, io]
+match:
+  kind: call
+  callee: FileInputStream
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Resolve the path and verify it stays within the allowed base directory (Path.normalize + startsWith) before opening."

@@ -1,0 +1,33 @@
+id: ZS-GO-041
+lifecycle: released
+name: template.JS() Cast of Tainted Value (XSS)
+version: "1.0.0"
+language: go
+category: xss
+severity: high
+confidence: medium
+cwe:
+  - CWE-79
+owasp:
+  - "A05:2025"
+rationale: |
+  Casting a string to template.JS tells html/template to embed the value
+  as trusted JavaScript, bypassing the engine's contextual escaping - so
+  attacker-controlled data in the cast executes as script in every
+  victim's browser under the site's origin, with full access to cookies,
+  storage, and the page DOM. Of the template type casts, this is the
+  most directly executable: the value is expected to be script.
+description: |
+  Detects calls to template.JS() (the html/template conversion) where an
+  argument traces back to an untrusted source (intra-procedural taint
+  tracking). Sibling of ZS-GO-040 (template.HTML).
+message: "template.JS() cast of a tainted value - user input embedded as trusted JavaScript"
+references:
+  - https://pkg.go.dev/html/template#JS
+tags: [xss, template, escaping]
+match:
+  kind: call
+  callee: template.JS
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Never cast user data to template.JS; pass values to scripts through JSON-encoded data attributes or template variables."

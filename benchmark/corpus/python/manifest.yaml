@@ -180,6 +180,69 @@ cases:
   - file: cases/vuln_hashlib_new_weak.py
     language: python
     expect: [{rule_id: ZS-PY-056, min_count: 1}]
+  - file: cases/vuln_subprocess_popen.py
+    language: python
+    expect: [{rule_id: ZS-PY-057, min_count: 1}]
+  - file: cases/vuln_executescript.py
+    language: python
+    expect: [{rule_id: ZS-PY-058, min_count: 1}]
+  - file: cases/vuln_django_raw.py
+    language: python
+    expect: [{rule_id: ZS-PY-059, min_count: 1}]
+  - file: cases/vuln_sqlalchemy_text.py
+    language: python
+    expect: [{rule_id: ZS-PY-060, min_count: 1}]
+  - file: cases/vuln_lxml_xpath.py
+    language: python
+    expect: [{rule_id: ZS-PY-061, min_count: 1}]
+  - file: cases/vuln_mongo_find_one.py
+    language: python
+    expect: [{rule_id: ZS-PY-062, min_count: 1}]
+  - file: cases/vuln_mongo_aggregate.py
+    language: python
+    expect: [{rule_id: ZS-PY-063, min_count: 1}]
+  - file: cases/vuln_os_remove.py
+    language: python
+    expect: [{rule_id: ZS-PY-064, min_count: 1}]
+  - file: cases/vuln_shutil_rmtree.py
+    language: python
+    expect: [{rule_id: ZS-PY-065, min_count: 1}]
+  - file: cases/vuln_aes_ecb.py
+    language: python
+    expect: [{rule_id: ZS-PY-066, min_count: 1}]
+  - file: cases/vuln_arc4.py
+    language: python
+    expect: [{rule_id: ZS-PY-067, min_count: 1}]
+  - file: cases/vuln_des3.py
+    language: python
+    expect: [{rule_id: ZS-PY-068, min_count: 1}]
+  - file: cases/vuln_weak_random_token.py
+    language: python
+    expect: [{rule_id: ZS-PY-069, min_count: 1}]
+  - file: cases/vuln_jwt_weak_key.py
+    language: python
+    expect: [{rule_id: ZS-PY-070, min_count: 1}]
+  - file: cases/vuln_django_cors_allow_all.py
+    language: python
+    expect: [{rule_id: ZS-PY-071, min_count: 1}]
+  - file: cases/vuln_mark_safe.py
+    language: python
+    expect: [{rule_id: ZS-PY-072, min_count: 1}]
+  - file: cases/vuln_requests_put.py
+    language: python
+    expect: [{rule_id: ZS-PY-073, min_count: 1}]
+  - file: cases/vuln_requests_delete.py
+    language: python
+    expect: [{rule_id: ZS-PY-074, min_count: 1}]
+  - file: cases/vuln_django_cookie_httponly.py
+    language: python
+    expect: [{rule_id: ZS-PY-075, min_count: 1}]
+  - file: cases/vuln_flask_cookie_httponly.py
+    language: python
+    expect: [{rule_id: ZS-PY-076, min_count: 1}]
+  - file: cases/vuln_jinja2_template.py
+    language: python
+    expect: [{rule_id: ZS-PY-077, min_count: 1}]
   - file: cases/clean.py
     language: python
     expect: []

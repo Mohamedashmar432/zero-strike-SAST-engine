@@ -1,0 +1,34 @@
+id: ZS-JS-075
+lifecycle: released
+name: spawnSync() Command Injection
+version: "1.0.0"
+language: javascript
+category: command-injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-78
+owasp:
+  - "A05:2025"
+rationale: |
+  child_process.spawnSync() invoked with shell: true (or with a command
+  line that reaches a shell) interprets its command text through /bin/sh,
+  so attacker-controlled input containing shell metacharacters (;, |, &&)
+  lets the attacker chain or substitute arbitrary commands with the Node
+  process's privileges. Being synchronous, it also blocks the event loop,
+  but the primary risk is command execution, and it is exploitable
+  wherever a request value is concatenated into the spawned command.
+description: |
+  Detects calls to spawnSync() (child_process, commonly destructured as
+  spawnSync) where an argument traces back to an untrusted source
+  (intra-procedural taint tracking). Sibling of ZS-JS-029 (spawn).
+message: "spawnSync() called with a tainted argument — use an argument array without shell, and validate input"
+references:
+  - https://owasp.org/www-community/attacks/Command_Injection
+tags: [command-injection, child-process]
+match:
+  kind: call
+  callee: spawnSync
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Pass the program and each argument as array elements with shell disabled, and allowlist any user-derived values."

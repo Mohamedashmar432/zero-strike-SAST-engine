@@ -1,0 +1,34 @@
+id: ZS-TS-067
+lifecycle: released
+name: Weak HMAC Algorithm (crypto.createHmac)
+version: "1.0.0"
+language: typescript
+category: cryptography
+severity: medium
+confidence: high
+cwe:
+  - CWE-327
+owasp:
+  - "A04:2025"
+rationale: |
+  HMAC's security rests on the underlying hash: HMAC-MD5 and HMAC-SHA1
+  inherit MD5/SHA-1's collision weaknesses, and while HMAC's construction
+  blunts the simplest collision attacks, both are deprecated for message
+  authentication — cryptanalysis keeps narrowing the margin, and
+  regulators (NIST, PCI) no longer accept them. New systems using
+  HMAC-MD5/SHA-1 are choosing a primitive already on the way to broken.
+description: |
+  Detects crypto.createHmac() called with "md5" or "sha1" as the
+  algorithm literal. Modern choices (sha256 and above) do not fire this
+  rule. Mirrors ZS-JS-026's policy for crypto.createHash.
+  Ported verbatim from ZS-JS-069, same match shape.
+message: "crypto.createHmac() with MD5/SHA-1 — use sha256 or stronger"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+tags: [cryptography, weak-crypto, hmac]
+match:
+  kind: call
+  callee: crypto.createHmac
+  filters:
+    - argument_literal_matches: "(?i)^(md5|sha1)$"
+fix_suggestion: "Use crypto.createHmac('sha256', key) or stronger; rotate existing MACs when the data is next written."

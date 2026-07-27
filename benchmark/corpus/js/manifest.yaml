@@ -141,3 +141,114 @@ cases:
   - file: cases/vuln_jwt_alg_none.js
     language: javascript
     expect: [{rule_id: ZS-JS-048, min_count: 1}]
+  - file: cases/vuln_document_writeln.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-049, min_count: 1}]
+  - file: cases/vuln_location_assign.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-050, min_count: 1}]
+  - file: cases/vuln_location_replace.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-051, min_count: 1}]
+  - file: cases/vuln_window_open.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-052, min_count: 1}]
+  - file: cases/vuln_iframe_srcdoc.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-053, min_count: 1}]
+  - file: cases/vuln_javascript_href.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-054, min_count: 1}]
+  - file: cases/vuln_postmessage_wildcard.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-055, min_count: 1}]
+  - file: cases/vuln_settimeout_string.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-056, min_count: 1}]
+  - file: cases/vuln_setinterval_string.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-057, min_count: 1}]
+  - file: cases/vuln_sqli_connection_query.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-058, min_count: 1}]
+  - file: cases/vuln_sqli_knex_raw.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-059, min_count: 1}]
+  - file: cases/vuln_nosqli_findone.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-060, min_count: 1}]
+  - file: cases/vuln_nosqli_aggregate.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-061, min_count: 1}]
+  - file: cases/vuln_fs_writefile.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-062, min_count: 1}]
+  - file: cases/vuln_fs_writefilesync.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-063, min_count: 1}]
+  - file: cases/vuln_fs_createwritestream.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-064, min_count: 1}]
+  - file: cases/vuln_fs_createreadstream.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-065, min_count: 1}]
+  - file: cases/vuln_crypto_createcipher.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-066, min_count: 1}]
+  - file: cases/vuln_crypto_createdecipher.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-067, min_count: 1}]
+  - file: cases/vuln_aes_ecb.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-068, min_count: 1}]
+  - file: cases/vuln_weak_hmac.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-069, min_count: 1}]
+  - file: cases/vuln_jwt_weak_key.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-070, min_count: 1}]
+  - file: cases/vuln_cors_allow_all.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-071, min_count: 1}]
+  - file: cases/vuln_cookie_secure_false.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-072, min_count: 1}]
+  - file: cases/vuln_cookie_httponly_false.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-073, min_count: 1}]
+  - file: cases/vuln_errorhandler.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-074, min_count: 1}]
+  - file: cases/vuln_spawnsync.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-075, min_count: 1}]
+  - file: cases/vuln_execfilesync.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-076, min_count: 1}]
+  - file: cases/vuln_vm_run_in_this_context.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-077, min_count: 1}]
+  - file: cases/vuln_vm_run_in_context.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-078, min_count: 1}]
+  - file: cases/vuln_ssti_lodash_template.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-079, min_count: 1}]
+  - file: cases/vuln_ssti_handlebars.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-080, min_count: 1}]
+  - file: cases/vuln_ssti_nunjucks.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-081, min_count: 1}]
+  - file: cases/vuln_ssrf_https_get.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-082, min_count: 1}]
+  - file: cases/vuln_log_injection.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-083, min_count: 1}]
+  - file: cases/vuln_ssrf_axios_put.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-084, min_count: 1}]
+  - file: cases/vuln_ssrf_axios_delete.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-085, min_count: 1}]

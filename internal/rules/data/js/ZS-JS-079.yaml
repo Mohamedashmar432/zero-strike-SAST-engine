@@ -1,0 +1,33 @@
+id: ZS-JS-079
+lifecycle: released
+name: Server-Side Template Injection (_.template)
+version: "1.0.0"
+language: javascript
+category: ssti
+severity: high
+confidence: medium
+cwe:
+  - CWE-1336
+owasp:
+  - "A03:2025"
+rationale: |
+  Lodash's _.template() compiles its input into an executable function —
+  template delimiters interpolate arbitrary JavaScript, and a tainted
+  template string lets the attacker run code in the Node process
+  (historically exploited via options.variable escapes, CVE-2021-23337).
+  Wherever a "custom template" feature takes template text from request
+  data, this becomes remote code execution on the server.
+description: |
+  Detects calls to _.template() (the conventional lodash receiver) where
+  the template argument traces back to an untrusted source
+  (intra-procedural taint tracking). Sibling of ZS-JS-041/042 (ejs/pug).
+message: "_.template() called with a tainted template — server-side template injection (RCE-class)"
+references:
+  - https://owasp.org/www-community/attacks/Server_Side_Template_Injection
+tags: [ssti, injection, lodash]
+match:
+  kind: call
+  callee: _.template
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Keep template strings static; pass user data only as the data object, never as template source."

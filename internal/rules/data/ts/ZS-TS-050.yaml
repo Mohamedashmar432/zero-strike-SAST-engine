@@ -1,0 +1,33 @@
+id: ZS-TS-050
+lifecycle: released
+name: DOM Open Redirect via window.open()
+version: "1.0.0"
+language: typescript
+category: open-redirect
+severity: medium
+confidence: medium
+cwe:
+  - CWE-601
+owasp:
+  - "A01:2025"
+rationale: |
+  Passing attacker-controlled data to window.open() opens a URL the
+  attacker chose in a new window or tab — a phishing flow launched from
+  genuinely trusted UI, or a javascript: URL that executes script when the
+  opened context is same-origin. Users trust content spawned from a site
+  they chose to visit, so redirects initiated this way inherit that trust.
+description: |
+  Detects calls to window.open() where the URL argument traces back to an
+  untrusted source (intra-procedural taint tracking). The bare open()
+  form (no explicit window receiver) is not matched.
+  Ported verbatim from ZS-JS-052, same match shape.
+message: "window.open() called with a tainted URL — validate the destination against an allowlist"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
+tags: [open-redirect, dom, navigation]
+match:
+  kind: call
+  callee: window.open
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Only open URLs from an allowlist of trusted destinations; never pass raw user input to window.open()."

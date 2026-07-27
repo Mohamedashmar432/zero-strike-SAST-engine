@@ -1,0 +1,33 @@
+id: ZS-JAVA-036
+lifecycle: released
+name: ECB Cipher Mode (Cipher.getInstance)
+version: "1.0.0"
+language: java
+category: cryptography
+severity: medium
+confidence: high
+cwe:
+  - CWE-327
+owasp:
+  - "A04:2025"
+rationale: |
+  ECB mode encrypts each block independently with the same key, so
+  identical plaintext blocks produce identical ciphertext blocks - the
+  classic "ECB penguin" leak. Structure in the data survives encryption,
+  and an attacker can cut, replay, or splice whole blocks to forge
+  messages the application accepts. AES itself is strong; AES/ECB throws
+  away the secrecy properties the cipher is meant to provide.
+description: |
+  Detects Cipher.getInstance() called with a transformation naming ECB
+  mode (e.g. "AES/ECB/PKCS5Padding"), matched as a string literal. GCM
+  and CBC-with-MAC transformations do not fire this rule.
+message: "Cipher.getInstance() with ECB mode - ECB leaks plaintext structure; use AES/GCM/NoPadding"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+tags: [cryptography, weak-crypto, ecb]
+match:
+  kind: call
+  callee: Cipher.getInstance
+  filters:
+    - argument_literal_matches: "(?i)/ecb/"
+fix_suggestion: "Use Cipher.getInstance(\"AES/GCM/NoPadding\") (authenticated), or CBC plus a separate MAC for legacy interop."

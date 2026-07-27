@@ -1,0 +1,33 @@
+id: ZS-TS-063
+lifecycle: released
+name: Path Traversal via fs.createReadStream()
+version: "1.0.0"
+language: typescript
+category: path-traversal
+severity: high
+confidence: medium
+cwe:
+  - CWE-22
+owasp:
+  - "A01:2025"
+rationale: |
+  Opening a read stream on a path built from untrusted input lets an
+  attacker escape the intended directory with ../ sequences or an absolute
+  path and stream arbitrary files back to themselves — configuration with
+  secrets, other users' data, or application source. Streaming endpoints
+  (downloads, media serving) are the classic place this pattern appears.
+description: |
+  Detects calls to fs.createReadStream() where the path argument traces
+  back to an untrusted source (intra-procedural taint tracking). Sibling
+  of ZS-JS-024/025 (fs.readFile/readFileSync).
+  Ported verbatim from ZS-JS-065, same match shape.
+message: "fs.createReadStream() called with a tainted path — validate and confine the path before streaming"
+references:
+  - https://owasp.org/www-community/attacks/Path_Traversal
+tags: [path-traversal, file-access, node-fs]
+match:
+  kind: call
+  callee: fs.createReadStream
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Resolve the path with path.resolve and confirm it stays within the allowed base directory before opening the stream."

@@ -1,0 +1,36 @@
+id: ZS-JS-071
+lifecycle: released
+name: Permissive CORS (cors() with Default Allow-All)
+version: "1.0.0"
+language: javascript
+category: security-misconfiguration
+severity: medium
+confidence: high
+cwe:
+  - CWE-942
+owasp:
+  - "A02:2025"
+rationale: |
+  Calling the cors middleware with no options enables CORS for every
+  origin: Access-Control-Allow-Origin is set to * (or reflects any
+  requester), so any website can make cross-origin requests to the API and
+  read responses. For endpoints that return user data, that turns the
+  same-origin policy off — a malicious site can scrape the API on behalf
+  of every visitor, needing no other vulnerability.
+description: |
+  Detects calls to cors() with zero arguments — the
+  explicitly-allow-everything default. Configured calls with an
+  origin allowlist (cors({ origin: [...] })) are not flagged. Complements
+  ZS-JS-027/028, which catch tainted reflection of the
+  Access-Control-Allow-Origin header by hand.
+message: "cors() with no options — enables cross-origin requests from any origin"
+references:
+  - https://cwe.mitre.org/data/definitions/942.html
+  - https://portswigger.net/web-security/cors
+tags: [cors, misconfiguration, express]
+match:
+  kind: call
+  callee: cors
+  filters:
+    - argument_count: 0
+fix_suggestion: "Pass an explicit allowlist: cors({ origin: ['https://app.example.com'] }); avoid the allow-all default in production."

@@ -1,0 +1,34 @@
+id: ZS-JAVA-041
+lifecycle: released
+name: XXE via SAXParserFactory.newInstance()
+version: "1.0.0"
+language: java
+category: xxe
+severity: high
+confidence: medium
+cwe:
+  - CWE-611
+owasp:
+  - "A05:2025"
+rationale: |
+  SAXParserFactory produces parsers with external-entity processing
+  enabled by default, so XML parsed from an attacker-controlled document
+  can reference external files (file:///etc/passwd) or remote endpoints
+  (SSRF via entity expansion), exfiltrating local files or reaching
+  internal services through the parser - plus billion-laughs entity
+  expansion for denial of service. Safe use requires explicitly
+  disabling external entities and DTDs, which newInstance() alone never
+  does.
+description: |
+  Detects calls to SAXParserFactory.newInstance(), which returns a
+  factory with insecure defaults unless the caller hardens it. Sibling
+  of ZS-JAVA-003 (DocumentBuilderFactory) and ZS-JAVA-009
+  (XMLInputFactory).
+message: "SAXParserFactory.newInstance() - disable external entities and DTDs before parsing"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html
+tags: [xxe, xml, sax]
+match:
+  kind: call
+  callee: SAXParserFactory.newInstance
+fix_suggestion: "Set feature \"http://apache.org/xml/features/disallow-doctype-decl\" true (or disable external entities) on the factory before use."

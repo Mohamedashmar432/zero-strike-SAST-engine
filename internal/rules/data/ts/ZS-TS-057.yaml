@@ -1,0 +1,35 @@
+id: ZS-TS-057
+lifecycle: released
+name: Knex raw() SQL Injection
+version: "1.0.0"
+language: typescript
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-89
+owasp:
+  - "A05:2025"
+rationale: |
+  knex.raw() executes the SQL string it is given verbatim, outside the
+  query builder's escaping — so interpolating attacker-controlled input
+  into it defeats every protection knex offers and lets the attacker
+  rewrite the query's structure: injected WHERE clauses to bypass
+  authorization, UNION SELECT to read unrelated tables, or stacked
+  statements to modify data. This is exploitable wherever a filter, sort,
+  or search parameter from a request reaches the raw() string instead of
+  being passed as a binding.
+description: |
+  Detects calls to knex.raw() where an argument traces back to an
+  untrusted source (intra-procedural taint tracking).
+  Ported verbatim from ZS-JS-059, same match shape.
+message: "knex.raw() called with a tainted SQL fragment — use bindings: knex.raw('... ? ...', [value])"
+references:
+  - https://owasp.org/www-community/attacks/SQL_Injection
+tags: [sqli, injection, knex]
+match:
+  kind: call
+  callee: knex.raw
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Keep the SQL static and pass user values as ? bindings, or use the knex query builder API."

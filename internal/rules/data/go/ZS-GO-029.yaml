@@ -1,0 +1,31 @@
+id: ZS-GO-029
+lifecycle: released
+name: Weak Cryptographic Hash (crypto/sha1)
+version: "1.0.0"
+language: go
+category: cryptography
+severity: medium
+confidence: high
+cwe:
+  - CWE-327
+owasp:
+  - "A04:2025"
+rationale: |
+  SHA-1 is broken for collision resistance: practical chosen-prefix
+  collisions (SHAttered, 2017) let an attacker craft two inputs that hash
+  identically, undermining signatures, integrity checks, and certificate
+  validation built on it. As a password hash it is additionally fast
+  enough for commodity GPUs to brute-force billions of guesses per
+  second. ZS-GO-004 covers md5.New(); this rule covers the equally
+  deprecated sha1.New().
+description: |
+  Detects calls to sha1.New() from crypto/sha1. SHA-1 is deprecated for
+  security use regardless of input, so no argument filter is needed.
+message: "sha1.New() detected - SHA-1 is broken; use sha256.New() or stronger"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+tags: [weak-crypto, sha1, hash]
+match:
+  kind: call
+  callee: sha1.New
+fix_suggestion: "Use crypto/sha256 (or bcrypt/argon2 for passwords); SHA-1 must not be used for new security-sensitive hashing."

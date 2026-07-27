@@ -1,0 +1,35 @@
+id: ZS-JAVA-037
+lifecycle: released
+name: SQL Injection via Statement.execute()
+version: "1.0.0"
+language: java
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-89
+owasp:
+  - "A05:2025"
+rationale: |
+  Statement.execute() runs the SQL string it is given verbatim, so
+  building that string by concatenating attacker-controlled input lets
+  an attacker terminate the intended query and append arbitrary SQL -
+  bypassing authentication, extracting other tables via UNION SELECT, or
+  modifying and deleting data, and execute() additionally permits
+  multiple result types which some drivers chain into stacked
+  statements. This is exploitable wherever a request parameter reaches
+  the raw query string before execute() runs it.
+description: |
+  Detects calls to stmt.execute() (the conventional Statement receiver
+  name, matching ZS-JAVA-001/010's convention) where an argument traces
+  back to an untrusted source (intra-procedural taint tracking).
+message: "stmt.execute() called with a tainted query string - use PreparedStatement with bound parameters"
+references:
+  - https://owasp.org/www-community/attacks/SQL_Injection
+tags: [sqli, injection, jdbc]
+match:
+  kind: call
+  callee: stmt.execute
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Use PreparedStatement with ? placeholders and bound parameters instead of concatenating values into the query string."

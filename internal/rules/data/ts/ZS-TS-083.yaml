@@ -1,0 +1,34 @@
+id: ZS-TS-083
+lifecycle: released
+name: SSRF via axios.delete()
+version: "1.0.0"
+language: typescript
+category: ssrf
+severity: high
+confidence: medium
+cwe:
+  - CWE-918
+owasp:
+  - "A01:2025"
+rationale: |
+  Passing an attacker-controlled URL to axios.delete() makes the server
+  issue an HTTP DELETE to a destination the attacker chose, exposing
+  internal services to remote resource deletion — admin APIs and
+  infrastructure endpoints that assume only the internal network can
+  reach them. This is exploitable wherever a remote resource URL comes
+  from request data without scheme/host allowlisting.
+description: |
+  Detects calls to axios.delete() where an argument traces back to an
+  untrusted source (intra-procedural taint tracking). Sibling of
+  ZS-JS-035/036/084 (axios.get/post/put).
+  Ported verbatim from ZS-JS-085, same match shape.
+message: "axios.delete() called with a tainted URL — validate scheme and host against an allowlist"
+references:
+  - https://owasp.org/www-community/attacks/Server_Side_Request_Forgery
+tags: [ssrf, axios]
+match:
+  kind: call
+  callee: axios.delete
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Validate the URL's scheme and host against an allowlist before issuing the request; never pass raw user input as the URL."

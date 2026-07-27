@@ -1,0 +1,37 @@
+id: ZS-PY-069
+lifecycle: released
+name: Predictable Random Value Used for Security Purpose
+version: "1.0.0"
+language: python
+category: cryptography
+severity: medium
+confidence: low
+cwe:
+  - CWE-338
+owasp:
+  - "A04:2025"
+rationale: |
+  The random module is a deterministic Mersenne-Twister PRNG: an attacker
+  who observes a few outputs — or can guess the seed window — can
+  reconstruct the generator's state and predict every future value.
+  Assigning its output to a security-sensitive variable (a token, OTP,
+  password reset code, CSRF value, session id) makes that value guessable,
+  which defeats whatever control the value was meant to enforce — account
+  takeover via predictable reset tokens is the classic exploit.
+description: |
+  Detects assignments where the left-hand side looks security-sensitive
+  (token, otp, secret, password, session, csrf, api key) and the
+  right-hand side calls the random module (randint, random, choice,
+  randrange, getrandbits, shuffle).
+
+  Confidence is low: the heuristic keys on variable naming, so benign uses
+  (e.g. a "token" that is not a security credential) may be flagged.
+message: "random module used to generate a security-sensitive value — use the secrets module"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+tags: [weak-crypto, weak-prng, random]
+match:
+  kind: assignment
+  lhs_identifier: "(?i)(otp|token|secret|password|csrf|session|api[_-]?key)"
+  rhs_literal: "random\\.(randint|random|choice|randrange|getrandbits|shuffle)"
+fix_suggestion: "Use secrets.token_urlsafe()/secrets.choice()/secrets.randbelow() — the random module is not cryptographically secure."

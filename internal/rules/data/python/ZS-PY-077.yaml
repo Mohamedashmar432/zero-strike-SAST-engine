@@ -1,0 +1,39 @@
+id: ZS-PY-077
+lifecycle: released
+name: Server-Side Template Injection via Template()
+version: "1.0.0"
+language: python
+category: ssti
+severity: high
+confidence: low
+cwe:
+  - CWE-94
+owasp:
+  - "A03:2025"
+rationale: |
+  Compiling attacker-controlled text as a Jinja2 (or Mako) template hands
+  the attacker the template engine's full expression power: sandbox
+  escapes via __class__.__mro__ chains reach Python objects and ultimately
+  os.system or subprocess, turning template injection into remote code
+  execution on the server. This is exploitable wherever a template string
+  — not merely the variables rendered into it — comes from request data,
+  such as "custom email template" or "dynamic page" features.
+description: |
+  Detects calls to Template() where an argument traces back to an
+  untrusted source (intra-procedural taint tracking), covering
+  `from jinja2 import Template` and `from mako.template import Template`.
+
+  Confidence is low: string.Template (a safe, interpolation-only class)
+  shares the bare callee name "Template"; usages of string.Template with
+  tainted values will also be flagged even though they cannot execute
+  code. render_template_string() is covered separately by ZS-PY-027.
+message: "Template() called with a tainted template — server-side template injection (RCE-class)"
+references:
+  - https://owasp.org/www-community/attacks/Server_Side_Template_Injection
+tags: [ssti, injection, jinja2, mako]
+match:
+  kind: call
+  callee: Template
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Never compile user input as a template; keep templates static and pass user data only as render context variables."

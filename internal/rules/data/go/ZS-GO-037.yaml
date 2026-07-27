@@ -1,0 +1,35 @@
+id: ZS-GO-037
+lifecycle: released
+name: db.QueryRow() SQL Injection
+version: "1.0.0"
+language: go
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-89
+owasp:
+  - "A05:2025"
+rationale: |
+  db.QueryRow() executes the SQL string it is given, so building that
+  string by concatenating attacker-controlled input lets an attacker
+  terminate the intended query and append arbitrary SQL - bypassing
+  authentication in login lookups, reading other tables via UNION
+  SELECT, or modifying data. Single-row reads feel safer than multi-row
+  queries, but the injection surface is identical: one concatenated id
+  in a "fetch user by id" lookup is enough to dump the users table.
+description: |
+  Detects calls to db.QueryRow() (the conventional *sql.DB receiver
+  name, matching ZS-GO-002's convention) where an argument traces back
+  to an untrusted source (intra-procedural taint tracking). Sibling of
+  ZS-GO-002 (db.Query) and ZS-GO-007 (db.Exec).
+message: "db.QueryRow() called with a tainted query string - use $1 placeholders"
+references:
+  - https://owasp.org/www-community/attacks/SQL_Injection
+tags: [sqli, injection, database-sql]
+match:
+  kind: call
+  callee: db.QueryRow
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Use parameterized placeholders: db.QueryRow('SELECT ... WHERE id = $1', id) instead of concatenating input."

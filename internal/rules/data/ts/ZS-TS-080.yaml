@@ -1,0 +1,35 @@
+id: ZS-TS-080
+lifecycle: released
+name: SSRF via https.get()
+version: "1.0.0"
+language: typescript
+category: ssrf
+severity: high
+confidence: medium
+cwe:
+  - CWE-918
+owasp:
+  - "A01:2025"
+rationale: |
+  Passing an attacker-controlled URL to https.get() makes the server issue
+  an HTTPS request to a destination the attacker chose — internal services
+  behind the firewall, cloud metadata endpoints (169.254.169.254 hands out
+  instance credentials), or third-party hosts whose responses the attacker
+  can then read or use as an attack proxy. This is exploitable wherever a
+  fetch/webhook URL comes from request data without scheme/host
+  allowlisting.
+description: |
+  Detects calls to https.get() where an argument traces back to an
+  untrusted source (intra-procedural taint tracking). Sibling of
+  ZS-JS-038 (http.get).
+  Ported verbatim from ZS-JS-082, same match shape.
+message: "https.get() called with a tainted URL — validate scheme and host against an allowlist"
+references:
+  - https://owasp.org/www-community/attacks/Server_Side_Request_Forgery
+tags: [ssrf, https, node]
+match:
+  kind: call
+  callee: https.get
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Validate the URL's host against an allowlist before requesting; never pass raw user input as the URL."
