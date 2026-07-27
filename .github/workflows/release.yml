@@ -135,12 +135,23 @@ jobs:
             -d "{\"email\":\"$PORTAL_ADMIN_EMAIL\",\"password\":\"$PORTAL_ADMIN_PASSWORD\"}" \
             | jq -r '.access_token')
 
+          failed=0
+
+          # ponytail: no retry/backoff, this is a hand-rolled 5-call loop, not a client
+          # library - add retries if flaky uploads turn out to be common.
           publish() {
             echo "Publishing $1 as $2/$3..."
-            curl -fsSL -X POST "$PORTAL_URL/api/v1/admin/downloads/zerostrike" \
+            http_code=$(curl -sS -o /tmp/publish_response.json -w '%{http_code}' -X POST \
+              "$PORTAL_URL/api/v1/admin/downloads/zerostrike" \
               -H "Authorization: Bearer $token" \
-              -F "version=${{ github.ref_name }}" -F "os=$2" -F "arch=$3" -F "file=@$1"
-            echo
+              -F "version=${{ github.ref_name }}" -F "os=$2" -F "arch=$3" -F "file=@$1")
+            if [ "$http_code" -ge 400 ]; then
+              echo "FAILED ($http_code): $(cat /tmp/publish_response.json)"
+              failed=1
+            else
+              cat /tmp/publish_response.json
+              echo
+            fi
           }
 
           publish zerostrike_linux_amd64 linux amd64
@@ -148,3 +159,8 @@ jobs:
           publish zerostrike_windows_amd64.exe windows amd64
           publish zerostrike_darwin_amd64 darwin amd64
           publish zerostrike_darwin_arm64 darwin arm64
+
+          if [ "$failed" -ne 0 ]; then
+            echo "One or more binaries failed to publish to the portal — see FAILED lines above."
+            exit 1
+          fi

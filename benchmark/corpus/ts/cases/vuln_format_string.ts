@@ -3,5 +3,6 @@
 // substituted value, is attacker-controlled)
 import * as util from 'util';
 function log(req: any) {
-  console.log(util.format('User: ' + req.query.name));
+  const message = util.format('User: ' + req.query.name);
+  return message;
 }

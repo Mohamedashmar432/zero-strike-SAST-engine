@@ -3,5 +3,6 @@
 // substituted value, is attacker-controlled)
 const util = require('util');
 function log(req) {
-  console.log(util.format('User: ' + req.query.name));
+  const message = util.format('User: ' + req.query.name);
+  return message;
 }
