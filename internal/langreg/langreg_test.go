@@ -14,6 +14,18 @@ func (fakeBuilder) Build(path string, source []byte) (*ir.IRFile, []ir.BuildWarn
 	return &ir.IRFile{Path: path}, nil, nil
 }
 
+// A CGO_ENABLED=0 build registers no parsers, which every consumer must
+// surface: `scan` warns and continues, zerostrike-bench exits 2. Silence here
+// is what let a 22.64%-recall no-CGo baseline pass as a real measurement.
+func TestNoParsersMessage(t *testing.T) {
+	if msg := langreg.NoParsersMessage(0); msg == "" {
+		t.Error("NoParsersMessage(0): want a diagnosis, got empty")
+	}
+	if msg := langreg.NoParsersMessage(7); msg != "" {
+		t.Errorf("NoParsersMessage(7): want empty, got %q", msg)
+	}
+}
+
 func TestRegisterGetAll(t *testing.T) {
 	if _, ok := langreg.Get(core.Language("zz-fake")); ok {
 		t.Fatal("expected zz-fake to be unregistered")

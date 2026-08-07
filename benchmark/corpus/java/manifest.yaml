@@ -105,6 +105,51 @@ cases:
   - file: cases/vuln_weak_hmac.java
     language: java
     expect: [{rule_id: ZS-JAVA-050, min_count: 1}]
+  - file: cases/vuln_weak_cipher_getinstance.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-035, min_count: 1}]
+  - file: cases/vuln_cipher_ecb.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-036, min_count: 1}]
+  - file: cases/vuln_sqli_execute.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-037, min_count: 1}]
+  - file: cases/vuln_print_stack_trace.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-038, min_count: 1}]
+  - file: cases/vuln_print_stack_trace_ex.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-039, min_count: 1}]
+  - file: cases/vuln_ssrf_postforobject.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-040, min_count: 1}]
+  - file: cases/vuln_xxe_sax.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-041, min_count: 1}]
+  - file: cases/vuln_secret_key_spec_des.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-042, min_count: 1}]
+  - file: cases/vuln_digestutils_md5.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-043, min_count: 1}]
+  - file: cases/vuln_digestutils_sha1.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-044, min_count: 1}]
+  - file: cases/vuln_sensitive_log_error.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-045, min_count: 1}]
+  - file: cases/vuln_ldap_template.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-046, min_count: 1}]
+  - file: cases/vuln_ldap_dircontext.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-047, min_count: 1}]
+  - file: cases/vuln_fileinputstream.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-048, min_count: 1}]
+  - file: cases/vuln_xpath_compile.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-049, min_count: 1}]
   - file: cases/clean.java
     language: java
     expect: []

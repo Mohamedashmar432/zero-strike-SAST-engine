@@ -54,17 +54,15 @@ case is self-describing.
 
 ## Known v1 scope gaps (not silently dropped — tracked here)
 
-- **Python taint-gated rules excluded** (`ZS-PY-004`, `ZS-PY-012`,
-  `ZS-PY-013`): their fixtures pass a value traced from a bare function
-  parameter, which the current same-file taint model (`internal/analyzer/taint/patterns.go`)
-  does not treat as tainted (only specific sources like `request.args`,
-  `os.environ.get`, etc. do). Confirming these would fire requires a
-  CGo-enabled local run this environment doesn't have (no `gcc`); adding
-  them is a follow-up once verified.
-- **`testdata/python/vuln_assert.py` excluded**: its own file comment
-  states it does not fire ("tree-sitter emits assert_statement, not
-  call") — a documented, pre-existing false negative, not something this
-  corpus should assert as a true positive.
+- ~~**Python taint-gated rules excluded** (`ZS-PY-004`, `ZS-PY-012`,
+  `ZS-PY-013`)~~ and ~~**`vuln_assert.py` excluded**~~ — **both resolved.**
+  All four are now manifest-scored. They were deferred because verifying
+  them needed a CGo run "this environment doesn't have (no `gcc`)"; the
+  toolchain was present all along, just off `PATH`. Cost of that gap: the
+  same missing-`gcc` assumption produced the `CGO_ENABLED=0` `baseline.json`
+  that reported 22.64% recall and was read as a coverage deficit for ten
+  sprints. Verify locally before deferring on toolchain grounds:
+  `PATH=/c/Users/<you>/mingw64/mingw64/bin:$PATH CGO_ENABLED=1 CC=gcc go test ./...`
 - **No TypeScript fixtures existed before this sprint** — `corpus/ts/`
   cases were written fresh, mirroring the exact source/sink shape proven
   by `internal/engine/integration_javascript_test.go`'s TS cases.

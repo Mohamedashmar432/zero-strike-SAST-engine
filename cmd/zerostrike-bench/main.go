@@ -13,6 +13,7 @@ import (
 	"os"
 
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/benchmark"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/langreg"
 
 	// Blank imports register each language's IR builder with
 	// internal/langreg — same requirement as cmd/zerostrike/main.go.
@@ -43,6 +44,18 @@ func main() {
 	flag.StringVar(&mdOut, "md-out", "", "write the Markdown report to this path (\"\" = skip)")
 	flag.BoolVar(&enableGraphs, "enable-graphs", false, "enable CFG/DFG-based path-sensitive taint reporting (Python only)")
 	flag.Parse()
+
+	// Refuse to score at all when no parser registered. Every SAST expectation
+	// would miss for a build reason rather than a detection reason, and the
+	// resulting number reads as a real accuracy result — the committed
+	// baseline.json reported "22.64% recall, 41 false negatives" on exactly
+	// this for ten sprints, and it was cited as evidence of a coverage gap
+	// that did not exist. Exit 2 (harness error), never 1 (threshold miss).
+	if msg := langreg.NoParsersMessage(len(langreg.All())); msg != "" {
+		fmt.Fprintln(os.Stderr, "zerostrike-bench:", msg)
+		fmt.Fprintln(os.Stderr, "zerostrike-bench: refusing to score — every SAST case would miss for a build reason, not a detection one.")
+		os.Exit(2)
+	}
 
 	dirs, err := benchmark.LoadCorpus(corpusRoot)
 	if err != nil {

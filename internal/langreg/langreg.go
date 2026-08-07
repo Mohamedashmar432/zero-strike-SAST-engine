@@ -36,6 +36,23 @@ func Get(lang core.Language) (Entry, bool) {
 	return e, ok
 }
 
+// NoParsersMessage returns a diagnosis when registered is 0, or "" otherwise.
+// A CGO_ENABLED=0 build excludes every cgo-gated register.go, leaving this
+// registry empty and SAST detection a silent no-op.
+//
+// Every consumer must surface this rather than proceeding quietly, because
+// the failure looks like a result: a scan reports a near-empty findings list
+// as a clean repo (QA Sprint 23 — a stale no-CGo binary scored ~1% detection
+// across 5 known-vulnerable repos before anyone questioned the build), and a
+// benchmark scores a ~0% SAST recall as a real measurement (the committed
+// baseline.json advertised 22.64% recall for ten sprints on exactly this).
+func NoParsersMessage(registered int) string {
+	if registered > 0 {
+		return ""
+	}
+	return "no language parsers registered — this binary was built with CGO_ENABLED=0, so SAST detection is disabled. Rebuild with CGO_ENABLED=1 and a C compiler on PATH."
+}
+
 // All returns every registered Entry in stable (language-name) order.
 func All() []Entry {
 	out := make([]Entry, 0, len(entries))

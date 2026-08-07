@@ -96,11 +96,15 @@ func TestAllRules_PassValidator(t *testing.T) {
 	}
 }
 
-// TestAllRules_HaveCoverageInBenchmarkCorpus is a sampling audit, not a gate:
-// it cross-references every released rule ID against the rule_ids referenced
-// in benchmark/corpus manifests and logs (never fails) any rule lacking a
-// corpus fixture, so the coverage backlog is visible in verbose test output
-// without blocking merges or CI.
+// TestAllRules_HaveCoverageInBenchmarkCorpus gates every released rule on
+// having a benchmark corpus case: it cross-references each rule ID against the
+// rule_ids referenced in benchmark/corpus manifests and fails on any rule
+// without one.
+//
+// This used to only t.Logf, and the backlog it printed went unread — 15 Java
+// rules (ZS-JAVA-035..049) shipped with fixtures sitting on disk but no
+// manifest entry, so they were scanned on every run and scored on none.
+// An unmeasured rule is indistinguishable from a broken one.
 func TestAllRules_HaveCoverageInBenchmarkCorpus(t *testing.T) {
 	corpusDir := findCorpusDir(t)
 	if corpusDir == "" {
@@ -130,7 +134,12 @@ func TestAllRules_HaveCoverageInBenchmarkCorpus(t *testing.T) {
 
 	sort.Strings(missing)
 	if len(missing) > 0 {
-		t.Logf("%d/%d released rules lack benchmark corpus coverage: %v", len(missing), total, missing)
+		t.Errorf("%d/%d released rules lack benchmark corpus coverage: %v\n"+
+			"Every released rule needs a fixture + manifest entry, or it is unmeasured: "+
+			"it cannot produce a TP, an FN, or an FP, so nothing detects it silently breaking. "+
+			"ZS-JAVA-035..049 sat here with fixtures already on disk and no manifest entry. "+
+			"Add the case to benchmark/corpus/<lang>/manifest.yaml, verifying the expectation "+
+			"against the rule YAML rather than the fixture filename.", len(missing), total, missing)
 	}
 }
 

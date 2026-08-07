@@ -59,10 +59,16 @@ func parseLanguages(raw []string) []core.Language {
 // is 0 (a CGo-less build has no language parsers registered, so SAST
 // scanning silently finds nothing regardless of input), or "" otherwise.
 func noParsersRegisteredWarning(registeredLangs int) string {
-	if registeredLangs > 0 {
+	msg := langreg.NoParsersMessage(registeredLangs)
+	if msg == "" {
 		return ""
 	}
-	return "WARNING: no language parsers registered — this binary was built with CGO_ENABLED=0, so SAST detection is disabled. Secrets/SCA/framework checks still run. Rebuild with CGO_ENABLED=1 and a C compiler on PATH to enable SAST scanning."
+	// A scan degrades rather than fails here: the pure-Go secrets, SCA, and
+	// framework scanners still produce real findings, so the run is worth
+	// completing as long as the SAST gap is stated. zerostrike-bench makes
+	// the opposite call and exits non-zero, because a partial scan is useful
+	// but a partial *score* is just a wrong number.
+	return "WARNING: " + msg + " Secrets/SCA/framework checks still run."
 }
 
 // parseGroupBy maps a --group-by flag value to a report.GroupBy. It is
