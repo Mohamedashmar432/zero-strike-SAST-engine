@@ -481,6 +481,14 @@ func isArgumentList(c *ir.IRNode) bool {
 // asking about argument 2 of a one-argument call simply does not match.
 func argumentAt(n *ir.IRNode, i int, pred func(*ir.IRNode) bool) bool {
 	args := argumentNodes(n)
+	// A negative index counts from the end, so -1 is the last argument. This
+	// is what makes overloaded sinks expressible: pg_query has both
+	// pg_query($query) and pg_query($conn, $query), and mysqli_query is
+	// mysqli_query($link, $query) — the query is the last argument in every
+	// form, but no single non-negative index describes it.
+	if i < 0 {
+		i += len(args)
+	}
 	if i < 0 || i >= len(args) {
 		return false
 	}

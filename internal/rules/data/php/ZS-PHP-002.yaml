@@ -37,4 +37,10 @@ match:
   callee: mysqli_query
   filters:
     - tainted_argument: true
+      # The query string only, addressed from the END because these sinks
+      # are overloaded: pg_query($query) and pg_query($conn, $query) both
+      # exist, and mysqli_query is mysqli_query($link, $query). The query
+      # is the last argument in every form; a tainted connection handle is
+      # not a SQL injection.
+      tainted_argument_index: -1
 fix_suggestion: "Use mysqli_prepare()/bind_param() or PDO prepared statements instead of concatenating user input into the query string."

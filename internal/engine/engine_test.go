@@ -917,3 +917,64 @@ func TestArgumentIndex_ConstructorShape(t *testing.T) {
 		t.Errorf("literal SQL with tainted connection got %d matches, want 0", n)
 	}
 }
+
+// TestArgumentIndex_NegativeCountsFromEnd covers overloaded sinks. pg_query has
+// both pg_query($query) and pg_query($conn, $query); mysqli_query is
+// mysqli_query($link, $query). The query is the last argument in every form, so
+// no single non-negative index describes it — -1 does.
+func TestArgumentIndex_NegativeCountsFromEnd(t *testing.T) {
+	last := -1
+	rule := &rules.Rule{
+		ID:       "ZS-TEST-LASTARG",
+		Language: core.LangPHP,
+		Match: rules.MatchPattern{
+			Kind:    string(ir.NodeKindCall),
+			Callee:  "pg_query",
+			Filters: []rules.Filter{{TaintedArgument: true, TaintedArgumentIndex: &last}},
+		},
+	}
+	idx := engine.BuildIndex([]*rules.Rule{rule})
+
+	call := func(args ...*ir.IRNode) *ir.IRNode {
+		kids := []*ir.IRNode{{Kind: ir.NodeKindUnknown, Text: "("}}
+		for i, a := range args {
+			if i > 0 {
+				kids = append(kids, &ir.IRNode{Kind: ir.NodeKindUnknown, Text: ","})
+			}
+			kids = append(kids, a)
+		}
+		kids = append(kids, &ir.IRNode{Kind: ir.NodeKindUnknown, Text: ")"})
+		return &ir.IRNode{Kind: ir.NodeKindCall, Children: []*ir.IRNode{
+			{Kind: ir.NodeKindIdentifier, Text: "pg_query"},
+			{Kind: ir.NodeKindUnknown, Children: kids},
+		}}
+	}
+	run := func(c *ir.IRNode) int {
+		mc := &engine.MatchContext{
+			Index: idx,
+			File: &analyzer.AnalysisResult{
+				IR:          &ir.IRFile{Language: core.LangPHP, Path: "a.php", Root: &ir.IRNode{Kind: ir.NodeKindModule, Children: []*ir.IRNode{c}}},
+				TaintedVars: map[string]bool{"q": true, "conn": true},
+			},
+		}
+		got, err := engine.New().Match(context.Background(), mc)
+		if err != nil {
+			t.Fatalf("Match: %v", err)
+		}
+		return len(got)
+	}
+	q := func() *ir.IRNode { return &ir.IRNode{Kind: ir.NodeKindIdentifier, Text: "q"} }
+	conn := func() *ir.IRNode { return &ir.IRNode{Kind: ir.NodeKindIdentifier, Text: "conn"} }
+	lit := func() *ir.IRNode { return &ir.IRNode{Kind: ir.NodeKindLiteral, Text: "SELECT 1"} }
+
+	if n := run(call(q())); n != 1 {
+		t.Errorf("pg_query($taintedQuery) got %d, want 1", n)
+	}
+	if n := run(call(conn(), q())); n != 1 {
+		t.Errorf("pg_query($conn, $taintedQuery) got %d, want 1", n)
+	}
+	// A tainted connection handle with a literal query is not an injection.
+	if n := run(call(conn(), lit())); n != 0 {
+		t.Errorf("pg_query($taintedConn, \"literal\") got %d, want 0", n)
+	}
+}
