@@ -1,0 +1,36 @@
+id: ZS-JAVA-050
+lifecycle: released
+name: Weak HMAC Algorithm (Mac.getInstance)
+version: "1.0.0"
+language: java
+category: cryptography
+severity: medium
+confidence: high
+cwe:
+  - CWE-327
+owasp:
+  - "A04:2025"
+rationale: |
+  HMAC's security depends on the underlying hash's collision resistance.
+  MD5 and SHA-1 are both broken for collision attacks, and using either as
+  the HMAC hash offers no real advantage over HmacSHA256 — there's no
+  reason to accept the weaker, harder-to-justify option. Same underlying
+  concern as ZS-GO-043 (hmac.New) and ZS-PHP-029 (hash_hmac); Java already
+  covers ECB (ZS-JAVA-036) and hardcoded JWT/HMAC keys (ZS-JAVA-008) but
+  had no rule for the algorithm choice itself.
+description: |
+  Detects Mac.getInstance() called with "HmacMD5" or "HmacSHA1" as the
+  algorithm-name string literal, matched case-insensitively, the same
+  literal-matching shape already used for MessageDigest.getInstance() and
+  Cipher.getInstance(). Mac.getInstance("HmacSHA256") and stronger do not
+  fire this rule.
+message: "Mac.getInstance() with a weak algorithm (HmacMD5/HmacSHA1) — use HmacSHA256 or stronger"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+tags: [cryptography, weak-crypto, hmac]
+match:
+  kind: call
+  callee: Mac.getInstance
+  filters:
+    - argument_literal_matches: "(?i)^hmac(md5|sha1)$"
+fix_suggestion: "Use Mac.getInstance(\"HmacSHA256\") or stronger."

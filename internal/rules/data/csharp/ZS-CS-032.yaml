@@ -1,0 +1,29 @@
+id: ZS-CS-032
+lifecycle: released
+name: Weak HMAC Algorithm (HMACSHA1)
+version: "1.0.0"
+language: csharp
+category: cryptography
+severity: medium
+confidence: high
+cwe:
+  - CWE-327
+owasp:
+  - "A04:2025"
+rationale: |
+  HMAC's security depends on the underlying hash's collision resistance.
+  SHA-1 is deprecated for new designs (NIST has withdrawn approval for
+  most SHA-1 uses), and using it as the HMAC hash offers no real advantage
+  over HMACSHA256. Same underlying concern as ZS-CS-031 (HMACMD5),
+  ZS-JAVA-050 (Mac.getInstance) and ZS-PHP-029 (hash_hmac).
+description: |
+  Detects calls to HMACSHA1.Create(), the same static-factory shape as
+  ZS-CS-031/ZS-CS-005/ZS-CS-022.
+message: "HMACSHA1.Create() detected — use HMACSHA256 or stronger"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+tags: [cryptography, weak-crypto, hmac]
+match:
+  kind: call
+  callee: HMACSHA1.Create
+fix_suggestion: "Replace HMACSHA1.Create() with HMACSHA256.Create() or stronger."

@@ -1,0 +1,36 @@
+id: ZS-CS-033
+lifecycle: released
+name: Weak Hardcoded JWT/HMAC Signing Key
+version: "1.0.0"
+language: csharp
+category: authentication
+severity: high
+confidence: medium
+cwe:
+  - CWE-326
+  - CWE-798
+owasp:
+  - "A04:2025"
+rationale: |
+  An HMAC-signed JWT is only as strong as its key: a short or
+  dictionary-grade key hardcoded in source lets an attacker brute-force it
+  offline against any captured token and then mint tokens with arbitrary
+  claims — user ids, roles, expiry — that the application accepts as
+  authentic. A hardcoded key also leaks to anyone with repository read
+  access and persists in git history. This is distinct from ZS-CS-028
+  (which catches signature validation being disabled outright): here
+  validation stays on, but the key itself is weak. Mirrors ZS-JAVA-008's
+  naming-and-length policy.
+description: |
+  Detects assignments of a short string literal (16 characters or fewer)
+  to a variable or property whose name identifies it as a JWT/HMAC signing
+  key (jwtSecret, JwtKey, SigningKey, ...).
+message: "Weak hardcoded JWT/HMAC signing key — use a 32+ character key from configuration or a KMS"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html
+tags: [jwt, weak-secret, hardcoded-secret]
+match:
+  kind: assignment
+  lhs_identifier: "(?i)(jwt.*(secret|key)|signing.*key|hmac.*key)"
+  rhs_literal: "^\"[^\"]{1,16}\"$"
+fix_suggestion: "Generate a long (32+ character) random secret at deploy time and load it from configuration or a secrets manager — never hardcode signing key material."

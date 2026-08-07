@@ -87,6 +87,18 @@ cases:
   - file: cases/vuln_weak_hash_sha1.cs
     language: csharp
     expect: [{rule_id: ZS-CS-029, min_count: 1}]
+  - file: cases/vuln_ecb_ciphermode.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-030, min_count: 1}]
+  - file: cases/vuln_hmacmd5.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-031, min_count: 1}]
+  - file: cases/vuln_hmacsha1.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-032, min_count: 1}]
+  - file: cases/vuln_jwt_secret.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-033, min_count: 1}]
   - file: cases/clean.cs
     language: csharp
     expect: []

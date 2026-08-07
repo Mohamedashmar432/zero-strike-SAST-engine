@@ -1,0 +1,38 @@
+id: ZS-PHP-028
+lifecycle: released
+name: openssl_encrypt() Called Without an IV
+version: "1.0.0"
+language: php
+category: cryptography
+severity: medium
+confidence: medium
+cwe:
+  - CWE-329
+owasp:
+  - "A04:2025"
+rationale: |
+  openssl_encrypt()'s $iv parameter is optional in its signature, but
+  omitting it is not safe: PHP raises a warning and silently encrypts with
+  an all-zero IV. For any chaining mode (CBC, CFB, OFB, CTR) a fixed IV
+  means identical plaintext prefixes across messages produce identical
+  leading ciphertext blocks, and for CTR/OFB it can fully break
+  confidentiality by reusing the same keystream. This is the closest PHP
+  analogue to Node's deprecated crypto.createCipher() (ZS-JS-064/ZS-TS-064),
+  which derives its IV internally instead of taking a random one.
+description: |
+  Detects openssl_encrypt() called with exactly 4 positional arguments
+  (data, cipher, key, options) — the form that omits the $iv parameter.
+  Calls that pass a 5th argument (even an empty-string IV) are not flagged
+  by this rule; a hardcoded/predictable IV value is a separate concern this
+  syntactic check cannot see.
+message: "openssl_encrypt() called without an IV argument — silently encrypts with an all-zero IV"
+references:
+  - https://www.php.net/manual/en/function.openssl-encrypt.php
+  - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+tags: [cryptography, weak-crypto, iv]
+match:
+  kind: call
+  callee: openssl_encrypt
+  filters:
+    - argument_count: 4
+fix_suggestion: "Pass a fresh random IV per message: $iv = random_bytes(openssl_cipher_iv_length($cipher)); store it alongside the ciphertext (it need not be secret)."

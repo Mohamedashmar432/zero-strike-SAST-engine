@@ -1,0 +1,34 @@
+id: ZS-PHP-029
+lifecycle: released
+name: Weak HMAC Algorithm (hash_hmac)
+version: "1.0.0"
+language: php
+category: cryptography
+severity: medium
+confidence: high
+cwe:
+  - CWE-327
+owasp:
+  - "A04:2025"
+rationale: |
+  HMAC's security depends on the underlying hash's collision resistance.
+  MD5 and SHA-1 are both broken for collision attacks, and while HMAC-MD5
+  isn't broken in the same way plain MD5 is, using either as the HMAC hash
+  is a well-known red flag that signals legacy or copy-pasted code and
+  offers no real advantage over HMAC-SHA256 — there's no reason to accept
+  the weaker, harder-to-justify option. Same underlying concern as
+  ZS-JAVA-050 (Mac.getInstance) and ZS-GO-043 (hmac.New).
+description: |
+  Detects hash_hmac() called with 'md5' or 'sha1' as the algorithm-name
+  first argument, matched case-insensitively. hash_hmac('sha256', ...) and
+  stronger do not fire this rule.
+message: "hash_hmac() with a weak algorithm (md5/sha1) — use sha256 or stronger"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+tags: [cryptography, weak-crypto, hmac]
+match:
+  kind: call
+  callee: hash_hmac
+  filters:
+    - argument_literal_matches: "(?i)^(md5|sha1)$"
+fix_suggestion: "Use hash_hmac('sha256', $data, $key) or stronger."

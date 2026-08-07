@@ -1,0 +1,36 @@
+id: ZS-PHP-027
+lifecycle: released
+name: ECB Cipher Mode (openssl_encrypt)
+version: "1.0.0"
+language: php
+category: cryptography
+severity: medium
+confidence: high
+cwe:
+  - CWE-327
+owasp:
+  - "A04:2025"
+rationale: |
+  ECB mode encrypts each block independently with the same key, so
+  identical plaintext blocks yield identical ciphertext blocks — structure
+  in the data (record layouts, repeated fields, headers) survives
+  encryption, and an attacker can cut, replay, or splice blocks to forge
+  messages. AES itself is strong; AES-ECB discards the secrecy properties
+  the cipher is meant to provide, which is why no modern protocol permits
+  it. Same underlying weakness as ZS-JAVA-036 (Cipher.getInstance) and
+  ZS-TS-066 (crypto.createCipheriv) — the risk is in the mode, not the
+  algorithm wrapping it.
+description: |
+  Detects openssl_encrypt() called with a cipher-method literal ending in
+  -ecb (e.g. aes-128-ecb, aes-256-ecb), matched case-insensitively.
+  Authenticated modes such as aes-256-gcm do not fire this rule.
+message: "openssl_encrypt() with an ECB-mode cipher — ECB leaks plaintext structure; use aes-256-gcm"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+tags: [cryptography, weak-crypto, ecb]
+match:
+  kind: call
+  callee: openssl_encrypt
+  filters:
+    - argument_literal_matches: "(?i)-ecb$"
+fix_suggestion: "Use an authenticated mode such as aes-256-gcm with a random per-message IV, or CBC plus a separate MAC for legacy interop."

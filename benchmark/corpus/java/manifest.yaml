@@ -102,6 +102,9 @@ cases:
   - file: cases/vuln_spel_injection.java
     language: java
     expect: [{rule_id: ZS-JAVA-034, min_count: 1}]
+  - file: cases/vuln_weak_hmac.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-050, min_count: 1}]
   - file: cases/clean.java
     language: java
     expect: []

@@ -1,0 +1,36 @@
+id: ZS-GO-043
+lifecycle: released
+name: Weak HMAC Algorithm (hmac.New)
+version: "1.0.0"
+language: go
+category: cryptography
+severity: medium
+confidence: high
+cwe:
+  - CWE-327
+owasp:
+  - "A04:2025"
+rationale: |
+  HMAC's security depends on the underlying hash's collision resistance.
+  MD5 and SHA-1 are both broken for collision attacks, and using either as
+  the HMAC hash offers no real advantage over hmac.New(sha256.New, ...) —
+  there's no reason to accept the weaker, harder-to-justify option. Same
+  underlying concern as ZS-JAVA-050 (Mac.getInstance) and ZS-PHP-029
+  (hash_hmac).
+description: |
+  Detects hmac.New() called with md5.New or sha1.New as the
+  hash-constructor first argument (a function value, not a string). The
+  selector expression's package-name leaf (md5 or sha1) is what the engine
+  can match as an identifier — its New method-name leaf is too generic on
+  its own to use as the signal. hmac.New with sha256.New or stronger does
+  not fire this rule.
+message: "hmac.New() with a weak hash constructor (md5.New/sha1.New) — use sha256.New or stronger"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+tags: [cryptography, weak-crypto, hmac]
+match:
+  kind: call
+  callee: hmac.New
+  filters:
+    - argument_identifier_matches: "^(md5|sha1)$"
+fix_suggestion: "Use hmac.New(sha256.New, key) or stronger."

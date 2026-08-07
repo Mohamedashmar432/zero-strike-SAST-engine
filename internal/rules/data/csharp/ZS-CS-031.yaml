@@ -1,0 +1,30 @@
+id: ZS-CS-031
+lifecycle: released
+name: Weak HMAC Algorithm (HMACMD5)
+version: "1.0.0"
+language: csharp
+category: cryptography
+severity: medium
+confidence: high
+cwe:
+  - CWE-327
+owasp:
+  - "A04:2025"
+rationale: |
+  HMAC's security depends on the underlying hash's collision resistance.
+  MD5 is cryptographically broken for collisions, and using it as the HMAC
+  hash offers no real advantage over HMACSHA256 — there's no reason to
+  accept the weaker, harder-to-justify option. Same underlying concern as
+  ZS-JAVA-050 (Mac.getInstance) and ZS-PHP-029 (hash_hmac).
+description: |
+  Detects calls to HMACMD5.Create(), the .NET static-factory form, the
+  same shape already used by ZS-CS-005 (MD5.Create) and ZS-CS-022
+  (DES.Create).
+message: "HMACMD5.Create() detected — use HMACSHA256 or stronger"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+tags: [cryptography, weak-crypto, hmac]
+match:
+  kind: call
+  callee: HMACMD5.Create
+fix_suggestion: "Replace HMACMD5.Create() with HMACSHA256.Create() or stronger."

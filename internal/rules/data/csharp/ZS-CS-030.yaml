@@ -1,0 +1,39 @@
+id: ZS-CS-030
+lifecycle: released
+name: ECB Cipher Mode
+version: "1.0.0"
+language: csharp
+category: cryptography
+severity: medium
+confidence: high
+cwe:
+  - CWE-327
+owasp:
+  - "A04:2025"
+rationale: |
+  ECB mode encrypts each block independently with the same key, so
+  identical plaintext blocks produce identical ciphertext blocks — the
+  classic "ECB penguin" leak. Structure in the data survives encryption,
+  and an attacker can cut, replay, or splice whole blocks to forge messages
+  the application accepts. AES itself is strong; setting CipherMode.ECB
+  throws away the secrecy properties the cipher is meant to provide. Same
+  underlying weakness as ZS-JAVA-036/ZS-TS-066/ZS-PHP-027.
+description: |
+  Detects the bare ECB member-name identifier used anywhere a CipherMode
+  enum constant appears — an assignment such as aes.Mode = CipherMode.ECB,
+  a composite/object initializer, or a comparison — matched the same way
+  ZS-GO-009 and ZS-GO-031 match TLS-version constants regardless of
+  context: C#'s member_access_expression lowers to an Attribute IR node
+  whose "ECB" member is its own leaf Identifier node, so the match applies
+  to that leaf rather than the full dotted chain. Known limitation: this
+  is a bare-identifier match, so a variable or member literally named ECB
+  in an unrelated context would also fire; the same tradeoff already
+  accepted for ZS-GO-009/031's constant names.
+message: "CipherMode.ECB used — ECB leaks plaintext structure; use CipherMode.CBC or an authenticated mode"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+tags: [cryptography, weak-crypto, ecb]
+match:
+  kind: identifier
+  identifier: ECB
+fix_suggestion: "Use an authenticated construction (AesGcm) or CipherMode.CBC with a random IV and a separate HMAC."

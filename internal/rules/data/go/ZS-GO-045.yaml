@@ -1,0 +1,36 @@
+id: ZS-GO-045
+lifecycle: released
+name: Weak/Static IV (cipher.NewCBCEncrypter)
+version: "1.0.0"
+language: go
+category: cryptography
+severity: medium
+confidence: medium
+cwe:
+  - CWE-329
+owasp:
+  - "A04:2025"
+rationale: |
+  CBC mode requires an unpredictable, unique-per-message IV: if the IV is
+  hardcoded or reused, identical plaintext prefixes across messages produce
+  identical leading ciphertext blocks, and an attacker who can influence
+  plaintext can mount chosen-plaintext attacks against the cipher. A
+  literal byte-string IV baked into source is both predictable and
+  identical on every call, defeating CBC's guarantees entirely.
+description: |
+  Detects cipher.NewCBCEncrypter() called with a hardcoded string literal
+  anywhere in its argument list — the common []byte("...") anti-pattern for
+  the IV parameter. Known limitation: this is a syntactic, literal-only
+  check; an IV built from a zero-filled make([]byte, ...) buffer (equally
+  insecure, but no literal to match) is not detected — same class of
+  limitation already accepted for ZS-PY-014.
+message: "cipher.NewCBCEncrypter() called with a hardcoded IV literal — use a fresh random IV per message (crypto/rand)"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+tags: [cryptography, weak-crypto, iv]
+match:
+  kind: call
+  callee: cipher.NewCBCEncrypter
+  filters:
+    - argument_literal_matches: "^.{1,32}$"
+fix_suggestion: "Generate a fresh IV per message with crypto/rand.Read and prepend it to the ciphertext (it need not be secret)."

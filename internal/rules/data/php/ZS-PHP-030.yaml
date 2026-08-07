@@ -1,0 +1,36 @@
+id: ZS-PHP-030
+lifecycle: released
+name: Weak Hardcoded JWT/HMAC Signing Key
+version: "1.0.0"
+language: php
+category: authentication
+severity: high
+confidence: medium
+cwe:
+  - CWE-326
+  - CWE-798
+owasp:
+  - "A04:2025"
+rationale: |
+  An HMAC-signed JWT is only as strong as its key: a short or
+  dictionary-grade key hardcoded in source lets an attacker brute-force it
+  offline against any captured token (billions of HS256 guesses per second
+  on commodity GPUs) and then mint tokens with arbitrary claims — user ids,
+  roles, expiry — that the application accepts as authentic. A hardcoded
+  key also leaks to anyone with repository read access and persists in git
+  history. Mirrors ZS-JAVA-008's naming-and-length policy; PHP has no
+  equivalent rule today despite JWT libraries (firebase/php-jwt and
+  similar) being common here.
+description: |
+  Detects assignments of a short string literal (16 characters or fewer)
+  to a variable whose name identifies it as a JWT/HMAC signing key
+  ($jwtSecret, $jwt_key, $signingKey, ...).
+message: "Weak hardcoded JWT/HMAC signing key — use a 32+ character key from configuration or a KMS"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html
+tags: [jwt, weak-secret, hardcoded-secret]
+match:
+  kind: assignment
+  lhs_identifier: "(?i)(jwt[_-]?(secret|key)|signing[_-]?key|hmac[_-]?key)"
+  rhs_literal: "^[\"'][^\"']{1,16}[\"']$"
+fix_suggestion: "Load a high-entropy key (32+ random characters) from environment or a secrets manager; never hardcode it."

@@ -1,0 +1,35 @@
+id: ZS-PHP-031
+lifecycle: released
+name: Permissive CORS via header()
+version: "1.0.0"
+language: php
+category: security-misconfiguration
+severity: medium
+confidence: high
+cwe:
+  - CWE-942
+owasp:
+  - "A02:2025"
+rationale: |
+  Sending Access-Control-Allow-Origin: * tells every browser that any
+  origin may read this response — for endpoints returning user data or
+  authenticated content, that turns off the same-origin policy for
+  everyone, letting a malicious site scrape the API on behalf of any
+  visitor with no other vulnerability needed. PHP has no CORS rule today
+  despite header() being the standard way this misconfiguration ships.
+description: |
+  Detects header() called with a literal string containing
+  "Access-Control-Allow-Origin: *", matched case-insensitively. A reflected
+  or allowlisted origin value (built from a variable, not a wildcard
+  literal) does not fire this rule.
+message: "header() sets Access-Control-Allow-Origin: * — enables cross-origin requests from any origin"
+references:
+  - https://cwe.mitre.org/data/definitions/942.html
+  - https://portswigger.net/web-security/cors
+tags: [cors, misconfiguration]
+match:
+  kind: call
+  callee: header
+  filters:
+    - argument_literal_matches: "(?i)access-control-allow-origin:\\s*\\*"
+fix_suggestion: "Reflect only an explicit allowlist of trusted origins instead of a wildcard."

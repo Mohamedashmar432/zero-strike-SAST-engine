@@ -130,6 +130,15 @@ cases:
   - file: testdata/vuln_bcrypt_lowcost.go
     language: go
     expect: [{rule_id: ZS-GO-042, min_count: 1}]
+  - file: testdata/vuln_weak_hmac.go
+    language: go
+    expect: [{rule_id: ZS-GO-043, min_count: 1}]
+  - file: testdata/vuln_jwt_secret.go
+    language: go
+    expect: [{rule_id: ZS-GO-044, min_count: 1}]
+  - file: testdata/vuln_static_iv.go
+    language: go
+    expect: [{rule_id: ZS-GO-045, min_count: 1}]
   - file: testdata/clean.go
     language: go
     expect: []

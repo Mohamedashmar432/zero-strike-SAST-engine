@@ -78,6 +78,24 @@ cases:
   - file: cases/vuln_weak_cipher_openssl.php
     language: php
     expect: [{rule_id: ZS-PHP-026, min_count: 1}]
+  - file: cases/vuln_ecb_openssl.php
+    language: php
+    expect: [{rule_id: ZS-PHP-027, min_count: 1}]
+  - file: cases/vuln_openssl_no_iv.php
+    language: php
+    expect: [{rule_id: ZS-PHP-028, min_count: 1}]
+  - file: cases/vuln_hash_hmac_md5.php
+    language: php
+    expect: [{rule_id: ZS-PHP-029, min_count: 1}]
+  - file: cases/vuln_jwt_secret.php
+    language: php
+    expect: [{rule_id: ZS-PHP-030, min_count: 1}]
+  - file: cases/vuln_cors_wildcard.php
+    language: php
+    expect: [{rule_id: ZS-PHP-031, min_count: 1}, {rule_id: ZS-CFG-003, min_count: 1}]
+  - file: cases/vuln_display_errors.php
+    language: php
+    expect: [{rule_id: ZS-PHP-032, min_count: 1}]
   - file: cases/clean.php
     language: php
     expect: []

@@ -1,0 +1,37 @@
+id: ZS-PHP-032
+lifecycle: released
+name: Verbose Errors via display_errors
+version: "1.0.0"
+language: php
+category: security-misconfiguration
+severity: medium
+confidence: high
+cwe:
+  - CWE-209
+owasp:
+  - "A05:2025"
+rationale: |
+  Enabling display_errors at runtime prints PHP's raw error output —
+  file paths, function arguments, database connection strings in a failed
+  query, framework and library versions — directly into the HTTP response.
+  An attacker uses this both to map the application's internals and to
+  fingerprint exact software versions for known-CVE targeting. This is the
+  source-level equivalent of the config-file-level Django/Laravel debug
+  checks already covered by internal/scanner/framework; PHP had no
+  AST-level rule for the same call-based idiom.
+description: |
+  Detects ini_set() called with 'display_errors' as the setting-name
+  argument and a truthy value ('1', 'On', 'true') as the value argument.
+  ini_set('display_errors', '0') and ini_set('display_errors', 'Off') do
+  not fire this rule.
+message: "ini_set('display_errors', ...) enabled — verbose PHP errors will be exposed to clients"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Error_Handling_Cheat_Sheet.html
+tags: [misconfiguration, error-handling, information-disclosure]
+match:
+  kind: call
+  callee: ini_set
+  filters:
+    - argument_literal_matches: "(?i)^display_errors$"
+    - argument_literal_matches: "(?i)^(1|on|true)$"
+fix_suggestion: "Set display_errors to 0/Off in production and log errors to a file instead (log_errors=1, error_log=...)."
