@@ -38,7 +38,11 @@ references:
 tags: [sqli, injection, jdbc]
 match:
   kind: call
-  callee: stmt.executeUpdate
+  # Any receiver, not just a variable literally named "stmt". WebGoat
+  # writes statement.executeUpdate(query); pinning the receiver name missed
+  # every one. Precision comes from tainted_argument_index below.
+  callee: executeUpdate
+  callee_suffix: true
   filters:
     - tainted_argument: true
       # The query string only. These APIs take the SQL first and bind
