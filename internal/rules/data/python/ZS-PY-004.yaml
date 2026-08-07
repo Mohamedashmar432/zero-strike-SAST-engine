@@ -39,4 +39,10 @@ match:
   callee_suffix: true
   filters:
     - tainted_argument: true
+      # Only the query string. DB-API's execute(sql, params) passes values as a
+      # separate sequence precisely so they are never part of the SQL, so
+      # `cur.execute('... WHERE id = %s', (id_,))` is the CORRECT form and must
+      # not be flagged. Matching any argument flagged it, which is the worst
+      # possible false positive: it trains people away from parameterisation.
+      tainted_argument_index: 0
 fix_suggestion: "Use parameterized queries: cursor.execute(query, params) where params is a tuple."

@@ -31,4 +31,8 @@ match:
   callee: knex.raw
   filters:
     - tainted_argument: true
+      # The query string only. These APIs take the SQL first and bind
+      # parameters afterwards, so a tainted value in a later argument is
+      # the CORRECT, parameterised form and must not be flagged.
+      tainted_argument_index: 0
 fix_suggestion: "Keep the SQL static and pass user values as ? bindings, or use the knex query builder API."

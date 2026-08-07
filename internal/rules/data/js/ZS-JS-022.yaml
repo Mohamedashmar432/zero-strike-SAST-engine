@@ -38,4 +38,8 @@ match:
   callee: client.query
   filters:
     - tainted_argument: true
+      # The query string only. These APIs take the SQL first and bind
+      # parameters afterwards, so a tainted value in a later argument is
+      # the CORRECT, parameterised form and must not be flagged.
+      tainted_argument_index: 0
 fix_suggestion: "Use parameterized placeholders: client.query('SELECT * FROM users WHERE id = $1', [id]) instead of concatenating the value into the query string."

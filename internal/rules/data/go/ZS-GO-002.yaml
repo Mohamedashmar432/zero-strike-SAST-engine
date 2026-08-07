@@ -40,4 +40,8 @@ match:
   callee: db.Query
   filters:
     - tainted_argument: true
+      # The query string only. These APIs take the SQL first and bind
+      # parameters afterwards, so a tainted value in a later argument is
+      # the CORRECT, parameterised form and must not be flagged.
+      tainted_argument_index: 0
 fix_suggestion: "Use a parameterized query: db.Query(\"SELECT * FROM users WHERE id = ?\", id) instead of building the query string with the tainted value."

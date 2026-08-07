@@ -40,4 +40,8 @@ match:
   callee: stmt.executeQuery
   filters:
     - tainted_argument: true
+      # The query string only. These APIs take the SQL first and bind
+      # parameters afterwards, so a tainted value in a later argument is
+      # the CORRECT, parameterised form and must not be flagged.
+      tainted_argument_index: 0
 fix_suggestion: "Replace Statement with PreparedStatement and bind the tainted value via setString()/setInt() instead of concatenating it into the query text."

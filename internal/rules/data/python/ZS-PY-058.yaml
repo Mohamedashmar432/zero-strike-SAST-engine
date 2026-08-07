@@ -39,4 +39,8 @@ match:
   callee_suffix: true
   filters:
     - tainted_argument: true
+      # The query string only. These APIs take the SQL first and bind
+      # parameters afterwards, so a tainted value in a later argument is
+      # the CORRECT, parameterised form and must not be flagged.
+      tainted_argument_index: 0
 fix_suggestion: "Never interpolate user input into a script; use execute() with bound parameters for each statement instead of executescript()."
