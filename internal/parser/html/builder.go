@@ -30,6 +30,11 @@ func (b *IRBuilder) Build(path string, source []byte) (*ir.IRFile, []ir.BuildWar
 	if err != nil {
 		return nil, nil, fmt.Errorf("html builder: %w", err)
 	}
+	// collectElements walks *sitter.Node pointers into the tree's C memory.
+	// Without this, result is unreachable once RootNode is loaded and the GC
+	// finalizer (ts_tree_delete) can free the CST mid-walk — a use-after-free
+	// that silently drops random findings. Also frees promptly, not at GC time.
+	defer result.Tree.Close()
 	root := &ir.IRNode{
 		NodeID:   uuid.New().String(),
 		Kind:     ir.NodeKindModule,
@@ -188,6 +193,10 @@ func ExtractScripts(source []byte) []ScriptBlock {
 	if err != nil {
 		return nil
 	}
+	// Same use-after-free hazard as Build: collectScripts reads through
+	// *sitter.Node into the tree's C memory, which the GC finalizer is free to
+	// delete the moment result stops being reachable.
+	defer result.Tree.Close()
 	var blocks []ScriptBlock
 	collectScripts(result.RootNode, source, &blocks)
 	return blocks

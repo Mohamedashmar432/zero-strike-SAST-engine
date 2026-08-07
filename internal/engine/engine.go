@@ -115,27 +115,46 @@ func (e *defaultEngine) Match(_ context.Context, mc *MatchContext) ([]MatchResul
 	taintedVars := mc.File.TaintedVars
 	var out []MatchResult
 	fileLang := mc.File.IR.Language
+	// consider evaluates one candidate rule against n.
+	//
+	// The three index buckets are iterated separately rather than gathered
+	// into one candidate slice. Gathering used to start with
+	// `candidates := mc.Index.byKind[n.Kind]` and append to it — but that
+	// slice aliases the shared rule index's own backing array, so whenever it
+	// had spare capacity the append wrote *into the index itself*. Every file
+	// in a scan matches against that one index across runtime.NumCPU()
+	// goroutines, so workers silently overwrote each other's candidate lists
+	// and rules were skipped at random: identical scans of the same 12 files
+	// returned anywhere from 6 to 11 of the 11 expected findings. That is the
+	// "non-reproducible anomaly" left open in Sprint 25. Never append to a
+	// slice read out of Index here. Iterating in place also drops a
+	// per-call-node allocation from the hot path.
+	consider := func(n *ir.IRNode, r *rules.Rule) {
+		// A rule only applies to files of its own declared language — the
+		// IR shape (assignment/call/try nodes) is language-agnostic, so
+		// e.g. a Python "hardcoded credential" rule would otherwise also
+		// match an identical-looking assignment in a Go or C# file.
+		if r.Language != fileLang {
+			return
+		}
+		if matchNode(r.Match, n, taintedVars, fileLang) {
+			out = append(out, MatchResult{Rule: r, Node: n, TaintedVar: taintedIdentifierFor(r.Match, n, taintedVars, fileLang)})
+		}
+	}
+
 	ir.Walk(mc.File.IR.Root, func(n *ir.IRNode) bool {
-		candidates := mc.Index.byKind[n.Kind]
+		for _, r := range mc.Index.byKind[n.Kind] {
+			consider(n, r)
+		}
 		if n.Kind == ir.NodeKindCall {
 			text := calleeText(n)
-			candidates = append(candidates, mc.Index.byCallee[text]...)
+			for _, r := range mc.Index.byCallee[text] {
+				consider(n, r)
+			}
 			for _, r := range mc.Index.byCalleeSuffix[lastCalleeSegment(text)] {
 				if calleeSuffixMatches(r.Match.Callee, text) {
-					candidates = append(candidates, r)
+					consider(n, r)
 				}
-			}
-		}
-		for _, r := range candidates {
-			// A rule only applies to files of its own declared language — the
-			// IR shape (assignment/call/try nodes) is language-agnostic, so
-			// e.g. a Python "hardcoded credential" rule would otherwise also
-			// match an identical-looking assignment in a Go or C# file.
-			if r.Language != fileLang {
-				continue
-			}
-			if matchNode(r.Match, n, taintedVars, fileLang) {
-				out = append(out, MatchResult{Rule: r, Node: n, TaintedVar: taintedIdentifierFor(r.Match, n, taintedVars, fileLang)})
 			}
 		}
 		return true

@@ -25,6 +25,11 @@ func (b *IRBuilder) Build(path string, source []byte) (*ir.IRFile, []ir.BuildWar
 	if err != nil {
 		return nil, nil, fmt.Errorf("js builder: %w", err)
 	}
+	// buildNode walks *sitter.Node pointers into the tree's C memory. Without
+	// this, result is unreachable once RootNode is loaded and the GC finalizer
+	// (ts_tree_delete) can free the CST mid-walk — a use-after-free that
+	// silently drops random findings. Also frees promptly, not at GC time.
+	defer result.Tree.Close()
 	var warnings []ir.BuildWarning
 	root := b.buildNode(result.RootNode, source, nil, path, &warnings)
 	return &ir.IRFile{

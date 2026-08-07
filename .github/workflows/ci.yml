@@ -29,12 +29,21 @@ jobs:
         include:
           - os: ubuntu-latest
             cgo: "1"
-            name: ubuntu (CGo)
+            # -race only works with CGo, so this is the only leg that can run
+            # it — and it must. The scanner matches every file against one
+            # shared rule index across runtime.NumCPU() goroutines, and a
+            # mutation of that index (see TestMatch_ConcurrentSharedIndex)
+            # drops findings at random while every test still passes without
+            # this flag. That bug shipped undetected from Sprint 25.
+            race: "-race"
+            name: ubuntu (CGo, race)
           - os: ubuntu-latest
             cgo: "0"
+            race: ""
             name: ubuntu (no CGo)
           - os: windows-latest
             cgo: "0"
+            race: ""
             name: windows (no CGo)
     runs-on: ${{ matrix.os }}
     env:
@@ -46,7 +55,7 @@ jobs:
           go-version-file: go.mod
           cache: true
       - name: Test
-        run: go test ./... -count=1
+        run: go test ./... -count=1 ${{ matrix.race }}
 
   scan-e2e:
     name: scan-e2e / ${{ matrix.name }}
