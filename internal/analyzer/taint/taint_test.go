@@ -529,3 +529,49 @@ func TestBuild_NilSymbolTableDisablesInterprocedural(t *testing.T) {
 		t.Error("expected interprocedural step to be disabled with nil symbols")
 	}
 }
+
+// TestBuild_GoMultiValueAssignmentSplitsLHS is a regression test for the taint
+// loss on Go's `value, err := fn()` idiom. Builders store the whole `left`
+// span as one Attrs["lhs"], so this arrived as the literal key "num, _" and a
+// later reference to bare `num` never matched it. ZS-GO-014 (integer overflow)
+// was written against exactly this shape, never fired, and was removed in
+// Sprint 28 rather than shipped; damn-vulnerable-golang's annotated CWE-190
+// case is the same code.
+func TestBuild_GoMultiValueAssignmentSplitsLHS(t *testing.T) {
+	root := &ir.IRNode{
+		Kind: ir.NodeKindModule,
+		Children: []*ir.IRNode{
+			assignment("val", "resp.Request.URL.Query().Get(\"val\")", ident("_")),
+			assignment("num, _", "strconv.Atoi(val)", ident("val")),
+		},
+	}
+	tainted := build(&ir.IRFile{Root: root, Language: core.LangGo})
+	if !tainted["val"] {
+		t.Fatal("precondition: val should be tainted by the query source")
+	}
+	if !tainted["num"] {
+		t.Error("num should be tainted: taint must survive a multi-value assignment")
+	}
+	if tainted["num, _"] {
+		t.Error(`the raw "num, _" text must not be used as a taint key`)
+	}
+	if tainted["_"] {
+		t.Error("the blank identifier should never be tainted")
+	}
+}
+
+// Python tuple unpacking stores its LHS the same way, so the same split
+// applies — guards against a Go-only fix.
+func TestBuild_PythonTupleUnpackSplitsLHS(t *testing.T) {
+	root := &ir.IRNode{
+		Kind: ir.NodeKindModule,
+		Children: []*ir.IRNode{
+			assignment("raw", "request.args.get('q')", ident("_")),
+			assignment("a, b", "parse(raw)", ident("raw")),
+		},
+	}
+	tainted := build(&ir.IRFile{Root: root, Language: core.LangPython})
+	if !tainted["a"] || !tainted["b"] {
+		t.Errorf("both unpacked names should be tainted, got a=%v b=%v", tainted["a"], tainted["b"])
+	}
+}

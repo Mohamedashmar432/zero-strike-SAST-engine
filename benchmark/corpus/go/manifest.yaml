@@ -139,6 +139,9 @@ cases:
   - file: testdata/vuln_static_iv.go
     language: go
     expect: [{rule_id: ZS-GO-045, min_count: 1}]
+  - file: testdata/vuln_int16_overflow.go
+    language: go
+    expect: [{rule_id: ZS-GO-046, min_count: 1}]
   - file: testdata/clean.go
     language: go
     expect: []

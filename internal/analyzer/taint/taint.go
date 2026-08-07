@@ -11,6 +11,8 @@
 package taint
 
 import (
+	"strings"
+
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/graph"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/ir"
@@ -87,32 +89,62 @@ func BuildContext(file *ir.IRFile, symbols symboltable.SymbolTable, dfg *graph.D
 			return true
 		}
 		verdict, reason, ref := assignmentTaintsLHS(n, pats, summaries, symbols, tainted)
-		if aug, _ := n.Attrs["augmented"].(bool); aug {
-			if !verdict && tainted[lhs] {
+		aug, _ := n.Attrs["augmented"].(bool)
+		for _, name := range lhsNames(lhs) {
+			v, rs, rf := verdict, reason, ref
+			if aug && !v && tainted[name] {
 				// Inherits the previous verdict; keep the previously
 				// recorded reason instead of overwriting with empty.
-				verdict = true
-				reason = reasons[lhs]
-				ref = lhs
+				v, rs, rf = true, reasons[name], name
 			}
-		}
-		tainted[lhs] = verdict
-		if verdict {
-			reasons[lhs] = reason
-			if dfg != nil {
-				if p := extendPath(n, ref, dfg, paths); p != nil {
-					paths[lhs] = p
-				} else {
-					delete(paths, lhs)
+			tainted[name] = v
+			if v {
+				reasons[name] = rs
+				if dfg != nil {
+					if p := extendPath(n, rf, dfg, paths); p != nil {
+						paths[name] = p
+					} else {
+						delete(paths, name)
+					}
 				}
+			} else {
+				delete(reasons, name)
+				delete(paths, name)
 			}
-		} else {
-			delete(reasons, lhs)
-			delete(paths, lhs)
 		}
 		return true
 	})
 	return Result{Tainted: tainted, Reasons: reasons, Paths: paths}
+}
+
+// lhsNames splits an assignment's LHS text into the individual variable names
+// it binds.
+//
+// Builders store the whole `left` span as one Attrs["lhs"] string, so Go's
+// `num, _ := strconv.Atoi(val)` and Python's `a, b = f()` both arrive here as
+// the literal text "num, _" / "a, b". Keying taint on that verbatim loses the
+// binding outright: a later reference to bare `num` never matches the key
+// "num, _". Since `value, err := fn()` is Go's near-universal call idiom, that
+// silently dropped taint across most real Go code — it is why ZS-GO-014
+// (integer overflow) was authored, never fired, and was removed in Sprint 28
+// instead of shipped, and why damn-vulnerable-golang's annotated CWE-190 case
+// (`val := ...Query().Get("val"); num, _ := strconv.Atoi(val)`) went undetected.
+//
+// Only the taint map keys are split. Attrs["lhs"] is deliberately left intact
+// so rules matching on lhs_identifier keep seeing the original source text.
+func lhsNames(lhs string) []string {
+	if !strings.Contains(lhs, ",") {
+		return []string{lhs}
+	}
+	var out []string
+	for _, p := range strings.Split(lhs, ",") {
+		// "_" is Go's blank identifier — nothing can ever reference it back,
+		// so a taint entry for it would only be dead weight in the map.
+		if p = strings.TrimSpace(p); p != "" && p != "_" {
+			out = append(out, p)
+		}
+	}
+	return out
 }
 
 // extendPath builds the source-to-sink location chain for a tainted

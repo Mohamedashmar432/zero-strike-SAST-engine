@@ -1,0 +1,45 @@
+id: ZS-GO-046
+lifecycle: released
+name: Integer Overflow via Narrowing Conversion (int16)
+version: "1.0.0"
+language: go
+category: validation
+severity: medium
+confidence: medium
+cwe:
+  - CWE-190
+owasp:
+  - "A03:2025"
+rationale: |
+  Converting a request-derived number to int16 silently wraps any value
+  outside -32768..32767 rather than failing, so an attacker who controls the
+  input controls the sign and magnitude of the result. Where that value then
+  feeds a length, an index, a quantity, or a balance, the wrap turns an
+  attacker-supplied "40000" into a negative number that slips past a
+  greater-than-zero check and drives an out-of-bounds access, an oversized
+  allocation, or a financial discrepancy. strconv.Atoi returns a full-width
+  int precisely so the caller can range-check before narrowing; this rule
+  fires when that check is skipped on a tainted value.
+
+  This rule previously existed as ZS-GO-014, was found never to fire, and was
+  removed in Sprint 28 rather than shipped non-functional. The cause was not
+  the rule: taint was keyed on an assignment's whole LHS text, so the
+  `num, _ := strconv.Atoi(val)` that always precedes this conversion stored
+  the key "num, _" and left bare `num` untainted (see taint.lhsNames). With
+  that fixed the rule fires, and ZS-GO-014 has since been reused for tx.Query
+  SQL injection — hence the new ID.
+description: |
+  Detects an int16() conversion whose argument traces back to an untrusted
+  source (intra-procedural taint tracking). int32 narrowing is not covered:
+  callee matching is exact, so it would need a sibling rule, and int32 is wide
+  enough that the wrap needs a far less plausible input to reach.
+message: "int16() narrowing conversion on a tainted value — bounds-check before converting or the value wraps"
+references:
+  - https://cwe.mitre.org/data/definitions/190.html
+tags: [integer-overflow, validation, numeric]
+match:
+  kind: call
+  callee: int16
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Range-check before narrowing: reject the input unless it fits (e.g. n < math.MinInt16 || n > math.MaxInt16), or keep the wider type."
