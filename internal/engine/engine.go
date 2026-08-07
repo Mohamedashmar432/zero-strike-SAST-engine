@@ -271,11 +271,18 @@ func evalFilter(f rules.Filter, n *ir.IRNode, taintedVars map[string]bool, lang 
 		}
 	}
 	if f.TaintedArgument {
-		if !anyArgument(n, func(a *ir.IRNode) bool {
-			return a.Kind == ir.NodeKindIdentifier && taintedVars[a.Text]
-		}) && !anyArgument(n, func(a *ir.IRNode) bool {
-			return isDirectSourceExpression(a, lang)
-		}) {
+		isTainted := func(a *ir.IRNode) bool {
+			return (a.Kind == ir.NodeKindIdentifier && taintedVars[a.Text]) ||
+				isDirectSourceExpression(a, lang)
+		}
+		scan := anyArgument
+		if f.TaintedArgumentIndex != nil {
+			i := *f.TaintedArgumentIndex
+			scan = func(n *ir.IRNode, pred func(*ir.IRNode) bool) bool {
+				return argumentAt(n, i, pred)
+			}
+		}
+		if !scan(n, isTainted) {
 			return false
 		}
 	}
@@ -411,6 +418,73 @@ func isDirectSourceExpression(n *ir.IRNode, lang core.Language) bool {
 // anyArgument reports whether any node in a call's argument list (everything
 // after the callee/function child) satisfies pred. Returns false for non-call
 // nodes or calls with no argument list child.
+// argumentNodes returns a call's real positional arguments, in order.
+//
+// Children[0] is the callee, but Children[1:] is not simply the argument list:
+// some builders keep the grammar's punctuation tokens as Unknown children.
+// Java lowers String.format("a" + b) to four children — the callee attribute,
+// "(", the binary_op, ")" — so naive Children[1+i] indexing would treat the
+// open paren as argument 0. anyArgument never noticed because a paren is never
+// a tainted identifier, but positional matching cannot ignore it.
+func argumentNodes(n *ir.IRNode) []*ir.IRNode {
+	if n.Kind != ir.NodeKindCall || len(n.Children) < 2 {
+		return nil
+	}
+	candidates := n.Children[1:]
+	// Two shapes exist and both must work. Go, C#, JS/TS and PHP wrap the
+	// arguments in a single unnamed argument_list node, so descend into it.
+	// Java has no wrapper: it emits the arguments as direct children beside
+	// literal "(" and ")" tokens.
+	if len(candidates) == 1 && isArgumentList(candidates[0]) {
+		candidates = candidates[0].Children
+	}
+	out := make([]*ir.IRNode, 0, len(candidates))
+	for _, c := range candidates {
+		// Drop only the grammar's punctuation. Emphatically NOT empty-text
+		// nodes: C# and PHP lower a string-concatenation argument to an
+		// Unknown node whose own Text is empty, so treating "" as punctuation
+		// silently deletes the real argument.
+		if c.Kind == ir.NodeKindUnknown {
+			switch strings.TrimSpace(c.Text) {
+			case "(", ")", ",":
+				continue
+			}
+		}
+		out = append(out, c)
+	}
+	return out
+}
+
+// isArgumentList reports whether c is a builder's unnamed argument_list
+// wrapper. Identified by its delimiters rather than by empty text, since a
+// real argument can also be an empty-text Unknown node.
+func isArgumentList(c *ir.IRNode) bool {
+	if c.Kind != ir.NodeKindUnknown || len(c.Children) < 2 {
+		return false
+	}
+	return strings.TrimSpace(c.Children[0].Text) == "(" &&
+		strings.TrimSpace(c.Children[len(c.Children)-1].Text) == ")"
+}
+
+// argumentAt applies pred to the i-th positional argument (0-based) and its
+// subtree. Returns false when the call has fewer arguments than that — a rule
+// asking about argument 2 of a one-argument call simply does not match.
+func argumentAt(n *ir.IRNode, i int, pred func(*ir.IRNode) bool) bool {
+	args := argumentNodes(n)
+	if i < 0 || i >= len(args) {
+		return false
+	}
+	if pred(args[i]) {
+		return true
+	}
+	for _, d := range ir.Descendants(args[i]) {
+		if pred(d) {
+			return true
+		}
+	}
+	return false
+}
+
 func anyArgument(n *ir.IRNode, pred func(*ir.IRNode) bool) bool {
 	if n.Kind != ir.NodeKindCall || len(n.Children) < 2 {
 		return false

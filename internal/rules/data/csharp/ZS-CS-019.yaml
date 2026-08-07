@@ -60,4 +60,8 @@ match:
   callee: string.Format
   filters:
     - tainted_argument: true
+      # Only the format string itself. Matching any argument fired on the
+      # safe logger.info("User: %s", name) idiom — the substituted value
+      # being attacker-controlled is the normal case, not the bug.
+      tainted_argument_index: 0
 fix_suggestion: "Never build the format-string template from untrusted input; use a fixed literal template and pass tainted data only as substitution arguments."

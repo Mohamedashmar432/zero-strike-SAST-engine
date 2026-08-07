@@ -766,3 +766,90 @@ func TestMatch_CalleeSuffix_SingleSegmentMatchesAnyReceiver(t *testing.T) {
 		t.Errorf("cur.executemany matched %d rules, want 0", len(got))
 	}
 }
+
+// TestMatch_TaintedArgumentIndex pins the argument-position filter, which
+// exists because "any argument, anywhere in its subtree" is wrong for any sink
+// where exactly one position is dangerous. The format-string family
+// (string.Format, fmt.Sprintf, String.format, sprintf, util.format) is
+// vulnerable when the FORMAT STRING is attacker-controlled, not when a
+// substituted value is — so matching any argument fired on the entirely safe
+// logger.info("User: %s", name) idiom.
+//
+// Both IR shapes are covered. Go/C#/JS/TS/PHP wrap arguments in an unnamed
+// argument_list node; Java emits them as direct children beside literal "("
+// and ")" tokens. Getting this wrong silently shifts every index by one.
+func TestMatch_TaintedArgumentIndex(t *testing.T) {
+	zero := 0
+	rule := &rules.Rule{
+		ID:       "ZS-TEST-FMT",
+		Language: core.LangPython,
+		Match: rules.MatchPattern{
+			Kind:   string(ir.NodeKindCall),
+			Callee: "fmt",
+			Filters: []rules.Filter{
+				{TaintedArgument: true, TaintedArgumentIndex: &zero},
+			},
+		},
+	}
+	idx := engine.BuildIndex([]*rules.Rule{rule})
+
+	lit := func(s string) *ir.IRNode { return &ir.IRNode{Kind: ir.NodeKindLiteral, Text: s} }
+	tainted := func() *ir.IRNode { return &ir.IRNode{Kind: ir.NodeKindIdentifier, Text: "evil"} }
+	punct := func(s string) *ir.IRNode { return &ir.IRNode{Kind: ir.NodeKindUnknown, Text: s} }
+
+	// wrapped: callee, then one argument_list node delimited by parens.
+	wrapped := func(args ...*ir.IRNode) *ir.IRNode {
+		kids := []*ir.IRNode{punct("(")}
+		for i, a := range args {
+			if i > 0 {
+				kids = append(kids, punct(","))
+			}
+			kids = append(kids, a)
+		}
+		kids = append(kids, punct(")"))
+		return &ir.IRNode{Kind: ir.NodeKindCall, Children: []*ir.IRNode{
+			{Kind: ir.NodeKindIdentifier, Text: "fmt"},
+			{Kind: ir.NodeKindUnknown, Children: kids},
+		}}
+	}
+	// flat: Java-style, arguments as direct children beside paren tokens.
+	flat := func(args ...*ir.IRNode) *ir.IRNode {
+		kids := []*ir.IRNode{{Kind: ir.NodeKindIdentifier, Text: "fmt"}, punct("(")}
+		for i, a := range args {
+			if i > 0 {
+				kids = append(kids, punct(","))
+			}
+			kids = append(kids, a)
+		}
+		return &ir.IRNode{Kind: ir.NodeKindCall, Children: append(kids, punct(")"))}
+	}
+
+	run := func(call *ir.IRNode) int {
+		mc := &engine.MatchContext{
+			Index: idx,
+			File: &analyzer.AnalysisResult{
+				IR:          &ir.IRFile{Language: core.LangPython, Path: "t.py", Root: &ir.IRNode{Kind: ir.NodeKindModule, Children: []*ir.IRNode{call}}},
+				TaintedVars: map[string]bool{"evil": true},
+			},
+		}
+		got, err := engine.New().Match(context.Background(), mc)
+		if err != nil {
+			t.Fatalf("Match: %v", err)
+		}
+		return len(got)
+	}
+
+	for _, shape := range []struct {
+		name string
+		fn   func(...*ir.IRNode) *ir.IRNode
+	}{{"wrapped", wrapped}, {"flat", flat}} {
+		// Tainted format string (argument 0) -> fires.
+		if n := run(shape.fn(tainted(), lit("safe"))); n != 1 {
+			t.Errorf("%s: tainted argument 0 got %d matches, want 1", shape.name, n)
+		}
+		// Tainted value in argument 1, literal format string -> must NOT fire.
+		if n := run(shape.fn(lit("User: %s"), tainted())); n != 0 {
+			t.Errorf("%s: tainted argument 1 got %d matches, want 0 — this is the safe idiom", shape.name, n)
+		}
+	}
+}

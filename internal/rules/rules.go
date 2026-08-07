@@ -21,6 +21,19 @@ type Filter struct {
 	// TaintedArgument requires at least one of the call's argument identifiers
 	// to be present in the file's tainted-variable set (see internal/analyzer/taint).
 	TaintedArgument bool
+	// TaintedArgumentIndex narrows TaintedArgument to a single positional
+	// argument (0-based, excluding the callee). Without it "any argument,
+	// anywhere in its subtree" is the only option, which is wrong for any sink
+	// where exactly one position is dangerous.
+	//
+	// The format-string family is the motivating case: string.Format,
+	// fmt.Sprintf, String.format, util.format and sprintf are vulnerable when
+	// the *format string* is attacker-controlled, not when a substituted value
+	// is. Matching any argument makes them fire on the entirely safe
+	// logger.info("User: %s", name) idiom — a known imprecision that got worse
+	// once function parameters became taint sources. Set this to 0 to mean
+	// "only the format string".
+	TaintedArgumentIndex *int
 	// TaintedRHS requires an assignment node's right-hand-side subtree to contain
 	// an identifier present in the file's tainted-variable set. Use for
 	// assignment-based sinks (e.g. element.innerHTML = ...) where TaintedArgument

@@ -54,4 +54,8 @@ match:
   callee: util.format
   filters:
     - tainted_argument: true
+      # Only the format string itself. Matching any argument fired on the
+      # safe logger.info("User: %s", name) idiom — the substituted value
+      # being attacker-controlled is the normal case, not the bug.
+      tainted_argument_index: 0
 fix_suggestion: "Never build the format-string template from request data; only substituted %s/%d values should ever be attacker-influenced, and even then validate/sanitize before logging."

@@ -25,13 +25,29 @@ func TestIntegration_JwtParseUnverifiedFiresZSGO022(t *testing.T) {
 	}
 }
 
-// TestIntegration_TaintedSprintfFiresZSGO023 verifies tainted-format-string detection.
+// TestIntegration_TaintedSprintfFiresZSGO023 verifies tainted-format-string
+// detection. The FORMAT STRING must be the tainted part. This test previously
+// used fmt.Sprintf("hello %s", name) — the safe idiom — and so asserted a
+// false positive as required behaviour. ZS-GO-023 now sets
+// tainted_argument_index: 0.
 func TestIntegration_TaintedSprintfFiresZSGO023(t *testing.T) {
 	idx := loadGoRules(t)
 	src := "package main\nfunc handler() {\n\tname := r.FormValue(\"name\")\n" +
-		"\tgreeting := fmt.Sprintf(\"hello %s\", name)\n\t_ = greeting\n}\n"
+		"\tgreeting := fmt.Sprintf(\"hello \" + name)\n\t_ = greeting\n}\n"
 	if !hasRule(matchGoSource(t, idx, src), "ZS-GO-023") {
-		t.Error("expected ZS-GO-023 to fire when a fmt.Sprintf argument is tainted")
+		t.Error("expected ZS-GO-023 to fire when the fmt.Sprintf format string is tainted")
+	}
+}
+
+// The safe idiom — literal format string, tainted value substituted — must not
+// fire. That is the ordinary logging shape, and matching it produced 9 false
+// positives on a single real target before tainted_argument_index existed.
+func TestIntegration_SafeSprintfDoesNotFireZSGO023(t *testing.T) {
+	idx := loadGoRules(t)
+	src := "package main\nfunc handler() {\n\tname := r.FormValue(\"name\")\n" +
+		"\tgreeting := fmt.Sprintf(\"hello %s\", name)\n\t_ = greeting\n}\n"
+	if hasRule(matchGoSource(t, idx, src), "ZS-GO-023") {
+		t.Error("ZS-GO-023 fired on a literal format string with a substituted value — that is the safe idiom")
 	}
 }
 

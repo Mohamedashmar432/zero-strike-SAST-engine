@@ -1,5 +1,6 @@
 <?php
 $username = $_GET['username'];
-// ZS-PHP-017: tainted format string — sprintf() called with a tainted argument
-$greeting = sprintf("User: %s", $username);
+// ZS-PHP-017: the FORMAT STRING itself is attacker-controlled. The safe
+// sprintf("User: %s", $username) idiom must not fire — see clean.php.
+$greeting = sprintf("User: " . $username);
 file_put_contents('greeting.log', $greeting);
