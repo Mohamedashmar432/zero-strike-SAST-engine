@@ -32,11 +32,9 @@ match:
   callee: SqlCommand
   filters:
     - tainted_argument: true
-      # NOT pinned with tainted_argument_index: 0, deliberately. These are C#
-      # constructor calls (new SqliteDataAdapter(sql, conn)); the type name
-      # occupies a child slot, so positional argument 0 does not resolve to the
-      # SQL string the way it does for a method call. Pinning it silently
-      # dropped 21 real SQL injections in WebGoat's DB providers while the
-      # corpus still passed. Needs argumentNodes to understand constructors
-      # before it can be narrowed.
+      # The query string only. SqlCommand/MySqlCommand/SqliteDataAdapter
+      # take (sql, connection), so a tainted connection argument is not a
+      # SQL injection. argumentNodes locates the argument_list explicitly,
+      # so the constructor's "new" token and type name do not shift this.
+      tainted_argument_index: 0
 fix_suggestion: "Use parameterized queries: new SqlCommand(\"... WHERE Name = @name\", conn) with cmd.Parameters.AddWithValue(\"@name\", value)."

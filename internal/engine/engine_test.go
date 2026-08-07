@@ -853,3 +853,67 @@ func TestMatch_TaintedArgumentIndex(t *testing.T) {
 		}
 	}
 }
+
+// TestArgumentIndex_ConstructorShape covers the C# constructor layout, where
+// the call node is ["new", TypeName, argument_list] rather than
+// [callee, argument_list].
+//
+// argumentNodes originally assumed the argument list directly followed the
+// callee, which made the TYPE NAME argument 0. Pinning
+// `new SqliteDataAdapter(sql, connection)` to argument 0 then matched the type
+// identifier — never tainted — and silently dropped 21 real SQL injections on
+// a real target while the corpus still reported TP=451 FP=0 FN=0. The argument
+// list is now located by its "(" … ")" delimiters wherever it sits.
+func TestArgumentIndex_ConstructorShape(t *testing.T) {
+	zero := 0
+	rule := &rules.Rule{
+		ID:       "ZS-TEST-CTOR",
+		Language: core.LangCSharp,
+		Match: rules.MatchPattern{
+			Kind:    string(ir.NodeKindCall),
+			Callee:  "SqliteDataAdapter",
+			Filters: []rules.Filter{{TaintedArgument: true, TaintedArgumentIndex: &zero}},
+		},
+	}
+	idx := engine.BuildIndex([]*rules.Rule{rule})
+
+	ctor := func(arg0, arg1 *ir.IRNode) *ir.IRNode {
+		return &ir.IRNode{Kind: ir.NodeKindCall, Children: []*ir.IRNode{
+			{Kind: ir.NodeKindUnknown, Text: "new"},
+			{Kind: ir.NodeKindIdentifier, Text: "SqliteDataAdapter"},
+			{Kind: ir.NodeKindUnknown, Children: []*ir.IRNode{
+				{Kind: ir.NodeKindUnknown, Text: "("},
+				arg0,
+				{Kind: ir.NodeKindUnknown, Text: ","},
+				arg1,
+				{Kind: ir.NodeKindUnknown, Text: ")"},
+			}},
+		}}
+	}
+	run := func(call *ir.IRNode) int {
+		mc := &engine.MatchContext{
+			Index: idx,
+			File: &analyzer.AnalysisResult{
+				IR:          &ir.IRFile{Language: core.LangCSharp, Path: "a.cs", Root: &ir.IRNode{Kind: ir.NodeKindModule, Children: []*ir.IRNode{call}}},
+				TaintedVars: map[string]bool{"sql": true, "connection": true},
+			},
+		}
+		got, err := engine.New().Match(context.Background(), mc)
+		if err != nil {
+			t.Fatalf("Match: %v", err)
+		}
+		return len(got)
+	}
+
+	taintedSQL := &ir.IRNode{Kind: ir.NodeKindIdentifier, Text: "sql"}
+	literalSQL := &ir.IRNode{Kind: ir.NodeKindLiteral, Text: "select * from Products"}
+	conn := &ir.IRNode{Kind: ir.NodeKindIdentifier, Text: "connection"}
+
+	if n := run(ctor(taintedSQL, conn)); n != 1 {
+		t.Errorf("tainted SQL in argument 0 got %d matches, want 1 — the type name must not be argument 0", n)
+	}
+	// A literal query with a tainted connection is not a SQL injection.
+	if n := run(ctor(literalSQL, conn)); n != 0 {
+		t.Errorf("literal SQL with tainted connection got %d matches, want 0", n)
+	}
+}

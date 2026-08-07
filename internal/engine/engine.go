@@ -430,13 +430,23 @@ func argumentNodes(n *ir.IRNode) []*ir.IRNode {
 	if n.Kind != ir.NodeKindCall || len(n.Children) < 2 {
 		return nil
 	}
+	// Locate the argument_list wherever it sits rather than assuming it
+	// directly follows the callee. Three shapes exist:
+	//
+	//   method call (Go, C#, JS/TS, PHP): [callee, argument_list]
+	//   constructor (C#):                 ["new", TypeName, argument_list]
+	//   Java:                             [callee, "(", arg, ",", arg, ")"]
+	//
+	// Assuming Children[1] was the argument list made a C# constructor's TYPE
+	// NAME argument 0, so pinning `new SqliteDataAdapter(sql, conn)` to
+	// argument 0 matched the type identifier — never tainted — and silently
+	// dropped 21 real SQL injections while the corpus stayed green.
 	candidates := n.Children[1:]
-	// Two shapes exist and both must work. Go, C#, JS/TS and PHP wrap the
-	// arguments in a single unnamed argument_list node, so descend into it.
-	// Java has no wrapper: it emits the arguments as direct children beside
-	// literal "(" and ")" tokens.
-	if len(candidates) == 1 && isArgumentList(candidates[0]) {
-		candidates = candidates[0].Children
+	for _, c := range n.Children {
+		if isArgumentList(c) {
+			candidates = c.Children
+			break
+		}
 	}
 	out := make([]*ir.IRNode, 0, len(candidates))
 	for _, c := range candidates {
