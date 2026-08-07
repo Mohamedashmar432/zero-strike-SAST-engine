@@ -55,7 +55,10 @@ CWE_ALIASES = [
     frozenset({"79", "80"}),                   # XSS
     frozenset({"89", "564"}),                  # SQL / HQL injection
     frozenset({"330", "338"}),                 # weak randomness
-    frozenset({"200", "209", "532"}),          # information exposure
+    # information exposure. 489 (active debug code) belongs here: semgrep tags
+    # printStackTrace as CWE-489 while we tag it CWE-209, on byte-identical
+    # sites, and without this the differential reported all 8 as misses.
+    frozenset({"200", "209", "489", "532"}),
 ]
 
 

@@ -28,5 +28,15 @@ references:
 tags: [error-handling, information-disclosure, stack-trace]
 match:
   kind: call
-  callee: e.printStackTrace
+  # Any receiver, not just "e" / "ex". These were two rules pinned to those two
+  # variable names; WebGoat alone also uses sqle.printStackTrace() and
+  # exception.printStackTrace(), and the Semgrep differential showed 8 such
+  # sites missed. printStackTrace is an unambiguous method name, so matching it
+  # on any receiver is precise. argument_count: 0 selects the no-arg overload
+  # (the one that writes to stderr) and satisfies the validator's requirement
+  # that a single-segment callee_suffix be constrained.
+  callee: printStackTrace
+  callee_suffix: true
+  filters:
+    - argument_count: 0
 fix_suggestion: "Log the exception with a structured logger (logger.error(\"op failed\", e)) and return a generic message to the caller."
