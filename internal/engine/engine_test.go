@@ -3,6 +3,7 @@ package engine_test
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/analyzer"
@@ -664,13 +665,17 @@ func TestMatch_CalleeSuffix_OptOutStaysExactOnly(t *testing.T) {
 	}
 }
 
-// TestBuildIndex_CalleeSuffix_SingleSegmentNeverIndexedAsSuffix defends the
-// engine's own floor independently of the validator: even if a single-segment
-// callee_suffix:true rule somehow reaches BuildIndex, it must fall back to
-// exact-match-only, never suffix-match (which would make e.g. "eval" match
-// any "obj.eval()" call — see internal/rules/validator.go for the load-time
-// rejection of this same combination).
-func TestBuildIndex_CalleeSuffix_SingleSegmentNeverIndexedAsSuffix(t *testing.T) {
+// TestBuildIndex_CalleeSuffix_SingleSegmentDoesSuffixMatch pins the Sprint 33
+// contract change. A single-segment callee_suffix now DOES suffix-match, so
+// "execute" matches cur.execute / conn.execute / session.execute — sink rules
+// are no longer pinned to one hardcoded receiver name.
+//
+// The protection this replaces is still enforced, just moved: an unbounded
+// rule like "eval" broadening to any obj.eval() is prevented at load time by
+// the Validator, which now rejects a single-segment callee_suffix on a rule
+// with no filters. Precision comes from the rule's own gating, not from the
+// receiver name. See TestValidator_CalleeSuffixSingleSegmentRequiresFilters.
+func TestBuildIndex_CalleeSuffix_SingleSegmentDoesSuffixMatch(t *testing.T) {
 	rule := &rules.Rule{
 		ID:       "ZS-TEST-SUFFIX-SINGLESEG",
 		Language: core.LangJavaScript,
@@ -697,7 +702,67 @@ func TestBuildIndex_CalleeSuffix_SingleSegmentNeverIndexedAsSuffix(t *testing.T)
 	if err != nil {
 		t.Fatalf("Match error: %v", err)
 	}
-	if len(results) != 0 {
-		t.Fatalf("expected single-segment callee_suffix rule to never suffix-match obj.eval(), got %d results", len(results))
+	if len(results) != 1 {
+		t.Fatalf("expected single-segment callee_suffix rule to match obj.eval(), got %d results", len(results))
+	}
+}
+
+// TestMatch_CalleeSuffix_SingleSegmentMatchesAnyReceiver covers the Sprint 33
+// change: a single-segment callee_suffix means "this method on any receiver".
+//
+// Sink rules used to be pinned to one hardcoded receiver name — ZS-PY-004
+// matched `cursor.execute` and therefore missed `cur.execute`, `conn.execute`,
+// and `session.execute`. dvpwa, a deliberately vulnerable SQL-injection app,
+// scored 0 findings across 40 files largely because its DAOs use `cur`.
+func TestMatch_CalleeSuffix_SingleSegmentMatchesAnyReceiver(t *testing.T) {
+	rule := &rules.Rule{
+		ID:       "ZS-TEST-EXEC",
+		Language: core.LangPython,
+		Match: rules.MatchPattern{
+			Kind:         string(ir.NodeKindCall),
+			Callee:       "execute",
+			CalleeSuffix: true,
+		},
+	}
+	idx := engine.BuildIndex([]*rules.Rule{rule})
+
+	for _, callee := range []string{"execute", "cur.execute", "cursor.execute", "conn.execute", "db.session.execute"} {
+		call := &ir.IRNode{
+			Kind:     ir.NodeKindCall,
+			Children: []*ir.IRNode{attrChain(strings.Split(callee, ".")...)},
+			Attrs:    map[string]any{"argument_count": 1},
+		}
+		mc := &engine.MatchContext{
+			Index: idx,
+			File: &analyzer.AnalysisResult{IR: &ir.IRFile{
+				Language: core.LangPython, Path: "t.py",
+				Root: &ir.IRNode{Kind: ir.NodeKindModule, Children: []*ir.IRNode{call}},
+			}},
+		}
+		got, err := engine.New().Match(context.Background(), mc)
+		if err != nil {
+			t.Fatalf("%s: Match: %v", callee, err)
+		}
+		if len(got) != 1 {
+			t.Errorf("%s: got %d matches, want 1 — any receiver should match", callee, len(got))
+		}
+	}
+
+	// A different method must still not match: suffix matching is on the
+	// dot boundary, not a substring.
+	call := &ir.IRNode{
+		Kind:     ir.NodeKindCall,
+		Children: []*ir.IRNode{attrChain("cur", "executemany")},
+		Attrs:    map[string]any{"argument_count": 1},
+	}
+	mc := &engine.MatchContext{
+		Index: idx,
+		File: &analyzer.AnalysisResult{IR: &ir.IRFile{
+			Language: core.LangPython, Path: "t.py",
+			Root: &ir.IRNode{Kind: ir.NodeKindModule, Children: []*ir.IRNode{call}},
+		}},
+	}
+	if got, _ := engine.New().Match(context.Background(), mc); len(got) != 0 {
+		t.Errorf("cur.executemany matched %d rules, want 0", len(got))
 	}
 }

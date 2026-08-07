@@ -80,6 +80,44 @@ func BuildContext(file *ir.IRFile, symbols symboltable.SymbolTable, dfg *graph.D
 	}
 	pats := patternsFor(file.Language)
 	summaries := buildSummaries(file, pats)
+
+	// Seed function parameters as tainted before walking assignments.
+	//
+	// Without this the engine only ever sees taint that both originates and
+	// is consumed inside one function body, which is not how real code is
+	// written: the request handler extracts the value and a helper does the
+	// dangerous thing with it. dvpwa is the clean demonstration — 0 findings
+	// across 40 files of a deliberately vulnerable SQL-injection app, because
+	// every DAO takes its input as a parameter:
+	//
+	//     q = ("INSERT INTO students (name) VALUES ('%(name)s')" % {'name': name})
+	//     await cur.execute(q)      # `name` is a bare parameter
+	//
+	// Seeding happens up front rather than per-scope because the taint map is
+	// file-scoped and flow-insensitive (see Build's doc comment); a later
+	// clean reassignment still clears the verdict, since the assignment walk
+	// below runs afterwards and overwrites.
+	//
+	// ponytail: every parameter is seeded, not just those of request-handler
+	// -shaped functions. Type-aware or entry-point-only seeding would be more
+	// precise; this is the version whose cost is measurable against the
+	// corpus's --max-fp 0 gate. Narrow it if that gate or the real-target
+	// false-positive rate says to.
+	ir.Walk(file.Root, func(n *ir.IRNode) bool {
+		if n.Kind != ir.NodeKindFunction {
+			return true
+		}
+		params, _ := n.Attrs["parameters"].([]string)
+		for _, p := range params {
+			if p == "" || p == "_" {
+				continue
+			}
+			tainted[p] = true
+			reasons[p] = "unvalidated function parameter " + p
+		}
+		return true
+	})
+
 	ir.Walk(file.Root, func(n *ir.IRNode) bool {
 		if n.Kind != ir.NodeKindAssignment {
 			return true

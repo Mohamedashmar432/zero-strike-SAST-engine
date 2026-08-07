@@ -575,3 +575,52 @@ func TestBuild_PythonTupleUnpackSplitsLHS(t *testing.T) {
 		t.Errorf("both unpacked names should be tainted, got a=%v b=%v", tainted["a"], tainted["b"])
 	}
 }
+
+// TestBuild_FunctionParametersAreTainted covers the Sprint 33 change: taint
+// previously only existed where it both originated and was consumed inside one
+// function body, which is not how real code is written. The handler extracts
+// the value; a helper does the dangerous thing with it.
+//
+// The concrete case: WebGoat's SqliteDbProvider.IsValidCustomerLogin
+// concatenates its `email` parameter straight into SQL. 18 such injections in
+// one file were invisible before this.
+func TestBuild_FunctionParametersAreTainted(t *testing.T) {
+	root := &ir.IRNode{
+		Kind: ir.NodeKindModule,
+		Children: []*ir.IRNode{{
+			Kind:  ir.NodeKindFunction,
+			Attrs: map[string]any{"parameters": []string{"email", "_"}},
+			Children: []*ir.IRNode{
+				assignment("sql", `"select * from t where e = '" + email + "'"`, ident("email")),
+			},
+		}},
+	}
+	tainted := build(&ir.IRFile{Root: root, Language: core.LangCSharp})
+	if !tainted["email"] {
+		t.Error("a function parameter should be treated as unvalidated input")
+	}
+	if !tainted["sql"] {
+		t.Error("taint should propagate from the parameter into the concatenated SQL string")
+	}
+	if tainted["_"] {
+		t.Error("the blank identifier should never be seeded")
+	}
+}
+
+// A later clean reassignment still clears a seeded parameter — seeding runs
+// before the assignment walk precisely so the existing overwrite rules apply.
+func TestBuild_CleanReassignmentClearsSeededParameter(t *testing.T) {
+	root := &ir.IRNode{
+		Kind: ir.NodeKindModule,
+		Children: []*ir.IRNode{{
+			Kind:  ir.NodeKindFunction,
+			Attrs: map[string]any{"parameters": []string{"name"}},
+			Children: []*ir.IRNode{
+				assignment("name", `"constant"`, ident("_")),
+			},
+		}},
+	}
+	if build(&ir.IRFile{Root: root, Language: core.LangPython})["name"] {
+		t.Error("a parameter reassigned to a constant should no longer be tainted")
+	}
+}

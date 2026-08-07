@@ -54,11 +54,21 @@ func BuildIndex(rs []*rules.Rule) *RuleIndex {
 	for _, r := range rs {
 		kind := ir.NodeKind(r.Match.Kind)
 		switch {
-		case kind == ir.NodeKindCall && r.Match.Callee != "" && r.Match.CalleeSuffix && strings.Contains(r.Match.Callee, "."):
-			// ponytail: "contains a dot" is the ≥2-segment floor — the
-			// Validator already rejects callee_suffix:true on a
-			// single-segment callee, so this precondition is guaranteed,
-			// not just assumed, by the time a rule reaches here.
+		case kind == ir.NodeKindCall && r.Match.Callee != "" && r.Match.CalleeSuffix:
+			// A single-segment callee_suffix ("execute") means "this method on
+			// any receiver". The ≥2-segment floor used to be enforced here and
+			// in the Validator, which left every sink rule pinned to one
+			// hardcoded receiver name: `cursor.execute` matched nothing in
+			// dvpwa, whose DAOs use `cur`, and nothing on `conn.execute` /
+			// `session.execute` / `engine.execute` either. Same shape as
+			// ZS-GO-014's `tx.Query` and ZS-GO-002's `db.Query`.
+			//
+			// calleeSuffixMatches already handles the single-segment case
+			// correctly (`.execute` is a dot-boundary suffix of `cur.execute`),
+			// so only the index and the Validator needed to stop rejecting it.
+			// Precision comes from the rule's own filters — every rule using
+			// this is taint-gated, so a non-SQL `task.execute(x)` only fires
+			// when x is attacker-controlled.
 			last := lastCalleeSegment(r.Match.Callee)
 			idx.byCalleeSuffix[last] = append(idx.byCalleeSuffix[last], r)
 		case kind == ir.NodeKindCall && r.Match.Callee != "":

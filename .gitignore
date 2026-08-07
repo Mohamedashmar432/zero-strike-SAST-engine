@@ -21,3 +21,6 @@ coverage.html
 Thumbs.db
 
 # docs/ is intentionally tracked (release notes, architecture docs)
+# Python bytecode from scripts/
+__pycache__/
+*.pyc

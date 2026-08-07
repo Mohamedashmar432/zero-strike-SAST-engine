@@ -42,6 +42,32 @@ EXT_LANG = {
 
 CWE_RE = re.compile(r"CWE-(\d+)")
 
+# CWE ids the two tools use interchangeably for the same defect. Without this
+# the same finding scores as a miss purely on taxonomy granularity: we report
+# md5 as CWE-327 (broken crypto algorithm), semgrep as CWE-328 (weak hash);
+# both are correct and both describe the same line. Each frozenset is one
+# equivalence class -- ids inside a class are treated as matching.
+CWE_ALIASES = [
+    frozenset({"326", "327", "328", "916"}),   # weak crypto / weak hash / weak key
+    frozenset({"77", "78", "88"}),             # command / argument injection
+    frozenset({"94", "95", "96"}),             # code / expression injection
+    frozenset({"22", "23", "36", "73"}),       # path traversal family
+    frozenset({"79", "80"}),                   # XSS
+    frozenset({"89", "564"}),                  # SQL / HQL injection
+    frozenset({"330", "338"}),                 # weak randomness
+    frozenset({"200", "209", "532"}),          # information exposure
+]
+
+
+def cwe_match(a, b):
+    """True when two CWE id sets describe the same defect class."""
+    if a & b:
+        return True
+    for klass in CWE_ALIASES:
+        if (a & klass) and (b & klass):
+            return True
+    return False
+
 
 def cwes(values):
     """Pull the numeric CWE ids out of either tool's assorted CWE spellings."""
@@ -114,6 +140,34 @@ def run_semgrep(targets_root, target, out_json):
     return out
 
 
+def collapse(findings):
+    """Collapse findings to one entry per (file, line) vulnerability site.
+
+    Without this the gap is systematically overstated, because the two tools
+    have very different rule granularity. Semgrep reports a single
+    `exec("ping " . $target)` under four separate rule ids
+    (tainted-exec, exec-use, tainted-command-injection,
+    laravel-command-injection); pair_up can only spend one of our findings on
+    one of theirs, so detecting that line correctly still scored as three
+    misses. Measured on DVWA, that alone accounted for most of the apparent
+    PHP gap on lines we already flag.
+
+    One source line is one vulnerability site. That is the unit worth
+    counting on both sides.
+    """
+    by_site = {}
+    for f in findings:
+        key = (f["path"], f["line"])
+        if key in by_site:
+            by_site[key]["cwe"] |= f["cwe"]
+            by_site[key]["rules"].add(f["rule"])
+        else:
+            e = dict(f)
+            e["rules"] = {f["rule"]}
+            by_site[key] = e
+    return list(by_site.values())
+
+
 def pair_up(zs, sg):
     """Bucket into both / semgrep-only / zerostrike-only.
 
@@ -133,14 +187,15 @@ def pair_up(zs, sg):
             if i in consumed:
                 continue
             z = zs[i]
-            if s["cwe"] and z["cwe"] and not (s["cwe"] & z["cwe"]):
+            if s["cwe"] and z["cwe"] and not cwe_match(s["cwe"], z["cwe"]):
                 continue
-            if not s["cwe"] or not z["cwe"]:
-                # One side has no CWE metadata: fall back to location alone,
-                # tightened to the exact line so it stays conservative.
-                if s["line"] != z["line"]:
-                    continue
-            elif abs(s["line"] - z["line"]) > LINE_SLOP:
+            # Location tolerance applies whether or not CWEs are present. An
+            # earlier version demanded an exact line when either side had no
+            # CWE metadata, which manufactured misses: semgrep tags
+            # string-to-int-signedness-cast with no CWE at all and reports it
+            # one line above where we report ours, so a real detection scored
+            # as a gap. Many semgrep rules carry no CWE, so this was not rare.
+            if abs(s["line"] - z["line"]) > LINE_SLOP:
                 continue
             hit = i
             break
@@ -172,10 +227,10 @@ def main():
         # flush: a semgrep pass over a large target (WebGoat) runs for many
         # minutes, and Python's block buffering makes a working run look hung.
         print(f"[{a.label}] {t}", flush=True)
-        zs = run_zerostrike(a.zerostrike_exe, a.targets_root, t,
-                            os.path.join(a.out_dir, f"{t}-zs-{a.label}.json"))
-        sg = run_semgrep(a.targets_root, t,
-                         os.path.join(a.out_dir, f"{t}-sg.json"))
+        zs = collapse(run_zerostrike(a.zerostrike_exe, a.targets_root, t,
+                                     os.path.join(a.out_dir, f"{t}-zs-{a.label}.json")))
+        sg = collapse(run_semgrep(a.targets_root, t,
+                                  os.path.join(a.out_dir, f"{t}-sg.json")))
         both, sg_only, zs_only = pair_up(zs, sg)
         gaps = defaultdict(int)
         for s in sg_only:

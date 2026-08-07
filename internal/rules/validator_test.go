@@ -48,11 +48,27 @@ func TestValidator_CallWithoutCallee(t *testing.T) {
 	assertError(t, r, "match.callee")
 }
 
-func TestValidator_CalleeSuffixRequiresTwoSegments(t *testing.T) {
+// A single-segment callee_suffix matches the method on ANY receiver, which is
+// what stops sink rules being pinned to one hardcoded variable name
+// (`cursor.execute` missed `cur.execute` / `conn.execute` / `session.execute`).
+// It is only safe on a rule that gates the match with filters: an unbounded
+// "eval" suffix rule would fire on any parser.eval() call.
+func TestValidator_CalleeSuffixSingleSegmentRequiresFilters(t *testing.T) {
 	r := validRule()
 	r.Match.Callee = "eval"
 	r.Match.CalleeSuffix = true
+	r.Match.Filters = nil
 	assertError(t, r, "match.callee_suffix")
+}
+
+func TestValidator_CalleeSuffixSingleSegmentAllowedWithFilters(t *testing.T) {
+	r := validRule()
+	r.Match.Callee = "execute"
+	r.Match.CalleeSuffix = true
+	r.Match.Filters = []rules.Filter{{TaintedArgument: true}}
+	if errs := rules.NewValidator().Validate(r); len(errs) != 0 {
+		t.Errorf("taint-gated single-segment callee_suffix should validate, got %v", errs)
+	}
 }
 
 func TestValidator_CalleeSuffixAllowedWithTwoSegments(t *testing.T) {

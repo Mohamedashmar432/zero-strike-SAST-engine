@@ -61,9 +61,26 @@ func (v *defaultValidator) Validate(rule *Rule) []string {
 		// legitimately callee-less and allowed.
 		errs = append(errs, "match.callee: required for kind=call unless filters constrain the match")
 	}
-	if rule.Match.CalleeSuffix && !strings.Contains(rule.Match.Callee, ".") {
+	if rule.Match.CalleeSuffix && rule.Match.Callee == "" {
+		errs = append(errs, "match.callee_suffix: requires a callee")
+	}
+	// A single-segment callee_suffix ("execute") means "this method on any
+	// receiver", which is how a sink rule stops being pinned to one hardcoded
+	// variable name: `cursor.execute` missed `cur.execute`, `conn.execute` and
+	// `session.execute`, and dvpwa scored 0 across 40 files because its DAOs
+	// use `cur`.
+	//
+	// It is only permitted on a rule that constrains the match with filters.
+	// The original ≥2-segment floor existed to stop an unconditional rule from
+	// broadening — a bare `eval` suffix rule would fire on any `parser.eval()`
+	// regardless of the argument. That risk is real and is kept: what makes
+	// the wider match safe is the rule's own gating (typically
+	// tainted_argument), not the receiver name.
+	if rule.Match.CalleeSuffix && !strings.Contains(rule.Match.Callee, ".") && len(rule.Match.Filters) == 0 {
 		errs = append(errs, fmt.Sprintf(
-			"match.callee_suffix: callee %q must have at least 2 dot-separated segments to opt into suffix matching",
+			"match.callee_suffix: single-segment callee %q matches the method on any receiver, "+
+				"so it requires filters (e.g. tainted_argument) to stay precise; "+
+				"use a dotted callee for an unconditional rule",
 			rule.Match.Callee))
 	}
 	if !validSeverities[string(rule.Severity)] {
