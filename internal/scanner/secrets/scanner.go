@@ -118,7 +118,11 @@ var detectors = []detector{
 	{
 		ruleID:     "ZS-SEC-016",
 		detectorID: "json-yaml-secret",
-		pattern:    regexp.MustCompile(`(?i)"?(?:password|passwd|pwd|secret|api_key|token|access_key)"?\s*[:=]\s*"([^"]{6,})"`),
+		// Deliberately excludes api_key and password/passwd/pwd: ZS-SEC-003 and
+		// ZS-SEC-004 already match those keywords on every file type, so keeping
+		// them here reported the same line twice. Only the keywords no other
+		// detector covers belong in this alternation.
+		pattern:    regexp.MustCompile(`(?i)"?(?:secret|access_key|token)"?\s*[:=]\s*"([^"]{6,})"`),
 		severity:   core.SeverityMedium,
 		minEntropy: 3.0,
 	},

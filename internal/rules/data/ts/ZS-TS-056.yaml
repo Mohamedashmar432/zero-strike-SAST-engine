@@ -32,4 +32,8 @@ match:
   callee: connection.query
   filters:
     - tainted_argument: true
+      # The query string only. These APIs take the SQL first and bind
+      # parameters afterwards, so a tainted value in a later argument is
+      # the CORRECT, parameterised form and must not be flagged.
+      tainted_argument_index: 0
 fix_suggestion: "Use parameterized queries: connection.query('SELECT ... WHERE id = ?', [id]) instead of concatenating input."
