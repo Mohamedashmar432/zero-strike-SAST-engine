@@ -115,9 +115,14 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           sha256sum zerostrike_* > checksums.txt
+          # `create`, else `upload --clobber` onto the existing release. Without this, a
+          # re-run after a partial failure (e.g. the portal-publish step below 502'd) dies
+          # here on "release already exists" and never reaches the step that needs retrying.
           gh release create "${{ github.ref_name }}" zerostrike_* checksums.txt \
             --repo "${{ github.repository }}" \
-            --title "${{ github.ref_name }}" --generate-notes
+            --title "${{ github.ref_name }}" --generate-notes \
+          || gh release upload "${{ github.ref_name }}" zerostrike_* checksums.txt \
+            --repo "${{ github.repository }}" --clobber
 
       # Portal's /api/v1/downloads/zerostrike/latest/{os-arch} (what the portal's own
       # onboarding UI tells users to curl in their CI) only ever serves binaries a prior
@@ -131,28 +136,46 @@ jobs:
           PORTAL_ADMIN_EMAIL: ${{ secrets.ZS_PORTAL_ADMIN_EMAIL }}
           PORTAL_ADMIN_PASSWORD: ${{ secrets.ZS_PORTAL_ADMIN_PASSWORD }}
         run: |
-          token=$(curl -fsSL -X POST "$PORTAL_URL/api/v1/auth/login" \
+          # Retried because the portal is an Azure Container App: an idle one has scaled to
+          # zero and the first request pays a cold start. Unretried, login returns empty, every
+          # publish below then 401s, and the 4xx short-circuit misreports it as our bug.
+          token=$(curl -fsSL --connect-timeout 20 --max-time 180 \
+            --retry 5 --retry-delay 15 --retry-all-errors \
+            -X POST "$PORTAL_URL/api/v1/auth/login" \
             -H 'Content-Type: application/json' \
             -d "{\"email\":\"$PORTAL_ADMIN_EMAIL\",\"password\":\"$PORTAL_ADMIN_PASSWORD\"}" \
             | jq -r '.access_token')
+          if [ -z "$token" ] || [ "$token" = "null" ]; then
+            echo "Portal login failed - no access token. Check ZS_PORTAL_ADMIN_* secrets and $PORTAL_URL."
+            exit 1
+          fi
 
           failed=0
 
-          # ponytail: no retry/backoff, this is a hand-rolled 5-call loop, not a client
-          # library - add retries if flaky uploads turn out to be common.
+          # Retries exist because they turned out to be needed: v0.32.0 published 2/5 and
+          # the rest 502'd while the portal container restarted. 5xx/000 (no response) are
+          # the platform, so back off and retry; 4xx is our own bug (bad token, bad os/arch)
+          # and retrying just burns minutes.
+          # The publish endpoint replaces an existing (version, os, arch), so retries are safe.
           publish() {
             echo "Publishing $1 as $2/$3..."
-            http_code=$(curl -sS -o /tmp/publish_response.json -w '%{http_code}' -X POST \
-              "$PORTAL_URL/api/v1/admin/downloads/zerostrike" \
-              -H "Authorization: Bearer $token" \
-              -F "version=${{ github.ref_name }}" -F "os=$2" -F "arch=$3" -F "file=@$1")
-            if [ "$http_code" -ge 400 ]; then
-              echo "FAILED ($http_code): $(cat /tmp/publish_response.json)"
-              failed=1
-            else
-              cat /tmp/publish_response.json
-              echo
-            fi
+            for attempt in 1 2 3 4; do
+              http_code=$(curl -sS --connect-timeout 20 --max-time 300 \
+                -o /tmp/publish_response.json -w '%{http_code}' -X POST \
+                "$PORTAL_URL/api/v1/admin/downloads/zerostrike" \
+                -H "Authorization: Bearer $token" \
+                -F "version=${{ github.ref_name }}" -F "os=$2" -F "arch=$3" -F "file=@$1") || http_code=000
+              case "$http_code" in
+                2*|3*) cat /tmp/publish_response.json; echo; return ;;
+              esac
+              echo "  attempt $attempt got $http_code: $(cat /tmp/publish_response.json)"
+              case "$http_code" in
+                4*) break ;;
+              esac
+              sleep $((attempt * 20))
+            done
+            echo "FAILED ($http_code): $(cat /tmp/publish_response.json)"
+            failed=1
           }
 
           publish zerostrike_linux_amd64 linux amd64
