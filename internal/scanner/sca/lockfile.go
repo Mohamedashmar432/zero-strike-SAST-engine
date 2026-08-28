@@ -23,25 +23,32 @@ type Dependency struct {
 
 // parseLockFile dispatches to the appropriate parser based on file name.
 func parseLockFile(path string, data []byte) []Dependency {
+	deps, _ := parseLockFileWithErr(path, data)
+	return deps
+}
+
+// parseLockFileWithErr dispatches to the appropriate parser, returning any parsing error.
+func parseLockFileWithErr(path string, data []byte) ([]Dependency, error) {
 	base := filepath.Base(path)
 	switch {
 	case base == "package-lock.json":
-		deps, _ := parsePackageLockJSON(path, data)
-		return deps
+		return parsePackageLockJSON(path, data)
+	case base == "package.json":
+		return parsePackageJSON(path, data)
 	case base == "yarn.lock":
-		return parseYarnLock(path, data)
+		return parseYarnLock(path, data), nil
 	case base == "pnpm-lock.yaml":
-		return parsePnpmLock(path, data)
+		return parsePnpmLock(path, data), nil
 	case base == "Pipfile.lock":
-		return parsePipfileLock(path, data)
+		return parsePipfileLock(path, data), nil
 	case base == "go.mod":
-		return parseGoMod(path, data)
+		return parseGoMod(path, data), nil
 	case base == "pom.xml":
-		return parsePomXML(path, data)
+		return parsePomXML(path, data), nil
 	case strings.HasPrefix(base, "requirements") && strings.HasSuffix(base, ".txt"):
-		return parseRequirementsTxt(path, data)
+		return parseRequirementsTxt(path, data), nil
 	}
-	return nil
+	return nil, nil
 }
 
 // parseRequirementsTxt parses a pip requirements.txt file.
@@ -79,14 +86,64 @@ func parseRequirementsTxt(path string, data []byte) []Dependency {
 	return deps
 }
 
+var semverCleanRe = regexp.MustCompile(`^[\^~>=<v\s]*(\d+\.\d+(?:\.\d+)?(?:-[0-9A-Za-z.-]+)?)`)
+
+func cleanSemverSpec(spec string) string {
+	spec = strings.TrimSpace(spec)
+	if strings.Contains(spec, "/") || strings.Contains(spec, ":") || spec == "*" || spec == "latest" {
+		return ""
+	}
+	m := semverCleanRe.FindStringSubmatch(spec)
+	if len(m) > 1 {
+		return m[1]
+	}
+	return ""
+}
+
+// parsePackageJSON parses a npm package.json manifest.
+func parsePackageJSON(path string, data []byte) ([]Dependency, error) {
+	var pkg struct {
+		Dependencies    map[string]string `json:"dependencies"`
+		DevDependencies map[string]string `json:"devDependencies"`
+	}
+	if err := json.Unmarshal(data, &pkg); err != nil {
+		return nil, err
+	}
+
+	var deps []Dependency
+	extractDeps := func(m map[string]string) {
+		for name, spec := range m {
+			if name == "" || spec == "" {
+				continue
+			}
+			ver := cleanSemverSpec(spec)
+			if ver == "" {
+				continue
+			}
+			deps = append(deps, Dependency{
+				Ecosystem: "npm",
+				Package:   name,
+				Version:   ver,
+				Manifest:  path,
+				Direct:    true,
+			})
+		}
+	}
+	extractDeps(pkg.Dependencies)
+	extractDeps(pkg.DevDependencies)
+	return deps, nil
+}
+
 // parsePackageLockJSON parses npm package-lock.json (v1, v2, v3).
 func parsePackageLockJSON(path string, data []byte) ([]Dependency, error) {
+	type v1Dep struct {
+		Version      string           `json:"version"`
+		Dependencies map[string]v1Dep `json:"dependencies"`
+	}
 	var raw struct {
 		LockfileVersion int `json:"lockfileVersion"`
 		// v1 format
-		Dependencies map[string]struct {
-			Version string `json:"version"`
-		} `json:"dependencies"`
+		Dependencies map[string]v1Dep `json:"dependencies"`
 		// v2/v3 format
 		Packages map[string]struct {
 			Version string `json:"version"`
@@ -97,35 +154,47 @@ func parsePackageLockJSON(path string, data []byte) ([]Dependency, error) {
 	}
 
 	var deps []Dependency
-	if raw.LockfileVersion <= 1 {
-		for name, entry := range raw.Dependencies {
-			if name == "" || entry.Version == "" {
-				continue
+	if raw.LockfileVersion <= 1 || (len(raw.Packages) == 0 && len(raw.Dependencies) > 0) {
+		var collectV1 func(depsMap map[string]v1Dep, isDirect bool)
+		collectV1 = func(depsMap map[string]v1Dep, isDirect bool) {
+			for name, entry := range depsMap {
+				if name == "" || entry.Version == "" {
+					continue
+				}
+				deps = append(deps, Dependency{
+					Ecosystem: "npm",
+					Package:   name,
+					Version:   entry.Version,
+					Manifest:  path,
+					Direct:    isDirect,
+				})
+				if len(entry.Dependencies) > 0 {
+					collectV1(entry.Dependencies, false)
+				}
 			}
-			deps = append(deps, Dependency{
-				Ecosystem: "npm",
-				Package:   name,
-				Version:   entry.Version,
-				Manifest:  path,
-				Direct:    !strings.Contains(name, "/"),
-			})
 		}
+		collectV1(raw.Dependencies, true)
 	} else {
 		for key, entry := range raw.Packages {
 			if key == "" || entry.Version == "" {
 				continue
 			}
-			// Strip "node_modules/" prefix to get package name
-			name := strings.TrimPrefix(key, "node_modules/")
+			// In npm v2/v3, keys are "node_modules/foo" or "node_modules/foo/node_modules/bar" or "node_modules/@scope/pkg"
+			idx := strings.LastIndex(key, "node_modules/")
+			if idx == -1 {
+				continue
+			}
+			name := key[idx+len("node_modules/"):]
 			if name == "" {
 				continue
 			}
+			isDirect := (idx == 0)
 			deps = append(deps, Dependency{
 				Ecosystem: "npm",
 				Package:   name,
 				Version:   entry.Version,
 				Manifest:  path,
-				Direct:    !strings.Contains(name, "node_modules/"),
+				Direct:    isDirect,
 			})
 		}
 	}

@@ -1,0 +1,28 @@
+id: ZS-JS-091
+lifecycle: released
+name: Path Traversal via path.join
+version: "1.0.0"
+language: javascript
+category: path-traversal
+severity: high
+confidence: medium
+cwe:
+  - CWE-22
+owasp:
+  - "A01:2025"
+rationale: |
+  path.join() concatenates path segments but does not restrict the resulting path
+  to a designated root folder. If an attacker supplies '../' segments, they can
+  escape the intended directory and access arbitrary files on the system.
+description: |
+  Detects calls to path.join() where an argument traces back to an untrusted source.
+message: "path.join() called with tainted path argument — validate path confinement"
+references:
+  - https://owasp.org/www-community/attacks/Path_Traversal
+tags: [path-traversal, file-system, path.join]
+match:
+  kind: call
+  callee: path.join
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Validate that the resolved absolute path starts with the trusted root directory (e.g. using path.resolve and startsWith check)."

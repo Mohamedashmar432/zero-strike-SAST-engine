@@ -30,5 +30,9 @@ func (s *SASTScanner) Name() string { return "sast" }
 func (s *SASTScanner) Accepts(_ walker.FileEntry) bool { return false }
 
 func (s *SASTScanner) Scan(_ context.Context, _ []walker.FileEntry) ([]core.Finding, []analyzer.Diagnostic, error) {
-	return nil, nil, nil
+	diag := analyzer.Diagnostic{
+		Severity: "warning",
+		Message:  "SAST scanning disabled: binary compiled without CGo (CGO_ENABLED=0). Tree-sitter AST parsers require CGo/gcc.",
+	}
+	return nil, []analyzer.Diagnostic{diag}, nil
 }

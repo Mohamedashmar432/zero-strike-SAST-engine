@@ -36,6 +36,7 @@ func (s *SCAScanner) Name() string { return "sca" }
 func (s *SCAScanner) Accepts(entry walker.FileEntry) bool {
 	base := filepath.Base(entry.Path)
 	return base == "package-lock.json" ||
+		base == "package.json" ||
 		base == "yarn.lock" ||
 		base == "pnpm-lock.yaml" ||
 		base == "Pipfile.lock" ||
@@ -46,14 +47,30 @@ func (s *SCAScanner) Accepts(entry walker.FileEntry) bool {
 
 func (s *SCAScanner) Scan(ctx context.Context, files []walker.FileEntry) ([]core.Finding, []analyzer.Diagnostic, error) {
 	var deps []Dependency
+	var diags []analyzer.Diagnostic
 	for _, f := range files {
 		data, err := os.ReadFile(f.Path)
 		if err != nil {
+			diags = append(diags, analyzer.Diagnostic{
+				Severity: "warning",
+				Message:  fmt.Sprintf("failed to read lockfile %s: %v", f.Path, err),
+				Location: &core.Location{File: f.Path},
+			})
 			continue
 		}
-		deps = append(deps, parseLockFile(f.Path, data)...)
+		fileDeps, err := parseLockFileWithErr(f.Path, data)
+		if err != nil {
+			diags = append(diags, analyzer.Diagnostic{
+				Severity: "warning",
+				Message:  fmt.Sprintf("failed to parse %s: %v", f.Path, err),
+				Location: &core.Location{File: f.Path},
+			})
+		}
+		deps = append(deps, fileDeps...)
 	}
-	return s.scanDeps(ctx, deduplicateDeps(deps))
+	findings, scanDiags, err := s.scanDeps(ctx, deduplicateDeps(deps))
+	diags = append(diags, scanDiags...)
+	return findings, diags, err
 }
 
 // scanDeps runs the OSV query for a resolved dependency list.

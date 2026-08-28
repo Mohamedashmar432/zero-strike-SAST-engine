@@ -31,6 +31,8 @@ var checks = []check{
 	laravelSessionCookieCheck,
 	laravelCsrfExceptCheck,
 	phpIniCookieInsecureCheck,
+	githubActionsUnpinnedCheck,
+	dockerComposePrivilegedCheck,
 }
 
 // FrameworkScanner detects framework-level security misconfigurations by

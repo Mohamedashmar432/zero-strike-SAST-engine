@@ -1,0 +1,30 @@
+id: ZS-JS-086
+lifecycle: released
+name: child_process.execSync Command Injection
+version: "1.0.0"
+language: javascript
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-78
+owasp:
+  - "A05:2025"
+rationale: |
+  child_process.execSync() synchronously invokes a system shell to execute the
+  supplied command string. If tainted user input reaches the command without
+  strict validation or escaping, an attacker can supply shell metacharacters
+  to execute arbitrary commands on the server.
+description: |
+  Detects calls to execSync() where an argument traces back to an untrusted
+  source (intra-procedural taint tracking).
+message: "execSync() called with a tainted command string — command injection risk"
+references:
+  - https://owasp.org/www-community/attacks/Command_Injection
+tags: [command-injection, child-process, execSync]
+match:
+  kind: call
+  callee: execSync
+  filters:
+    - tainted_argument: true
+fix_suggestion: "Use execFileSync() or spawnSync() with an argument array instead of a shell string."

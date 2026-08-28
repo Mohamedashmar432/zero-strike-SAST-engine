@@ -1,0 +1,28 @@
+id: ZS-TS-088
+lifecycle: released
+name: Insecure Cleartext HTTP Request (http://)
+version: "1.0.0"
+language: typescript
+category: transport
+severity: medium
+confidence: high
+cwe:
+  - CWE-319
+owasp:
+  - "A04:2025"
+rationale: |
+  Making outbound HTTP requests using the unencrypted http:// scheme transmits
+  request payloads and authentication credentials in the clear, vulnerable to
+  network eavesdropping and tampering.
+description: |
+  Detects http.get() called with hardcoded http:// scheme URLs.
+message: "http.get() called with unencrypted http:// URL — use https://"
+references:
+  - https://owasp.org/www-community/vulnerabilities/Cleartext_Transmission_of_Sensitive_Information
+tags: [http, cleartext, network]
+match:
+  kind: call
+  callee: http.get
+  filters:
+    - argument_literal_matches: "^http://"
+fix_suggestion: "Use HTTPS (https://) for all remote network communications."

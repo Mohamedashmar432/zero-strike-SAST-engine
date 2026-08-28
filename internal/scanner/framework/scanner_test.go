@@ -206,3 +206,65 @@ func TestFrameworkScanner_AcceptsAndScan(t *testing.T) {
 		t.Errorf("expected exactly 1 ZS-CFG-001 finding from Scan, got %+v", findings)
 	}
 }
+
+func TestGitHubActionsUnpinnedCheck(t *testing.T) {
+	vuln := []byte(`
+name: CI
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v2
+`)
+	fs := detectGitHubActionsUnpinned(".github/workflows/ci.yml", vuln)
+	if len(fs) != 2 {
+		t.Fatalf("expected 2 unpinned action findings, got %d: %+v", len(fs), fs)
+	}
+	if fs[0].RuleID != "ZS-CFG-012" {
+		t.Errorf("expected ZS-CFG-012, got %s", fs[0].RuleID)
+	}
+
+	clean := []byte(`
+name: CI
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+      - uses: ./local-action
+`)
+	fsClean := detectGitHubActionsUnpinned(".github/workflows/ci.yml", clean)
+	if len(fsClean) != 0 {
+		t.Errorf("expected 0 findings for pinned SHA / local action, got %+v", fsClean)
+	}
+}
+
+func TestDockerComposePrivilegedCheck(t *testing.T) {
+	vuln := []byte(`
+version: '3.8'
+services:
+  web:
+    image: nginx
+    privileged: true
+`)
+	fs := detectDockerComposePrivileged("docker-compose.yml", vuln)
+	if len(fs) != 1 || fs[0].RuleID != "ZS-CFG-013" {
+		t.Fatalf("expected 1 ZS-CFG-013 finding, got %+v", fs)
+	}
+
+	clean := []byte(`
+version: '3.8'
+services:
+  web:
+    image: nginx
+    security_opt:
+      - no-new-privileges:true
+`)
+	fsClean := detectDockerComposePrivileged("docker-compose.yml", clean)
+	if len(fsClean) != 0 {
+		t.Errorf("expected 0 findings for unprivileged compose file, got %+v", fsClean)
+	}
+}

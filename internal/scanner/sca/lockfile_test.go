@@ -251,3 +251,105 @@ func TestParsePipfileLock(t *testing.T) {
 		t.Errorf("pytest (develop dep) should be Direct=false")
 	}
 }
+
+func TestParsePackageJSON(t *testing.T) {
+	data := []byte(`{
+		"dependencies": {
+			"express": "^4.18.2",
+			"lodash": "~4.17.21",
+			"@types/node": ">=18.0.0"
+		},
+		"devDependencies": {
+			"mocha": "10.2.0"
+		}
+	}`)
+	deps, err := parsePackageJSON("package.json", data)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(deps) != 4 {
+		t.Fatalf("expected 4 deps, got %d: %+v", len(deps), deps)
+	}
+	byName := map[string]Dependency{}
+	for _, d := range deps {
+		byName[d.Package] = d
+		if !d.Direct {
+			t.Errorf("expected %s to be Direct=true", d.Package)
+		}
+		if d.Ecosystem != "npm" {
+			t.Errorf("expected %s ecosystem to be npm, got %s", d.Package, d.Ecosystem)
+		}
+	}
+	if byName["express"].Version != "4.18.2" {
+		t.Errorf("express version = %q, want 4.18.2", byName["express"].Version)
+	}
+	if byName["lodash"].Version != "4.17.21" {
+		t.Errorf("lodash version = %q, want 4.17.21", byName["lodash"].Version)
+	}
+	if byName["@types/node"].Version != "18.0.0" {
+		t.Errorf("@types/node version = %q, want 18.0.0", byName["@types/node"].Version)
+	}
+	if byName["mocha"].Version != "10.2.0" {
+		t.Errorf("mocha version = %q, want 10.2.0", byName["mocha"].Version)
+	}
+}
+
+func TestParsePackageLockJSON_NestedAndScoped(t *testing.T) {
+	data := []byte(`{
+		"lockfileVersion": 3,
+		"packages": {
+			"": {},
+			"node_modules/express": {"version": "4.18.2"},
+			"node_modules/express/node_modules/qs": {"version": "6.11.0"},
+			"node_modules/@scope/pkg": {"version": "1.0.0"},
+			"node_modules/parent/node_modules/@scope/child": {"version": "2.0.0"}
+		}
+	}`)
+	deps, err := parsePackageLockJSON("package-lock.json", data)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(deps) != 4 {
+		t.Fatalf("expected 4 deps, got %d: %+v", len(deps), deps)
+	}
+	byName := map[string]Dependency{}
+	for _, d := range deps {
+		byName[d.Package] = d
+	}
+	if !byName["express"].Direct {
+		t.Errorf("express should be Direct=true")
+	}
+	if byName["express"].Version != "4.18.2" {
+		t.Errorf("express version = %q, want 4.18.2", byName["express"].Version)
+	}
+	if byName["qs"].Direct {
+		t.Errorf("nested qs should be Direct=false")
+	}
+	if byName["qs"].Version != "6.11.0" {
+		t.Errorf("qs version = %q, want 6.11.0", byName["qs"].Version)
+	}
+	if !byName["@scope/pkg"].Direct {
+		t.Errorf("@scope/pkg should be Direct=true")
+	}
+	if byName["@scope/pkg"].Version != "1.0.0" {
+		t.Errorf("@scope/pkg version = %q, want 1.0.0", byName["@scope/pkg"].Version)
+	}
+	if byName["@scope/child"].Direct {
+		t.Errorf("nested @scope/child should be Direct=false")
+	}
+	if byName["@scope/child"].Version != "2.0.0" {
+		t.Errorf("@scope/child version = %q, want 2.0.0", byName["@scope/child"].Version)
+	}
+}
+
+func TestParseLockFileWithErr_InvalidJSON(t *testing.T) {
+	data := []byte(`{ invalid json `)
+	_, err := parseLockFileWithErr("package.json", data)
+	if err == nil {
+		t.Error("expected error parsing invalid package.json, got nil")
+	}
+	_, err = parseLockFileWithErr("package-lock.json", data)
+	if err == nil {
+		t.Error("expected error parsing invalid package-lock.json, got nil")
+	}
+}

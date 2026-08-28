@@ -1,0 +1,28 @@
+id: ZS-JS-089
+lifecycle: released
+name: Insecure WebSocket Connection (ws://)
+version: "1.0.0"
+language: javascript
+category: transport
+severity: medium
+confidence: high
+cwe:
+  - CWE-319
+owasp:
+  - "A04:2025"
+rationale: |
+  Establishing a WebSocket connection over plaintext ws:// exposes all transmitted
+  frames to eavesdropping, session hijacking, and man-in-the-middle attacks on the
+  network. Always use encrypted wss:// connections.
+description: |
+  Detects WebSocket constructor calls initialized with an unencrypted ws:// scheme URL.
+message: "WebSocket connection initialized with unencrypted ws:// URL — use wss://"
+references:
+  - https://owasp.org/www-community/vulnerabilities/Cleartext_Transmission_of_Sensitive_Information
+tags: [websocket, cleartext, tls]
+match:
+  kind: call
+  callee: WebSocket
+  filters:
+    - argument_literal_matches: "^ws://"
+fix_suggestion: "Switch protocol scheme from ws:// to secure wss://."

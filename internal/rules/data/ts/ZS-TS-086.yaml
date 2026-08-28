@@ -1,0 +1,28 @@
+id: ZS-TS-086
+lifecycle: released
+name: Deprecated/Weak Cipher Algorithm in createCipheriv
+version: "1.0.0"
+language: typescript
+category: crypto
+severity: high
+confidence: high
+cwe:
+  - CWE-327
+owasp:
+  - "A04:2025"
+rationale: |
+  Using deprecated or broken symmetric cipher algorithms (such as DES, 3DES, RC4, or Blowfish)
+  exposes encrypted data to decryption attacks and known cryptanalytic vulnerabilities.
+  Modern applications should use strong AEAD ciphers such as AES-256-GCM or ChaCha20-Poly1305.
+description: |
+  Detects crypto.createCipheriv() or crypto.createDecipheriv() called with a weak or deprecated cipher algorithm.
+message: "crypto.createCipheriv() called with a weak cipher algorithm — upgrade to aes-256-gcm"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+tags: [crypto, weak-cipher, des, rc4]
+match:
+  kind: call
+  callee: crypto.createCipheriv
+  filters:
+    - argument_literal_matches: "(?i)^(des|rc4|blowfish|3des|des-ede|des-ede3)"
+fix_suggestion: "Upgrade to a secure modern cipher like aes-256-gcm with authenticated encryption."

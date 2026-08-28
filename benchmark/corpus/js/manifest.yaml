@@ -252,3 +252,22 @@ cases:
   - file: cases/vuln_ssrf_axios_delete.js
     language: javascript
     expect: [{rule_id: ZS-JS-085, min_count: 1}]
+  - file: cases/vuln_execsync_cmdi.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-086, min_count: 1}]
+  - file: cases/vuln_sqli_connection_query.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-087, min_count: 1}]
+  - file: cases/vuln_createcipheriv_weak.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-088, min_count: 1}]
+  - file: cases/vuln_websocket_ws.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-089, min_count: 1}]
+  - file: cases/vuln_http_get_cleartext.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-090, min_count: 1}]
+  - file: cases/vuln_path_join_traversal.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-091, min_count: 1}]
+

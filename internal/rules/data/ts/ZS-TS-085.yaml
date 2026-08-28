@@ -1,0 +1,29 @@
+id: ZS-TS-085
+lifecycle: released
+name: connection.query SQL Injection
+version: "1.0.0"
+language: typescript
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-89
+owasp:
+  - "A05:2025"
+rationale: |
+  Passing untrusted input directly into database connection.query() allows
+  an attacker to alter query structure, bypass authentication, or exfiltrate
+  sensitive records. Use parameterized statements instead of string concatenation.
+description: |
+  Detects calls to connection.query() with a tainted query string argument.
+message: "connection.query() called with a tainted query string — use parameterized queries"
+references:
+  - https://owasp.org/www-community/attacks/SQL_Injection
+tags: [sqli, injection, mysql, postgres]
+match:
+  kind: call
+  callee: connection.query
+  filters:
+    - tainted_argument: true
+      tainted_argument_index: 0
+fix_suggestion: "Use parameterized queries with placeholders (? or $1) instead of concatenating variables into SQL strings."
