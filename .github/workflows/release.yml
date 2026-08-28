@@ -127,7 +127,7 @@ jobs:
       - name: Publish binaries to the ZeroStrike portal
         working-directory: dist
         env:
-          PORTAL_URL: https://zero-strike-production.up.railway.app
+          PORTAL_URL: https://tb-sast-be.whiteforest-4ec423c0.southindia.azurecontainerapps.io
           PORTAL_ADMIN_EMAIL: ${{ secrets.ZS_PORTAL_ADMIN_EMAIL }}
           PORTAL_ADMIN_PASSWORD: ${{ secrets.ZS_PORTAL_ADMIN_PASSWORD }}
         run: |
