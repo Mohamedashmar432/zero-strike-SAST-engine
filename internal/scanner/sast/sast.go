@@ -43,6 +43,7 @@ type SASTScanner struct {
 	findingCache cache.FindingCache
 	astCache     cache.ASTCache
 	enableGraphs bool
+	workers      int
 }
 
 // New creates a SASTScanner from a pre-validated rule set. findingCache and
@@ -50,7 +51,14 @@ type SASTScanner struct {
 // cache.NoopCache{}/cache.NoopASTCache{} to disable caching (e.g. --no-cache).
 // enableGraphs opts into CFG/DFG-based path-sensitive taint reporting (see
 // internal/analyzer.New).
-func New(allRules []*rules.Rule, rootPath string, findingCache cache.FindingCache, astCache cache.ASTCache, enableGraphs bool) *SASTScanner {
+//
+// workers caps the per-file goroutines; 0 means runtime.NumCPU(). It is the
+// scan's --workers value: this stage holds a tree-sitter parser and a whole
+// file's AST per goroutine, so NumCPU on a many-core host against a large repo
+// is the difference between a scan and an OOM kill in a memory-capped
+// container. Ignoring the flag here made --workers a no-op for the only stage
+// whose memory use it was meant to bound.
+func New(allRules []*rules.Rule, rootPath string, findingCache cache.FindingCache, astCache cache.ASTCache, enableGraphs bool, workers int) *SASTScanner {
 	return &SASTScanner{
 		eng:          engine.New(),
 		ruleIndex:    engine.BuildIndex(allRules),
@@ -59,6 +67,7 @@ func New(allRules []*rules.Rule, rootPath string, findingCache cache.FindingCach
 		findingCache: findingCache,
 		astCache:     astCache,
 		enableGraphs: enableGraphs,
+		workers:      workers,
 	}
 }
 
@@ -82,7 +91,10 @@ func (s *SASTScanner) Scan(ctx context.Context, files []walker.FileEntry) ([]cor
 	}
 	close(fileQueue)
 
-	numWorkers := runtime.NumCPU()
+	numWorkers := s.workers
+	if numWorkers <= 0 {
+		numWorkers = runtime.NumCPU()
+	}
 	var wg sync.WaitGroup
 	for range numWorkers {
 		wg.Add(1)

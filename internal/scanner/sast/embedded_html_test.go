@@ -57,7 +57,7 @@ func TestEmbeddedScript_FiresJSRuleWithRebasedLine(t *testing.T) {
 		t.Fatalf("write fixture: %v", err)
 	}
 
-	sc := New(loadAllEmbeddedRules(t), dir, cache.NoopCache{}, cache.NoopASTCache{}, false)
+	sc := New(loadAllEmbeddedRules(t), dir, cache.NoopCache{}, cache.NoopASTCache{}, false, 0)
 	found, _, err := sc.Scan(context.Background(), []walker.FileEntry{{Path: path, Language: core.LangHTML}})
 	if err != nil {
 		t.Fatalf("scan: %v", err)

@@ -42,7 +42,7 @@ func (w *fsWalker) walk(
 
 	dirEntries, err := os.ReadDir(dirPath)
 	if err != nil {
-		errs <- err
+		sendErr(errs, err)
 		return
 	}
 
@@ -68,7 +68,7 @@ func (w *fsWalker) walk(
 
 		info, err := de.Info()
 		if err != nil {
-			errs <- err
+			sendErr(errs, err)
 			continue
 		}
 		if isBinaryBySize(info.Size(), w.opts.MaxFileSizeBytes) {
@@ -78,7 +78,7 @@ func (w *fsWalker) walk(
 		// Check ignore patterns relative to root.
 		rel, err := filepath.Rel(rootPath, fullPath)
 		if err != nil {
-			errs <- err
+			sendErr(errs, err)
 			continue
 		}
 		if isIgnored(rel, patterns) {
@@ -130,3 +130,22 @@ func isIgnored(relPath string, patterns []string) bool {
 // Ensure fsWalker satisfies the Walker interface at compile time.
 var _ Walker = (*fsWalker)(nil)
 
+// sendErr reports a walk error without ever blocking.
+//
+// The consumer (pipeline.Run) drains the file channel to completion BEFORE it
+// reads the error channel, so a blocking send wedges the walk goroutine as soon
+// as the buffer fills -- the deferred close(entries) never runs, the consumer's
+// `range fileCh` never ends, and the whole scan hangs with no output and no
+// error. A repo big enough to produce more unreadable paths than the buffer
+// holds (permission-denied dirs, over-long paths, races with a concurrent
+// checkout) is exactly the case that used to hang forever.
+//
+// ponytail: dropping the overflow is fine because the consumer only ever reads
+// ONE error anyway; if walk errors ever need to be reported in full they should
+// become diagnostics on the result, not a bigger buffer.
+func sendErr(errs chan<- error, err error) {
+	select {
+	case errs <- err:
+	default:
+	}
+}

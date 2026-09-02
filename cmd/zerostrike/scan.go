@@ -111,6 +111,7 @@ func scanCmd() *cobra.Command {
 		flagToken        string
 		flagProjectID    string
 		flagScanLabel    string
+		flagTimeout      time.Duration
 	)
 
 	cmd := &cobra.Command{
@@ -119,7 +120,16 @@ func scanCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			rootPath := args[0]
-			ctx := context.Background()
+
+			// Every scan runs under a deadline. Nothing else bounds a run: the
+			// pipeline's stages take a context but nobody used to cancel it, so a
+			// pathological repo (a dependency set large enough to make the SCA
+			// stage's network round trips add up, an unreadable tree, a parser
+			// that will not finish) left the process alive indefinitely -- a CI
+			// runner burning hours, or a portal scan sitting at "pending" with no
+			// report and no error to show for it.
+			ctx, cancel := context.WithTimeout(context.Background(), flagTimeout)
+			defer cancel()
 
 			// Validated early so a bad --group-by fails before the scan runs.
 			// --format is still validated late, after the scan, in the reporter
@@ -207,6 +217,16 @@ func scanCmd() *cobra.Command {
 			start := time.Now()
 			result, err := pipe.Run(ctx)
 			elapsed := time.Since(start)
+			if err == nil && ctx.Err() != nil {
+				// The deadline cuts stages short without necessarily surfacing an
+				// error of its own -- SAST workers simply stop pulling files and
+				// SCA degrades to a warning -- so the report would look complete
+				// while missing most of the repo. A timed-out scan is a failed
+				// scan, not a clean one.
+				err = fmt.Errorf(
+					"scan timed out after %s (raise --timeout, or exclude large generated/vendored "+
+						"directories with --exclude-dir)", flagTimeout)
+			}
 			if err != nil {
 				if upload {
 					// Best-effort: don't leave the portal showing a
@@ -347,6 +367,7 @@ func scanCmd() *cobra.Command {
 	cmd.Flags().StringVar(&flagServer, "server", "", "portal server base URL (enables report upload together with --token)")
 	cmd.Flags().StringVar(&flagToken, "token", "", "portal project token — alone determines which project a scan belongs to")
 	cmd.Flags().StringVar(&flagProjectID, "project-id", "", "deprecated, ignored — the project token alone determines the project")
+	cmd.Flags().DurationVar(&flagTimeout, "timeout", 30*time.Minute, "maximum wall-clock time for the whole scan")
 	cmd.Flags().StringVar(&flagScanLabel, "scan-label", "", "optional label for this scan, shown in the portal")
 
 	return cmd
