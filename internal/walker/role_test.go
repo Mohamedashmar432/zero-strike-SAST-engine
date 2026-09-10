@@ -57,12 +57,37 @@ func TestClassifyRole(t *testing.T) {
 	}
 }
 
-// TestClassifyRole_WindowsSeparators guards the platform this engine is
-// developed on: the walker hands over a filepath.Rel result, which uses
-// backslashes on Windows, and a classifier that only split on "/" would
-// classify every Windows path as production.
-func TestClassifyRole_WindowsSeparators(t *testing.T) {
-	if got := ClassifyRole(`backend\tests\test_api.py`); got != RoleTest {
-		t.Errorf("backslash path classified %q, want %q", got, RoleTest)
+// TestClassifyRole_SeparatorIndependent is a regression test for a CI failure
+// that passed on Windows and failed on Linux.
+//
+// ClassifyRole originally normalised with filepath.ToSlash, which replaces
+// os.PathSeparator. On Linux that is already "/", so a backslash-spelled path
+// kept its backslashes, collapsed into a single segment, and classified as
+// production. Both spellings must agree on every platform.
+func TestClassifyRole_SeparatorIndependent(t *testing.T) {
+	pairs := []struct {
+		slash     string
+		backslash string
+		want      FileRole
+	}{
+		{"backend/tests/test_api.py", `backend\tests\test_api.py`, RoleTest},
+		{"a/testdata/x.go", `a\testdata\x.go`, RoleTest},
+		{"web/__tests__/button.tsx", `web\__tests__\button.tsx`, RoleTest},
+		{"frontend/lib/api.ts", `frontend\lib\api.ts`, RoleProduction},
+		{"src/app/main.go", `src\app\main.go`, RoleProduction},
+	}
+	for _, p := range pairs {
+		gotFwd := ClassifyRole(p.slash)
+		gotBack := ClassifyRole(p.backslash)
+		if gotFwd != p.want {
+			t.Errorf("ClassifyRole(%q) = %q, want %q", p.slash, gotFwd, p.want)
+		}
+		if gotBack != p.want {
+			t.Errorf("ClassifyRole(%q) = %q, want %q", p.backslash, gotBack, p.want)
+		}
+		if gotFwd != gotBack {
+			t.Errorf("separator spelling changed the verdict: %q=%q but %q=%q",
+				p.slash, gotFwd, p.backslash, gotBack)
+		}
 	}
 }

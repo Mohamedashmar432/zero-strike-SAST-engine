@@ -238,6 +238,31 @@ func TestWalk_SkipsStaticDir(t *testing.T) {
 	}
 }
 
+// TestWalk_SkipsFrameworkBuildOutput covers the gap that dominated a real
+// scan: frontend/.next held 1600 generated .js files and produced 147 of 151
+// findings. dist/ and build/ were already skipped; the per-framework names
+// were not.
+func TestWalk_SkipsFrameworkBuildOutput(t *testing.T) {
+	root := makeTempDir(t)
+	for _, dir := range []string{".next", ".nuxt", ".svelte-kit", ".angular", ".output", ".turbo", "out"} {
+		writeFile(t, filepath.Join(root, dir, "chunk.js"), "try{}catch(e){}")
+	}
+	writeFile(t, filepath.Join(root, "app.js"), "// kept")
+
+	w := walker.NewWalker(nil)
+	paths, errs := collectWalk(t, w, root)
+
+	if len(errs) != 0 {
+		t.Errorf("unexpected errors: %v", errs)
+	}
+	if len(paths) != 1 {
+		t.Fatalf("expected only app.js to survive, got %d: %v", len(paths), paths)
+	}
+	if filepath.Base(paths[0]) != "app.js" {
+		t.Errorf("unexpected path: %q", paths[0])
+	}
+}
+
 func TestWalk_SkipsMinifiedJsByDefault(t *testing.T) {
 	root := makeTempDir(t)
 	writeFile(t, filepath.Join(root, "Scripts", "jquery-1.3.2.min.js"), "// vendored, noisy")

@@ -330,7 +330,20 @@ var assertionContext = []string{
 // operand. line is the full source line, which carries the context the
 // captured value alone cannot show.
 func plausibleSecret(captured, line []byte) bool {
-	v := strings.ToLower(string(captured))
+	raw := strings.TrimSpace(string(captured))
+
+	// A value wrapped in angle brackets is a documentation placeholder, never
+	// a live credential: <your-password>, <dev sentinel value>,
+	// SEED_ADMIN_PASSWORD='<a real password>'. Checked before the vocabulary
+	// list because the give-away is the shape, not the words inside -- the
+	// words are usually a description of the secret rather than any of the
+	// tokens below. This is what kept a deployment guide and two triage
+	// documents in the report.
+	if strings.HasPrefix(raw, "<") && strings.HasSuffix(raw, ">") {
+		return false
+	}
+
+	v := strings.ToLower(raw)
 	for _, t := range placeholderTokens {
 		if strings.Contains(v, t) {
 			return false

@@ -33,3 +33,5 @@ cases:
   - file: cases/guarded_regexp.ts
     language: typescript
     expect: []
+  - file: cases/doc_placeholders.md
+    expect: []

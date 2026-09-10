@@ -18,6 +18,13 @@ var hardcodedSkipDirs = []string{
 	// Static / generated / build output (common source of false positives)
 	"static", "assets", "public", "media",
 	"dist", "build", "bin", "obj",
+	// Framework build output. These were missing, and on a real Next.js app
+	// frontend/.next held 1600 generated .js files that produced 147 of 151
+	// findings -- bundled and minified code nobody authored and nobody can
+	// fix. Same shape as dist/ and build/ above, just named per framework.
+	".next", ".nuxt", ".svelte-kit", ".angular", ".output", ".turbo",
+	".parcel-cache", ".astro", ".docusaurus", ".vercel", ".netlify",
+	"out",
 	// Test coverage and linter caches
 	"htmlcov", "coverage", ".tox", ".pytest_cache",
 	".mypy_cache", ".ruff_cache",
