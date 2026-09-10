@@ -24,3 +24,11 @@ Thumbs.db
 # Python bytecode from scripts/
 __pycache__/
 *.pyc
+
+# Triage/analysis artifacts for scanned customer codebases. These quote the
+# scanned application's source and file layout, so they stay local: the
+# reproducible evidence lives in benchmark/corpus/fp/ instead.
+/SAST-Triage-Report.md
+/SAST-False-Positives-Explained.md
+/false-positive-fix-goal.md
+/scan-*-report*.md

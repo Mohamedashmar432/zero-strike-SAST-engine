@@ -52,6 +52,15 @@ func BuildIndex(rs []*rules.Rule) *RuleIndex {
 		byCalleeSuffix: make(map[string][]*rules.Rule),
 	}
 	for _, r := range rs {
+		// A retired rule loads and validates but must never fire. The
+		// lifecycle field was validated from the start (see rules.Validator)
+		// and read by nothing, so "retired" was documentation — the rule kept
+		// matching. Enforced here rather than in the loader so that rule
+		// counts, HashRuleSet, and the rule-listing commands still see the
+		// retired rule; only matching skips it.
+		if r.Lifecycle == "retired" {
+			continue
+		}
 		kind := ir.NodeKind(r.Match.Kind)
 		switch {
 		case kind == ir.NodeKindCall && r.Match.Callee != "" && r.Match.CalleeSuffix:
@@ -123,6 +132,7 @@ func (e *defaultEngine) Match(_ context.Context, mc *MatchContext) ([]MatchResul
 		return nil, nil
 	}
 	taintedVars := mc.File.TaintedVars
+	weakVars := mc.File.WeakTaintVars
 	var out []MatchResult
 	fileLang := mc.File.IR.Language
 	// consider evaluates one candidate rule against n.
@@ -147,7 +157,7 @@ func (e *defaultEngine) Match(_ context.Context, mc *MatchContext) ([]MatchResul
 		if r.Language != fileLang {
 			return
 		}
-		if matchNode(r.Match, n, taintedVars, fileLang) {
+		if matchNode(r.Match, n, taintedVars, weakVars, fileLang) {
 			out = append(out, MatchResult{Rule: r, Node: n, TaintedVar: taintedIdentifierFor(r.Match, n, taintedVars, fileLang)})
 		}
 	}
@@ -216,7 +226,7 @@ func attributeText(n *ir.IRNode) string {
 // matchNode checks whether a node satisfies the match pattern.
 // Callee matching is already handled by the index; matchNode covers
 // Identifier, Literal, and Filter constraints.
-func matchNode(pattern rules.MatchPattern, n *ir.IRNode, taintedVars map[string]bool, lang core.Language) bool {
+func matchNode(pattern rules.MatchPattern, n *ir.IRNode, taintedVars, weak map[string]bool, lang core.Language) bool {
 	if ir.NodeKind(pattern.Kind) != n.Kind {
 		return false
 	}
@@ -244,14 +254,14 @@ func matchNode(pattern rules.MatchPattern, n *ir.IRNode, taintedVars map[string]
 		}
 	}
 	for _, f := range pattern.Filters {
-		if !evalFilter(f, n, taintedVars, lang) {
+		if !evalFilter(f, n, taintedVars, weak, lang) {
 			return false
 		}
 	}
 	return true
 }
 
-func evalFilter(f rules.Filter, n *ir.IRNode, taintedVars map[string]bool, lang core.Language) bool {
+func evalFilter(f rules.Filter, n *ir.IRNode, taintedVars, weak map[string]bool, lang core.Language) bool {
 	if f.ArgumentCount != nil {
 		ac, _ := n.Attrs["argument_count"].(int)
 		if ac != *f.ArgumentCount {
@@ -272,8 +282,17 @@ func evalFilter(f rules.Filter, n *ir.IRNode, taintedVars map[string]bool, lang 
 	}
 	if f.TaintedArgument {
 		isTainted := func(a *ir.IRNode) bool {
-			return (a.Kind == ir.NodeKindIdentifier && taintedVars[a.Text]) ||
-				isDirectSourceExpression(a, lang)
+			if a.Kind == ir.NodeKindIdentifier && taintedVars[a.Text] {
+				// require_real_source rejects taint that exists only because
+				// every function parameter is seeded untrusted. See
+				// taint.Result.Weak: without this, any helper that takes an
+				// argument looks attacker-controlled, which is what made
+				// setTimeout/fetch/RegExp fire on ordinary React code.
+				return !f.RequireRealSource || !weak[a.Text]
+			}
+			// An inline source expression (sink(req.query.x)) matched a real
+			// source pattern by definition, so it is never weak.
+			return isDirectSourceExpression(a, lang)
 		}
 		scan := anyArgument
 		if f.TaintedArgumentIndex != nil {
@@ -329,8 +348,13 @@ func evalFilter(f rules.Filter, n *ir.IRNode, taintedVars map[string]bool, lang 
 			return false
 		}
 	}
+	if f.ArgumentKindNotAt != nil {
+		if !argumentKindAllowed(n, *f.ArgumentKindNotAt) {
+			return false
+		}
+	}
 	if f.TaintedRHS {
-		if !rhsIsTainted(n, taintedVars, lang) {
+		if !rhsIsTainted(n, taintedVars, weak, f.RequireRealSource, lang) {
 			return false
 		}
 	}
@@ -345,7 +369,7 @@ func evalFilter(f rules.Filter, n *ir.IRNode, taintedVars map[string]bool, lang 
 		}
 	}
 	if f.Not != nil {
-		if matchNode(*f.Not, n, taintedVars, lang) {
+		if matchNode(*f.Not, n, taintedVars, weak, lang) {
 			return false
 		}
 	}
@@ -369,19 +393,24 @@ func anyExceptHandler(n *ir.IRNode, pred func(ir.ExceptHandler) bool) bool {
 // contains an identifier present in taintedVars, or a source pattern matched
 // directly inline (element.innerHTML = req.body.x, with no intervening
 // assignment to a named variable — see isDirectSourceExpression).
-func rhsIsTainted(n *ir.IRNode, taintedVars map[string]bool, lang core.Language) bool {
+func rhsIsTainted(n *ir.IRNode, taintedVars, weak map[string]bool, requireRealSource bool, lang core.Language) bool {
 	if n.Kind != ir.NodeKindAssignment || len(n.Children) == 0 {
 		return false
 	}
+	// strongly reports whether an identifier's taint counts under this
+	// filter's require_real_source setting — see taint.Result.Weak.
+	strongly := func(name string) bool {
+		return taintedVars[name] && (!requireRealSource || !weak[name])
+	}
 	rhs := n.Children[len(n.Children)-1]
-	if rhs.Kind == ir.NodeKindIdentifier && taintedVars[rhs.Text] {
+	if rhs.Kind == ir.NodeKindIdentifier && strongly(rhs.Text) {
 		return true
 	}
 	if isDirectSourceExpression(rhs, lang) {
 		return true
 	}
 	for _, d := range ir.Descendants(rhs) {
-		if d.Kind == ir.NodeKindIdentifier && taintedVars[d.Text] {
+		if d.Kind == ir.NodeKindIdentifier && strongly(d.Text) {
 			return true
 		}
 		if isDirectSourceExpression(d, lang) {
@@ -619,4 +648,33 @@ func firstTaintedRHSIdentifier(n *ir.IRNode, taintedVars map[string]bool, lang c
 		}
 	}
 	return ""
+}
+
+// argumentKindAllowed reports whether the positional argument named by spec is
+// NOT one of spec.Kinds - i.e. whether the match survives the filter.
+//
+// The kind check is on the argument node itself and deliberately does not walk
+// descendants, unlike argumentAt. That difference is the entire point: an
+// arrow function passed to setTimeout contains identifiers and calls in its
+// body, so a descendant walk would find almost any kind inside it and the
+// filter would never exclude anything.
+//
+// A call with no such argument passes: "argument 0 is not a function" is
+// vacuously true when there is no argument 0, and the rule's other filters
+// are what decide those cases.
+func argumentKindAllowed(n *ir.IRNode, spec rules.ArgumentKindPattern) bool {
+	args := argumentNodes(n)
+	i := spec.Index
+	if i < 0 {
+		i += len(args)
+	}
+	if i < 0 || i >= len(args) {
+		return true
+	}
+	for _, k := range spec.Kinds {
+		if args[i].Kind == ir.NodeKind(k) {
+			return false
+		}
+	}
+	return true
 }

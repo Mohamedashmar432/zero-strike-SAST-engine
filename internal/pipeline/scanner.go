@@ -162,7 +162,7 @@ func openCache(cfg ScanConfig, ruleSetHash string) (cache.FindingCache, cache.AS
 	cacheRoot := filepath.Join(cfg.RootPath, ".zerostrike", "cache")
 	mgr, err := cache.Open(cacheRoot, cache.Meta{
 		FormatVersion:   cache.FormatVersion,
-		EngineVersion:   version.Version,
+		EngineVersion:   version.CacheKey(),
 		RuleSetHash:     ruleSetHash,
 		IRSchemaVersion: ir.SchemaVersion,
 	})
@@ -185,6 +185,26 @@ func (p *ScanPipeline) Run(ctx context.Context) (*ScanResult, error) {
 	}
 
 	var result ScanResult
+
+	// Drop test/fixture material before any scanner sees it.
+	//
+	// Filtered here, once, rather than inside the two per-scanner Accepts
+	// loops below: those loops are duplicated between the serial and
+	// concurrent branches, and a role check written twice is a role check
+	// that eventually disagrees with itself. Filtering the shared input also
+	// keeps FilesScanned honest and skips parsing the file at all.
+	if !p.config.IncludeTests {
+		kept := allFiles[:0]
+		for _, f := range allFiles {
+			if f.Role == walker.RoleTest {
+				result.FilesSkipped++
+				continue
+			}
+			kept = append(kept, f)
+		}
+		allFiles = kept
+	}
+
 	result.FilesScanned = len(allFiles)
 
 	workers := p.config.WorkerCount

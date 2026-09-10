@@ -145,3 +145,8 @@ cases:
   - file: testdata/clean.go
     language: go
     expect: []
+
+# Fixtures live under testdata/, which walker.ClassifyRole treats as test
+# material for real users. Opt this corpus back in so the 45 Go cases are
+# still scanned; see benchmark.Manifest.IncludeTests.
+include_tests: true

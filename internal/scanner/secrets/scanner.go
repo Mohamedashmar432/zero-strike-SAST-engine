@@ -6,10 +6,12 @@ import (
 	"math"
 	"os"
 	"regexp"
+	"strings"
 
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/analyzer"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/findings"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/suppress"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/walker"
 )
 
@@ -19,6 +21,19 @@ type detector struct {
 	pattern    *regexp.Regexp
 	severity   core.Severity
 	minEntropy float64 // 0 = no entropy filter
+
+	// generic marks a detector that matches by surrounding syntax
+	// (password = "...", "token": "...", a URI with credentials) rather than
+	// by a provider's own key shape.
+	//
+	// Only generic detectors get the placeholder and example-host filters
+	// below. The split is the whole point: AKIA-prefixed strings, ghp_ tokens
+	// and PEM blocks are worth reporting whatever words they contain -- AWS's
+	// own documentation key is literally AKIAIOSFODNN7EXAMPLE, and rejecting
+	// it for containing "EXAMPLE" would drop a real detector. A generic
+	// `password = "test-pw"` carries no such signal and is almost always a
+	// fixture.
+	generic bool
 }
 
 var detectors = []detector{
@@ -40,6 +55,7 @@ var detectors = []detector{
 		pattern:    regexp.MustCompile(`(?i)api[_\-]?key\s*[:=]\s*["']?([a-zA-Z0-9_\-]{20,64})["']?`),
 		severity:   core.SeverityHigh,
 		minEntropy: 3.0,
+		generic:    true,
 	},
 	{
 		ruleID:     "ZS-SEC-004",
@@ -47,6 +63,7 @@ var detectors = []detector{
 		pattern:    regexp.MustCompile(`(?i)(?:password|passwd|pwd)\s*[:=]\s*["']([^"']{8,})["']`),
 		severity:   core.SeverityHigh,
 		minEntropy: 3.0,
+		generic:    true,
 	},
 	{
 		ruleID:     "ZS-SEC-005",
@@ -96,24 +113,28 @@ var detectors = []detector{
 		detectorID: "mongodb-uri",
 		pattern:    regexp.MustCompile(`(mongodb(?:\+srv)?:\/\/[^:\s"']+:[^@\s"']+@[^\s"']+)`),
 		severity:   core.SeverityHigh,
+		generic:    true,
 	},
 	{
 		ruleID:     "ZS-SEC-013",
 		detectorID: "postgresql-uri",
 		pattern:    regexp.MustCompile(`(postgres(?:ql)?:\/\/[^:\s"']+:[^@\s"']+@[^\s"']+)`),
 		severity:   core.SeverityHigh,
+		generic:    true,
 	},
 	{
 		ruleID:     "ZS-SEC-014",
 		detectorID: "mysql-uri",
 		pattern:    regexp.MustCompile(`(mysql:\/\/[^:\s"']+:[^@\s"']+@[^\s"']+)`),
 		severity:   core.SeverityHigh,
+		generic:    true,
 	},
 	{
 		ruleID:     "ZS-SEC-015",
 		detectorID: "redis-uri",
 		pattern:    regexp.MustCompile(`(redis:\/\/(?:[^:\s"']*:[^@\s"']+@)[^\s"']+)`),
 		severity:   core.SeverityHigh,
+		generic:    true,
 	},
 	{
 		ruleID:     "ZS-SEC-016",
@@ -125,6 +146,7 @@ var detectors = []detector{
 		pattern:    regexp.MustCompile(`(?i)"?(?:secret|access_key|token)"?\s*[:=]\s*"([^"]{6,})"`),
 		severity:   core.SeverityMedium,
 		minEntropy: 3.0,
+		generic:    true,
 	},
 	{
 		ruleID:     "ZS-SEC-017",
@@ -230,6 +252,12 @@ func scanContent(path string, data []byte) []core.Finding {
 			if d.minEntropy > 0 && shannonEntropy(string(captured)) < d.minEntropy {
 				continue
 			}
+			if suppress.Suppressed(data, lineNum+1, lineNum+1, d.ruleID) {
+				continue
+			}
+			if d.generic && !plausibleSecret(captured, line) {
+				continue
+			}
 			name := d.detectorID
 			f := findings.BuildSecretFinding(
 				d.detectorID,
@@ -263,4 +291,61 @@ func shannonEntropy(s string) float64 {
 		h -= p * math.Log2(p)
 	}
 	return h
+}
+
+// placeholderTokens are substrings that mark a value as a stand-in rather than
+// a live credential. Applied only to generic detectors -- see detector.generic.
+var placeholderTokens = []string{
+	"canary", "example", "dummy", "sample", "placeholder",
+	"dev-only", "dev_only", "test-", "test_", "fake", "changeme",
+	"change-me", "xxx", "your-", "your_", "redacted", "notreal",
+	"todo", "insecure", "dontuse",
+}
+
+// exampleHosts are reserved or non-routable hosts. A URI pointing at one is
+// documentation or a fixture: RFC 2606 reserves example.com/.net/.org and the
+// .test/.invalid TLDs precisely so they can never be a real endpoint.
+// Restricted to the domains RFC 2606 and RFC 6761 reserve so they can never
+// resolve to a real endpoint. Deliberately NOT localhost/127.0.0.1: a
+// committed mongodb://admin:secretpass123@localhost is a real hardcoded
+// credential, and the host being local says nothing about whether the
+// password is. The canary case that motivated this filter is caught by the
+// placeholder vocabulary and the assertion context instead.
+var exampleHosts = []string{
+	"example.com", "example.net", "example.org",
+	".invalid", ".test",
+}
+
+// assertionContext marks a line where the value is being compared rather than
+// used -- a test asserting that a credential does NOT appear in output is the
+// control, not the vulnerability. The report that motivated this flagged a
+// credential-redaction canary test as a leaked mongodb URI.
+var assertionContext = []string{
+	"assert", "expect(", "should", "assertequal", "assertnotin",
+	"tobe(", "toequal(", "!=", "==",
+}
+
+// plausibleSecret reports whether a generic-detector hit looks like a live
+// credential rather than a placeholder, an example endpoint, or an assertion
+// operand. line is the full source line, which carries the context the
+// captured value alone cannot show.
+func plausibleSecret(captured, line []byte) bool {
+	v := strings.ToLower(string(captured))
+	for _, t := range placeholderTokens {
+		if strings.Contains(v, t) {
+			return false
+		}
+	}
+	for _, h := range exampleHosts {
+		if strings.Contains(v, h) {
+			return false
+		}
+	}
+	l := strings.ToLower(string(line))
+	for _, a := range assertionContext {
+		if strings.Contains(l, a) {
+			return false
+		}
+	}
+	return true
 }

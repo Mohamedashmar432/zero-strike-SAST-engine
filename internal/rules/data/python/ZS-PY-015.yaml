@@ -28,4 +28,15 @@ tags: [ssrf, urllib, request-forgery]
 match:
   kind: call
   callee: urllib.request.urlopen
+  filters:
+    # This rule had NO filter: every urlopen call was a finding regardless of
+    # its argument, which reported a deploy-time webhook URL from an env var as
+    # SSRF. The rule's meaning is deliberately narrowed here from "urlopen is
+    # used" to "urlopen is called with an untrusted target".
+    #
+    # Consequence accepted: urlopen(constant) is no longer reported at all. If
+    # that hardening signal is wanted back it belongs in a separate INFO rule,
+    # not in a CWE-918 finding.
+    - tainted_argument: true
+      require_real_source: true
 fix_suggestion: "Validate the URL against an allowlist. Reject internal/private IPs and non-http(s) schemes."

@@ -10,7 +10,8 @@ type FileEntry struct {
 	Path     string
 	Language core.Language
 	Size     int64
-	IsBinary bool // true if the first 512 bytes contain a null byte
+	IsBinary bool     // true if the first 512 bytes contain a null byte
+	Role     FileRole // test/fixture material, or production code — see ClassifyRole
 }
 
 // Options controls the behaviour of a Walker.

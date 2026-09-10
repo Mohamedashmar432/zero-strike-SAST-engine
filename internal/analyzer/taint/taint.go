@@ -32,6 +32,25 @@ type Result struct {
 	// (see extendPath) — the flow-insensitive verdict is still trusted, the
 	// precise path just isn't.
 	Paths map[string][]core.Location
+
+	// Weak marks tainted variables whose taint comes only from the
+	// function-parameter seeding below, with no matched source pattern
+	// anywhere upstream. It is a subset of Tainted.
+	//
+	// The distinction exists because parameter seeding is deliberately
+	// imprecise: every parameter of every function is treated as untrusted so
+	// that a handler-extracts/helper-executes split still reports (see the
+	// seeding comment in BuildContext). That is right for a SQL sink, but on
+	// its own it makes `setTimeout(cb, delay)`, `fetch(url)` and
+	// `new RegExp(pattern)` fire on any ordinary helper that happens to take
+	// an argument — which is where three of the six false-positive classes in
+	// the triage of a real scan came from.
+	//
+	// Rules that are noisy under that assumption opt out with the
+	// require_real_source filter, which demands a variable that is tainted and
+	// NOT weak. Rules where parameter taint is the point (SQL, command
+	// injection, path traversal) ignore Weak entirely and keep their recall.
+	Weak map[string]bool
 }
 
 // Build walks file in source order and returns the set of variable names
@@ -75,8 +94,9 @@ func BuildContext(file *ir.IRFile, symbols symboltable.SymbolTable, dfg *graph.D
 	tainted := make(map[string]bool)
 	reasons := make(map[string]string)
 	paths := make(map[string][]core.Location)
+	weak := make(map[string]bool)
 	if file == nil || file.Root == nil {
-		return Result{Tainted: tainted, Reasons: reasons, Paths: paths}
+		return Result{Tainted: tainted, Reasons: reasons, Paths: paths, Weak: weak}
 	}
 	pats := patternsFor(file.Language)
 	summaries := buildSummaries(file, pats)
@@ -114,6 +134,8 @@ func BuildContext(file *ir.IRFile, symbols symboltable.SymbolTable, dfg *graph.D
 			}
 			tainted[p] = true
 			reasons[p] = "unvalidated function parameter " + p
+			// Seeded taint with no source pattern behind it — see Result.Weak.
+			weak[p] = true
 		}
 		return true
 	})
@@ -137,6 +159,18 @@ func BuildContext(file *ir.IRFile, symbols symboltable.SymbolTable, dfg *graph.D
 			}
 			tainted[name] = v
 			if v {
+				// Weakness follows the same edge the verdict came from.
+				// assignmentTaintsLHS returns a non-empty ref only when the
+				// verdict was "RHS references an already-tainted name", so
+				// ref != "" is exactly the propagation case and inherits that
+				// name's tier. Everything else that yields true is a matched
+				// source pattern or a function summary, both of which are
+				// real sources, so the LHS becomes strong.
+				if rf != "" {
+					weak[name] = weak[rf]
+				} else {
+					delete(weak, name)
+				}
 				reasons[name] = rs
 				if dfg != nil {
 					if p := extendPath(n, rf, dfg, paths); p != nil {
@@ -148,11 +182,12 @@ func BuildContext(file *ir.IRFile, symbols symboltable.SymbolTable, dfg *graph.D
 			} else {
 				delete(reasons, name)
 				delete(paths, name)
+				delete(weak, name)
 			}
 		}
 		return true
 	})
-	return Result{Tainted: tainted, Reasons: reasons, Paths: paths}
+	return Result{Tainted: tainted, Reasons: reasons, Paths: paths, Weak: weak}
 }
 
 // lhsNames splits an assignment's LHS text into the individual variable names

@@ -81,8 +81,11 @@ func TestPipelineNew_Cache_CreatesMetaJSON(t *testing.T) {
 	metaPath := filepath.Join(root, ".zerostrike", "cache", "meta.json")
 	meta := readMeta(t, metaPath)
 
-	if meta.EngineVersion != version.Version {
-		t.Errorf("EngineVersion = %q, want %q", meta.EngineVersion, version.Version)
+	// CacheKey, not Version: the cache must also invalidate when matching
+	// semantics change under an unchanged version string (see
+	// version.MatchSemanticsRevision).
+	if meta.EngineVersion != version.CacheKey() {
+		t.Errorf("EngineVersion = %q, want %q", meta.EngineVersion, version.CacheKey())
 	}
 	if meta.IRSchemaVersion != ir.SchemaVersion {
 		t.Errorf("IRSchemaVersion = %d, want %d", meta.IRSchemaVersion, ir.SchemaVersion)

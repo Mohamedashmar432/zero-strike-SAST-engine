@@ -33,4 +33,17 @@ match:
   kind: assignment
   lhs_identifier: "(?i)(password|secret|api[_-]?key|apikey|token)"
   rhs_literal: "^\".+\"$"
+  filters:
+    # A guarded sentinel is not a leaked credential: it is a known-bad value
+    # that exists so a start-up check can recognise it and refuse to boot.
+    # The report that motivated this flagged INSECURE_JWT_SECRET as a HIGH
+    # hardcoded credential -- deleting that literal would have removed the
+    # production safety check, inverting the actual security posture.
+    #
+    # Matched by naming convention rather than by proving the guard exists:
+    # confirming the comparison would need cross-function analysis, and a
+    # value shouting INSECURE_ at the reader is already a deliberate signal.
+    - not:
+        kind: assignment
+        lhs_identifier: "(?i)^[$@]?(INSECURE|PLACEHOLDER|CHANGEME|CHANGE_ME|DEV_ONLY|EXAMPLE|DUMMY|FAKE|SAMPLE|DEFAULT)_"
 fix_suggestion: "Replace the literal with System.getenv(), a config loader, or a secrets manager lookup."

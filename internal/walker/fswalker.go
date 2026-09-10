@@ -89,6 +89,10 @@ func (w *fsWalker) walk(
 			Path:     fullPath,
 			Language: core.LangUnknown,
 			Size:     info.Size(),
+			// Classified from the root-relative path, not fullPath, so a
+			// checkout sitting under some directory named "test" doesn't make
+			// the whole project test material.
+			Role: ClassifyRole(rel),
 		}
 		if f, err := os.Open(fullPath); err == nil {
 			buf := make([]byte, 512)

@@ -14,6 +14,13 @@ type KwargPattern struct {
 }
 
 // Filter is a typed constraint on a match pattern.
+// ArgumentKindPattern names one positional argument and a set of IR node
+// kinds. A negative Index counts from the end, matching argumentAt.
+type ArgumentKindPattern struct {
+	Index int
+	Kinds []string
+}
+
 type Filter struct {
 	Not           *MatchPattern
 	ArgumentCount *int
@@ -51,6 +58,28 @@ type Filter struct {
 	ArgumentLiteralMatches string
 	// HasBareExcept requires a try_statement node to contain at least one bare
 	// "except:" clause (see ir.ExceptHandler.IsBare).
+	// ArgumentKindNotAt suppresses the match when the argument at Index is
+	// itself one of the named IR node kinds. The check is on that argument's
+	// own kind only, never its descendants.
+	//
+	// It exists because a sink rule can otherwise flag the very pattern it
+	// recommends: setTimeout's message says "pass a function, not a string",
+	// and the rule fired on arrow functions. Expressed negatively rather than
+	// as an allowlist of permitted kinds because a bare identifier holding a
+	// string is a legitimate hit, and enumerating every safe kind would
+	// exclude it.
+	ArgumentKindNotAt *ArgumentKindPattern
+
+	// RequireRealSource restricts the TaintedArgument/TaintedRHS check to
+	// taint with a matched source pattern behind it, rejecting taint that
+	// exists only because every function parameter is seeded untrusted (see
+	// internal/analyzer/taint.Result.Weak).
+	//
+	// Set it on sinks whose argument is routinely an ordinary parameter --
+	// setTimeout, fetch, RegExp, urlopen. Leave it off where parameter taint
+	// is the whole point, such as SQL and command injection, or recall drops.
+	RequireRealSource bool
+
 	HasBareExcept bool
 	// HasEmptyExceptHandler requires a try_statement node to contain at least one
 	// except clause whose body is just "pass" (see ir.ExceptHandler.IsEmptyBody).

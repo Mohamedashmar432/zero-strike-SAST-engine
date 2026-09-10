@@ -1,0 +1,35 @@
+version: "1"
+# False-positive regression corpus.
+#
+# Every case here is code that a correctly tuned engine must report NOTHING
+# for, drawn from the 1321 verified false positives of an internal triage of a
+# real scan (report held privately; see docs/release-notes/PRECISION-OVERHAUL.md).
+# The gate runs with --max-fp 0, so any finding on any of these files fails
+# CI. Before this corpus existed the gate only measured recall: precision had
+# no fixtures at all, which is how a rule that fires on every `assert` keyword
+# shipped.
+#
+# include_tests is deliberately NOT set. This corpus must be scanned with role
+# filtering active, since that is one of the things it exists to verify.
+cases:
+  - file: cases/tests/test_asserts.py
+    language: python
+    expect: []
+  - file: cases/sentinel_config.py
+    language: python
+    expect: []
+  - file: cases/canary_redaction.py
+    language: python
+    expect: []
+  - file: cases/suppressed.py
+    language: python
+    expect: []
+  - file: cases/arrow_settimeout.ts
+    language: typescript
+    expect: []
+  - file: cases/const_fetch.ts
+    language: typescript
+    expect: []
+  - file: cases/guarded_regexp.ts
+    language: typescript
+    expect: []

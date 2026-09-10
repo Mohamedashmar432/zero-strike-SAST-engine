@@ -19,6 +19,7 @@ import (
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/langreg"
 	htmlparser "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/parser/html"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/rules"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/suppress"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/walker"
 
 	// Blank imports run each language package's init() registration with
@@ -190,7 +191,16 @@ func (s *SASTScanner) processFile(ctx context.Context, entry walker.FileEntry) (
 
 	fileFindings := make([]core.Finding, 0, len(matchResults))
 	for _, mr := range matchResults {
-		fileFindings = append(fileFindings, findings.BuildFinding(mr, mc, source))
+		f := findings.BuildFinding(mr, mc, source)
+		// Honour an inline suppression the author wrote on the flagged line.
+		// Done here because this is the only point in the SAST path that has
+		// both the finding and the file's raw bytes in hand. Safe to cache:
+		// suppression is a pure function of file content, and the finding
+		// cache is keyed on the content hash.
+		if suppress.Suppressed(source, f.Location.StartLine, f.Location.EndLine, f.RuleID) {
+			continue
+		}
+		fileFindings = append(fileFindings, f)
 	}
 
 	// HTML files additionally get their inline <script> bodies scanned with the

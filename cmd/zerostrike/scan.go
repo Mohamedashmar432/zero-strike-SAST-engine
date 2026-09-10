@@ -106,6 +106,7 @@ func scanCmd() *cobra.Command {
 		flagSCAError     string
 		flagAllowFile    string
 		flagExcludeDirs  []string
+		flagIncludeTests bool
 		flagGroupBy      string
 		flagServer       string
 		flagToken        string
@@ -172,6 +173,7 @@ func scanCmd() *cobra.Command {
 				SCAOnError:            flagSCAError,
 				AllowFile:             flagAllowFile,
 				ExcludeDirs:           flagExcludeDirs,
+				IncludeTests:          flagIncludeTests,
 			}
 
 			pipe, err := pipeline.New(cfg)
@@ -363,6 +365,7 @@ func scanCmd() *cobra.Command {
 	cmd.Flags().StringVar(&flagSCAError, "sca-on-error", "warn", "SCA on network error: warn|fail")
 	cmd.Flags().StringVar(&flagAllowFile, "allow-file", "", "path to allowlist YAML (default: <root>/.zs-allow.yaml)")
 	cmd.Flags().StringSliceVar(&flagExcludeDirs, "exclude-dir", nil, "directory names to skip, e.g. --exclude-dir gen --exclude-dir templates")
+	cmd.Flags().BoolVar(&flagIncludeTests, "include-tests", false, "scan test/fixture paths too (tests/, testdata/, conftest.py, *_test.go, *.spec.ts, ...); off by default because production rule semantics do not hold there")
 	cmd.Flags().StringVar(&flagGroupBy, "group-by", "", "group findings in the report: file|rule|severity|language (default: no grouping for json, severity for html; ignored by sarif)")
 	cmd.Flags().StringVar(&flagServer, "server", "", "portal server base URL (enables report upload together with --token)")
 	cmd.Flags().StringVar(&flagToken, "token", "", "portal project token — alone determines which project a scan belongs to")

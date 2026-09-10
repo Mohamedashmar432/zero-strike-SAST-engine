@@ -125,6 +125,13 @@ func TestAllRules_HaveCoverageInBenchmarkCorpus(t *testing.T) {
 			t.Fatalf("LoadDir(%s): %v", dir, err)
 		}
 		for _, r := range loaded {
+			// A retired rule is skipped by engine.BuildIndex and can never
+			// fire, so it cannot have a corpus expectation - requiring one
+			// would make retirement impossible. The message below has always
+			// said "released rules"; this is what makes that true.
+			if r.Lifecycle == "retired" {
+				continue
+			}
 			total++
 			if !covered[r.ID] {
 				missing = append(missing, r.ID)

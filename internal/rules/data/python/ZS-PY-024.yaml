@@ -9,7 +9,10 @@ confidence: high
 cwe:
   - CWE-390
 owasp:
-  - "A10:2025"
+  # A09 Logging & Monitoring Failures, not A10 SSRF. The old A10 mapping is
+  # what rendered "Server-Side Request Forgery - FAIL, 3 findings" on a report
+  # whose three findings were all swallowed exceptions and none was SSRF.
+  - "A09:2025"
 rationale: |
   Silently discarding an exception with a bare pass hides the fact that an
   operation failed — including security-relevant failures such as a rejected

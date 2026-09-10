@@ -35,14 +35,15 @@ func (a *defaultAnalyzer) Analyze(_ context.Context, file *ir.IRFile) (*Analysis
 
 	tc := taint.BuildContext(file, symbols, dfg)
 	return &AnalysisResult{
-		File:         file.Path,
-		IR:           file,
-		Symbols:      symbols,
-		CFG:          cfg,
-		DFG:          dfg,
-		TaintedVars:  tc.Tainted,
-		TaintReasons: tc.Reasons,
-		TaintPaths:   tc.Paths,
+		File:          file.Path,
+		IR:            file,
+		Symbols:       symbols,
+		CFG:           cfg,
+		DFG:           dfg,
+		TaintedVars:   tc.Tainted,
+		WeakTaintVars: tc.Weak,
+		TaintReasons:  tc.Reasons,
+		TaintPaths:    tc.Paths,
 	}, nil
 }
 
@@ -82,6 +83,11 @@ type AnalysisResult struct {
 	// internal/analyzer/taint.BuildContext). Keyed by the same variable
 	// names as TaintedVars; only set for variables where TaintedVars is true.
 	TaintReasons map[string]string
+	// WeakTaintVars is the subset of TaintedVars whose taint comes only from
+	// function-parameter seeding, with no source pattern upstream (see
+	// internal/analyzer/taint.Result.Weak). Rules opt out of it with the
+	// require_real_source filter.
+	WeakTaintVars map[string]bool
 	// TaintPaths holds the source-to-sink location chain for each tainted
 	// variable (see internal/analyzer/taint.Result.Paths). Nil unless
 	// --enable-graphs was set and the file's language has graph support

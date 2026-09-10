@@ -116,13 +116,20 @@ func TestIntegration_YamlLoadFiresZSPY010(t *testing.T) {
 	}
 }
 
-// TestIntegration_AssertFiresZSPY009 verifies the Sprint 4 fix for KI-001:
-// assert_statement now maps to NodeKindAssert and ZS-PY-009 fires correctly.
-func TestIntegration_AssertFiresZSPY009(t *testing.T) {
+// TestIntegration_RetiredAssertRuleDoesNotFire is the inverse of the original
+// TestIntegration_AssertFiresZSPY009, which asserted that ZS-PY-009 fires on
+// `assert user.is_admin()`. It did fire - on that, and on all 1301 asserts in
+// one real repository, 1300 of them pytest assertions. The rule is now
+// lifecycle: retired, and BuildIndex skips retired rules.
+//
+// This test therefore guards two things at once: that ZS-PY-009 stays retired,
+// and that lifecycle enforcement works at all. Before this change "retired"
+// was a validated field that nothing read, so a retired rule kept matching.
+func TestIntegration_RetiredAssertRuleDoesNotFire(t *testing.T) {
 	_, idx := loadPythonRules(t)
 	results := matchSource(t, idx, "assert user.is_admin()\n")
-	if !hasRule(results, "ZS-PY-009") {
-		t.Error("expected ZS-PY-009 to fire on assert statement")
+	if hasRule(results, "ZS-PY-009") {
+		t.Error("ZS-PY-009 is lifecycle: retired and must not fire; BuildIndex should skip retired rules")
 	}
 }
 

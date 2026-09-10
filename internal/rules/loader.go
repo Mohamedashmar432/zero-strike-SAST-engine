@@ -50,18 +50,25 @@ type kwargYAML struct {
 	ValuePattern string `yaml:"value_pattern"`
 }
 
+type argKindYAML struct {
+	Index int      `yaml:"index"`
+	Kinds []string `yaml:"kinds"`
+}
+
 type filterYAML struct {
-	Not                       *matchYAML `yaml:"not"`
-	ArgumentCount             *int       `yaml:"argument_count"`
-	HasAttribute              string     `yaml:"has_attribute"`
-	TaintedArgument           bool       `yaml:"tainted_argument"`
-	TaintedArgumentIndex      *int       `yaml:"tainted_argument_index"`
-	TaintedRHS                bool       `yaml:"tainted_rhs"`
-	Kwarg                     *kwargYAML `yaml:"kwarg"`
-	ArgumentIdentifierMatches string     `yaml:"argument_identifier_matches"`
-	ArgumentLiteralMatches    string     `yaml:"argument_literal_matches"`
-	HasBareExcept             bool       `yaml:"has_bare_except"`
-	HasEmptyExceptHandler     bool       `yaml:"has_empty_except_handler"`
+	Not                       *matchYAML   `yaml:"not"`
+	ArgumentCount             *int         `yaml:"argument_count"`
+	HasAttribute              string       `yaml:"has_attribute"`
+	TaintedArgument           bool         `yaml:"tainted_argument"`
+	TaintedArgumentIndex      *int         `yaml:"tainted_argument_index"`
+	TaintedRHS                bool         `yaml:"tainted_rhs"`
+	Kwarg                     *kwargYAML   `yaml:"kwarg"`
+	ArgumentIdentifierMatches string       `yaml:"argument_identifier_matches"`
+	ArgumentLiteralMatches    string       `yaml:"argument_literal_matches"`
+	RequireRealSource         bool         `yaml:"require_real_source"`
+	ArgumentKindNotAt         *argKindYAML `yaml:"argument_kind_not_at"`
+	HasBareExcept             bool         `yaml:"has_bare_except"`
+	HasEmptyExceptHandler     bool         `yaml:"has_empty_except_handler"`
 }
 
 type defaultLoader struct {
@@ -194,6 +201,8 @@ func convertFilters(fyamls []filterYAML) []Filter {
 			TaintedRHS:                f.TaintedRHS,
 			ArgumentIdentifierMatches: f.ArgumentIdentifierMatches,
 			ArgumentLiteralMatches:    f.ArgumentLiteralMatches,
+			RequireRealSource:         f.RequireRealSource,
+			ArgumentKindNotAt:         convertArgKind(f.ArgumentKindNotAt),
 			HasBareExcept:             f.HasBareExcept,
 			HasEmptyExceptHandler:     f.HasEmptyExceptHandler,
 		}
@@ -207,4 +216,13 @@ func convertFilters(fyamls []filterYAML) []Filter {
 		out = append(out, filter)
 	}
 	return out
+}
+
+// convertArgKind maps the YAML form of argument_kind_not_at onto the rule
+// struct. Returns nil for an absent key so the filter stays inactive.
+func convertArgKind(y *argKindYAML) *ArgumentKindPattern {
+	if y == nil {
+		return nil
+	}
+	return &ArgumentKindPattern{Index: y.Index, Kinds: y.Kinds}
 }

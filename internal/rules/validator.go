@@ -61,6 +61,23 @@ func (v *defaultValidator) Validate(rule *Rule) []string {
 		// legitimately callee-less and allowed.
 		errs = append(errs, "match.callee: required for kind=call unless filters constrain the match")
 	}
+	// An unrecognised node kind in argument_kind_not_at would make the filter
+	// silently match nothing, which is the failure mode this whole change set
+	// exists to remove. Reject it at load time instead.
+	for i, f := range rule.Match.Filters {
+		if f.ArgumentKindNotAt == nil {
+			continue
+		}
+		if len(f.ArgumentKindNotAt.Kinds) == 0 {
+			errs = append(errs, fmt.Sprintf("match.filters[%d].argument_kind_not_at: kinds must not be empty", i))
+		}
+		for _, k := range f.ArgumentKindNotAt.Kinds {
+			if !validNodeKinds[k] {
+				errs = append(errs, fmt.Sprintf("match.filters[%d].argument_kind_not_at: unknown node kind %q", i, k))
+			}
+		}
+	}
+
 	if rule.Match.CalleeSuffix && rule.Match.Callee == "" {
 		errs = append(errs, "match.callee_suffix: requires a callee")
 	}

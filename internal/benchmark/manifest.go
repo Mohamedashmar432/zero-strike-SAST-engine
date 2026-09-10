@@ -40,6 +40,16 @@ type Case struct {
 type Manifest struct {
 	Version string `yaml:"version"`
 	Cases   []Case `yaml:"cases"`
+
+	// IncludeTests scans this corpus's fixtures even when their paths look
+	// like test material to walker.ClassifyRole.
+	//
+	// Only the Go corpus needs it: its fixtures must live under testdata/ so
+	// that `go build ./...` and `go vet ./...` skip them, and testdata/ is a
+	// path real users need suppressed. Set per-manifest rather than globally
+	// so the fp/ corpus still exercises role filtering for real — if every
+	// corpus opted in, nothing would test the filter.
+	IncludeTests bool `yaml:"include_tests,omitempty"`
 }
 
 // CorpusDir is one loaded corpus subdirectory (e.g. "python", "secrets").

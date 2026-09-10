@@ -27,9 +27,6 @@ cases:
   - file: cases/vuln_execute_tainted.py
     language: python
     expect: [{rule_id: ZS-PY-004, min_count: 1}]
-  - file: cases/vuln_assert.py
-    language: python
-    expect: [{rule_id: ZS-PY-009, min_count: 1}]
   - file: cases/vuln_sha1.py
     language: python
     expect: [{rule_id: ZS-PY-011, min_count: 1}]

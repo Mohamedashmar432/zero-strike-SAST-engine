@@ -1,5 +1,19 @@
 id: ZS-PY-009
-lifecycle: released
+lifecycle: retired
+# Retired: the rule matched the `assert` keyword with no filters at all, which
+# made it 1301 of 1324 findings on one real repository -- 1300 of them pytest
+# assertions in backend/tests/ and the last a type-narrowing `assert x is not
+# None`. Not one was a security check.
+#
+# It is retired rather than repaired because CWE-617's premise is that asserts
+# vanish in production, which requires `python -O` or PYTHONOPTIMIZE. The
+# engine cannot observe how the target will be launched, so the rule can never
+# establish its own precondition.
+#
+# What this gives up: a genuine `assert user.is_admin()` access-control check
+# is no longer reported. Accepted deliberately -- see
+# docs/release-notes/PRECISION-OVERHAUL.md. ZS-PHP-021 (taint-gated `assert`,
+# CWE-95) is a different rule and is unaffected.
 name: assert Used for Security Check
 version: "1.0.0"
 language: python

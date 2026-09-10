@@ -30,4 +30,18 @@ match:
   callee: setTimeout
   filters:
     - tainted_argument: true
+      # Only argument 0 is executed as code; a tainted *delay* is not
+      # code injection. Unindexed, this fired on setTimeout(cb, delay).
+      tainted_argument_index: 0
+      # Parameter-only taint is not enough here: this sink takes an ordinary
+      # argument in ordinary code, so seeded parameter taint alone flagged
+      # every helper that had one. See taint.Result.Weak.
+      require_real_source: true
+    # Argument 0 being a function is the fix this rule recommends, so
+    # never report it. Negative form is deliberate: the corpus fixture
+    # passes a bare identifier holding a string (setTimeout(code, 100)),
+    # which a positive [literal] allowlist would wrongly exclude.
+    - argument_kind_not_at:
+        index: 0
+        kinds: [function_def]
 fix_suggestion: "Always pass a function to setTimeout(); never a string built from user input."

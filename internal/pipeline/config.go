@@ -18,4 +18,10 @@ type ScanConfig struct {
 	EnableFrameworkChecks bool
 	AllowFile             string   // path to .zs-allow.yaml; "" = auto-discover from RootPath
 	ExcludeDirs           []string // extra directory names to skip (merged with hardcoded defaults)
+
+	// IncludeTests scans files classified as test/fixture material
+	// (walker.RoleTest) instead of skipping them. Off by default: production
+	// rule semantics do not hold in a test path, where an assertion or a
+	// fixture credential is the point rather than a defect.
+	IncludeTests bool
 }

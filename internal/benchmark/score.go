@@ -91,6 +91,7 @@ func ScoreCorpus(ctx context.Context, dirs []CorpusDir, enableGraphs bool) (*Sum
 			EnableFrameworkChecks: true,
 			EnableGraphs:          enableGraphs,
 			SCAOnError:            "warn",
+			IncludeTests:          dir.Manifest.IncludeTests,
 		}
 		pipe, err := pipeline.New(cfg)
 		if err != nil {

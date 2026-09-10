@@ -33,4 +33,8 @@ match:
   callee: fetch
   filters:
     - tainted_argument: true
+      # Parameter-only taint is not enough here: this sink takes an ordinary
+      # argument in ordinary code, so seeded parameter taint alone flagged
+      # every helper that had one. See taint.Result.Weak.
+      require_real_source: true
 fix_suggestion: "Validate the target URL against an allowlist of hosts and schemes before passing it to fetch(); never fetch a raw user-supplied URL."
