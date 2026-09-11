@@ -41,6 +41,15 @@ type Filter struct {
 	// once function parameters became taint sources. Set this to 0 to mean
 	// "only the format string".
 	TaintedArgumentIndex *int
+	// TaintedArgumentMinIndex narrows TaintedArgument to arguments at this
+	// position and after, for sinks whose leading arguments are plumbing
+	// rather than data. fmt.Fprintf(w, format, args...) writes the format and
+	// every substituted value, so no single TaintedArgumentIndex covers it,
+	// but argument 0 is the io.Writer — and because every function parameter
+	// is seeded tainted, the unnarrowed rule reported the writer itself and
+	// fired on fmt.Fprintf(w, "<h1>OK</h1>"). Ignored when
+	// TaintedArgumentIndex is set.
+	TaintedArgumentMinIndex *int
 	// TaintedRHS requires an assignment node's right-hand-side subtree to contain
 	// an identifier present in the file's tainted-variable set. Use for
 	// assignment-based sinks (e.g. element.innerHTML = ...) where TaintedArgument

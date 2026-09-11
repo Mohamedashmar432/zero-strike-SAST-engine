@@ -29,5 +29,9 @@ match:
   kind: call
   callee: document.writeln
   filters:
+    # DELIBERATELY UNINDEXED — do not narrow. Like document.write
+    # (ZS-JS-003), writeln is variadic and writes every argument into the
+    # parser stream, adding only a trailing newline; a tainted value at any
+    # position is XSS, so no index is safe to exclude.
     - tainted_argument: true
 fix_suggestion: "Use textContent/createElement instead of document.writeln, or sanitize with DOMPurify first."

@@ -30,5 +30,8 @@ match:
   kind: call
   callee: template.HTML
   filters:
+    # Deliberately unindexed. template.HTML(x) is a type conversion, so it has
+    # exactly one operand and that operand is the markup. Pinning index 0
+    # would be a no-op against the identical subtree.
     - tainted_argument: true
 fix_suggestion: "Let html/template escape user content; if HTML is required, sanitize it first (e.g. bluemonday) before casting."

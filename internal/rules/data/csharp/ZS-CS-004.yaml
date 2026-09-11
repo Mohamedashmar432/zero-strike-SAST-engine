@@ -39,4 +39,14 @@ match:
   callee_suffix: true
   filters:
     - tainted_argument: true
+      # Only argument 0 carries the bytes that reach the response. Every
+      # HttpResponse.Write overload puts the payload first — Write(string),
+      # Write(object), Write(char) and Write(char[] buffer, int index, int
+      # count) — and in that last overload `index` and `count` are integer
+      # offsets into an already-chosen buffer. A tainted offset can overrun or
+      # truncate the write, but it cannot introduce markup the caller did not
+      # already hold, so it is not XSS. The receiver in
+      # context.Response.Write(...) is part of the callee under callee_suffix,
+      # not an argument, so it does not occupy index 0.
+      tainted_argument_index: 0
 fix_suggestion: "Encode before writing: Response.Write(HttpUtility.HtmlEncode(value)), or use framework encoding helpers."

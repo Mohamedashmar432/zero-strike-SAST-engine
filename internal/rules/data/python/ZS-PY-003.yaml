@@ -27,4 +27,24 @@ tags: [command-injection, subprocess, shell]
 match:
   kind: call
   callee: subprocess.run
+  filters:
+    # shell=True is the whole premise of this rule -- without it subprocess
+    # never spawns a shell and each argument reaches execve untouched, so no
+    # metacharacter can be interpreted. Unfiltered, this matched the callee
+    # alone and reported the safe list form, subprocess.run(["ls", "-la"]),
+    # as command injection.
+    - kwarg:
+        name: shell
+        value_pattern: "^True$"
+    # Argument 0 is the command line. A constant one has nothing to inject
+    # into; anything else -- a variable, an f-string, a concatenation -- is
+    # dynamic and worth reporting.
+    #
+    # Deliberately not tainted_argument_index: taint here is file-scoped, so
+    # requiring it drops the command assembled from a module global, a config
+    # read, or another file, which is most real shell=True code. Same call as
+    # ZS-PY-008's non-literal path argument.
+    - argument_kind_not_at:
+        index: 0
+        kinds: [literal]
 fix_suggestion: "Pass a list of strings to subprocess.run() and remove shell=True."

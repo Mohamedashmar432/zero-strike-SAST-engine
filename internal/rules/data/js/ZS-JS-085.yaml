@@ -30,4 +30,8 @@ match:
   callee: axios.delete
   filters:
     - tainted_argument: true
+      # axios.delete(url, config): only argument 0 decides where the request
+      # goes. Argument 1 is the request config (headers, params, timeout),
+      # which cannot redirect the request.
+      tainted_argument_index: 0
 fix_suggestion: "Validate the URL's scheme and host against an allowlist before issuing the request; never pass raw user input as the URL."

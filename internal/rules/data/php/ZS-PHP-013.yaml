@@ -34,4 +34,16 @@ match:
   callee: file_get_contents
   filters:
     - tainted_argument: true
+      # file_get_contents($filename, $use_include_path, $context, $offset,
+      # $length): only argument 0 is the target. A tainted $offset/$length,
+      # or a tainted value buried in a stream $context (headers, POST body),
+      # does not choose where the request goes.
+      tainted_argument_index: 0
+      # require_real_source was tried here and REVERTED, for the reason
+      # spelled out in ZS-JAVA-019: file-scoped taint means a controller that
+      # passes $_GET into a helper's $path parameter leaves only weak taint,
+      # so requiring a real source silently drops that whole shape. Pinning
+      # argument 0 already removes the false positives on its own — a
+      # constant $url (DVWA's recaptchalib.php, $url = 'https://www.google
+      # .com/recaptcha/api/siteverify') is untainted and cannot match.
 fix_suggestion: "Validate the URL against an allowlist. Reject internal/private IPs and non-http(s) schemes before fetching, or disable allow_url_fopen if remote fetches aren't needed."

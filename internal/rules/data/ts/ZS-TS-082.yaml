@@ -31,4 +31,9 @@ match:
   callee: axios.put
   filters:
     - tainted_argument: true
+      # axios.put(url, data, config): only argument 0 decides where the
+      # request goes. Argument 1 is the request BODY -- PUTting user-supplied
+      # data to a fixed, trusted endpoint is the ordinary case and is not
+      # SSRF. Mirrors ZS-JS-084.
+      tainted_argument_index: 0
 fix_suggestion: "Validate the URL's scheme and host against an allowlist before issuing the request; never pass raw user input as the URL."

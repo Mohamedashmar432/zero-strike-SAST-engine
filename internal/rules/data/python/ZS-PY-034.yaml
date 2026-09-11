@@ -29,5 +29,10 @@ match:
   kind: call
   callee: send_file
   filters:
+    # send_file(path_or_file, ...): only argument 0 names the file served.
+    # The remaining parameters are keyword-only (mimetype, as_attachment,
+    # download_name, etag, ...) — a tainted download_name is a
+    # header-injection/naming concern, not path traversal.
     - tainted_argument: true
+      tainted_argument_index: 0
 fix_suggestion: "Validate the requested filename against an allowlist, or resolve it with os.path.realpath() and confirm it stays within the intended directory before calling send_file()."

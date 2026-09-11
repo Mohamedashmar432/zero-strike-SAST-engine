@@ -38,5 +38,9 @@ match:
     # that hardening signal is wanted back it belongs in a separate INFO rule,
     # not in a CWE-918 finding.
     - tainted_argument: true
+      # urlopen(url, data=None, timeout=..., ...): only argument 0 is the
+      # destination. Argument 1 is the POST body -- sending user data to a
+      # fixed endpoint is not SSRF -- and the rest are transport options.
+      tainted_argument_index: 0
       require_real_source: true
 fix_suggestion: "Validate the URL against an allowlist. Reject internal/private IPs and non-http(s) schemes."

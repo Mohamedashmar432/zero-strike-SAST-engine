@@ -37,5 +37,11 @@ match:
   kind: call
   callee: w.Write
   filters:
+    # Deliberately unindexed. io.Writer.Write(p []byte) takes exactly one
+    # argument and it is the data, so tainted_argument_index: 0 would be a
+    # pure no-op — the same single subtree either way — and would only add a
+    # field to audit. The writer `w` is the receiver, part of the callee, so
+    # unlike fmt.Fprintf (ZS-GO-017) there is no non-data position here that
+    # weakly-tainted handler parameters could match.
     - tainted_argument: true
 fix_suggestion: "HTML-escape the tainted value (e.g. html.EscapeString or html/template) before writing it into the response, or use html/template instead of a raw w.Write for HTML output."

@@ -32,4 +32,9 @@ match:
   callee: requests.put
   filters:
     - tainted_argument: true
+      # requests.put(url, data=..., **kwargs): only argument 0 decides where
+      # the request goes. The BODY (positional index 1, or data=/json=) is
+      # routinely user-supplied and PUTting it to a fixed, trusted endpoint
+      # is not SSRF.
+      tainted_argument_index: 0
 fix_suggestion: "Validate the URL's scheme and host against an allowlist before issuing the request; never pass raw user input as the URL."

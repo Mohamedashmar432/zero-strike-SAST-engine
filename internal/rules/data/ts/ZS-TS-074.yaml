@@ -32,5 +32,11 @@ match:
   kind: call
   callee: execFileSync
   filters:
+    # DELIBERATELY UNINDEXED — see ZS-JS-076, from which this is ported.
+    # execFileSync(file, args, options) is dangerous at index 0 (the
+    # executable, as in the corpus case execFileSync(tool)) and at index 1
+    # (the argv array). Only the options bag at index 2 is a non-sink, and one
+    # index cannot express "0 or 1", so pinning either would silently drop a
+    # documented true-positive shape.
     - tainted_argument: true
 fix_suggestion: "Use a fixed executable path and pass user data only as validated, individually-quoted arguments."

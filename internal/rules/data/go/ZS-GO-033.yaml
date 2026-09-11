@@ -29,5 +29,11 @@ match:
   kind: call
   callee: http.ServeFile
   filters:
+    # http.ServeFile(w, r, name): the path is argument 2. Arguments 0 and 1
+    # are the ResponseWriter and the *http.Request itself — the request is
+    # the taint source in every handler, so matching any argument made this
+    # rule fire on literally every ServeFile call, including
+    # http.ServeFile(w, r, "./static/index.html").
     - tainted_argument: true
+      tainted_argument_index: 2
 fix_suggestion: "Clean the path with filepath.Clean and verify it stays within the served root, or serve from an embedded/allowlisted file set."

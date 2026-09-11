@@ -31,5 +31,10 @@ match:
   kind: call
   callee: subprocess.check_output
   filters:
+    # check_output(args, ...) forwards to Popen, so only argument 0 becomes
+    # the command line; everything after it is plumbing (stdin, stderr,
+    # shell, cwd, env, timeout, encoding). A tainted cwd= or timeout= is not
+    # command injection.
     - tainted_argument: true
+      tainted_argument_index: 0
 fix_suggestion: "Pass a list of arguments (not a string) with shell=False, and validate/allowlist any user-influenced values before use."

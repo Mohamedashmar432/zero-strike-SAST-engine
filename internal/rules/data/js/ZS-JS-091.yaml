@@ -24,5 +24,10 @@ match:
   kind: call
   callee: path.join
   filters:
+    # DELIBERATELY UNINDEXED. path.join(...paths) is variadic and every
+    # segment is a path component, so any position can introduce '../' —
+    # the canonical vulnerable shape is path.join('/var/www/uploads', user),
+    # where the tainted segment is index 1, not 0. Pinning any single index
+    # would silently drop real traversals.
     - tainted_argument: true
 fix_suggestion: "Validate that the resolved absolute path starts with the trusted root directory (e.g. using path.resolve and startsWith check)."

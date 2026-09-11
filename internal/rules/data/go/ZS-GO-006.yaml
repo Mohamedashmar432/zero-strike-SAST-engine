@@ -37,5 +37,7 @@ match:
   kind: call
   callee: os.ReadFile
   filters:
+    # os.ReadFile(name) takes exactly one argument and it is the path.
     - tainted_argument: true
+      tainted_argument_index: 0
 fix_suggestion: "Resolve the path with filepath.Clean/filepath.Abs and confirm it stays within the allowed base directory before reading it."

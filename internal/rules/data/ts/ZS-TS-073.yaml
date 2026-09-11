@@ -31,5 +31,11 @@ match:
   kind: call
   callee: spawnSync
   filters:
+    # DELIBERATELY UNINDEXED — see ZS-JS-075, from which this is ported.
+    # spawnSync(command, args, options) is dangerous at both index 0 (the
+    # program) and index 1 (the argv array); the corpus case
+    # spawnSync('sh', ['-c', cmd]) is tainted at index 1. Only the options bag
+    # at index 2 is a non-sink, and one index cannot express "0 or 1", so
+    # pinning either would silently drop real detections.
     - tainted_argument: true
 fix_suggestion: "Pass the program and each argument as array elements with shell disabled, and allowlist any user-derived values."

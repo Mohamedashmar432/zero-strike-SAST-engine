@@ -32,5 +32,9 @@ match:
   kind: call
   callee: os.Open
   filters:
+    # os.Open(name) takes exactly one argument and it is the path. Pinned
+    # anyway so the family reads uniformly and a later overload cannot
+    # silently widen the rule.
     - tainted_argument: true
+      tainted_argument_index: 0
 fix_suggestion: "Resolve the path with filepath.Clean/filepath.Abs and confirm it stays within the allowed base directory before opening it."

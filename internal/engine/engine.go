@@ -295,10 +295,16 @@ func evalFilter(f rules.Filter, n *ir.IRNode, taintedVars, weak map[string]bool,
 			return isDirectSourceExpression(a, lang)
 		}
 		scan := anyArgument
-		if f.TaintedArgumentIndex != nil {
+		switch {
+		case f.TaintedArgumentIndex != nil:
 			i := *f.TaintedArgumentIndex
 			scan = func(n *ir.IRNode, pred func(*ir.IRNode) bool) bool {
 				return argumentAt(n, i, pred)
+			}
+		case f.TaintedArgumentMinIndex != nil:
+			m := *f.TaintedArgumentMinIndex
+			scan = func(n *ir.IRNode, pred func(*ir.IRNode) bool) bool {
+				return argumentsFrom(n, m, pred)
 			}
 		}
 		if !scan(n, isTainted) {
@@ -527,6 +533,31 @@ func argumentAt(n *ir.IRNode, i int, pred func(*ir.IRNode) bool) bool {
 	for _, d := range ir.Descendants(args[i]) {
 		if pred(d) {
 			return true
+		}
+	}
+	return false
+}
+
+// argumentsFrom applies pred to every positional argument from index min
+// onward, and their subtrees. It exists for sinks whose leading arguments are
+// plumbing rather than data: fmt.Fprintf(w, format, args...) writes the format
+// and every substituted value to w, so no single argumentAt index describes
+// the danger, while plain anyArgument matched the io.Writer itself — and since
+// every handler parameter is seeded tainted, fmt.Fprintf(w, "<h1>OK</h1>")
+// reported constant output as XSS.
+func argumentsFrom(n *ir.IRNode, min int, pred func(*ir.IRNode) bool) bool {
+	args := argumentNodes(n)
+	if min < 0 || min >= len(args) {
+		return false
+	}
+	for _, argRoot := range args[min:] {
+		if pred(argRoot) {
+			return true
+		}
+		for _, d := range ir.Descendants(argRoot) {
+			if pred(d) {
+				return true
+			}
 		}
 	}
 	return false

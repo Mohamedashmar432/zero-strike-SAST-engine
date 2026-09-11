@@ -33,5 +33,11 @@ match:
   kind: call
   callee: fs.readFile
   filters:
+    # fs.readFile(path, options, callback): only argument 0 is the path.
+    # Index 1 is an encoding/options object and index 2 a callback whose
+    # *body* routinely touches tainted request data — matching any argument
+    # meant the callback's subtree alone made every readFile fire.
+    # Mirrors ZS-JS-024.
     - tainted_argument: true
+      tainted_argument_index: 0
 fix_suggestion: "Resolve the path with path.resolve/path.normalize and confirm it stays within the allowed base directory before reading it."

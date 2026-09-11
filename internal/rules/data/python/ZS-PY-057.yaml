@@ -32,5 +32,10 @@ match:
   kind: call
   callee: subprocess.Popen
   filters:
+    # Popen(args, bufsize, executable, stdin, stdout, stderr, ...) — only
+    # argument 0 is the command line. The remaining positional and keyword
+    # parameters are process plumbing, so a tainted cwd=, env= or timeout=
+    # is not command injection.
     - tainted_argument: true
+      tainted_argument_index: 0
 fix_suggestion: "Pass a list of strings (subprocess.Popen([prog, arg])) with shell=False, and allowlist any user-derived values."

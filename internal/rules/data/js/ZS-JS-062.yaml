@@ -32,5 +32,11 @@ match:
   kind: call
   callee: fs.writeFile
   filters:
+    # fs.writeFile(file, data, options, callback): only argument 0 decides
+    # where the bytes land. Tainted *contents* at index 1 are the entire
+    # point of a write endpoint and are not path traversal; index 2 is
+    # options and index 3 a callback. Unindexed, this fired on
+    # fs.writeFile(CONSTANT_PATH, userControlledData, cb).
     - tainted_argument: true
+      tainted_argument_index: 0
 fix_suggestion: "Resolve the path with path.resolve and confirm it stays within the allowed base directory before writing."

@@ -32,4 +32,8 @@ match:
   callee: https.get
   filters:
     - tainted_argument: true
+      # https.get(url|options, callback) and https.get(url, options,
+      # callback): the destination is argument 0 in both shapes. Same
+      # reasoning as ZS-TS-036 (http.get). Mirrors ZS-JS-082.
+      tainted_argument_index: 0
 fix_suggestion: "Validate the URL's host against an allowlist before requesting; never pass raw user input as the URL."

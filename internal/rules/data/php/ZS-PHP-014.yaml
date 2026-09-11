@@ -34,4 +34,17 @@ match:
   callee: curl_setopt
   filters:
     - tainted_argument: true
+      # curl_setopt($ch, $option, $value): the value is argument 2. Argument
+      # 0 is the cURL handle and argument 1 the CURLOPT_* constant, so a
+      # tainted handle variable is meaningless here and only the value can
+      # carry an attacker-chosen destination.
+      tainted_argument_index: 2
+    # ...and the value is only a destination when the option IS CURLOPT_URL.
+    # curl_setopt($ch, CURLOPT_TIMEOUT, $userTimeout) or CURLOPT_POSTFIELDS
+    # with a user-supplied body are not SSRF; unfiltered, both were reported
+    # as CWE-918. Matched as an identifier because the PHP IR lowers a bare
+    # constant name to an identifier node, not a literal. Consequence
+    # accepted: setting the URL through a variable option
+    # (curl_setopt($ch, $opt, $url)) is no longer reported.
+    - argument_identifier_matches: "^CURLOPT_URL$"
 fix_suggestion: "Validate the URL against an allowlist before passing it to curl_setopt($ch, CURLOPT_URL, ...). Reject internal/private IPs and non-http(s) schemes."

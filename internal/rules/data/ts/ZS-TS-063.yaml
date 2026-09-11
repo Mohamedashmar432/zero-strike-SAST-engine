@@ -29,5 +29,9 @@ match:
   kind: call
   callee: fs.createReadStream
   filters:
+    # fs.createReadStream(path, options): only argument 0 is the path;
+    # index 1 is an options object (encoding, start, end, highWaterMark).
+    # Mirrors ZS-JS-065.
     - tainted_argument: true
+      tainted_argument_index: 0
 fix_suggestion: "Resolve the path with path.resolve and confirm it stays within the allowed base directory before opening the stream."

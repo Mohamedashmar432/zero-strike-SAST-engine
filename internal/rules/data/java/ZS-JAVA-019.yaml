@@ -36,5 +36,30 @@ match:
   kind: call
   callee: URL
   filters:
+    # DELIBERATELY UNINDEXED. java.net.URL has several constructor shapes and
+    # no single position describes the destination:
+    #
+    #   new URL(spec)                          -> spec is 0
+    #   new URL(context, spec)                 -> spec is 1
+    #   new URL(protocol, host, file)          -> host is 1, file is 2
+    #   new URL(protocol, host, port, file)    -> host is 1, file is 3
+    #
+    # A negative index (-1) would cover spec and file but silently drop a
+    # tainted *host*, which is the most dangerous position of all. More to
+    # the point, the false-positive class this family is being narrowed for
+    # does not exist here: unlike axios.post/http.Post, no argument of any
+    # URL constructor is a request body or an option. Every string argument
+    # is part of the destination, so "any argument tainted" is already the
+    # correct predicate and indexing could only lose real detections.
+    #
+    # require_real_source was tried here and REVERTED — do not re-add it
+    # without re-scanning WebGoat. Taint is file-scoped and intra-procedural,
+    # so a controller that hands its @RequestParam to a helper leaves the
+    # helper's parameter carrying only weak taint. Requiring a real source
+    # therefore deleted WebGoat's own SSRF lesson
+    # (SSRFTask2.furBall: @RequestParam String url -> new URL(url)) and its
+    # JWT jku attack (JWTHeaderJKUEndpoint: attacker-chosen jku header ->
+    # new URL(jku.asString())). The benchmark corpus stayed green through
+    # both losses; only the real-target scan caught it.
     - tainted_argument: true
 fix_suggestion: "Validate the URL against an allowlist. Reject internal/private IPs and non-http(s) schemes before opening a connection."

@@ -35,5 +35,9 @@ match:
   kind: call
   callee: File.ReadAllText
   filters:
+    # File.ReadAllText(path) / (path, encoding): only argument 0 is the path.
+    # A tainted Encoding at index 1 selects a character set, not a location,
+    # so it cannot escape a directory.
     - tainted_argument: true
+      tainted_argument_index: 0
 fix_suggestion: "Resolve the path with Path.GetFullPath() and confirm it stays within the allowed base directory before reading it, or reject paths containing '..'."

@@ -21,9 +21,9 @@ rationale: |
   controls content placement, not just disclosure.
 description: |
   Detects calls to File.WriteAllText() where an argument traces back to an
-  untrusted source (intra-procedural taint tracking). Tainted content with
-  a constant path also matches (any-argument taint), which is the known
-  over-approximation of this filter.
+  untrusted source (intra-procedural taint tracking). Only the path
+  argument counts: tainted content written to a constant path is not
+  traversal and no longer matches.
 message: "File.WriteAllText() called with a tainted path — canonicalize and validate the path against an allowed base directory"
 references:
   - https://owasp.org/www-community/attacks/Path_Traversal
@@ -33,5 +33,10 @@ match:
   kind: call
   callee: File.WriteAllText
   filters:
+    # File.WriteAllText(path, contents[, encoding]): only argument 0 chooses
+    # where the file lands. Tainted *contents* at index 1 are the normal case
+    # for any log or report writer and are not path traversal; index 2 is an
+    # Encoding. Unindexed, this fired on File.WriteAllText(FIXED, userData).
     - tainted_argument: true
+      tainted_argument_index: 0
 fix_suggestion: "Resolve with Path.GetFullPath and verify the result starts with the allowed base directory; reject names containing path separators."

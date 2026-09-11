@@ -50,7 +50,12 @@ cases:
     expect: [{rule_id: ZS-PHP-016, min_count: 1}]
   - file: cases/vuln_format_string.php
     language: php
-    expect: [{rule_id: ZS-PHP-017, min_count: 1}, {rule_id: ZS-PHP-024, min_count: 1}]
+    # ZS-PHP-024 was expected here too, on the fixture's trailing
+    # file_put_contents('greeting.log', $greeting). That destination is a
+    # string literal — tainted *contents* to a fixed path is not CWE-22/73 —
+    # so pinning ZS-PHP-024 to the path argument correctly stops it firing.
+    # ZS-PHP-024's own fixture, cases/vuln_file_write.php, still covers it.
+    expect: [{rule_id: ZS-PHP-017, min_count: 1}]
   - file: cases/vuln_eval.php
     language: php
     expect: [{rule_id: ZS-PHP-018, min_count: 1}]

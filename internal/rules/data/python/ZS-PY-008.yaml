@@ -19,9 +19,11 @@ rationale: |
   source code, credentials, or configuration, or to overwriting arbitrary
   files.
 description: |
-  Detects calls to open() which may accept a user-controlled path.
-  Note: this rule is a syntactic approximation. Precision improves with taint analysis (Sprint 8).
-  It may produce false positives when the path is a constant string literal.
+  Detects calls to open() whose path argument is not a constant string
+  literal. The rule is still a syntactic approximation: it reports any
+  non-literal path, tainted or not, because a path assembled from a
+  parameter is the case worth triaging and requiring real-source taint here
+  drops it. A literal path cannot be traversed and is excluded outright.
 message: "open() called with a variable path — validate and sanitize the path before use"
 references:
   - https://owasp.org/www-community/attacks/Path_Traversal
@@ -29,4 +31,13 @@ tags: [path-traversal, file-access, syntactic-approximation]
 match:
   kind: call
   callee: open
+  filters:
+    # open("config.json") cannot escape any directory, and the rule's own
+    # description used to admit it fired on exactly that. Negative form
+    # rather than a positive allowlist of safe kinds: the case this rule
+    # exists for is a bare identifier holding a path, which any positive
+    # list would have to enumerate.
+    - argument_kind_not_at:
+        index: 0
+        kinds: [literal]
 fix_suggestion: "Validate the path with os.path.realpath() and confirm it stays within the allowed directory."

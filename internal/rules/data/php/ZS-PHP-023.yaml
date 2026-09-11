@@ -34,5 +34,8 @@ match:
   kind: call
   callee: fopen
   filters:
+    # fopen($filename, $mode, $use_include_path, $context): only argument 0
+    # is the path. $mode is 'r'/'w'/'a', never a location.
     - tainted_argument: true
+      tainted_argument_index: 0
 fix_suggestion: "Resolve the user-supplied name with basename(), join it to a fixed base directory, then verify realpath() of the result still starts with that base directory before opening."

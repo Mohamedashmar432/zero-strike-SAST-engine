@@ -29,5 +29,28 @@ match:
   kind: call
   callee: fmt.Fprintf
   filters:
+    # DELIBERATELY UNINDEXED — do not "narrow" this to a single position.
+    #
+    # fmt.Fprintf(w, format, a...) writes the format string AND every
+    # substituted value into the response, so every position from 1 onward is
+    # an XSS sink. Pinning 1 (the format) would drop the overwhelmingly common
+    # real bug, fmt.Fprintf(w, "Hello, %s", name) — which is exactly what
+    # benchmark/corpus/go/testdata/vuln_xss_fprintf.go asserts. Pinning -1
+    # (last argument) would kill that same fixture's sibling shape,
+    # fmt.Fprintf(w, "%s %s", tainted, constant), where the tainted value is
+    # not last. There is no index, positive or negative, that describes
+    # "arguments 1..n", so broad is the only correct setting.
+    #
+    # What IS excluded is argument 0, the io.Writer. It is plumbing, not
+    # output data, but every net/http handler parameter is seeded weakly
+    # tainted, so `w` alone used to satisfy the filter and
+    # fmt.Fprintf(w, "<h1>static</h1>") was reported as XSS on every
+    # constant-response handler in a codebase.
+    #
+    # require_real_source is deliberately NOT the fix here: a handler helper
+    # that formats a plain string parameter into the response
+    # (func render(w http.ResponseWriter, name string)) is a genuine XSS, and
+    # parameter-only taint is all such a helper ever has.
     - tainted_argument: true
+      tainted_argument_min_index: 1
 fix_suggestion: "HTML-escape the tainted value (e.g. html.EscapeString or html/template) before writing it into the response, or use html/template instead of fmt.Fprintf for HTML output."

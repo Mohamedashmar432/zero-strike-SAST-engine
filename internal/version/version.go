@@ -29,7 +29,10 @@ var Version = "dev"
 //	2 - precision overhaul: file-role filtering, retired-rule enforcement,
 //	    weak/strong taint tiering, argument_kind_not_at, inline suppressions,
 //	    generic-detector secret filters, cross-engine credential dedup
-const MatchSemanticsRevision = 2
+//	3 - tainted_argument_min_index filter, so a sink can ignore leading
+//	    plumbing arguments (fmt.Fprintf's io.Writer) while still treating
+//	    every remaining argument as data
+const MatchSemanticsRevision = 3
 
 // CacheKey returns the identity the finding and IR caches must key on, pairing
 // the release version with the matching-semantics revision so that either one

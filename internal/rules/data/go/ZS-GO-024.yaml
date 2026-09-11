@@ -21,9 +21,9 @@ rationale: |
   over the content it is often a direct route to code execution.
 description: |
   Detects calls to os.WriteFile() where an argument traces back to an
-  untrusted source (intra-procedural taint tracking). The filter checks
-  any argument, so a tainted content argument with a constant path also
-  matches — review which argument is attacker-controlled.
+  untrusted source (intra-procedural taint tracking). The filter is pinned
+  to the destination path, so tainted file *contents* written to a constant
+  path no longer match.
 message: "os.WriteFile() called with a tainted argument — sanitize the destination path (filepath.Clean + base-directory containment) before writing"
 references:
   - https://owasp.org/www-community/attacks/Path_Traversal
@@ -33,5 +33,10 @@ match:
   kind: call
   callee: os.WriteFile
   filters:
+    # os.WriteFile(name, data, perm): only argument 0 decides where the
+    # bytes land. Tainted `data` at index 1 is the ordinary case — writing
+    # user content to a fixed path — and is not traversal; `perm` at index 2
+    # is a mode. Unindexed, this fired on os.WriteFile(FIXED, userBody, 0644).
     - tainted_argument: true
+      tainted_argument_index: 0
 fix_suggestion: "Resolve the target with filepath.Clean, verify it stays inside the intended base directory (strings.HasPrefix after filepath.Abs, or os.Root on Go 1.24+), and reject names containing path separators."

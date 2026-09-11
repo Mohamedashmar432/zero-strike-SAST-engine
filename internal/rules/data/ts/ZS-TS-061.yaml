@@ -29,5 +29,9 @@ match:
   kind: call
   callee: fs.writeFileSync
   filters:
+    # fs.writeFileSync(file, data, options): only argument 0 is the path.
+    # Tainted `data` at index 1 is file contents, not a location.
+    # Mirrors ZS-JS-063.
     - tainted_argument: true
+      tainted_argument_index: 0
 fix_suggestion: "Resolve the path with path.resolve and confirm it stays within the allowed base directory before writing."

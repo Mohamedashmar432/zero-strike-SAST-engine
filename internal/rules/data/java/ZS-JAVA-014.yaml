@@ -39,5 +39,10 @@ match:
   kind: call
   callee: out.print
   filters:
+    # Deliberately unindexed, same as ZS-JAVA-013: every PrintWriter.print
+    # overload is single-argument and that argument is the response body, so
+    # pinning index 0 would select the same subtree. Note this rule matches
+    # print, not printf — printf's format/args split is the format-string
+    # family's problem, not this one's.
     - tainted_argument: true
 fix_suggestion: "HTML-escape the value (e.g. with OWASP Java Encoder's Encode.forHtml()) before passing it to out.print()."

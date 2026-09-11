@@ -36,4 +36,11 @@ match:
   callee: restTemplate.getForObject
   filters:
     - tainted_argument: true
+      # getForObject(url, responseType, uriVariables...) in all three
+      # overloads (String url, URI url, String url + Map): the destination is
+      # argument 0. Argument 1 is a Class literal and arguments 2+ are URI
+      # template variables, which RestTemplate encodes into path/query
+      # segments -- they cannot change the scheme or host, so a tainted one
+      # is not SSRF.
+      tainted_argument_index: 0
 fix_suggestion: "Validate the URL against an allowlist. Reject internal/private IPs and non-http(s) schemes before calling getForObject()."

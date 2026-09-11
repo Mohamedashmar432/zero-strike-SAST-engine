@@ -29,5 +29,10 @@ match:
   kind: call
   callee: FileInputStream
   filters:
+    # Every FileInputStream constructor takes exactly one argument — a
+    # String name, a File, or a FileDescriptor — so the path is always
+    # index 0. Unlike ZS-JAVA-006's File, there is no multi-component
+    # overload, so pinning here loses nothing.
     - tainted_argument: true
+      tainted_argument_index: 0
 fix_suggestion: "Resolve the path and verify it stays within the allowed base directory (Path.normalize + startsWith) before opening."

@@ -33,6 +33,10 @@ match:
   callee: fetch
   filters:
     - tainted_argument: true
+      # fetch(resource, options): only argument 0 decides where the request
+      # goes. Argument 1 carries method, headers and body -- a tainted body
+      # or header sent to a fixed endpoint is not SSRF.
+      tainted_argument_index: 0
       # Parameter-only taint is not enough here: this sink takes an ordinary
       # argument in ordinary code, so seeded parameter taint alone flagged
       # every helper that had one. See taint.Result.Weak.

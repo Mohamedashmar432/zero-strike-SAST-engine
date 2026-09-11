@@ -39,5 +39,10 @@ match:
   kind: call
   callee: res.sendFile
   filters:
+    # res.sendFile(path, options, fn): the path is argument 0. The receiver
+    # `res` is not an argument, so index 0 really is the path. Index 1 is an
+    # options object ({ root }, headers) and index 2 a completion callback —
+    # neither can traverse.
     - tainted_argument: true
+      tainted_argument_index: 0
 fix_suggestion: "Resolve the path with path.resolve/path.normalize and confirm it stays within the allowed base directory (or pass the { root } option) before calling sendFile()."

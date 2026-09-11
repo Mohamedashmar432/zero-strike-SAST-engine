@@ -31,5 +31,13 @@ match:
   kind: call
   callee: File
   filters:
+    # DELIBERATELY UNINDEXED. Unlike the rest of the path-traversal family,
+    # every java.io.File constructor argument is itself a path component:
+    # File(String pathname), File(String parent, String child),
+    # File(File parent, String child), File(URI uri). There is no
+    # "contents"/"mode"/"encoding" position to exclude, and a tainted parent
+    # traverses just as well as a tainted child. Pinning index 0 would drop
+    # new File(BASE_DIR, userFilename); pinning -1 would drop
+    # new File(userDir, "config.xml"). Broad is correct here.
     - tainted_argument: true
 fix_suggestion: "Resolve the path with File.getCanonicalPath() and confirm it stays within the allowed base directory before use, or reject paths containing '..'."

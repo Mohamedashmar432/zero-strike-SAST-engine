@@ -29,4 +29,9 @@ match:
   callee: requests.post
   filters:
     - tainted_argument: true
+      # requests.post(url, data=..., json=..., headers=...): only argument 0
+      # decides where the request goes. The BODY (data=/json=, or the
+      # positional data at index 1) is routinely attacker-supplied by design
+      # -- forwarding it to a fixed, trusted endpoint is not SSRF.
+      tainted_argument_index: 0
 fix_suggestion: "Validate the URL against an allowlist. Reject internal/private IPs and non-http(s) schemes before sending."

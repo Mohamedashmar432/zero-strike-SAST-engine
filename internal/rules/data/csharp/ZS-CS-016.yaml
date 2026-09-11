@@ -39,4 +39,10 @@ match:
   callee: httpClient.GetAsync
   filters:
     - tainted_argument: true
+      # GetAsync(requestUri) / GetAsync(requestUri, cancellationToken) /
+      # GetAsync(requestUri, completionOption): the destination is argument 0
+      # in every overload. The trailing CancellationToken or
+      # HttpCompletionOption decides nothing about where the request goes, so
+      # a tainted value there is not SSRF.
+      tainted_argument_index: 0
 fix_suggestion: "Validate the URL against an allowlist. Reject internal/private IPs and non-http(s) schemes before fetching."

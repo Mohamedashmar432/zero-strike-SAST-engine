@@ -39,5 +39,10 @@ match:
   kind: call
   callee: out.println
   filters:
+    # Deliberately unindexed. Every PrintWriter.println overload takes exactly
+    # one argument (or none), and that argument is what reaches the response
+    # body, so tainted_argument_index: 0 would scan the identical subtree —
+    # a no-op field for a future auditor to re-verify. The PrintWriter `out`
+    # is the receiver, part of the callee, not an argument.
     - tainted_argument: true
 fix_suggestion: "HTML-escape the value (e.g. with OWASP Java Encoder's Encode.forHtml()) before passing it to out.println()."

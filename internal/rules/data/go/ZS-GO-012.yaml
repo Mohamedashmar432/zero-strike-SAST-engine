@@ -33,4 +33,7 @@ match:
   callee: http.Get
   filters:
     - tainted_argument: true
+      # http.Get(url string) takes exactly one argument and it is the
+      # destination, so argument 0 is the only position that can be SSRF.
+      tainted_argument_index: 0
 fix_suggestion: "Validate the URL against an allowlist. Reject internal/private IPs and non-http(s) schemes before fetching."

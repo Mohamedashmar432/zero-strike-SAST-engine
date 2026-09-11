@@ -42,5 +42,13 @@ match:
   kind: call
   callee: exec
   filters:
+    # Every Runtime.exec overload takes the command first: exec(String),
+    # exec(String[] cmdarray), and the three-argument forms
+    # exec(cmd, String[] envp) / exec(cmd, envp, File dir). Only that first
+    # position becomes the command line. A tainted envp is environment
+    # injection, not CWE-78, and a tainted working directory is neither —
+    # unindexed, this reported exec("/bin/ls", env, userDir) as command
+    # injection.
     - tainted_argument: true
+      tainted_argument_index: 0
 fix_suggestion: "Avoid Runtime.exec() with user-influenced input; use ProcessBuilder with a fixed executable and validated, individually-checked arguments instead."

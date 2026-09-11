@@ -32,5 +32,10 @@ match:
   kind: call
   callee: mark_safe
   filters:
+    # Deliberately unindexed. django.utils.safestring.mark_safe(s) takes
+    # exactly one parameter and it is the string being declared safe, so
+    # tainted_argument_index: 0 would be a no-op. (Contrast ZS-PY-054, whose
+    # Markup(base, encoding, errors) signature does have non-output
+    # positions and is therefore pinned.)
     - tainted_argument: true
 fix_suggestion: "Let Django's auto-escaping handle user content; if HTML is required, sanitize with bleach.clean() before marking safe."

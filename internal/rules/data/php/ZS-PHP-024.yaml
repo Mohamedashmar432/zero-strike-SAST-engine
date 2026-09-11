@@ -22,12 +22,11 @@ rationale: |
   logging endpoints, and "save settings" features that build the target
   path from request data are the usual offenders.
 description: |
-  Detects calls to file_put_contents() where an argument (path or
-  content) traces back to an untrusted source (intra-procedural taint
-  tracking, file-scoped). The tainted_argument filter cannot distinguish
-  which argument is tainted, so tainted-content-to-fixed-path writes are
-  also flagged; those are lower risk but still worth review when the
-  destination is web-reachable. Fixed path and content are not flagged.
+  Detects calls to file_put_contents() where the DESTINATION PATH traces
+  back to an untrusted source (intra-procedural taint tracking,
+  file-scoped). Tainted content written to a fixed path is not path
+  traversal and is deliberately not flagged here — that is a stored-XSS or
+  data-poisoning question for the rules that own it, not CWE-22/73.
 message: "file_put_contents() called with tainted input — arbitrary file write; validate the destination path and never derive it from request data"
 references:
   - https://cwe.mitre.org/data/definitions/73.html
@@ -37,5 +36,10 @@ match:
   kind: call
   callee: file_put_contents
   filters:
+    # file_put_contents($filename, $data, $flags, $context): only argument 0
+    # chooses where the file lands. Tainted $data at index 1 is the normal
+    # shape of any log or export writer — file_put_contents('app.log', $msg)
+    # — and is not traversal.
     - tainted_argument: true
+      tainted_argument_index: 0
 fix_suggestion: "Write only to fixed, non-web-accessible directories; derive filenames server-side (e.g. random IDs), never from request input, and verify realpath() of the target stays inside the intended base directory."

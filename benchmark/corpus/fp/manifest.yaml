@@ -15,6 +15,9 @@ cases:
   - file: cases/tests/test_asserts.py
     language: python
     expect: []
+  - file: cases/safe_subprocess_and_open.py
+    language: python
+    expect: []
   - file: cases/sentinel_config.py
     language: python
     expect: []
@@ -34,4 +37,71 @@ cases:
     language: typescript
     expect: []
   - file: cases/doc_placeholders.md
+    expect: []
+
+  # Argument-position precision, added with the command-injection /
+  # path-traversal / SSRF / XSS narrowing pass. Every case below is code that
+  # fired before its rule family was pinned to the argument that actually
+  # carries the danger: a tainted request body sent to a constant URL, tainted
+  # contents written to a constant path, a tainted cwd on a fixed command, a
+  # tainted insertAdjacentHTML position with constant markup.
+  - file: cases/safe_cmdi_python.py
+    language: python
+    expect: []
+  - file: cases/safe_cmdi_java.java
+    language: java
+    expect: []
+  - file: cases/safe_traversal_python.py
+    language: python
+    expect: []
+  - file: cases/safe_traversal_go.go
+    language: go
+    expect: []
+  - file: cases/safe_traversal_js.js
+    language: javascript
+    expect: []
+  - file: cases/safe_traversal_ts.ts
+    language: typescript
+    expect: []
+  - file: cases/safe_traversal_java.java
+    language: java
+    expect: []
+  - file: cases/safe_traversal_php.php
+    language: php
+    expect: []
+  - file: cases/safe_traversal_csharp.cs
+    language: csharp
+    expect: []
+  - file: cases/safe_ssrf_python.py
+    language: python
+    expect: []
+  - file: cases/safe_ssrf_go.go
+    language: go
+    expect: []
+  - file: cases/safe_ssrf_js.js
+    language: javascript
+    expect: []
+  - file: cases/safe_ssrf_ts.ts
+    language: typescript
+    expect: []
+  - file: cases/safe_ssrf_java.java
+    language: java
+    expect: []
+  - file: cases/safe_ssrf_php.php
+    language: php
+    expect: []
+  - file: cases/safe_ssrf_csharp.cs
+    language: csharp
+    expect: []
+  - file: cases/safe_xss_js.js
+    language: javascript
+    expect: []
+  - file: cases/safe_xss_ts.ts
+    language: typescript
+    expect: []
+  - file: cases/safe_xss_python.py
+    language: python
+    expect: []
+  - file: cases/safe_xss_csharp.cs
+    language: csharp
     expect: []

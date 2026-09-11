@@ -31,4 +31,12 @@ match:
   callee: Markup
   filters:
     - tainted_argument: true
+      # Markup(base, encoding, errors) — only `base` becomes the rendered,
+      # unescaped HTML. `encoding` and `errors` are str.decode() knobs
+      # ("utf-8", "strict"); a tainted value there changes how bytes are
+      # decoded, not what markup the template emits, so it is not XSS.
+      # Near-vacuous in practice because almost every call is Markup(x), but
+      # pinned to match the real signature rather than relying on callers
+      # never passing the other two.
+      tainted_argument_index: 0
 fix_suggestion: "Never wrap user input in Markup(); use markupsafe.escape(value) and rely on template autoescaping."

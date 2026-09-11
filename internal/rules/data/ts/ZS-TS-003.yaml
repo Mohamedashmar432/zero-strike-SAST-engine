@@ -30,5 +30,10 @@ match:
   kind: call
   callee: document.write
   filters:
+    # DELIBERATELY UNINDEXED — do not narrow. document.write(...text) is
+    # variadic and concatenates every argument into the parser stream, so
+    # document.write("<p>", userName, "</p>") is XSS at index 1 while
+    # document.write(userHtml) is XSS at index 0. No single index covers
+    # both. Kept identical to ZS-JS-003, this rule's JavaScript twin.
     - tainted_argument: true
 fix_suggestion: "Replace document.write() with safe DOM APIs such as createElement and appendChild."

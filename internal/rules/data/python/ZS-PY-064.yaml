@@ -30,5 +30,8 @@ match:
   kind: call
   callee: os.remove
   filters:
+    # os.remove(path, *, dir_fd=None): only argument 0 is the path; dir_fd
+    # is keyword-only and is a descriptor, not a location.
     - tainted_argument: true
+      tainted_argument_index: 0
 fix_suggestion: "Resolve the path and verify it stays within the intended directory (os.path.realpath + startswith check) before deleting."

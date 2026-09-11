@@ -31,4 +31,9 @@ match:
   callee: http.NewRequest
   filters:
     - tainted_argument: true
+      # http.NewRequest(method, url, body): the URL is argument 1, NOT 0.
+      # Argument 0 is the HTTP method and argument 2 is the request body;
+      # a tainted body posted to a fixed endpoint is not SSRF, and a tainted
+      # method is a different (much weaker) problem than request forgery.
+      tainted_argument_index: 1
 fix_suggestion: "Validate the URL's scheme and host against an allowlist before building the request; never pass raw user input as the URL."

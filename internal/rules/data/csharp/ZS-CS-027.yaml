@@ -36,4 +36,9 @@ match:
   callee: client.DownloadString
   filters:
     - tainted_argument: true
+      # DownloadString(string address) / DownloadString(Uri address): the
+      # address is argument 0 and is the only argument, so pinning the index
+      # costs nothing and stops a subtree match on anything the parser hangs
+      # off the call other than the address itself.
+      tainted_argument_index: 0
 fix_suggestion: "Validate the URL against an allowlist. Reject internal/private IPs and non-http(s) schemes before fetching; prefer HttpClient with a vetted handler."

@@ -35,5 +35,13 @@ match:
   kind: call
   callee: ProcessBuilder
   filters:
+    # DELIBERATELY UNINDEXED. ProcessBuilder(String... command) is variadic
+    # over the whole command line, and ProcessBuilder(List<String>) wraps the
+    # same list, so there is no single safe position: every argument is either
+    # the program or one of its arguments. The corpus case is
+    # new ProcessBuilder("sh", "-c", cmd), where the taint sits at index 2 —
+    # pinning index 0 would silently drop it. Unlike Popen or Runtime.exec,
+    # this constructor has no trailing options/env/cwd parameter, so there is
+    # no non-sink position to exclude and nothing to gain from an index.
     - tainted_argument: true
 fix_suggestion: "Use a fixed executable path and pass user data only as validated, individually-checked arguments, never as the command itself; prefer an allowlist of permitted commands."

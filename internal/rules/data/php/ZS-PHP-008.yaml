@@ -33,5 +33,8 @@ match:
   kind: call
   callee: require
   filters:
+    # require takes exactly one operand — the path — which the PHP builder
+    # emits as the synthetic call's argument 0 (see buildIncludeAsCall).
     - tainted_argument: true
+      tainted_argument_index: 0
 fix_suggestion: "Never build a require path from user input; map an allowlisted set of keys to fixed filenames instead."

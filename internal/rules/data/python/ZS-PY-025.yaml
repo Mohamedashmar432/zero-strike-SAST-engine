@@ -36,4 +36,8 @@ match:
   callee: requests.get
   filters:
     - tainted_argument: true
+      # requests.get(url, params=..., headers=..., timeout=...): only
+      # argument 0 decides where the request goes. Tainted params/headers
+      # sent to a fixed, trusted endpoint are not SSRF.
+      tainted_argument_index: 0
 fix_suggestion: "Validate the URL against an allowlist. Reject internal/private IPs and non-http(s) schemes before fetching."

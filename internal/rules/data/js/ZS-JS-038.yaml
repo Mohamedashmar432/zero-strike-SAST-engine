@@ -35,4 +35,11 @@ match:
   callee: http.get
   filters:
     - tainted_argument: true
+      # http.get(url|options, callback) and http.get(url, options, callback):
+      # the destination is argument 0 in both shapes -- either the URL string
+      # or the options object carrying host/port/path, and the index filter
+      # scans that argument's whole subtree, so a tainted host inside the
+      # object still matches. The trailing options/callback do not choose a
+      # destination.
+      tainted_argument_index: 0
 fix_suggestion: "Validate the target URL against an allowlist of hosts and schemes before passing it to http.get(); never request a raw user-supplied URL."

@@ -30,5 +30,7 @@ match:
   kind: call
   callee: ioutil.ReadFile
   filters:
+    # ioutil.ReadFile(filename) takes exactly one argument and it is the path.
     - tainted_argument: true
+      tainted_argument_index: 0
 fix_suggestion: "Resolve the path and confirm it stays within the allowed base directory before reading; upgrade to os.ReadFile while touching the code."

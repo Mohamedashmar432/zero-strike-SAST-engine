@@ -33,4 +33,10 @@ match:
   callee: axios.post
   filters:
     - tainted_argument: true
+      # axios.post(url, data, config): only argument 0 decides where the
+      # request goes. Argument 1 is the request BODY and argument 2 the
+      # config -- axios.post(CONSTANT_URL, userSuppliedBody) is the ordinary
+      # forward-user-data case and was the headline false positive of this
+      # rule. A tainted body is not SSRF; only a tainted URL is.
+      tainted_argument_index: 0
 fix_suggestion: "Validate the target URL against an allowlist of hosts and schemes before passing it to axios.post(); never post to a raw user-supplied URL."

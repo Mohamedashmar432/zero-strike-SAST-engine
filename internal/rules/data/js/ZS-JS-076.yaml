@@ -31,5 +31,15 @@ match:
   kind: call
   callee: execFileSync
   filters:
+    # DELIBERATELY UNINDEXED. execFileSync(file, args, options) is dangerous
+    # at index 0 (the executable — the corpus case execFileSync(tool)) and at
+    # index 1 (the argv array: execFileSync('sh', ['-c', user]) is plain
+    # command injection, and execFileSync('tar', [userFlag]) is the argument
+    # injection this rule's own fix_suggestion tells you to validate). Only
+    # index 2, the options bag (cwd/env/timeout), is a non-sink. The engine
+    # pins a single index and cannot express "0 or 1", so an index here would
+    # silently drop one of the two documented true-positive shapes — a worse
+    # trade than the tainted-cwd false positive it would remove. Same call
+    # over as ZS-JS-075.
     - tainted_argument: true
 fix_suggestion: "Use a fixed executable path and pass user data only as validated, individually-quoted arguments."

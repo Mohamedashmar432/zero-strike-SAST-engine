@@ -31,4 +31,8 @@ match:
   callee: requests.delete
   filters:
     - tainted_argument: true
+      # requests.delete(url, **kwargs): only argument 0 decides where the
+      # request goes. Tainted headers/params/timeout kwargs cannot redirect
+      # it.
+      tainted_argument_index: 0
 fix_suggestion: "Validate the URL's scheme and host against an allowlist before issuing the request; never pass raw user input as the URL."

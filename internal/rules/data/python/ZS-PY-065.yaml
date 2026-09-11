@@ -29,5 +29,9 @@ match:
   kind: call
   callee: shutil.rmtree
   filters:
+    # shutil.rmtree(path, ignore_errors=False, onerror=None): only argument
+    # 0 is the tree to delete. ignore_errors is a bool and onerror a
+    # callback whose body may legitimately touch request data.
     - tainted_argument: true
+      tainted_argument_index: 0
 fix_suggestion: "Never pass request data to rmtree(); compute the directory from a fixed base plus a validated identifier (e.g. a UUID you generated)."

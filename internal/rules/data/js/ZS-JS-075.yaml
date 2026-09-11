@@ -30,5 +30,14 @@ match:
   kind: call
   callee: spawnSync
   filters:
+    # DELIBERATELY UNINDEXED. spawnSync(command, args, options) is dangerous
+    # at BOTH index 0 (the program) and index 1 (the argv array) — the corpus
+    # case is spawnSync('sh', ['-c', cmd]), whose taint is at index 1, while
+    # spawnSync(userCmd, {shell: true}) puts it at index 0. Only index 2, the
+    # options bag (cwd/env/timeout), is a non-sink, and the engine can pin one
+    # index, not "0 or 1". Pinning either position would silently destroy half
+    # the true positives, which costs more than the tainted-cwd false positive
+    # an index would suppress. Revisit if tainted_argument_index ever accepts
+    # a set of positions.
     - tainted_argument: true
 fix_suggestion: "Pass the program and each argument as array elements with shell disabled, and allowlist any user-derived values."

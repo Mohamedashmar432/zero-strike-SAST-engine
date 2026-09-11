@@ -33,4 +33,13 @@ match:
   callee: el.insertAdjacentHTML
   filters:
     - tainted_argument: true
+      # insertAdjacentHTML(position, text): only argument 1 is parsed as HTML
+      # and inserted into the document. Argument 0 is the insertion position,
+      # one of four fixed keywords ("beforebegin"/"afterbegin"/"beforeend"/
+      # "afterend") — the DOM rejects anything else, so a tainted position is a
+      # runtime SyntaxError, not XSS. Unindexed, this fired on
+      # el.insertAdjacentHTML(userChosenPosition, "<b>constant</b>"), where no
+      # attacker-controlled byte reaches the parser. The receiver `el` is part
+      # of the callee, not an argument, so it is not in the index space.
+      tainted_argument_index: 1
 fix_suggestion: "Use insertAdjacentText for text, or sanitize the HTML with DOMPurify before passing it to insertAdjacentHTML."

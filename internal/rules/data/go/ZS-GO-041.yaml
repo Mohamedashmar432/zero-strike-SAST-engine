@@ -29,5 +29,9 @@ match:
   kind: call
   callee: template.JS
   filters:
+    # Deliberately unindexed, same reasoning as ZS-GO-040: template.JS(x) is a
+    # type conversion with exactly one operand, which is the script text, so
+    # tainted_argument_index: 0 would select the same subtree the unindexed
+    # filter already scans.
     - tainted_argument: true
 fix_suggestion: "Never cast user data to template.JS; pass values to scripts through JSON-encoded data attributes or template variables."

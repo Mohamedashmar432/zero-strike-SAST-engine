@@ -34,4 +34,9 @@ match:
   callee: axios.get
   filters:
     - tainted_argument: true
+      # axios.get(url, config): only argument 0 decides where the request
+      # goes. Argument 1 is the request config (params, headers, timeout);
+      # a tainted query param or header sent to a fixed, trusted endpoint is
+      # not SSRF.
+      tainted_argument_index: 0
 fix_suggestion: "Validate the target URL against an allowlist of hosts and schemes before passing it to axios.get(); never fetch a raw user-supplied URL."
