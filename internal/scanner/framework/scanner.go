@@ -3,10 +3,12 @@ package framework
 import (
 	"context"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/analyzer"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/findings"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/walker"
 )
 
@@ -37,10 +39,25 @@ var checks = []check{
 
 // FrameworkScanner detects framework-level security misconfigurations by
 // reading config files directly. Pure Go — no CGo, no tree-sitter/IR.
-type FrameworkScanner struct{}
+type FrameworkScanner struct {
+	rootPath string // scan root; fingerprints hash paths relative to it
+}
 
-// New returns a FrameworkScanner.
-func New() *FrameworkScanner { return &FrameworkScanner{} }
+// New returns a FrameworkScanner. rootPath is the scan root, used only to
+// make finding fingerprints independent of the checkout location.
+func New(rootPath string) *FrameworkScanner { return &FrameworkScanner{rootPath: rootPath} }
+
+// fingerprintPath returns path relative to the scan root with forward slashes.
+// Paths outside the root (or with no root set) are only slash-normalised,
+// which leaves already-relative paths unchanged on POSIX.
+func (s *FrameworkScanner) fingerprintPath(path string) string {
+	if s.rootPath != "" {
+		if rel, err := filepath.Rel(s.rootPath, path); err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+			path = rel
+		}
+	}
+	return filepath.ToSlash(path)
+}
 
 func (s *FrameworkScanner) Name() string { return "framework" }
 
@@ -67,7 +84,12 @@ func (s *FrameworkScanner) Scan(_ context.Context, files []walker.FileEntry) ([]
 			if !c.accepts(entry.Path) {
 				continue
 			}
-			out = append(out, c.detect(entry.Path, data)...)
+			for _, f := range c.detect(entry.Path, data) {
+				if f.Config != nil {
+					f.Fingerprint = findings.ConfigFingerprint(f.RuleID, s.fingerprintPath(f.Config.ConfigFile), f.Config.Key)
+				}
+				out = append(out, f)
+			}
 		}
 	}
 	return out, nil, nil

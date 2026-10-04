@@ -89,7 +89,7 @@ func New(cfg ScanConfig) (*ScanPipeline, error) {
 		scanners = append(scanners, scascan.New(onError))
 	}
 	if cfg.EnableFrameworkChecks {
-		scanners = append(scanners, framework.New())
+		scanners = append(scanners, framework.New(cfg.RootPath))
 	}
 
 	// Load allowlist: explicit path, or auto-discover .zs-allow.yaml at root.

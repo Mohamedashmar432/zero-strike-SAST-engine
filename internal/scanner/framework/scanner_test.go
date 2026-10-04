@@ -184,7 +184,7 @@ func TestCorsWildcardSourceCallCheck(t *testing.T) {
 }
 
 func TestFrameworkScanner_AcceptsAndScan(t *testing.T) {
-	sc := New()
+	sc := New("")
 	if !sc.Accepts(walker.FileEntry{Path: "app/.env"}) {
 		t.Error("Accepts should return true for .env files")
 	}

@@ -193,6 +193,15 @@ type ConfigInput struct {
 	Value      string // matched text, for message/evidence only — never a credential, no redaction needed
 }
 
+// ConfigFingerprint is the stable identity of a config finding:
+// sha256(ruleID|file|key)[:16]. Callers that know the scan root should pass a
+// root-relative, forward-slash path so the result does not depend on where the
+// tree happens to be checked out.
+func ConfigFingerprint(ruleID, file, key string) string {
+	fp := sha256.Sum256([]byte(ruleID + "|" + file + "|" + key))
+	return hex.EncodeToString(fp[:])[:16]
+}
+
 // BuildConfigFinding constructs a core.Finding for a detected framework misconfiguration.
 func BuildConfigFinding(
 	ruleID, ruleName, message, category string,
@@ -202,8 +211,7 @@ func BuildConfigFinding(
 	confidence core.Confidence,
 	cwe, owasp []string,
 ) core.Finding {
-	fp := sha256.Sum256([]byte(ruleID + "|" + input.ConfigFile + "|" + input.Key))
-	fingerprint := hex.EncodeToString(fp[:])[:16]
+	fingerprint := ConfigFingerprint(ruleID, input.ConfigFile, input.Key)
 
 	var evidence []core.Evidence
 	if input.Value != "" {
