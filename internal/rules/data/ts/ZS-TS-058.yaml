@@ -38,6 +38,13 @@ match:
     # UserModel.findOne. The exact `collection.findOne` callee only matched a
     # variable that happened to be called collection.
     - callee_pattern: '(?i)(collection|model)(\(\))?\.findOne$'
+    # Sequelize/TypeORM-style query objects ({ where: ... }) are parameterized, not Mongo filters.
+    - not:
+        kind: call
+        filters:
+          - kwarg:
+              name: where
+              value_pattern: ""
     # A $where filter is owned by the dedicated $where rule (one finding
     # per call).
     - not:

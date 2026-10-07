@@ -30,6 +30,13 @@ match:
   kind: call
   filters:
     - callee_pattern: "(?i)(collection|model)(\\(\\))?\\.(update|updateOne|updateMany|replaceOne|deleteOne|deleteMany|remove|findOneAndUpdate|findOneAndDelete|findOneAndReplace)$"
+    # Sequelize/TypeORM-style query objects ({ where: ... }) are parameterized, not Mongo filters.
+    - not:
+        kind: call
+        filters:
+          - kwarg:
+              name: where
+              value_pattern: ""
     - tainted_argument: true
       tainted_argument_index: 0
       require_real_source: true

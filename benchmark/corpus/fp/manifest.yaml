@@ -142,3 +142,6 @@ cases:
   - file: cases/safe_g3_ts.ts
     language: typescript
     expect: []
+  - file: cases/sequelize_where.ts
+    language: typescript
+    expect: []
