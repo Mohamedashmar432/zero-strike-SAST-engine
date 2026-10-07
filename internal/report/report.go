@@ -20,6 +20,11 @@ type ScanStats struct {
 	ByScanner     map[string]int           // "sast" | "secret" | "sca" → count
 	ByKind        map[core.FindingKind]int // FindingKindSAST | FindingKindSecret | FindingKindSCA → count
 	Suppressed    int                      // findings filtered by allowlist
+	// TierExcluded is the number of hardening/quality-tier findings left out
+	// of this report (see core.Tier); TierExcludedByRule lists them per rule
+	// ID. Both are zero/empty when the scan ran with --include-hardening.
+	TierExcluded       int
+	TierExcludedByRule map[string]int `json:",omitempty"`
 }
 
 // Report is the full output of a completed scan.

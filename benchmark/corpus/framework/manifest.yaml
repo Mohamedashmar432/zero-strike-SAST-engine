@@ -1,4 +1,8 @@
 version: "1"
+# Some cases here assert hardening/quality-tier rules (see core.Tier), which
+# default scan output leaves out. The fp/ corpus keeps the default, so it
+# verifies the exclusion itself.
+include_hardening: true
 cases:
   - file: cases/django/vuln_debug.env
     expect: [{rule_id: ZS-CFG-001, min_count: 1}]
@@ -55,4 +59,8 @@ cases:
   - file: cases/php/vuln_ini/php.ini
     expect: [{rule_id: ZS-CFG-011, min_count: 2}]
   - file: cases/php/clean_ini/php.ini
+    expect: []
+  - file: cases/gha/.github/workflows/third_party.yml
+    expect: [{rule_id: ZS-CFG-012, min_count: 1}]
+  - file: cases/gha/.github/workflows/first_party.yml
     expect: []

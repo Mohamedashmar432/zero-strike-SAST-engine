@@ -1,0 +1,36 @@
+id: ZS-TS-150
+lifecycle: released
+name: Angular Sanitizer Bypassed for a Dynamic Value
+version: "1.0.0"
+language: typescript
+category: xss
+severity: high
+confidence: medium
+cwe:
+  - CWE-79
+owasp:
+  - "A05:2025"
+rationale: |
+  Angular sanitizes every value bound to [innerHTML], [src], [style] and
+  similar sinks. DomSanitizer.bypassSecurityTrustHtml/Script/Style/Url/
+  ResourceUrl wraps a value so the sanitizer passes it through untouched.
+  When that value is built from data (an API response, a route parameter,
+  user.email interpolated into markup), whatever HTML or script it carries
+  executes in the page: stored or DOM XSS that Angular would otherwise
+  have stopped.
+description: |
+  Flags bypassSecurityTrust* calls on any receiver whose argument is not a
+  constant string. A template literal with a ${} substitution is not a
+  constant. The rule is deliberately not taint-gated: the usual source is
+  an HTTP response (stored XSS), which request taint does not model.
+message: "Angular sanitizer bypassed for a non-constant value (XSS)"
+references:
+  - https://angular.dev/best-practices/security#bypass-security-apis
+  - https://cwe.mitre.org/data/definitions/79.html
+tags: [xss, angular, sanitizer]
+match:
+  kind: call
+  filters:
+    - callee_matches: "(^|\\.)bypassSecurityTrust(Html|Script|Style|Url|ResourceUrl)$"
+    - argument_not_constant: 0
+fix_suggestion: "Bind the value without bypassSecurityTrust* and let Angular sanitize it; if markup must be preserved, sanitize it first (DOMPurify) and bypass only the sanitized result."

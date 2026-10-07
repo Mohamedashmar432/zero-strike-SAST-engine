@@ -19,10 +19,11 @@ rationale: |
   forge a token claiming to be any user or an administrator without ever
   needing a valid signing key.
 description: |
-  Detects calls to jwt.decode(). The rule matches any call to this function
-  regardless of context, so it does not check whether a corresponding
-  jwt.verify() call exists elsewhere or whether the decoded value is used
-  for any security-relevant decision.
+  Detects jwt.decode() in a function (or module, for top-level code) that
+  never verifies a token: no jwt.verify(), jws.verify(), jose jwtVerify() or
+  other *.verify() call in the same scope. jwt.decode() only base64-decodes
+  the payload, so trusting its result without verification accepts forged
+  tokens.
 message: "jwt.decode() detected — this does not verify the signature; use jwt.verify() for authentication"
 references:
   - https://cwe.mitre.org/data/definitions/347.html
@@ -30,4 +31,12 @@ tags: [jwt, authentication, signature-bypass]
 match:
   kind: call
   callee: jwt.decode
+  filters:
+    # Decoding before verifying in the same function (to read the header or
+    # pick a key) is the normal pattern. The bug is decoding with nothing
+    # verifying the token.
+    - not:
+        kind: call
+        filters:
+          - enclosing_function_calls: "(^|\\.)(verify|verifyAsync|jwtVerify)$"
 fix_suggestion: "Use jwt.verify(token, secretOrPublicKey) instead of jwt.decode() wherever the result is trusted for authentication."

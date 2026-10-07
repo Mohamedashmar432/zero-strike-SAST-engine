@@ -8,7 +8,7 @@ import "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
 // removed, renamed, or its meaning changes) - the AST cache stores this
 // value alongside cached IR and invalidates on a mismatch rather than risk
 // deserializing stale/incompatible IR.
-const SchemaVersion = 1
+const SchemaVersion = 2
 
 // SerialNode is the flat, JSON-serializable form of one IRNode, used by the
 // AST cache to persist parsed IR across scan runs. Unlike IRNode, it has no
@@ -163,6 +163,14 @@ func restoreAttrs(attrs map[string]any) map[string]any {
 	if v, ok := out["except_handlers"]; ok {
 		out["except_handlers"] = coerceExceptHandlers(v)
 	}
+	for _, k := range []string{"decorators", "decorator_stack"} {
+		if v, ok := out[k]; ok {
+			out[k] = coerceStringSlice(v)
+		}
+	}
+	if v, ok := out["import_aliases"]; ok {
+		out["import_aliases"] = coerceStringMap(v)
+	}
 
 	return out
 }
@@ -219,6 +227,26 @@ func coerceStringSlice(v any) any {
 	}
 }
 
+// coerceStringMap normalizes a value that should be map[string]string (the
+// Python builder's per-file import alias table). Handles the no-JSON-hop
+// case and the JSON-round-tripped map[string]interface{} case.
+func coerceStringMap(v any) any {
+	switch t := v.(type) {
+	case map[string]string:
+		return t
+	case map[string]interface{}:
+		out := make(map[string]string, len(t))
+		for k, item := range t {
+			if s, ok := item.(string); ok {
+				out[k] = s
+			}
+		}
+		return out
+	default:
+		return v
+	}
+}
+
 // coerceExceptHandlers normalizes a value that should be []ExceptHandler.
 // Handles the already-correct []ExceptHandler case (no JSON hop) and the
 // JSON-round-tripped []interface{} of map[string]interface{} case, reading
@@ -242,6 +270,9 @@ func coerceExceptHandlers(v any) any {
 			}
 			if isEmpty, ok := m["IsEmptyBody"].(bool); ok {
 				h.IsEmptyBody = isEmpty
+			}
+			if hasComment, ok := m["HasComment"].(bool); ok {
+				h.HasComment = hasComment
 			}
 			if types, ok := m["Types"]; ok {
 				if coerced, ok := coerceStringSlice(types).([]string); ok {

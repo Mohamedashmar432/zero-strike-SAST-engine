@@ -1,0 +1,45 @@
+id: ZS-JS-125
+lifecycle: released
+name: "Raw Set-Cookie header without SameSite"
+version: "1.0.0"
+language: javascript
+category: security-misconfiguration
+severity: low
+confidence: medium
+cwe:
+  - CWE-1275
+owasp:
+  - "A02:2025"
+rationale: |
+  A credential cookie written without a SameSite attribute relies on the
+  browser's default. Current browsers default to Lax, but older ones and
+  some embedded webviews send the cookie on every cross-site request,
+  which is what makes cross-site request forgery work. Setting SameSite
+  explicitly removes the dependency on the client. Low severity because
+  modern browsers already mitigate most of it.
+description: |
+  res.setHeader/header/set/append('Set-Cookie', value) where the value sets
+  a credential-named cookie (token, session, jwt, sid, auth) and contains
+  no `; SameSite=` attribute.
+message: "Set-Cookie header for a credential cookie has no SameSite attribute"
+references:
+  - https://cwe.mitre.org/data/definitions/1275.html
+  - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#samesitesamesite-value
+tags: [misconfiguration, cookie, csrf]
+match:
+  kind: call
+  filters:
+    - callee_pattern: "^(res|response|resp|reply)\\.(setHeader|header|set|append)$"
+    - argument_matches_at:
+        index: 0
+        pattern: "(?i)^set-cookie$"
+    - argument_matches_at:
+        index: 1
+        pattern: "(?i)^\\s*[\\w.$-]*(token|session|jwt|sid|sess|auth)[\\w.$-]*="
+    - not:
+        kind: call
+        filters:
+          - argument_matches_at:
+              index: 1
+              pattern: "(?i);\\s*samesite\\s*="
+fix_suggestion: "Add `; SameSite=Lax` (or Strict) to the cookie, or set it with res.cookie(name, value, { sameSite: 'lax', secure: true, httpOnly: true })."

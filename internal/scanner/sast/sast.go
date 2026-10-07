@@ -6,7 +6,9 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/analyzer"
@@ -75,7 +77,9 @@ func New(allRules []*rules.Rule, rootPath string, findingCache cache.FindingCach
 func (s *SASTScanner) Name() string { return "sast" }
 
 func (s *SASTScanner) Accepts(entry walker.FileEntry) bool {
-	return !entry.IsBinary
+	// AssetData entries come from static/public/assets dirs, entered only so
+	// the secrets scanner can read data files there — see FileEntry.AssetData.
+	return !entry.IsBinary && !entry.AssetData
 }
 
 func (s *SASTScanner) Scan(ctx context.Context, files []walker.FileEntry) ([]core.Finding, []analyzer.Diagnostic, error) {
@@ -182,6 +186,8 @@ func (s *SASTScanner) processFile(ctx context.Context, entry walker.FileEntry) (
 		Index:   s.ruleIndex,
 		File:    analysisResult,
 		Project: &engine.Project{Root: s.rootPath},
+		Browser: (lang == core.LangJavaScript || lang == core.LangTypeScript) &&
+			engine.IsBrowserContext(s.relPath(entry.Path), source),
 	}
 	matchResults, err := s.eng.Match(ctx, mc)
 	if err != nil {
@@ -250,6 +256,9 @@ func (s *SASTScanner) scanEmbeddedScripts(ctx context.Context, path string, sour
 			Index:   s.ruleIndex,
 			File:    analysisResult,
 			Project: &engine.Project{Root: s.rootPath},
+			// An inline <script> in an HTML document always runs in the
+			// browser.
+			Browser: true,
 		}
 		matchResults, err := s.eng.Match(ctx, mc)
 		if err != nil {
@@ -260,6 +269,16 @@ func (s *SASTScanner) scanEmbeddedScripts(ctx context.Context, path string, sour
 		}
 	}
 	return out
+}
+
+// relPath returns path relative to the scan root (slash-separated), falling
+// back to path itself. Context heuristics that look at directory names must
+// not see the directories above the scanned project.
+func (s *SASTScanner) relPath(path string) string {
+	if rel, err := filepath.Rel(s.rootPath, path); err == nil && !strings.HasPrefix(rel, "..") {
+		return filepath.ToSlash(rel)
+	}
+	return filepath.ToSlash(path)
 }
 
 // rebaseIR shifts every node's Location from script-fragment coordinates to

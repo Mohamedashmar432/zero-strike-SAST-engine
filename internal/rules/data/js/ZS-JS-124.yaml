@@ -1,0 +1,43 @@
+id: ZS-JS-124
+lifecycle: released
+name: "Raw Set-Cookie header without Secure"
+version: "1.0.0"
+language: javascript
+category: security-misconfiguration
+severity: medium
+confidence: medium
+cwe:
+  - CWE-614
+owasp:
+  - "A02:2025"
+rationale: |
+  A Set-Cookie header written by hand gets none of a framework's cookie
+  defaults. Without the Secure attribute a session or token cookie is also
+  sent over plain HTTP, where anyone on the network path can read and
+  replay it.
+description: |
+  res.setHeader/header/set/append('Set-Cookie', value) where the value is
+  a literal, template or concatenation that sets a credential-named cookie
+  (token, session, jwt, sid, auth) and contains no `; Secure` attribute.
+message: "Set-Cookie header for a credential cookie has no Secure attribute"
+references:
+  - https://cwe.mitre.org/data/definitions/614.html
+  - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie
+tags: [misconfiguration, cookie]
+match:
+  kind: call
+  filters:
+    - callee_pattern: "^(res|response|resp|reply)\\.(setHeader|header|set|append)$"
+    - argument_matches_at:
+        index: 0
+        pattern: "(?i)^set-cookie$"
+    - argument_matches_at:
+        index: 1
+        pattern: "(?i)^\\s*[\\w.$-]*(token|session|jwt|sid|sess|auth)[\\w.$-]*="
+    - not:
+        kind: call
+        filters:
+          - argument_matches_at:
+              index: 1
+              pattern: "(?i);\\s*secure\\b"
+fix_suggestion: "Add `; Secure` (and HttpOnly, SameSite) to the cookie, or set it with res.cookie(name, value, { secure: true, httpOnly: true, sameSite: 'lax' })."

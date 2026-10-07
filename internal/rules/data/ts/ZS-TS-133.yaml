@@ -1,0 +1,34 @@
+id: ZS-TS-133
+lifecycle: released
+name: "Path Traversal via uploaded file move (mv)"
+version: "1.0.0"
+language: typescript
+category: path-traversal
+severity: high
+confidence: medium
+cwe:
+  - CWE-22
+owasp:
+  - "A01:2025"
+rationale: |
+  express-fileupload's file.mv(dest) writes the upload wherever dest
+  points. When dest includes the client-supplied file name (or any other
+  request value), ../ sequences place the file outside the upload
+  directory, overwriting application files or dropping a web shell into a
+  served directory.
+description: |
+  A .mv() method call (express-fileupload's UploadedFile.mv, shelljs mv)
+  whose destination (argument 0) traces back to an untrusted source, such
+  as req.files.<field>.name.
+message: "Uploaded file moved to a tainted destination path - path traversal / arbitrary file write"
+references:
+  - https://owasp.org/www-community/vulnerabilities/Unrestricted_File_Upload
+  - https://github.com/richardgirges/express-fileupload
+tags: [path-traversal, file-upload]
+match:
+  kind: call
+  filters:
+    - callee_pattern: "\\.mv$"
+    - tainted_argument: true
+      tainted_argument_index: 0
+fix_suggestion: "Generate the stored file name server-side (a random id plus an allowlisted extension) or reduce the client name to path.basename() and confirm the resolved path stays inside the upload directory."

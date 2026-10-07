@@ -25,6 +25,8 @@ description: |
   binding name "http") where an argument traces back to an untrusted source
   (intra-procedural taint tracking). A differently-named module binding
   will not match.
+
+  When `http` is bound by an import or require, it must be the Node http/https module; this.http.get (an Angular HttpClient member) is a different callee.
 message: "http.get() called with a tainted URL — validate the target against an allowlist to prevent SSRF"
 references:
   - https://owasp.org/Top10/A10_2021-Server-Side_Request_Forgery_%28SSRF%29/
@@ -34,6 +36,11 @@ match:
   kind: call
   callee: http.get
   filters:
+    # `http` must be the Node http/https module: either bound by
+    # require/import of it, or not import-bound at all. A first-party HTTP
+    # wrapper imported as `http` does not match, and this.http.get (Angular
+    # HttpClient) no longer renders as http.get in the first place.
+    - callee_canonical: '^https?\.get$'
     - tainted_argument: true
       # http.get(url|options, callback) and http.get(url, options, callback):
       # the destination is argument 0 in both shapes -- either the URL string

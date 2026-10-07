@@ -114,6 +114,11 @@ type MatchContext struct {
 	Index   *RuleIndex // prebuilt at rule-load time, shared across files
 	File    *analyzer.AnalysisResult
 	Project *Project
+	// Browser marks code that runs in a browser rather than on a server: an
+	// inline <script> in an HTML document, an Angular or "use client" module,
+	// or a file under a frontend/ source root (see IsBrowserContext). Rules
+	// listing "browser" in SkipContexts do not run against it.
+	Browser bool
 }
 
 // Engine matches rules against an AnalysisResult.
@@ -132,9 +137,11 @@ func (e *defaultEngine) Match(_ context.Context, mc *MatchContext) ([]MatchResul
 		return nil, nil
 	}
 	taintedVars := mc.File.TaintedVars
-	weakVars := mc.File.WeakTaintVars
-	var out []MatchResult
 	fileLang := mc.File.IR.Language
+	fc := newFileCtx(mc.File.IR, taintedVars, mc.File.WeakTaintVars)
+	var out []MatchResult
+	// reported tracks rules with OncePerFile that have already matched here.
+	reported := map[*rules.Rule]bool{}
 	// consider evaluates one candidate rule against n.
 	//
 	// The three index buckets are iterated separately rather than gathered
@@ -157,7 +164,16 @@ func (e *defaultEngine) Match(_ context.Context, mc *MatchContext) ([]MatchResul
 		if r.Language != fileLang {
 			return
 		}
-		if matchNode(r.Match, n, taintedVars, weakVars, fileLang) {
+		if mc.Browser && skipsContext(r, "browser") {
+			return
+		}
+		if r.OncePerFile && reported[r] {
+			return
+		}
+		if matchNode(r.Match, n, fc) {
+			if r.OncePerFile {
+				reported[r] = true
+			}
 			out = append(out, MatchResult{Rule: r, Node: n, TaintedVar: taintedIdentifierFor(r.Match, n, taintedVars, fileLang)})
 		}
 	}
@@ -167,13 +183,34 @@ func (e *defaultEngine) Match(_ context.Context, mc *MatchContext) ([]MatchResul
 			consider(n, r)
 		}
 		if n.Kind == ir.NodeKindCall {
-			text := calleeText(n)
+			// text is the callee as written; canon resolves its first
+			// segment through the file's import table (Python only, see
+			// canonicalAlias), so `from hashlib import md5; md5(x)` reaches
+			// a rule written against hashlib.md5. Both forms are offered:
+			// rules written against a conventional alias (ET.fromstring)
+			// must keep matching the written text.
+			text := fc.callee(n)
+			canon := fc.canonicalAlias(text)
 			for _, r := range mc.Index.byCallee[text] {
 				consider(n, r)
 			}
-			for _, r := range mc.Index.byCalleeSuffix[lastCalleeSegment(text)] {
-				if calleeSuffixMatches(r.Match.Callee, text) {
+			if canon != text {
+				for _, r := range mc.Index.byCallee[canon] {
 					consider(n, r)
+				}
+			}
+			suffixRule := func(r *rules.Rule) {
+				if calleeSuffixMatches(r.Match.Callee, text) || (canon != text && calleeSuffixMatches(r.Match.Callee, canon)) {
+					consider(n, r)
+				}
+			}
+			last, canonLast := lastCalleeSegment(text), lastCalleeSegment(canon)
+			for _, r := range mc.Index.byCalleeSuffix[last] {
+				suffixRule(r)
+			}
+			if canonLast != last {
+				for _, r := range mc.Index.byCalleeSuffix[canonLast] {
+					suffixRule(r)
 				}
 			}
 		}
@@ -182,8 +219,31 @@ func (e *defaultEngine) Match(_ context.Context, mc *MatchContext) ([]MatchResul
 	return out, nil
 }
 
+// calleeTextFor extracts the callee text of a call node in lang's rendering.
+// JavaScript and TypeScript use jsCalleeText, which keeps non-identifier
+// receivers as placeholder segments (this.http.get, res.status().send); every
+// other language keeps the historical calleeText rendering.
+func calleeTextFor(n *ir.IRNode, lang core.Language) string {
+	if isJSLike(lang) {
+		return jsCalleeText(n, nil)
+	}
+	return calleeText(n)
+}
+
+// attributeTextFor is calleeTextFor's counterpart for a bare attribute node.
+func attributeTextFor(n *ir.IRNode, lang core.Language) string {
+	if isJSLike(lang) {
+		return jsExprText(n, nil)
+	}
+	return attributeText(n)
+}
+
 // calleeText extracts the callee name from a call node.
 // Handles plain calls (eval) and attribute calls (os.system, pickle.loads).
+//
+// For JavaScript/TypeScript use calleeTextFor: this rendering drops every
+// child that is not an Identifier or Attribute, so `this.http.get` collapsed
+// to `http.get` and `res.status(500).send` to `send`.
 func calleeText(n *ir.IRNode) string {
 	for _, c := range n.Children {
 		switch c.Kind {
@@ -226,7 +286,7 @@ func attributeText(n *ir.IRNode) string {
 // matchNode checks whether a node satisfies the match pattern.
 // Callee matching is already handled by the index; matchNode covers
 // Identifier, Literal, and Filter constraints.
-func matchNode(pattern rules.MatchPattern, n *ir.IRNode, taintedVars, weak map[string]bool, lang core.Language) bool {
+func matchNode(pattern rules.MatchPattern, n *ir.IRNode, fc *fileCtx) bool {
 	if ir.NodeKind(pattern.Kind) != n.Kind {
 		return false
 	}
@@ -248,20 +308,29 @@ func matchNode(pattern rules.MatchPattern, n *ir.IRNode, taintedVars, weak map[s
 	}
 	if pattern.RHSLiteral != "" {
 		rhs, _ := n.Attrs["rhs"].(string)
+		if n.Kind == ir.NodeKindReturn {
+			// On a return node rhs_literal matches the returned expression,
+			// the same "value being produced" an assignment's RHS is.
+			rhs, _ = n.Attrs["return_expr"].(string)
+		}
 		matched, err := regexp.MatchString(pattern.RHSLiteral, rhs)
 		if err != nil || !matched {
 			return false
 		}
 	}
 	for _, f := range pattern.Filters {
-		if !evalFilter(f, n, taintedVars, weak, lang) {
+		if !evalFilter(f, n, fc) {
 			return false
 		}
 	}
 	return true
 }
 
-func evalFilter(f rules.Filter, n *ir.IRNode, taintedVars, weak map[string]bool, lang core.Language) bool {
+func evalFilter(f rules.Filter, n *ir.IRNode, fc *fileCtx) bool {
+	taintedVars, weak, lang := fc.tainted, fc.weak, fc.lang
+	if !evalContextFilters(f, n, fc) {
+		return false
+	}
 	if f.ArgumentCount != nil {
 		ac, _ := n.Attrs["argument_count"].(int)
 		if ac != *f.ArgumentCount {
@@ -271,7 +340,7 @@ func evalFilter(f rules.Filter, n *ir.IRNode, taintedVars, weak map[string]bool,
 	if f.HasAttribute != "" {
 		found := false
 		for _, c := range n.Children {
-			if c.Kind == ir.NodeKindAttribute && strings.Contains(attributeText(c), f.HasAttribute) {
+			if c.Kind == ir.NodeKindAttribute && strings.Contains(attributeTextFor(c, lang), f.HasAttribute) {
 				found = true
 				break
 			}
@@ -312,7 +381,7 @@ func evalFilter(f rules.Filter, n *ir.IRNode, taintedVars, weak map[string]bool,
 		}
 	}
 	if f.Kwarg != nil {
-		if !anyArgument(n, func(a *ir.IRNode) bool {
+		pred := func(a *ir.IRNode) bool {
 			if a.Kind != ir.NodeKindKeywordArg {
 				return false
 			}
@@ -327,8 +396,15 @@ func evalFilter(f rules.Filter, n *ir.IRNode, taintedVars, weak map[string]bool,
 			}
 			value, _ := a.Attrs["kwarg_value"].(string)
 			matched, err := regexp.MatchString(f.Kwarg.ValuePattern, value)
-			return err == nil && matched
-		}) {
+			if err != nil || !matched {
+				return false
+			}
+			return !f.Kwarg.ValueTainted || fc.kwargValueTainted(a)
+		}
+		// JS/TS: an options object is as often a named local as an inline
+		// literal (const opts = {noent: true}; parseXml(data, opts)). Look
+		// through an identifier argument to its same-file object initializer.
+		if !anyArgument(n, pred) && !fc.anyResolvedObjectArgument(n, pred) {
 			return false
 		}
 	}
@@ -344,13 +420,19 @@ func evalFilter(f rules.Filter, n *ir.IRNode, taintedVars, weak map[string]bool,
 		}
 	}
 	if f.ArgumentLiteralMatches != "" {
-		if !anyArgument(n, func(a *ir.IRNode) bool {
-			if a.Kind != ir.NodeKindLiteral {
+		pred := func(a *ir.IRNode) bool {
+			value, ok := literalValue(a, fc.consts)
+			if !ok {
 				return false
 			}
-			matched, err := regexp.MatchString(f.ArgumentLiteralMatches, a.Text)
+			matched, err := regexp.MatchString(f.ArgumentLiteralMatches, value)
 			return err == nil && matched
-		}) {
+		}
+		if f.ArgumentLiteralIndex != nil {
+			if !argumentAt(n, *f.ArgumentLiteralIndex, pred) {
+				return false
+			}
+		} else if !anyArgument(n, pred) {
 			return false
 		}
 	}
@@ -364,6 +446,9 @@ func evalFilter(f rules.Filter, n *ir.IRNode, taintedVars, weak map[string]bool,
 			return false
 		}
 	}
+	if !fc.evalJSFilters(f, n) {
+		return false
+	}
 	if f.HasBareExcept {
 		if !anyExceptHandler(n, func(h ir.ExceptHandler) bool { return h.IsBare }) {
 			return false
@@ -374,12 +459,253 @@ func evalFilter(f rules.Filter, n *ir.IRNode, taintedVars, weak map[string]bool,
 			return false
 		}
 	}
+	if f.LiteralArgument != nil {
+		if !literalArgumentMatches(n, *f.LiteralArgument) {
+			return false
+		}
+	}
+	if f.LHSFlowsToCall != "" {
+		if !lhsFlowsToCall(n, cachedRegexp(f.LHSFlowsToCall)) {
+			return false
+		}
+	}
+	if f.ExceptHandler != nil {
+		if !anyExceptHandler(n, func(h ir.ExceptHandler) bool { return exceptHandlerMatches(*f.ExceptHandler, h) }) {
+			return false
+		}
+	}
+	if f.TryBodyCallsOnly != "" {
+		if !tryBodyCallsOnly(n, f.TryBodyCallsOnly) {
+			return false
+		}
+	}
+	if f.ContextIdentifierMatches != "" {
+		re := cachedRegexp(f.ContextIdentifierMatches)
+		if re == nil {
+			return false
+		}
+		found := false
+		for _, name := range contextNames(n) {
+			if re.MatchString(snakeCase(name)) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+	if f.EnclosingFunctionCalls != "" {
+		re := cachedRegexp(f.EnclosingFunctionCalls)
+		if re == nil {
+			return false
+		}
+		if !scopeContains(n, func(d *ir.IRNode) bool {
+			return d.Kind == ir.NodeKindCall && re.MatchString(calleeText(d))
+		}) {
+			return false
+		}
+	}
+	if f.EnclosingFunctionMentions != "" {
+		re := cachedRegexp(f.EnclosingFunctionMentions)
+		if re == nil {
+			return false
+		}
+		if !scopeContains(n, func(d *ir.IRNode) bool {
+			return (d.Kind == ir.NodeKindIdentifier || d.Kind == ir.NodeKindLiteral) && re.MatchString(d.Text)
+		}) {
+			return false
+		}
+	}
+	if f.AnyOf != nil {
+		passed := false
+		for _, sub := range f.AnyOf {
+			if evalFilter(sub, n, fc) {
+				passed = true
+				break
+			}
+		}
+		if !passed {
+			return false
+		}
+	}
 	if f.Not != nil {
-		if matchNode(*f.Not, n, taintedVars, weak, lang) {
+		if matchNode(*f.Not, n, fc) {
 			return false
 		}
 	}
 	return true
+}
+
+// literalArgumentMatches reports whether the call's positional argument at
+// spec.Index is itself a literal whose text matches spec.Pattern. The
+// argument node is checked directly, never its descendants: a dict or object
+// payload containing literals is not a literal argument.
+func literalArgumentMatches(n *ir.IRNode, spec rules.LiteralArgumentPattern) bool {
+	args := argumentNodes(n)
+	i := spec.Index
+	if i < 0 {
+		i += len(args)
+	}
+	if i < 0 || i >= len(args) {
+		return false
+	}
+	a := args[i]
+	if a.Kind == ir.NodeKindIdentifier {
+		a = boundLiteral(n, a.Text)
+		if a == nil {
+			return false
+		}
+	}
+	if a.Kind != ir.NodeKindLiteral {
+		return false
+	}
+	return cachedRegexp(spec.Pattern).MatchString(literalNodeText(a))
+}
+
+// boundLiteral resolves an identifier argument to the literal it is bound to:
+// the right-hand side of the assignments to name in the call's enclosing
+// function, falling back to the file's top level. It returns nil unless every
+// assignment to name in that scope is a plain literal -- a variable that is
+// sometimes computed is not a hardcoded value. This is what lets
+// `const mnemonic = '...'; fromPhrase(mnemonic)` and
+// `key = '...'; Fernet(key)` match like an inline literal.
+func boundLiteral(call *ir.IRNode, name string) *ir.IRNode {
+	for scope := enclosingScope(call); scope != nil; scope = enclosingScope(scope) {
+		var lit *ir.IRNode
+		consistent := true
+		seen := false
+		ir.Walk(scope, func(c *ir.IRNode) bool {
+			// Nested functions are their own scope; the outer walk must not
+			// pick up their locals.
+			if c != scope && c.Kind == ir.NodeKindFunction {
+				return false
+			}
+			if c.Kind != ir.NodeKindAssignment || len(c.Children) == 0 {
+				return true
+			}
+			if lhs, _ := c.Attrs["lhs"].(string); strings.TrimSpace(lhs) != name {
+				return true
+			}
+			seen = true
+			rhs := c.Children[len(c.Children)-1]
+			if rhs.Kind != ir.NodeKindLiteral {
+				consistent = false
+				return true
+			}
+			lit = rhs
+			return true
+		})
+		if seen {
+			if consistent {
+				return lit
+			}
+			return nil
+		}
+		if scope.Parent == nil {
+			break
+		}
+	}
+	return nil
+}
+
+// enclosingScope returns the nearest function ancestor of n, or the root.
+// Called on a root it returns nil.
+func enclosingScope(n *ir.IRNode) *ir.IRNode {
+	if n.Parent == nil {
+		return nil
+	}
+	p := n.Parent
+	for p.Parent != nil && p.Kind != ir.NodeKindFunction {
+		p = p.Parent
+	}
+	return p
+}
+
+// literalNodeText returns a literal's value text. Builders set Text on string
+// literals to the unquoted value; a literal whose Text is empty (a prefixed
+// Python bytes literal b'...' keeps its own children) falls back to the
+// concatenated text of its leaves.
+func literalNodeText(n *ir.IRNode) string {
+	if n.Text != "" {
+		return n.Text
+	}
+	var b strings.Builder
+	for _, d := range ir.Descendants(n) {
+		if len(d.Children) == 0 {
+			b.WriteString(d.Text)
+		}
+	}
+	return b.String()
+}
+
+// lhsFlowsToCall reports whether an assignment's target identifier is passed
+// as an argument to a call whose callee chain matches re, anywhere in the
+// enclosing function (or the whole file for a top-level assignment). The
+// callee chain is the call's own callee text plus the callee text of every
+// call nested in its receiver, so createHash('sha256').update(secret) reaches
+// createHash.
+func lhsFlowsToCall(n *ir.IRNode, re *regexp.Regexp) bool {
+	if n.Kind != ir.NodeKindAssignment {
+		return false
+	}
+	name, _ := n.Attrs["lhs"].(string)
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return false
+	}
+	scope := n
+	for scope.Parent != nil && scope.Kind != ir.NodeKindFunction {
+		scope = scope.Parent
+	}
+	found := false
+	ir.Walk(scope, func(c *ir.IRNode) bool {
+		if found {
+			return false
+		}
+		if c.Kind != ir.NodeKindCall || !argumentsReference(c, name) {
+			return true
+		}
+		for _, t := range calleeChain(c) {
+			if re.MatchString(t) {
+				found = true
+				return false
+			}
+		}
+		return true
+	})
+	return found
+}
+
+// argumentsReference reports whether name appears as an identifier in any of
+// the call's arguments (or their subtrees).
+func argumentsReference(c *ir.IRNode, name string) bool {
+	for _, a := range argumentNodes(c) {
+		if a.Kind == ir.NodeKindIdentifier && a.Text == name {
+			return true
+		}
+		for _, d := range ir.Descendants(a) {
+			if d.Kind == ir.NodeKindIdentifier && d.Text == name {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// calleeChain returns the callee text of c and of every call nested in c's
+// callee expression (the receiver side of a method chain).
+func calleeChain(c *ir.IRNode) []string {
+	out := []string{calleeText(c)}
+	if len(c.Children) == 0 {
+		return out
+	}
+	for _, d := range ir.Descendants(c.Children[0]) {
+		if d.Kind == ir.NodeKindCall {
+			out = append(out, calleeText(d))
+		}
+	}
+	return out
 }
 
 // anyExceptHandler reports whether any except clause recorded on a try_statement
@@ -440,9 +766,9 @@ func isDirectSourceExpression(n *ir.IRNode, lang core.Language) bool {
 		// include the trailing paren — the assignment-based check sees it
 		// naturally via raw RHS source text, so calleeText needs it added
 		// back explicitly here.
-		return taint.IsSource(lang, calleeText(n)+"(")
+		return taint.IsSource(lang, calleeTextFor(n, lang)+"(")
 	case ir.NodeKindAttribute:
-		return taint.IsSource(lang, attributeText(n))
+		return taint.IsSource(lang, attributeTextFor(n, lang))
 	case ir.NodeKindIdentifier:
 		return taint.IsSource(lang, n.Text)
 	default:
@@ -587,7 +913,19 @@ func anyArgument(n *ir.IRNode, pred func(*ir.IRNode) bool) bool {
 // tainted identifier's text that satisfied it. Returns "" when the rule
 // matched without using either filter — the common case for most rules.
 func taintedIdentifierFor(pattern rules.MatchPattern, n *ir.IRNode, taintedVars map[string]bool, lang core.Language) string {
-	for _, f := range pattern.Filters {
+	return taintedIdentifierInFilters(pattern.Filters, n, taintedVars, lang)
+}
+
+// taintedIdentifierInFilters is taintedIdentifierFor over a filter list,
+// recursing into any_of entries (which keep positive polarity) but never
+// into a not sub-pattern.
+func taintedIdentifierInFilters(filters []rules.Filter, n *ir.IRNode, taintedVars map[string]bool, lang core.Language) string {
+	for _, f := range filters {
+		if len(f.AnyOf) > 0 {
+			if id := taintedIdentifierInFilters(f.AnyOf, n, taintedVars, lang); id != "" {
+				return id
+			}
+		}
 		if f.TaintedArgument {
 			if id := firstTaintedArgument(n, taintedVars, lang); id != "" {
 				return id
@@ -624,11 +962,11 @@ func firstTaintedArgument(n *ir.IRNode, taintedVars map[string]bool, lang core.L
 	}
 	for _, argRoot := range n.Children[1:] {
 		if isDirectSourceExpression(argRoot, lang) {
-			return sourceExpressionText(argRoot)
+			return sourceExpressionText(argRoot, lang)
 		}
 		for _, d := range ir.Descendants(argRoot) {
 			if isDirectSourceExpression(d, lang) {
-				return sourceExpressionText(d)
+				return sourceExpressionText(d, lang)
 			}
 		}
 	}
@@ -640,12 +978,12 @@ func firstTaintedArgument(n *ir.IRNode, taintedVars map[string]bool, lang core.L
 // field — the same text isDirectSourceExpression tested against the source
 // patterns (with the call form's trailing "(" omitted, since it's only
 // needed for the regex match, not for display).
-func sourceExpressionText(n *ir.IRNode) string {
+func sourceExpressionText(n *ir.IRNode, lang core.Language) string {
 	switch n.Kind {
 	case ir.NodeKindCall:
-		return calleeText(n)
+		return calleeTextFor(n, lang)
 	case ir.NodeKindAttribute:
-		return attributeText(n)
+		return attributeTextFor(n, lang)
 	default:
 		return n.Text
 	}
@@ -671,11 +1009,11 @@ func firstTaintedRHSIdentifier(n *ir.IRNode, taintedVars map[string]bool, lang c
 		}
 	}
 	if isDirectSourceExpression(rhs, lang) {
-		return sourceExpressionText(rhs)
+		return sourceExpressionText(rhs, lang)
 	}
 	for _, d := range ir.Descendants(rhs) {
 		if isDirectSourceExpression(d, lang) {
-			return sourceExpressionText(d)
+			return sourceExpressionText(d, lang)
 		}
 	}
 	return ""

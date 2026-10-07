@@ -22,6 +22,14 @@ description: |
   Detects calls to spawnSync() (child_process, commonly destructured as
   spawnSync) where an argument traces back to an untrusted source
   (intra-procedural taint tracking). Sibling of ZS-JS-029 (spawn).
+
+  Fires only when the call can reach a shell or run an attacker-chosen
+  program: the program (argument 0) is tainted, shell is enabled (shell: true
+  or a shell path) with any tainted argument, or the program is a shell
+  interpreter (sh, bash, cmd, powershell, ...) with a tainted later argument.
+  A tainted argv element passed to a fixed, non-shell program is not command
+  injection -- no shell ever parses it -- and is not reported here.
+  The callee must resolve to child_process.spawnSync through its import or require binding (any local name, node: prefix included), or be a bare spawnSync() with no import binding in the file.
 message: "spawnSync() called with a tainted argument — use an argument array without shell, and validate input"
 references:
   - https://owasp.org/www-community/attacks/Command_Injection
@@ -29,15 +37,30 @@ tags: [command-injection, child-process]
 match:
   kind: call
   callee: spawnSync
+  # Any receiver ending in .spawnSync is a candidate (cp.spawnSync, child_process.spawnSync,
+  # require('child_process').spawnSync); callee_canonical then requires the callee
+  # to resolve to the child_process module, or to be the bare name with no
+  # import binding. So new RegExp(p).exec(s), re.exec(s) and a redux-saga
+  # spawnSync imported from another package do not match.
+  callee_suffix: true
   filters:
-    # DELIBERATELY UNINDEXED. spawnSync(command, args, options) is dangerous
-    # at BOTH index 0 (the program) and index 1 (the argv array) — the corpus
-    # case is spawnSync('sh', ['-c', cmd]), whose taint is at index 1, while
-    # spawnSync(userCmd, {shell: true}) puts it at index 0. Only index 2, the
-    # options bag (cwd/env/timeout), is a non-sink, and the engine can pin one
-    # index, not "0 or 1". Pinning either position would silently destroy half
-    # the true positives, which costs more than the tainted-cwd false positive
-    # an index would suppress. Revisit if tainted_argument_index ever accepts
-    # a set of positions.
-    - tainted_argument: true
+    - callee_canonical: '^(child_process\.)?spawnSync$'
+    # spawn/spawnSync execute a program directly with an argv array; no shell
+    # parses the arguments. Command injection (CWE-78) needs one of:
+    - any_of:
+        # the program itself is attacker-controlled;
+        - tainted_argument: true
+          tainted_argument_index: 0
+        # a shell is enabled (shell: true, or a shell path string) and any
+        # argument is attacker-controlled;
+        - kwarg:
+            name: shell
+            value_pattern: "^(true|[\"'`].+[\"'`])$"
+          tainted_argument: true
+        # or the program is a shell interpreter and a later argv element
+        # (the -c script) is attacker-controlled.
+        - argument_literal_matches: "^(sh|bash|zsh|dash|ksh|/bin/(ba|z|da|k)?sh|/usr/bin/(ba|z)?sh|cmd|cmd\\.exe|powershell|powershell\\.exe|pwsh)$"
+          argument_literal_index: 0
+          tainted_argument: true
+          tainted_argument_min_index: 1
 fix_suggestion: "Pass the program and each argument as array elements with shell disabled, and allowlist any user-derived values."

@@ -1,0 +1,33 @@
+id: ZS-TS-136
+lifecycle: released
+name: "SQL injection via Prisma raw unsafe query"
+version: "1.0.0"
+language: typescript
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-89
+owasp:
+  - "A05:2025"
+rationale: |
+  Prisma's $queryRawUnsafe and $executeRawUnsafe run the string they are
+  given as SQL, with no escaping; Prisma documents them as injection-prone
+  and provides tagged-template $queryRaw for parameterized queries.
+  Building the string by interpolation or concatenation is the defect in
+  itself, whatever the data's origin, so this needs no taint.
+description: |
+  prisma.$queryRawUnsafe / $executeRawUnsafe (on any client binding) is
+  called with a query (argument 0) that is a template literal with a ${}
+  substitution or a + concatenation.
+message: "Prisma raw *Unsafe query built from an interpolated string - use $queryRaw tagged templates or parameters"
+references:
+  - https://www.prisma.io/docs/orm/prisma-client/using-raw-sql/raw-queries#queryrawunsafe
+  - https://owasp.org/www-community/attacks/SQL_Injection
+tags: [sqli, injection, prisma]
+match:
+  kind: call
+  filters:
+    - callee_pattern: "(^|\\.)\\$(queryRawUnsafe|executeRawUnsafe)$"
+    - dynamic_string_argument_index: 0
+fix_suggestion: "Use the tagged-template prisma.$queryRaw`... ${value}` form (parameterized), or pass values as $queryRawUnsafe(sql, ...params) with $1 placeholders."

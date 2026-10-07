@@ -1,0 +1,49 @@
+id: ZS-PY-099
+lifecycle: released
+name: Cookie Set Without Secure Flag
+version: "1.0.0"
+language: python
+category: security-misconfiguration
+severity: low
+confidence: medium
+cwe:
+  - CWE-614
+owasp:
+  - "A02:2025"
+rationale: |
+  Django's and Flask/Werkzeug's set_cookie default to secure=False, so the
+  browser also sends the cookie over plain HTTP. One request to an http://
+  URL of the site (a downgraded link, an open Wi-Fi network) exposes it to
+  anyone on the path.
+description: |
+  Flags response.set_cookie(...) (any receiver) without secure set to a
+  true value. A non-literal secure= value (e.g. settings.SESSION_COOKIE_SECURE)
+  is treated as set. Cookie-clearing calls are skipped as in ZS-PY-098.
+  Reported separately from the HttpOnly rule because they are different
+  weaknesses with different fixes.
+message: "Cookie set without the Secure flag; sent over plain HTTP"
+references:
+  - https://owasp.org/www-community/controls/SecureCookieAttribute
+tags: [cookie, misconfiguration, django, flask]
+match:
+  kind: call
+  callee: set_cookie
+  callee_suffix: true
+  filters:
+    - not:
+        kind: call
+        filters:
+          - kwarg:
+              name: secure
+              value_pattern: "^(True|1|[^FN0].*|F[^a].*|N[^o].*)$"
+    - not:
+        kind: call
+        filters:
+          - argument_literal_matches: "^$"
+    - not:
+        kind: call
+        filters:
+          - kwarg:
+              name_pattern: "^(max_age|expires)$"
+              value_pattern: "^(0|-[0-9]+|.*1970.*)$"
+fix_suggestion: "Pass secure=True to set_cookie (and serve the site over HTTPS only)."

@@ -215,8 +215,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v2
+      - uses: tj-actions/checkout@v3
+      - uses: acme/setup-node@v2
 `)
 	fs := detectGitHubActionsUnpinned(".github/workflows/ci.yml", vuln)
 	if len(fs) != 2 {
@@ -266,5 +266,17 @@ services:
 	fsClean := detectDockerComposePrivileged("docker-compose.yml", clean)
 	if len(fsClean) != 0 {
 		t.Errorf("expected 0 findings for unprivileged compose file, got %+v", fsClean)
+	}
+}
+
+// AssetData entries (data files under static/public/assets) are for the
+// secrets scanner only; see walker.FileEntry.AssetData.
+func TestFrameworkScanner_RejectsAssetData(t *testing.T) {
+	s := &FrameworkScanner{}
+	if s.Accepts(walker.FileEntry{Path: "public/docker-compose.yml", AssetData: true}) {
+		t.Error("framework scanner must not accept AssetData entries")
+	}
+	if !s.Accepts(walker.FileEntry{Path: "docker-compose.yml"}) {
+		t.Error("framework scanner must accept a root docker-compose.yml")
 	}
 }

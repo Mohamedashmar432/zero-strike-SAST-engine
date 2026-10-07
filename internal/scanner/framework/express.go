@@ -63,5 +63,9 @@ func detectExpressMissingHelmet(path string, data []byte) []core.Finding {
 		[]string{"CWE-693"},
 		[]string{"A02:2025"},
 	)
+	// Hardening tier: missing security-header middleware is defence in depth
+	// with no exploit path of its own, so it is left out of default output
+	// and counted instead (see core.Tier).
+	f.Tier = core.TierHardening
 	return []core.Finding{f}
 }

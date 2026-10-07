@@ -32,4 +32,10 @@ match:
   callee: logging.info
   filters:
     - tainted_argument: true
+    # One finding per call site: a credential-shaped argument is ZS-PY-022's
+    # (sensitive data in logs), which is the more severe reading of the call.
+    - not:
+        kind: call
+        filters:
+          - argument_identifier_matches: "(?i)(password|secret|api_key|token)"
 fix_suggestion: "Strip or escape \\r/\\n and control characters from user input before logging, or log via structured fields (extra=...) that encode values."

@@ -1,0 +1,41 @@
+id: ZS-JS-121
+lifecycle: released
+name: "Stack trace field in HTTP response"
+version: "1.0.0"
+language: javascript
+category: error-handling
+severity: medium
+confidence: medium
+cwe:
+  - CWE-209
+owasp:
+  - "A10:2025"
+rationale: |
+  A stack trace in a response hands the client the server's internal call
+  graph, source file paths, framework and library versions, and often the
+  failing input itself. That is reconnaissance an attacker would otherwise
+  have to work for. Unlike a one-line message, a stack is never useful to a
+  legitimate client, so its presence in a response body is almost always a
+  debug path left enabled.
+description: |
+  A response writer (res.send/json, res.status(n).json, NextResponse.json,
+  Response.json) receives an object literal with a `stack` or `stackTrace`
+  property. Responses that already reference a caught error binding are
+  reported by the companion error-in-response rule instead, so one call
+  yields one finding.
+message: "Stack trace placed in the HTTP response body - keep stack traces in server logs"
+references:
+  - https://cwe.mitre.org/data/definitions/209.html
+tags: [error-handling, information-disclosure]
+match:
+  kind: call
+  filters:
+    - callee_pattern: "^(res|response|resp|reply|ctx\\.res)\\.(status\\(\\)\\.)?(send|json|jsonp|end|write)$|^(NextResponse|Response)(\\.json)?$"
+    - kwarg:
+        name_pattern: "^['\\\"]?stack(Trace)?['\\\"]?$"
+        value_pattern: ""
+    - not:
+        kind: call
+        filters:
+          - argument_references_error_binding: true
+fix_suggestion: "Remove the stack field from the response; log it server-side and return a correlation id instead."

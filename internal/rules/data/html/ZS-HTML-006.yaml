@@ -21,7 +21,9 @@ description: |
   Flags any element with a src attribute whose value uses the http:// scheme
   (scripts, images, iframes, media, etc.). Plain <a href="http://..."> links
   (navigations, not subresources) are intentionally not flagged; see ZS-HTML-007
-  for insecure form actions.
+  for insecure form actions. Loopback hosts (localhost, 127.0.0.0/8, [::1],
+  0.0.0.0) are not flagged: that traffic never crosses a network on which it
+  could be read or rewritten.
 message: "Subresource loaded over insecure http:// — mixed content, tamperable in transit (use https://)"
 references:
   - https://cwe.mitre.org/data/definitions/319.html
@@ -33,4 +35,10 @@ match:
     - kwarg:
         name: src
         value_pattern: "(?i)^http://"
+    - not:
+        kind: call
+        filters:
+          - kwarg:
+              name: src
+              value_pattern: '(?i)^http://(localhost|127\.[0-9.]+|\[::1\]|0\.0\.0\.0)([:/]|$)'
 fix_suggestion: "Serve the resource over https:// (or use a protocol-relative/relative URL on an https origin)."

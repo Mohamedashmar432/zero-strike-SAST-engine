@@ -1,0 +1,36 @@
+id: ZS-JS-132
+lifecycle: released
+name: "Path Traversal via fs.promises write"
+version: "1.0.0"
+language: javascript
+category: path-traversal
+severity: high
+confidence: medium
+cwe:
+  - CWE-22
+owasp:
+  - "A01:2025"
+rationale: |
+  The promise-based fs API writes exactly like fs.writeFile: an
+  attacker-influenced path lets the caller create or overwrite any file
+  the process can write (application code, configuration, scheduled
+  scripts), which commonly ends in code execution. It is reached through
+  fs.promises, require('fs').promises or the fs/promises module, which the
+  callback-API rules do not see.
+description: |
+  writeFile/appendFile on the promise-based fs API (fs.promises.*,
+  a binding of require('fs').promises, or an import from 'fs/promises',
+  under any local name) with a path (argument 0) that traces back to an
+  untrusted source.
+message: "fs.promises write to a tainted path - path traversal / arbitrary file write"
+references:
+  - https://owasp.org/www-community/attacks/Path_Traversal
+  - https://nodejs.org/api/fs.html#promises-api
+tags: [path-traversal, file-access]
+match:
+  kind: call
+  filters:
+    - callee_canonical: "^fs\\.promises\\.(writeFile|appendFile)$"
+    - tainted_argument: true
+      tainted_argument_index: 0
+fix_suggestion: "Build the path from a fixed base directory plus path.basename() of the input, resolve it, and confirm it stays inside the base before writing."

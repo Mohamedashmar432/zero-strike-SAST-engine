@@ -1,0 +1,40 @@
+id: ZS-JS-139
+lifecycle: released
+name: "Open Redirect (NextResponse.redirect)"
+version: "1.0.0"
+language: javascript
+category: open-redirect
+severity: medium
+confidence: medium
+cwe:
+  - CWE-601
+owasp:
+  - "A01:2025"
+rationale: |
+  NextResponse.redirect() (and the Fetch API's Response.redirect) send the
+  browser wherever the URL points. A destination taken from a query
+  parameter or header lets an attacker turn a trusted link into a hop to a
+  phishing page, or leak OAuth codes to their own host.
+description: |
+  NextResponse.redirect / Response.redirect with a destination (argument 0)
+  that traces back to untrusted input. A destination whose leading
+  constant segment is a same-site path ('/x...') or a fixed origin is not
+  reported.
+message: "Redirect to a tainted destination - open redirect risk"
+references:
+  - https://cwe.mitre.org/data/definitions/601.html
+  - https://nextjs.org/docs/app/api-reference/functions/next-response#redirect
+tags: [open-redirect, nextjs]
+match:
+  kind: call
+  filters:
+    - callee_pattern: "^(NextResponse|Response)\\.redirect$"
+    - tainted_argument: true
+      tainted_argument_index: 0
+    - not:
+        kind: call
+        filters:
+          - argument_matches_at:
+              index: 0
+              pattern: "^(/[^/\\\\]|https?://[^/$]+/)"
+fix_suggestion: "Accept only relative paths (starting with a single '/') or destinations whose origin is on an allowlist before redirecting."

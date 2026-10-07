@@ -1,0 +1,49 @@
+id: ZS-JS-128
+lifecycle: released
+name: "NoSQL operator injection in MongoDB write"
+version: "1.0.0"
+language: javascript
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-943
+owasp:
+  - "A05:2025"
+rationale: |
+  A MongoDB filter built from a raw request value accepts an object as
+  readily as a string: a JSON body of {"id": {"$ne": null}} turns
+  `update({ _id: req.body.id })` into "update every document". On a write
+  or delete that is mass modification or deletion from a single request.
+description: |
+  update/updateOne/updateMany/replaceOne/delete*/remove/findOneAnd* on a
+  receiver named like a MongoDB collection or model (reviewsCollection,
+  db.collection('x'), UserModel) receives a filter (argument 0) that
+  carries request data. Taint from ordinary function parameters alone is
+  not enough (require_real_source). $where filters are reported by the
+  dedicated $where rule.
+message: "MongoDB write/delete filter built from request data - coerce values to scalars to block operator injection"
+references:
+  - https://owasp.org/www-community/attacks/NoSQL_injection
+tags: [nosql-injection, injection, mongodb]
+match:
+  kind: call
+  filters:
+    - callee_pattern: "(?i)(collection|model)(\\(\\))?\\.(update|updateOne|updateMany|replaceOne|deleteOne|deleteMany|remove|findOneAndUpdate|findOneAndDelete|findOneAndReplace)$"
+    # Sequelize/TypeORM-style query objects ({ where: ... }) are parameterized, not Mongo filters.
+    - not:
+        kind: call
+        filters:
+          - kwarg:
+              name: where
+              value_pattern: ""
+    - tainted_argument: true
+      tainted_argument_index: 0
+      require_real_source: true
+    - not:
+        kind: call
+        filters:
+          - kwarg:
+              name_pattern: "^['\\\"]?\\$where['\\\"]?$"
+              value_pattern: ""
+fix_suggestion: "Coerce request values to the expected scalar type (String(id), Number(n)) or validate them with a schema before using them in a filter; use mongo-sanitize to strip $-prefixed keys."

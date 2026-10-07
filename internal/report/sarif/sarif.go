@@ -27,6 +27,26 @@ type sarifDoc struct {
 type sarifRun struct {
 	Tool    sarifTool     `json:"tool"`
 	Results []sarifResult `json:"results"`
+	// Properties records scan-level facts a SARIF consumer would otherwise
+	// lose, such as findings held back from default output by tier.
+	Properties *sarifRunProperties `json:"properties,omitempty"`
+}
+
+// runProperties returns the run property bag, or nil when there is nothing to
+// record (keeps the common case byte-identical to earlier output).
+func runProperties(s report.ScanStats) *sarifRunProperties {
+	if s.TierExcluded == 0 {
+		return nil
+	}
+	return &sarifRunProperties{TierExcluded: s.TierExcluded, TierExcludedByRule: s.TierExcludedByRule}
+}
+
+// sarifRunProperties is the run-level property bag. TierExcluded mirrors
+// report.ScanStats so a SARIF-only consumer can still see that hardening- or
+// quality-tier findings exist and were not included.
+type sarifRunProperties struct {
+	TierExcluded       int            `json:"zerostrikeTierExcluded,omitempty"`
+	TierExcludedByRule map[string]int `json:"zerostrikeTierExcludedByRule,omitempty"`
 }
 
 type sarifTool struct {
@@ -146,6 +166,11 @@ func (r *sarifReporter) Render(rep *report.Report, dest io.Writer) error {
 			for _, o := range f.OWASP {
 				tags = append(tags, owaspTag(o))
 			}
+			if !f.Tier.IsDefault() {
+				// Only present under --include-hardening; tag it so a
+				// consumer can filter hardening/quality results apart.
+				tags = append(tags, string(f.Tier))
+			}
 			if len(tags) > 0 {
 				rule.Properties = &sarifProperties{Tags: tags}
 			}
@@ -206,7 +231,8 @@ func (r *sarifReporter) Render(rep *report.Report, dest io.Writer) error {
 				InformationURI: "https://github.com/Mohamedashmar432/zero-strike-SAST-engine",
 				Rules:          rules,
 			}},
-			Results: results,
+			Results:    results,
+			Properties: runProperties(rep.Stats),
 		}},
 	}
 

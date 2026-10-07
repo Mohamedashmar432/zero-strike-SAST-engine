@@ -22,12 +22,24 @@ rationale: |
   non-security sampling, test fixtures) where predictability doesn't
   matter.
 description: |
-  Detects zero-argument calls to Math.random().
-message: "Math.random() detected — not cryptographically secure, predictable to an attacker"
+  Detects Math.random() whose result is bound to a security-relevant name:
+  assigned to (or interpolated into a value assigned to) a variable or
+  property named like a token, secret, password, nonce, salt, OTP/PIN,
+  key, session or CSRF value, a reset/verification/invite code or an id
+  such as a UUID; or returned from a function so named. Math.random() used
+  for a captcha operand, a shuffle, an animation delay, seed data or a
+  display identifier is not flagged.
+message: "Math.random() used for a security-sensitive value — not cryptographically secure, predictable to an attacker"
 references:
   - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
 tags: [weak-crypto, weak-prng, math-random]
 match:
   kind: call
   callee: Math.random
+  filters:
+    # Fire only when the value is bound to a security-relevant name: the
+    # variable or property it is assigned to, or the function whose return
+    # value it is. Names are compared in snake_case word form, so
+    # sessionToken -> session_token matches token, but tokenizer does not.
+    - context_identifier_matches: "(^|_)(token|secret|password|passwd|pwd|nonce|salt|otp|pin|key|keys|session|sid|csrf|xsrf|reset|verify|verification|code|auth|credential|credentials|api_key|apikey|iv|seed|uuid|guid|invite|challenge)(_|$)"
 fix_suggestion: "Use crypto.randomBytes() or crypto.getRandomValues() for tokens, session IDs, and password-reset codes; Math.random() is fine only for non-security randomness."

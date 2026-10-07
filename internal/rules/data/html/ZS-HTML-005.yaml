@@ -4,8 +4,12 @@ name: External Script Without Subresource Integrity
 version: "1.0.0"
 language: html
 category: supply-chain
-severity: medium
+severity: low
 confidence: high
+# Hardening tier: a missing SRI hash is supply-chain hygiene with no exploit
+# path in the application's own code. Left out of default output; reported
+# with --include-hardening.
+tier: hardening
 cwe:
   - CWE-353
 owasp:
@@ -20,7 +24,11 @@ rationale: |
 description: |
   Flags <script src="http(s)://..."> elements (absolute cross-origin scripts)
   that have no integrity attribute. Relative/same-origin script sources are not
-  flagged, as SRI is aimed at third-party delivery.
+  flagged, as SRI is aimed at third-party delivery. Versionless loader
+  endpoints whose contents change by design (Font Awesome kits, Google
+  platform.js/gtag/Tag Manager/Maps/reCAPTCHA, Stripe.js, Facebook and Twitter
+  widgets) are skipped: the vendor does not support SRI on them and an
+  integrity hash would break the page.
 message: "External <script> without an integrity (SRI) attribute — a compromised host serves arbitrary JS into this origin"
 references:
   - https://cwe.mitre.org/data/definitions/353.html
@@ -38,4 +46,10 @@ match:
         filters:
           - kwarg:
               name: integrity
+    - not:
+        kind: call
+        filters:
+          - kwarg:
+              name: src
+              value_pattern: '(?i)^https?://(kit\.fontawesome\.com|apis\.google\.com/js/|www\.google\.com/recaptcha/|www\.gstatic\.com/recaptcha/|www\.googletagmanager\.com/|maps\.googleapis\.com/|js\.stripe\.com/|connect\.facebook\.net/|platform\.twitter\.com/)'
 fix_suggestion: "Add integrity=\"sha384-...\" (and crossorigin=\"anonymous\") to the script tag, or self-host the dependency."

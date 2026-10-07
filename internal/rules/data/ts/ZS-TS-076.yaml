@@ -7,7 +7,10 @@ category: dangerous-functions
 severity: high
 confidence: medium
 cwe:
-  - CWE-95
+  # CWE-94 (Improper Control of Generation of Code) is the parent of
+  # CWE-95 (eval injection) and covers Function()/vm.* as well; CodeQL's
+  # js/code-injection uses it.
+  - CWE-94
 owasp:
   - "A05:2025"
 rationale: |

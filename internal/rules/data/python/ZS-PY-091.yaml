@@ -1,0 +1,36 @@
+id: ZS-PY-091
+lifecycle: released
+name: Untrusted Input in a Filesystem Glob Pattern
+version: "1.0.0"
+language: python
+category: path-traversal
+severity: medium
+confidence: medium
+cwe:
+  - CWE-22
+owasp:
+  - "A01:2025"
+rationale: |
+  glob.glob, glob.iglob and pathlib's Path.glob/rglob expand a pattern
+  against the filesystem. When part of the pattern comes from the request,
+  the caller controls both the directory walked ("../" segments, absolute
+  paths) and the wildcards, so it can enumerate, and through whatever the
+  code then does with each match read or delete, files outside the
+  directory the code meant to search.
+description: |
+  Flags glob/iglob/rglob calls (any receiver, so glob.glob(...) and
+  Path(base).glob(...) alike) whose pattern argument is tainted. Like the
+  other path rules it keeps parameter-seeded taint, because the
+  handler-extracts/helper-globs split is the common shape.
+message: "Untrusted value used in a glob pattern; an attacker can walk outside the intended directory"
+references:
+  - https://owasp.org/www-community/attacks/Path_Traversal
+  - https://docs.python.org/3/library/glob.html
+tags: [path-traversal, file-access, glob]
+match:
+  kind: call
+  filters:
+    - callee_matches: "(^|\\.)(glob|iglob|rglob)$"
+    - tainted_argument: true
+      tainted_argument_index: 0
+fix_suggestion: "Never put request data in a glob pattern; escape it with glob.escape() and validate it against an allowlist, then confirm each match resolves inside the base directory."

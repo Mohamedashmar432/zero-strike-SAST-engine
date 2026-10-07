@@ -1,0 +1,41 @@
+id: ZS-PY-090
+lifecycle: released
+name: View Exempted from CSRF Protection
+version: "1.0.0"
+language: python
+category: csrf
+severity: medium
+confidence: medium
+cwe:
+  - CWE-352
+owasp:
+  - "A01:2025"
+rationale: |
+  Django's CsrfViewMiddleware (and Flask-WTF's CSRFProtect) reject a
+  state-changing request that does not carry the per-session token, which
+  is what stops another site from submitting a form to this view in the
+  victim's logged-in browser. @csrf_exempt (Flask-WTF: @csrf.exempt) turns
+  that check off for the decorated view. Any POST the view accepts can then
+  be forged cross-site with the victim's cookies: password and e-mail
+  changes, transfers, account deletion.
+description: |
+  Flags a view function or class decorated with csrf_exempt or csrf.exempt,
+  anywhere in its decorator stack. A view that also carries require_GET or
+  require_safe only serves safe methods, so the exemption cannot be abused
+  and the rule skips it. An exempt JSON API that authenticates with a header
+  token rather than a cookie is a legitimate exception the rule cannot tell
+  apart, hence medium confidence.
+message: "View is exempted from CSRF protection; a cross-site form can trigger it with the victim's session"
+references:
+  - https://docs.djangoproject.com/en/stable/ref/csrf/
+  - https://cwe.mitre.org/data/definitions/352.html
+tags: [csrf, django, flask, decorator]
+match:
+  kind: decorator
+  literal: "(^|\\.)(csrf_exempt|csrf\\.exempt)$"
+  filters:
+    - not:
+        kind: decorator
+        filters:
+          - decorator_stack_matches: "(^|\\.)(require_GET|require_safe)$"
+fix_suggestion: "Remove @csrf_exempt and send the CSRF token with the request (form field or X-CSRFToken header); for a token-authenticated API, authenticate with a header instead of a cookie."

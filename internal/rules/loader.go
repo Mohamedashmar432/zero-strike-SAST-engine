@@ -31,6 +31,9 @@ type ruleYAML struct {
 	FixSuggestion string    `yaml:"fix_suggestion"`
 	Rationale     string    `yaml:"rationale"`
 	Lifecycle     string    `yaml:"lifecycle"`
+	Tier          string    `yaml:"tier"`
+	OncePerFile   bool      `yaml:"once_per_file"`
+	SkipContexts  []string  `yaml:"skip_contexts"`
 }
 
 type matchYAML struct {
@@ -48,6 +51,12 @@ type kwargYAML struct {
 	Name         string `yaml:"name"`
 	NamePattern  string `yaml:"name_pattern"`
 	ValuePattern string `yaml:"value_pattern"`
+	ValueTainted bool   `yaml:"value_tainted"`
+}
+
+type argTextYAML struct {
+	Index   int    `yaml:"index"`
+	Pattern string `yaml:"pattern"`
 }
 
 type argKindYAML struct {
@@ -56,20 +65,52 @@ type argKindYAML struct {
 }
 
 type filterYAML struct {
-	Not                       *matchYAML   `yaml:"not"`
-	ArgumentCount             *int         `yaml:"argument_count"`
-	HasAttribute              string       `yaml:"has_attribute"`
-	TaintedArgument           bool         `yaml:"tainted_argument"`
-	TaintedArgumentIndex      *int         `yaml:"tainted_argument_index"`
-	TaintedArgumentMinIndex   *int         `yaml:"tainted_argument_min_index"`
-	TaintedRHS                bool         `yaml:"tainted_rhs"`
-	Kwarg                     *kwargYAML   `yaml:"kwarg"`
-	ArgumentIdentifierMatches string       `yaml:"argument_identifier_matches"`
-	ArgumentLiteralMatches    string       `yaml:"argument_literal_matches"`
-	RequireRealSource         bool         `yaml:"require_real_source"`
-	ArgumentKindNotAt         *argKindYAML `yaml:"argument_kind_not_at"`
-	HasBareExcept             bool         `yaml:"has_bare_except"`
-	HasEmptyExceptHandler     bool         `yaml:"has_empty_except_handler"`
+	Not                            *matchYAML   `yaml:"not"`
+	ArgumentCount                  *int         `yaml:"argument_count"`
+	HasAttribute                   string       `yaml:"has_attribute"`
+	TaintedArgument                bool         `yaml:"tainted_argument"`
+	TaintedArgumentIndex           *int         `yaml:"tainted_argument_index"`
+	TaintedArgumentMinIndex        *int         `yaml:"tainted_argument_min_index"`
+	TaintedRHS                     bool         `yaml:"tainted_rhs"`
+	Kwarg                          *kwargYAML   `yaml:"kwarg"`
+	ArgumentIdentifierMatches      string       `yaml:"argument_identifier_matches"`
+	ArgumentLiteralMatches         string       `yaml:"argument_literal_matches"`
+	RequireRealSource              bool         `yaml:"require_real_source"`
+	ArgumentKindNotAt              *argKindYAML `yaml:"argument_kind_not_at"`
+	HasBareExcept                  bool         `yaml:"has_bare_except"`
+	CalleeMatches                  string       `yaml:"callee_matches"`
+	DecoratorStackMatches          string       `yaml:"decorator_stack_matches"`
+	EnclosingFunctionMatches       string       `yaml:"enclosing_function_matches"`
+	ArgumentNotConstant            *int         `yaml:"argument_not_constant"`
+	WrittenFileMatches             string       `yaml:"written_file_matches"`
+	HasEmptyExceptHandler          bool         `yaml:"has_empty_except_handler"`
+	LiteralArgument                *litArgYAML  `yaml:"literal_argument"`
+	LHSFlowsToCall                 string       `yaml:"lhs_flows_to_call"`
+	ExceptHandler                  *exceptYAML  `yaml:"except_handler"`
+	TryBodyCallsOnly               string       `yaml:"try_body_calls_only"`
+	ContextIdentifierMatches       string       `yaml:"context_identifier_matches"`
+	EnclosingFunctionCalls         string       `yaml:"enclosing_function_calls"`
+	EnclosingFunctionMentions      string       `yaml:"enclosing_function_mentions"`
+	ArgumentLiteralIndex           *int         `yaml:"argument_literal_index"`
+	AnyOf                          []filterYAML `yaml:"any_of"`
+	CalleePattern                  string       `yaml:"callee_pattern"`
+	CalleeCanonical                string       `yaml:"callee_canonical"`
+	CalleeResolved                 bool         `yaml:"callee_resolved"`
+	ArgumentMatchesAt              *argTextYAML `yaml:"argument_matches_at"`
+	DynamicStringArgumentIndex     *int         `yaml:"dynamic_string_argument_index"`
+	ArgumentReferencesErrorBinding bool         `yaml:"argument_references_error_binding"`
+}
+
+type litArgYAML struct {
+	Index   int    `yaml:"index"`
+	Pattern string `yaml:"pattern"`
+}
+
+type exceptYAML struct {
+	Bare      *bool `yaml:"bare"`
+	Empty     *bool `yaml:"empty"`
+	Broad     *bool `yaml:"broad"`
+	Commented *bool `yaml:"commented"`
 }
 
 type defaultLoader struct {
@@ -161,6 +202,9 @@ func (l *defaultLoader) parseYAML(source string, data []byte) ([]*Rule, error) {
 		FixSuggestion: ry.FixSuggestion,
 		Rationale:     ry.Rationale,
 		Lifecycle:     ry.Lifecycle,
+		Tier:          core.Tier(ry.Tier),
+		OncePerFile:   ry.OncePerFile,
+		SkipContexts:  ry.SkipContexts,
 		Match:         convertMatch(ry.Match),
 	}
 
@@ -195,21 +239,56 @@ func convertFilters(fyamls []filterYAML) []Filter {
 	out := make([]Filter, 0, len(fyamls))
 	for _, f := range fyamls {
 		filter := Filter{
-			ArgumentCount:             f.ArgumentCount,
-			HasAttribute:              f.HasAttribute,
-			TaintedArgument:           f.TaintedArgument,
-			TaintedArgumentIndex:      f.TaintedArgumentIndex,
-			TaintedArgumentMinIndex:   f.TaintedArgumentMinIndex,
-			TaintedRHS:                f.TaintedRHS,
-			ArgumentIdentifierMatches: f.ArgumentIdentifierMatches,
-			ArgumentLiteralMatches:    f.ArgumentLiteralMatches,
-			RequireRealSource:         f.RequireRealSource,
-			ArgumentKindNotAt:         convertArgKind(f.ArgumentKindNotAt),
-			HasBareExcept:             f.HasBareExcept,
-			HasEmptyExceptHandler:     f.HasEmptyExceptHandler,
+			ArgumentCount:                  f.ArgumentCount,
+			HasAttribute:                   f.HasAttribute,
+			TaintedArgument:                f.TaintedArgument,
+			TaintedArgumentIndex:           f.TaintedArgumentIndex,
+			TaintedArgumentMinIndex:        f.TaintedArgumentMinIndex,
+			TaintedRHS:                     f.TaintedRHS,
+			ArgumentIdentifierMatches:      f.ArgumentIdentifierMatches,
+			ArgumentLiteralMatches:         f.ArgumentLiteralMatches,
+			RequireRealSource:              f.RequireRealSource,
+			ArgumentKindNotAt:              convertArgKind(f.ArgumentKindNotAt),
+			HasBareExcept:                  f.HasBareExcept,
+			HasEmptyExceptHandler:          f.HasEmptyExceptHandler,
+			CalleeMatches:                  f.CalleeMatches,
+			DecoratorStackMatches:          f.DecoratorStackMatches,
+			EnclosingFunctionMatches:       f.EnclosingFunctionMatches,
+			ArgumentNotConstant:            f.ArgumentNotConstant,
+			WrittenFileMatches:             f.WrittenFileMatches,
+			LHSFlowsToCall:                 f.LHSFlowsToCall,
+			TryBodyCallsOnly:               f.TryBodyCallsOnly,
+			ContextIdentifierMatches:       f.ContextIdentifierMatches,
+			EnclosingFunctionCalls:         f.EnclosingFunctionCalls,
+			EnclosingFunctionMentions:      f.EnclosingFunctionMentions,
+			ArgumentLiteralIndex:           f.ArgumentLiteralIndex,
+			CalleePattern:                  f.CalleePattern,
+			CalleeCanonical:                f.CalleeCanonical,
+			CalleeResolved:                 f.CalleeResolved,
+			DynamicStringArgumentIndex:     f.DynamicStringArgumentIndex,
+			ArgumentReferencesErrorBinding: f.ArgumentReferencesErrorBinding,
+		}
+		if f.LiteralArgument != nil {
+			filter.LiteralArgument = &LiteralArgumentPattern{Index: f.LiteralArgument.Index, Pattern: f.LiteralArgument.Pattern}
+		}
+		if f.AnyOf != nil {
+			// Keep an explicit "any_of: []" non-nil so the validator can
+			// reject it; a nil AnyOf means the key was absent.
+			filter.AnyOf = append([]Filter{}, convertFilters(f.AnyOf)...)
+		}
+		if f.ExceptHandler != nil {
+			filter.ExceptHandler = &ExceptHandlerPattern{
+				Bare:      f.ExceptHandler.Bare,
+				Empty:     f.ExceptHandler.Empty,
+				Broad:     f.ExceptHandler.Broad,
+				Commented: f.ExceptHandler.Commented,
+			}
+		}
+		if f.ArgumentMatchesAt != nil {
+			filter.ArgumentMatchesAt = &ArgumentTextPattern{Index: f.ArgumentMatchesAt.Index, Pattern: f.ArgumentMatchesAt.Pattern}
 		}
 		if f.Kwarg != nil {
-			filter.Kwarg = &KwargPattern{Name: f.Kwarg.Name, NamePattern: f.Kwarg.NamePattern, ValuePattern: f.Kwarg.ValuePattern}
+			filter.Kwarg = &KwargPattern{Name: f.Kwarg.Name, NamePattern: f.Kwarg.NamePattern, ValuePattern: f.Kwarg.ValuePattern, ValueTainted: f.Kwarg.ValueTainted}
 		}
 		if f.Not != nil {
 			mp := convertMatch(*f.Not)

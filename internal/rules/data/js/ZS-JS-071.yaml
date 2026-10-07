@@ -4,8 +4,11 @@ name: Permissive CORS (cors() with Default Allow-All)
 version: "1.0.0"
 language: javascript
 category: security-misconfiguration
-severity: medium
+severity: low
 confidence: high
+# One app-wide policy: app.use(cors()) and app.options('*', cors()) in the
+# same file describe the same default, so report it once per file.
+once_per_file: true
 cwe:
   - CWE-942
 owasp:
@@ -23,6 +26,10 @@ description: |
   origin allowlist (cors({ origin: [...] })) are not flagged. Complements
   ZS-JS-027/028, which catch tainted reflection of the
   Access-Control-Allow-Origin header by hand.
+
+  Severity is low: the default policy sends Access-Control-Allow-Origin: *
+  without Access-Control-Allow-Credentials, so browsers do not expose
+  cookie-authenticated responses to other origins. Reported once per file.
 message: "cors() with no options — enables cross-origin requests from any origin"
 references:
   - https://cwe.mitre.org/data/definitions/942.html

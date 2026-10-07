@@ -24,4 +24,11 @@ type ScanConfig struct {
 	// rule semantics do not hold in a test path, where an assertion or a
 	// fixture credential is the point rather than a defect.
 	IncludeTests bool
+
+	// IncludeHardening keeps findings of the hardening and quality tiers (see
+	// core.Tier) in the output. Off by default: those findings carry no
+	// exploit path of their own. They are never dropped silently -- the
+	// pipeline counts every excluded finding per rule in
+	// ScanResult.TierExcluded / TierExcludedByRule.
+	IncludeHardening bool
 }

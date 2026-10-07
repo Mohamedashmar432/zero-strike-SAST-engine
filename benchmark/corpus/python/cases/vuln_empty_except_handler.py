@@ -1,5 +1,5 @@
-# ZS-PY-024: caught exception is silently discarded
+# ZS-PY-024: a catch-all handler silently discards every failure
 try:
     do_other_thing()
-except ValueError:
+except Exception:
     pass

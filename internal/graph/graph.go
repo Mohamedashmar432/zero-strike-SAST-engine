@@ -309,7 +309,10 @@ func computeReachingDefs(order []*ir.IRNode, cfg *CFG, dfg *DFG) {
 			for defID := range in {
 				next[defID] = true
 			}
-			if lhs, ok := n.Attrs["lhs"].(string); ok && lhs != "" {
+			// Only assignments define a variable. Comparisons, keyword
+			// arguments and dict/object pairs also carry lhs/rhs attrs (for
+			// rule matching), and must not kill or generate definitions.
+			if lhs, ok := n.Attrs["lhs"].(string); ok && lhs != "" && n.Kind == ir.NodeKindAssignment {
 				for _, otherDef := range defsOf[lhs] {
 					delete(next, otherDef) // kill: this assignment overwrites every prior def of lhs
 				}

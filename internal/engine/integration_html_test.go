@@ -51,7 +51,7 @@ func TestIntegration_HTMLRulesFire(t *testing.T) {
 	}{
 		{"ZS-HTML-001", `<a href="https://x.com" target="_blank">x</a>`},
 		{"ZS-HTML-002", `<a href="javascript:alert(1)">x</a>`},
-		{"ZS-HTML-003", `<button onclick="f()">x</button>`},
+		{"ZS-HTML-003", `<button onclick="f({{ x }})">x</button>`},
 		{"ZS-HTML-004", `<iframe src="https://x.com"></iframe>`},
 		{"ZS-HTML-005", `<script src="https://cdn.x.com/a.js"></script>`},
 		{"ZS-HTML-006", `<img src="http://x.com/a.png">`},

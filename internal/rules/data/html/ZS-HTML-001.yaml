@@ -4,8 +4,13 @@ name: target=_blank Link Without rel=noopener
 version: "1.0.0"
 language: html
 category: misconfiguration
-severity: medium
+severity: low
 confidence: medium
+# Hardening tier: every current browser (Chrome 88+, Firefox 79+, Safari
+# 12.1+) applies rel=noopener to target=_blank by default, so this is
+# defence-in-depth for legacy browsers rather than a reachable weakness. Left
+# out of default output; reported with --include-hardening.
+tier: hardening
 cwe:
   - CWE-1022
 owasp:
@@ -18,9 +23,11 @@ rationale: |
   tabnabbing — so a user who returns to the first tab lands on a convincing
   phishing page they believe they never left.
 description: |
-  Flags anchor elements with target="_blank" that do not carry a rel attribute
-  containing "noopener". Applies to <a>; <area target=_blank> is not covered by
-  this rule.
+  Flags anchor elements with target="_blank" whose href is an absolute
+  (cross-origin capable) URL and that do not carry a rel attribute containing
+  "noopener". Relative links and template URL tags ({% url %}, url_for) stay on
+  the same origin and are not flagged. Applies to <a>; <area target=_blank> is
+  not covered by this rule.
 message: "<a target=\"_blank\"> without rel=\"noopener\" — the opened page can hijack this tab (reverse tabnabbing)"
 references:
   - https://cwe.mitre.org/data/definitions/1022.html
@@ -33,6 +40,9 @@ match:
     - kwarg:
         name: target
         value_pattern: "(?i)^_blank$"
+    - kwarg:
+        name: href
+        value_pattern: '(?i)^\s*(https?:)?//'
     - not:
         kind: call
         filters:

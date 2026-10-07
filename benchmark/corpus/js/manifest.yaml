@@ -2,7 +2,7 @@ version: "1"
 cases:
   - file: cases/vuln_eval.js
     language: javascript
-    expect: [{rule_id: ZS-JS-001, min_count: 1}]
+    expect: [{rule_id: ZS-JS-001, min_count: 1, cwe: CWE-94}]
   - file: cases/vuln_tls.js
     language: javascript
     expect: [{rule_id: ZS-JS-006, min_count: 1}]
@@ -71,7 +71,7 @@ cases:
     expect: [{rule_id: ZS-JS-025, min_count: 1}]
   - file: cases/vuln_weak_hash.js
     language: javascript
-    expect: [{rule_id: ZS-JS-026, min_count: 1}]
+    expect: [{rule_id: ZS-JS-026, min_count: 1, cwe: CWE-328}]
   - file: cases/vuln_cors_header.js
     language: javascript
     expect: [{rule_id: ZS-JS-027, min_count: 1}]
@@ -218,7 +218,7 @@ cases:
     expect: [{rule_id: ZS-JS-073, min_count: 1}]
   - file: cases/vuln_errorhandler.js
     language: javascript
-    expect: [{rule_id: ZS-JS-074, min_count: 1}]
+    expect: [{rule_id: ZS-JS-074, min_count: 1, cwe: CWE-489}]
   - file: cases/vuln_spawnsync.js
     language: javascript
     expect: [{rule_id: ZS-JS-075, min_count: 1}]
@@ -264,4 +264,77 @@ cases:
   - file: cases/vuln_path_join_traversal.js
     language: javascript
     expect: [{rule_id: ZS-JS-091, min_count: 1}]
+  - file: cases/vuln_hardcoded_creds.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-140, min_count: 1}, {rule_id: ZS-JS-141, min_count: 1}, {rule_id: ZS-JS-143, min_count: 2}, {rule_id: ZS-JS-144, min_count: 2}, {rule_id: ZS-JS-146, min_count: 1}, {rule_id: ZS-JS-142, min_count: 1}, {rule_id: ZS-JS-145, min_count: 1}]
+  - file: cases/clean_hardcoded_creds.js
+    language: javascript
+    expect: []
+  # Module-level constant resolution for argument_literal_matches.
+  - file: cases/vuln_http_const_url.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-090, min_count: 1}]
 
+  - file: cases/vuln_g3_120.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-120, min_count: 1}]
+  - file: cases/vuln_g3_121.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-121, min_count: 1}]
+  - file: cases/vuln_g3_122.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-122, min_count: 1}]
+  - file: cases/vuln_g3_123.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-123, min_count: 1}]
+  - file: cases/vuln_g3_124.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-124, min_count: 1}]
+  - file: cases/vuln_g3_125.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-125, min_count: 1}]
+  - file: cases/vuln_g3_126.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-126, min_count: 1}]
+  - file: cases/vuln_g3_127.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-127, min_count: 1}]
+  - file: cases/vuln_g3_128.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-128, min_count: 1}]
+  - file: cases/vuln_g3_129.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-129, min_count: 1}]
+  - file: cases/vuln_g3_130.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-130, min_count: 1}]
+  - file: cases/vuln_g3_131.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-131, min_count: 1}]
+  - file: cases/vuln_g3_132.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-132, min_count: 1}]
+  - file: cases/vuln_g3_133.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-133, min_count: 1}]
+  - file: cases/vuln_g3_134.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-134, min_count: 1}]
+  - file: cases/vuln_g3_135.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-135, min_count: 1}]
+  - file: cases/vuln_g3_136.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-136, min_count: 1}]
+  - file: cases/vuln_g3_137.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-137, min_count: 1}]
+  - file: cases/vuln_g3_138.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-138, min_count: 1}]
+  - file: cases/vuln_g3_139.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-139, min_count: 1}]
+  - file: cases/vuln_g3_140.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-150, min_count: 1}]

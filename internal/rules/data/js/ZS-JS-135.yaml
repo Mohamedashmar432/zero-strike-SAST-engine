@@ -1,0 +1,33 @@
+id: ZS-JS-135
+lifecycle: released
+name: "ApolloServer debug mode enabled"
+version: "1.0.0"
+language: javascript
+category: security-misconfiguration
+severity: medium
+confidence: high
+cwe:
+  - CWE-489
+owasp:
+  - "A02:2025"
+rationale: |
+  ApolloServer's debug option adds exception stack traces and internal
+  error details to every GraphQL error response. Turned on explicitly it
+  stays on in production, giving any client the server's file paths,
+  resolver internals and library versions.
+description: |
+  new ApolloServer({ debug: true, ... }) (inline options or a same-file
+  options object passed by name).
+message: "ApolloServer created with debug: true - stack traces are returned to GraphQL clients"
+references:
+  - https://cwe.mitre.org/data/definitions/489.html
+  - https://www.apollographql.com/docs/apollo-server/data/errors/
+tags: [misconfiguration, graphql, debug]
+match:
+  kind: call
+  callee: ApolloServer
+  filters:
+    - kwarg:
+        name: debug
+        value_pattern: "^true$"
+fix_suggestion: "Remove debug: true (Apollo enables it only outside production by default) and format errors with formatError for clients."

@@ -2,6 +2,7 @@ package rules
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/ir"
@@ -25,6 +26,8 @@ var validNodeKinds = map[string]bool{
 	string(ir.NodeKindAttribute):  true,
 	string(ir.NodeKindBinaryOp):   true,
 	string(ir.NodeKindAssert):     true,
+	string(ir.NodeKindDecorator):  true,
+	string(ir.NodeKindKeywordArg): true,
 }
 
 var validSeverities = map[string]bool{
@@ -38,6 +41,12 @@ var validConfidences = map[string]bool{
 var validLifecycles = map[string]bool{
 	"draft": true, "validated": true, "released": true, "retired": true,
 }
+
+// validSkipContexts are the execution contexts a rule may opt out of (see
+// Rule.SkipContexts). An unknown name is rejected rather than ignored: a typo
+// would otherwise leave the rule firing exactly where its author meant to
+// switch it off.
+var validSkipContexts = map[string]bool{"browser": true}
 
 type defaultValidator struct{}
 
@@ -78,6 +87,22 @@ func (v *defaultValidator) Validate(rule *Rule) []string {
 		}
 	}
 
+	errs = append(errs, validateFilterRegexes(rule.Match.Filters, "match.filters")...)
+	for i, f := range rule.Match.Filters {
+		if f.LHSFlowsToCall != "" {
+			if _, err := regexp.Compile(f.LHSFlowsToCall); err != nil {
+				errs = append(errs, fmt.Sprintf("match.filters[%d].lhs_flows_to_call: invalid regex: %v", i, err))
+			}
+		}
+		if f.LiteralArgument != nil {
+			if f.LiteralArgument.Pattern == "" {
+				errs = append(errs, fmt.Sprintf("match.filters[%d].literal_argument: pattern must not be empty", i))
+			} else if _, err := regexp.Compile(f.LiteralArgument.Pattern); err != nil {
+				errs = append(errs, fmt.Sprintf("match.filters[%d].literal_argument.pattern: invalid regex: %v", i, err))
+			}
+		}
+	}
+
 	if rule.Match.CalleeSuffix && rule.Match.Callee == "" {
 		errs = append(errs, "match.callee_suffix: requires a callee")
 	}
@@ -108,6 +133,88 @@ func (v *defaultValidator) Validate(rule *Rule) []string {
 	}
 	if !validLifecycles[rule.Lifecycle] {
 		errs = append(errs, fmt.Sprintf("lifecycle: invalid value %q", rule.Lifecycle))
+	}
+	if !rule.Tier.IsValid() {
+		errs = append(errs, fmt.Sprintf("tier: invalid value %q (want security, hardening or quality)", rule.Tier))
+	}
+	for _, c := range rule.SkipContexts {
+		if !validSkipContexts[c] {
+			errs = append(errs, fmt.Sprintf("skip_contexts: unknown context %q", c))
+		}
+	}
+	errs = append(errs, validateFilters("match.filters", rule.Match.Filters)...)
+	return errs
+}
+
+// validateFilters checks the structural filter fields that would otherwise
+// fail silently at match time: a regex that does not compile matches nothing,
+// an empty any_of can never pass, and an except_handler with no constraint
+// is indistinguishable from a typo. It recurses into any_of entries and not
+// sub-patterns.
+func validateFilters(where string, fs []Filter) []string {
+	var errs []string
+	for i, f := range fs {
+		at := fmt.Sprintf("%s[%d]", where, i)
+		for name, re := range map[string]string{
+			"try_body_calls_only":         f.TryBodyCallsOnly,
+			"context_identifier_matches":  f.ContextIdentifierMatches,
+			"enclosing_function_calls":    f.EnclosingFunctionCalls,
+			"enclosing_function_mentions": f.EnclosingFunctionMentions,
+			"argument_literal_matches":    f.ArgumentLiteralMatches,
+		} {
+			if re == "" {
+				continue
+			}
+			if _, err := regexp.Compile(re); err != nil {
+				errs = append(errs, fmt.Sprintf("%s.%s: %v", at, name, err))
+			}
+		}
+		if f.ArgumentLiteralIndex != nil && f.ArgumentLiteralMatches == "" {
+			errs = append(errs, at+".argument_literal_index: requires argument_literal_matches")
+		}
+		if f.ExceptHandler != nil {
+			p := f.ExceptHandler
+			if p.Bare == nil && p.Empty == nil && p.Broad == nil && p.Commented == nil {
+				errs = append(errs, at+".except_handler: set at least one of bare, empty, broad, commented")
+			}
+		}
+		if f.AnyOf != nil {
+			if len(f.AnyOf) == 0 {
+				errs = append(errs, at+".any_of: must list at least one filter")
+			}
+			errs = append(errs, validateFilters(at+".any_of", f.AnyOf)...)
+		}
+		if f.Not != nil {
+			errs = append(errs, validateFilters(at+".not.filters", f.Not.Filters)...)
+		}
+	}
+	return errs
+}
+
+// validateFilterRegexes compiles the regex-valued filters added for the
+// context-aware rules, recursing into `not` sub-patterns. The engine treats a
+// regex that fails to compile as "no match", so a typo would otherwise turn a
+// positive filter into a rule that never fires and a negative one into a
+// no-op, silently.
+func validateFilterRegexes(fs []Filter, at string) []string {
+	var errs []string
+	for i, f := range fs {
+		for name, pat := range map[string]string{
+			"callee_matches":             f.CalleeMatches,
+			"decorator_stack_matches":    f.DecoratorStackMatches,
+			"enclosing_function_matches": f.EnclosingFunctionMatches,
+			"written_file_matches":       f.WrittenFileMatches,
+		} {
+			if pat == "" {
+				continue
+			}
+			if _, err := regexp.Compile(pat); err != nil {
+				errs = append(errs, fmt.Sprintf("%s[%d].%s: %v", at, i, name, err))
+			}
+		}
+		if f.Not != nil {
+			errs = append(errs, validateFilterRegexes(f.Not.Filters, fmt.Sprintf("%s[%d].not.filters", at, i))...)
+		}
 	}
 	return errs
 }

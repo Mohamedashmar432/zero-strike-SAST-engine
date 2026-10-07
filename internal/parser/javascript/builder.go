@@ -6,10 +6,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/uuid"
-	sitter "github.com/smacker/go-tree-sitter"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/ir"
+	"github.com/google/uuid"
+	sitter "github.com/smacker/go-tree-sitter"
 )
 
 // IRBuilder converts a JavaScript tree-sitter CST into an ir.IRFile.
@@ -172,6 +172,22 @@ func extractAttrs(n *ir.IRNode, node *sitter.Node, source []byte) {
 		if params := extractParameters(node, source); len(params) > 0 {
 			n.Attrs["parameters"] = params
 		}
+		// The first parameter of an err-first / .catch() callback holds an
+		// error object; the engine's argument_references_error_binding filter
+		// reads it (CWE-209: error details sent in a response).
+		if eb := errorCallbackParam(node, source); eb != "" {
+			n.Attrs["error_param"] = eb
+		}
+	case "catch_clause":
+		if eb := catchBinding(node, source); eb != "" {
+			n.Attrs["error_binding"] = eb
+		}
+	case "property_identifier":
+		// property_identifier lowers to NodeKindIdentifier like a variable
+		// reference does. Mark it so a filter that needs a *reference* to a
+		// binding (err) can tell `err` apart from the key in {err: 1} or the
+		// property in x.err.
+		n.Attrs["prop"] = true
 	case "return_statement":
 		// Capture the returned expression's text for the taint
 		// function-summary pass (see internal/analyzer/taint).
@@ -204,19 +220,26 @@ func extractAttrs(n *ir.IRNode, node *sitter.Node, source []byte) {
 			n.Attrs["rhs"] = value.Content(source)
 		}
 	case "pair":
+		// lhs/rhs mirror kwarg_name/kwarg_value so assignment-style
+		// lhs_identifier/rhs_literal rules can match object entries such as
+		// { password: 'letmein' }. lhs drops the quotes of a string key.
 		if key := node.ChildByFieldName("key"); key != nil {
 			n.Attrs["kwarg_name"] = key.Content(source)
+			n.Attrs["lhs"] = unquoteLiteral(key.Content(source))
 		}
 		if value := node.ChildByFieldName("value"); value != nil {
 			n.Attrs["kwarg_value"] = value.Content(source)
+			n.Attrs["rhs"] = value.Content(source)
 		}
+	case "binary_expression":
+		setEqualityAttrs(n, node, source)
 	case "try_statement":
 		var handlers []ir.ExceptHandler
 		for i := 0; i < int(node.ChildCount()); i++ {
 			child := node.Child(i)
 			if child.Type() == "catch_clause" {
 				body := child.ChildByFieldName("body")
-				handlers = append(handlers, ir.ExceptHandler{IsEmptyBody: isEmptyBlockBody(body)})
+				handlers = append(handlers, ir.ExceptHandler{IsEmptyBody: isEmptyBlockBody(body), HasComment: hasCommentChild(body)})
 			}
 		}
 		if len(handlers) > 0 {
@@ -257,6 +280,43 @@ func extractParameters(node *sitter.Node, source []byte) []string {
 		}
 	}
 	return out
+}
+
+// equalityOps are the operators whose operands setEqualityAttrs records.
+var equalityOps = map[string]bool{"==": true, "===": true, "!=": true, "!==": true}
+
+// setEqualityAttrs records lhs/rhs/operator on an equality binary_expression
+// (a === b, a != b) so lhs_identifier/rhs_literal rules can match a
+// credential compared to a literal. Operands are normalised so a string
+// literal sits on the rhs ('admin' === pw becomes lhs=pw, rhs='admin').
+// Other operators get no attrs and so never match those rules.
+func setEqualityAttrs(n *ir.IRNode, node *sitter.Node, source []byte) {
+	op := node.ChildByFieldName("operator")
+	left, right := node.ChildByFieldName("left"), node.ChildByFieldName("right")
+	if op == nil || left == nil || right == nil || !equalityOps[op.Type()] {
+		return
+	}
+	isStr := func(x *sitter.Node) bool { return x.Type() == "string" || x.Type() == "template_string" }
+	if isStr(left) && !isStr(right) {
+		left, right = right, left
+	}
+	n.Attrs["lhs"] = left.Content(source)
+	n.Attrs["rhs"] = right.Content(source)
+	n.Attrs["operator"] = op.Type()
+}
+
+// hasCommentChild reports whether a statement_block (catch body) holds a
+// comment among its direct children.
+func hasCommentChild(body *sitter.Node) bool {
+	if body == nil {
+		return false
+	}
+	for i := 0; i < int(body.ChildCount()); i++ {
+		if body.Child(i).Type() == "comment" {
+			return true
+		}
+	}
+	return false
 }
 
 // isEmptyBlockBody reports whether a statement_block (catch body) contains no

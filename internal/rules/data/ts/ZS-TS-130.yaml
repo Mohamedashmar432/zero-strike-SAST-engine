@@ -1,0 +1,36 @@
+id: ZS-TS-130
+lifecycle: released
+name: "Server-Side Request Forgery (HTTP client libraries)"
+version: "1.0.0"
+language: typescript
+category: ssrf
+severity: high
+confidence: medium
+cwe:
+  - CWE-918
+owasp:
+  - "A01:2025"
+rationale: |
+  When the URL handed to an outbound HTTP client comes from request input,
+  the attacker chooses where the server connects: internal-only services,
+  cloud metadata endpoints such as 169.254.169.254, or hosts inside the
+  network perimeter. needle, got, superagent, request and undici are as
+  common in Node back ends as axios and fetch, which already have rules.
+description: |
+  A request through needle, got, superagent, request / request-promise or
+  undici (the callee must resolve to an import or require of one of those
+  packages, under any local name) whose URL (argument 0) traces back to an
+  untrusted source.
+message: "Outbound HTTP request to a tainted URL - validate the target against an allowlist to prevent SSRF"
+references:
+  - https://owasp.org/Top10/A10_2021-Server-Side_Request_Forgery_%28SSRF%29/
+  - https://cwe.mitre.org/data/definitions/918.html
+tags: [ssrf, http-client]
+match:
+  kind: call
+  filters:
+    - callee_canonical: "^(needle|got|superagent|request|request-promise|request-promise-native|undici)(\\.(get|post|put|patch|delete|del|head|request|stream|fetch))?$"
+    - callee_resolved: true
+    - tainted_argument: true
+      tainted_argument_index: 0
+fix_suggestion: "Validate the destination host and scheme against an allowlist before issuing the request; never request a raw user-supplied URL."

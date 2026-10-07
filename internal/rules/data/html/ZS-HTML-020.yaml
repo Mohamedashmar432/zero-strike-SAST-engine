@@ -1,0 +1,45 @@
+id: ZS-HTML-020
+lifecycle: released
+name: Template Output Marked Safe (Auto-Escaping Bypassed)
+version: "1.0.0"
+language: html
+category: xss
+severity: high
+confidence: medium
+cwe:
+  - CWE-79
+owasp:
+  - "A05:2025"
+rationale: |
+  Django, Jinja2, Nunjucks and Twig HTML-escape every {{ value }} by
+  default; that escaping is the application's XSS defence. The |safe filter
+  tells the engine the value is already trusted markup and switches the
+  escaping off for that output. When the value carries anything a user
+  supplied (a query parameter, a stored post, a fetched response), its HTML
+  and script reach the page verbatim: reflected or stored XSS.
+description: |
+  Flags a {{ ... }} template expression that applies the |safe filter. Form
+  and widget renders ({{ form.as_p|safe }}, {{ field|safe }}) and the CSRF
+  token are skipped, because the framework builds and escapes that markup
+  itself, and so is a value that passes through an escaping or sanitizing
+  filter before |safe.
+message: "Template output marked |safe; HTML escaping is disabled for this value (XSS)"
+references:
+  - https://docs.djangoproject.com/en/stable/ref/templates/builtins/#safe
+  - https://jinja.palletsprojects.com/en/stable/templates/#html-escaping
+  - https://cwe.mitre.org/data/definitions/79.html
+tags: [xss, template, django, jinja]
+match:
+  kind: call
+  callee: template.expr
+  filters:
+    - argument_literal_matches: "\\|\\s*safe\\b"
+    - not:
+        kind: call
+        filters:
+          - argument_literal_matches: "(?i)(^csrf_token\\b|^(form|field|wizard\\.form)\\b|\\.(as_p|as_table|as_ul|as_div|media|label_tag|errors)\\s*\\|)"
+    - not:
+        kind: call
+        filters:
+          - argument_literal_matches: "\\|\\s*(escape|e|force_escape|escapejs|striptags|bleach|sanitize|clean)\\b.*\\|\\s*safe\\b"
+fix_suggestion: "Drop |safe and let the template escape the value; if the value must contain markup, sanitize it with an allowlist sanitizer (bleach, nh3) before marking it safe."

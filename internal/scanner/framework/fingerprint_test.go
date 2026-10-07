@@ -16,7 +16,7 @@ func scanClone(t *testing.T) map[string][2]string {
 	t.Helper()
 	root := t.TempDir()
 	files := map[string]string{
-		".github/workflows/ci.yml": "jobs:\n  b:\n    steps:\n      - uses: actions/checkout@v3\n",
+		".github/workflows/ci.yml": "jobs:\n  b:\n    steps:\n      - uses: tj-actions/checkout@v3\n",
 		"app/.env":                 "DEBUG=true\n",
 	}
 	var entries []walker.FileEntry

@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    {% autoescape on %}
+    <div class="comment">{{ comment.body }}</div>
+    {% endautoescape %}
+    {# server-side comment {{ never_rendered }} #}
+    <div>{{ form.as_p|safe }}</div>
+    <div>{{ sanitized|escape|safe }}</div>
+  </body>
+</html>

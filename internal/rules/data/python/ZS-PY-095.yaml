@@ -1,0 +1,33 @@
+id: ZS-PY-095
+lifecycle: released
+name: Token Generator Returns random Module Output
+version: "1.0.0"
+language: python
+category: cryptography
+severity: medium
+confidence: low
+cwe:
+  - CWE-338
+owasp:
+  - "A04:2025"
+rationale: |
+  A function named generate_token / make_api_key / new_otp exists to mint
+  a secret. When it returns a value drawn from the random module, the
+  secret is predictable from earlier outputs, and every caller inherits
+  that weakness without an assignment to a suspicious name ever appearing.
+description: |
+  Flags a return statement whose expression calls the random module
+  (choice, choices, sample, randint, randrange, random, getrandbits,
+  randbytes, shuffle) inside a function whose name says it produces a
+  token, key, secret, password, OTP, nonce, salt or session id. The return
+  form of ZS-PY-069. Low confidence: it keys on the function name.
+message: "Function that generates a secret returns a random-module value; use the secrets module"
+references:
+  - https://docs.python.org/3/library/secrets.html
+tags: [weak-crypto, weak-prng, random]
+match:
+  kind: return
+  rhs_literal: "\\brandom\\.(randint|random|choices?|randrange|getrandbits|shuffle|sample|randbytes)\\("
+  filters:
+    - enclosing_function_matches: "(?i)(token|otp|secret|passw(or)?d|api_?key|nonce|salt|csrf|session_?id|reset_?code)"
+fix_suggestion: "Generate the value with secrets.token_urlsafe()/secrets.choice()/secrets.token_hex()."

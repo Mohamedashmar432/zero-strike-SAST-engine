@@ -24,13 +24,34 @@ description: |
   where an argument traces back to an untrusted source (intra-procedural
   taint tracking).
   Ported verbatim from ZS-JS-060, same match shape.
+
+  The receiver may be any expression whose name ends in collection or model (case-insensitive), including db.collection('name'). Filters that use $where are reported by the $where rule instead.
 message: "collection.findOne() called with a tainted filter — validate/coerce input before building the query"
 references:
   - https://owasp.org/www-community/attacks/NoSQL_injection
 tags: [nosql-injection, injection, mongodb]
 match:
   kind: call
-  callee: collection.findOne
   filters:
+    # Any receiver named like a MongoDB collection or model:
+    # collection.findOne, db.reviewsCollection.findOne, db.collection('x').findOne,
+    # UserModel.findOne. The exact `collection.findOne` callee only matched a
+    # variable that happened to be called collection.
+    - callee_pattern: '(?i)(collection|model)(\(\))?\.findOne$'
+    # Sequelize/TypeORM-style query objects ({ where: ... }) are parameterized, not Mongo filters.
+    - not:
+        kind: call
+        filters:
+          - kwarg:
+              name: where
+              value_pattern: ""
+    # A $where filter is owned by the dedicated $where rule (one finding
+    # per call).
+    - not:
+        kind: call
+        filters:
+          - kwarg:
+              name_pattern: '^["'']?\$where["'']?$'
+              value_pattern: ""
     - tainted_argument: true
 fix_suggestion: "Pass user values as plain scalar filter values, validate their types, and never interpolate input into $where."

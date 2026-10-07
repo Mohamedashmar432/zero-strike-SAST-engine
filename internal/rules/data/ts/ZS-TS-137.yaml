@@ -1,0 +1,38 @@
+id: ZS-TS-137
+lifecycle: released
+name: "Mass assignment from the request body"
+version: "1.0.0"
+language: typescript
+category: injection
+severity: medium
+confidence: medium
+cwe:
+  - CWE-915
+owasp:
+  - "A08:2025"
+rationale: |
+  Constructing or creating a model straight from req.body copies every
+  field the client sent, including ones the form never offered: role,
+  isAdmin, balance, ownerId. That is how a registration request becomes
+  an administrator account.
+description: |
+  A model is built from the whole request body or query: new Model(req.body)
+  for a capitalized constructor that is not a JavaScript built-in, or
+  Model.create/build/insertMany/bulkCreate(req.body).
+message: "Model populated from the whole request body - mass assignment of unintended fields"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Mass_Assignment_Cheat_Sheet.html
+  - https://cwe.mitre.org/data/definitions/915.html
+tags: [mass-assignment, injection]
+match:
+  kind: call
+  filters:
+    - callee_pattern: "^[A-Z][\\w$]*$|^[A-Z][\\w$]*\\.(create|build|insertMany|bulkCreate)$"
+    - argument_matches_at:
+        index: 0
+        pattern: "^req\\.(body|query)$"
+    - not:
+        kind: call
+        filters:
+          - callee_pattern: "^(Error|[A-Za-z]*Error|URL|URLSearchParams|Date|RegExp|Buffer|Map|Set|WeakMap|WeakSet|Promise|Proxy|Function|Array|Object|String|Number|Boolean|BigInt|Symbol|Blob|File|FormData|Headers|Request|Response|NextResponse|Uint8Array|TextEncoder|TextDecoder)$"
+fix_suggestion: "Copy only the allowed fields (const { username, password } = req.body) or validate the body against a schema that strips unknown keys before building the model."

@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html>
   <body>
-    <button onclick="sendData(document.cookie)">Submit</button>
+    {# ZS-HTML-003: a template value interpolated into an inline handler. The
+       template engine HTML-escapes it, but the browser HTML-decodes the
+       attribute before running it as JavaScript, so ');alert(1);// escapes. #}
+    <button onclick="loadProfile('{{ username }}')">Open profile</button>
   </body>
 </html>

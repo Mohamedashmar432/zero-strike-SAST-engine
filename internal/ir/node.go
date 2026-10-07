@@ -27,6 +27,12 @@ const (
 	NodeKindSwitch     NodeKind = "switch"
 	NodeKindSelect     NodeKind = "select"
 	NodeKindDefer      NodeKind = "defer"
+	// NodeKindDecorator is one decorator line of a decorated definition
+	// (Python "@csrf_exempt"). Text is the decorator's dotted name with any
+	// call arguments dropped; Attrs carry "decorator_args" (the argument
+	// text, when called), "decorator_stack" (every decorator name on the
+	// same definition, outermost first) and "decorated_name".
+	NodeKindDecorator NodeKind = "decorator"
 	NodeKindUnknown    NodeKind = "unknown"
 )
 
@@ -36,6 +42,10 @@ type ExceptHandler struct {
 	IsBare      bool     // true when the clause has no exception type (bare "except:")
 	Types       []string // exception type names/expressions, empty when IsBare
 	IsEmptyBody bool     // true when the handler body is just "pass"
+	// HasComment is true when the handler body contains a comment. An empty
+	// handler that says "// ignore" or "# best effort" is a documented
+	// decision rather than a forgotten one.
+	HasComment bool
 }
 
 // IRNode is a node in the ZeroStrike Intermediate Representation.

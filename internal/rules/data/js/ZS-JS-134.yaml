@@ -1,0 +1,31 @@
+id: ZS-JS-134
+lifecycle: released
+name: "Path Traversal via directory listing (fs.readdir)"
+version: "1.0.0"
+language: javascript
+category: path-traversal
+severity: medium
+confidence: medium
+cwe:
+  - CWE-22
+owasp:
+  - "A01:2025"
+rationale: |
+  Listing a directory chosen by the caller discloses the names of files
+  outside the intended folder (other users' uploads, backups, key files)
+  and is usually the first step before a read or download of one of them.
+description: |
+  fs.readdir/readdirSync/opendir (callback or promise API, under any
+  binding of the fs module) with a path (argument 0) that traces back to
+  an untrusted source.
+message: "Directory listing of a tainted path - path traversal / information disclosure"
+references:
+  - https://owasp.org/www-community/attacks/Path_Traversal
+tags: [path-traversal, file-access]
+match:
+  kind: call
+  filters:
+    - callee_canonical: "^fs(\\.promises)?\\.(readdir|readdirSync|opendir|opendirSync)$"
+    - tainted_argument: true
+      tainted_argument_index: 0
+fix_suggestion: "Resolve the directory against a fixed base and confirm it stays inside it before listing; never list a raw user-supplied path."

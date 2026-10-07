@@ -33,6 +33,8 @@ description: |
   directly within an argument's subtree (not just via a named tainted
   variable) would close this for every taint-gated rule at once; that's
   follow-up work, not fixed here.
+
+  The callee must resolve to child_process.exec through its import or require binding (any local name, node: prefix included), or be a bare exec() with no import binding in the file.
 message: "exec() called with a tainted command string — command injection risk"
 references:
   - https://owasp.org/www-community/attacks/Command_Injection
@@ -40,6 +42,13 @@ tags: [command-injection, child-process]
 match:
   kind: call
   callee: exec
+  # Any receiver ending in .exec is a candidate (cp.exec, child_process.exec,
+  # require('child_process').exec); callee_canonical then requires the callee
+  # to resolve to the child_process module, or to be the bare name with no
+  # import binding. So new RegExp(p).exec(s), re.exec(s) and a redux-saga
+  # exec imported from another package do not match.
+  callee_suffix: true
   filters:
+    - callee_canonical: '^(child_process\.)?exec$'
     - tainted_argument: true
 fix_suggestion: "Use execFile()/spawn() with an argument array instead of a shell string, or strictly allowlist/validate the input before building the command."

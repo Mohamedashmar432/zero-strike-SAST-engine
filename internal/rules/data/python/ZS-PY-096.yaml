@@ -1,0 +1,35 @@
+id: ZS-PY-096
+lifecycle: released
+name: Password Hashed with a Fast Digest
+version: "1.0.0"
+language: python
+category: cryptography
+severity: high
+confidence: medium
+cwe:
+  - CWE-916
+owasp:
+  - "A04:2025"
+rationale: |
+  MD5, SHA-1 and the SHA-2 family are designed to be fast: a single GPU
+  computes billions per second, so a leaked table of password digests
+  (salted or not) is brute-forced in hours. Password storage needs a
+  deliberately slow, salted key-derivation function. This is a different
+  weakness from using a broken hash (ZS-PY-007/011): SHA-256 is not broken,
+  it is simply the wrong tool for passwords.
+description: |
+  Flags hashlib.md5/sha1/sha224/sha256/sha384/sha512/sha3_*/blake2* and
+  hashlib.new(...) when an argument references an identifier named like a
+  password (password, passwd, pwd, passphrase). Import aliases are resolved,
+  so `from hashlib import md5; md5(password.encode())` is covered.
+message: "Password hashed with a fast digest; use a slow, salted KDF (bcrypt, scrypt, Argon2, PBKDF2)"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+  - https://cwe.mitre.org/data/definitions/916.html
+tags: [weak-crypto, password-storage, hashing]
+match:
+  kind: call
+  filters:
+    - callee_matches: "^hashlib\\.(md5|sha1|sha224|sha256|sha384|sha512|sha3_224|sha3_256|sha3_384|sha3_512|blake2b|blake2s|new)$"
+    - argument_identifier_matches: "(?i)^(.*_)?(password|passwd|pwd|passphrase)(_.*)?$"
+fix_suggestion: "Store passwords with argon2-cffi, bcrypt, hashlib.scrypt or Django's make_password(); never with a bare digest."

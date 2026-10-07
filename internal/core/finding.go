@@ -30,6 +30,39 @@ const (
 	FindingKindConfig FindingKind = "config"
 )
 
+// Tier separates exploitable security weaknesses from hardening advice and
+// code-quality notes. Only the security tier is part of default scan output;
+// the other two are excluded unless the scan opts in (--include-hardening),
+// and every excluded finding is still counted in the report's
+// Stats.TierExcluded / Stats.TierExcludedByRule so nothing is hidden
+// silently.
+type Tier string
+
+const (
+	// TierSecurity is the default: a finding that can indicate a reachable,
+	// exploitable weakness. The empty Tier means the same thing.
+	TierSecurity Tier = "security"
+	// TierHardening is defence-in-depth advice with no exploit path of its
+	// own: a missing SRI hash, an unpinned first-party CI action, a missing
+	// security-headers middleware.
+	TierHardening Tier = "hardening"
+	// TierQuality is a code-quality weakness (bare except:, catch-all
+	// handlers) that is worth fixing but is not a vulnerability by itself.
+	TierQuality Tier = "quality"
+)
+
+// IsDefault reports whether findings of this tier belong in default output.
+func (t Tier) IsDefault() bool { return t == "" || t == TierSecurity }
+
+// IsValid reports whether t is a recognised tier ("" counts as security).
+func (t Tier) IsValid() bool {
+	switch t {
+	case "", TierSecurity, TierHardening, TierQuality:
+		return true
+	}
+	return false
+}
+
 // SecretFinding carries metadata for a detected secret.
 type SecretFinding struct {
 	DetectorID string
@@ -100,4 +133,8 @@ type Finding struct {
 	Description  string             // what the rule detects and its known limits, from rule YAML description
 	Remediation  string             // concrete fix guidance, from the rule's FixSuggestion (populated by internal/findings.BuildFinding)
 	TaintContext *TaintContext      // non-nil iff the finding depended on tainted-data tracking
+	// Tier is the output tier (see Tier). Empty means security. Findings of
+	// any other tier are dropped from default output by the pipeline and
+	// counted instead.
+	Tier Tier `json:"Tier,omitempty"`
 }

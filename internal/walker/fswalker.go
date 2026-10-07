@@ -23,7 +23,7 @@ func (w *fsWalker) Walk(rootPath string) (<-chan FileEntry, <-chan error) {
 	go func() {
 		defer close(entries)
 		defer close(errs)
-		w.walk(rootPath, rootPath, defaultIgnorePatterns, entries, errs)
+		w.walk(rootPath, rootPath, defaultIgnorePatterns, false, entries, errs)
 	}()
 
 	return entries, errs
@@ -31,9 +31,12 @@ func (w *fsWalker) Walk(rootPath string) (<-chan FileEntry, <-chan error) {
 
 // walk performs the actual recursive descent.
 // ignorePatterns accumulates patterns from ignore files found in parent dirs.
+// assetData is true inside a default-skipped asset directory (static/,
+// public/, ...), where only data files are emitted — see FileEntry.AssetData.
 func (w *fsWalker) walk(
 	rootPath, dirPath string,
 	ignorePatterns []string,
+	assetData bool,
 	entries chan<- FileEntry,
 	errs chan<- error,
 ) {
@@ -50,11 +53,15 @@ func (w *fsWalker) walk(
 		fullPath := filepath.Join(dirPath, de.Name())
 
 		if de.IsDir() {
+			childAsset := assetData
 			if isSkippedDir(de.Name(), w.opts.ExcludeDirs) {
-				continue
+				if !isAssetDataDir(de.Name(), w.opts.ExcludeDirs) {
+					continue
+				}
+				childAsset = true
 			}
 			// Recurse into sub-directory.
-			w.walk(rootPath, fullPath, patterns, entries, errs)
+			w.walk(rootPath, fullPath, patterns, childAsset, entries, errs)
 			continue
 		}
 
@@ -63,6 +70,9 @@ func (w *fsWalker) walk(
 			continue
 		}
 		if isSkippedExt(de.Name(), w.opts.ExcludeExts) {
+			continue
+		}
+		if assetData && !isAssetDataFile(de.Name()) {
 			continue
 		}
 
@@ -92,7 +102,8 @@ func (w *fsWalker) walk(
 			// Classified from the root-relative path, not fullPath, so a
 			// checkout sitting under some directory named "test" doesn't make
 			// the whole project test material.
-			Role: ClassifyRole(rel),
+			Role:      ClassifyRole(rel),
+			AssetData: assetData,
 		}
 		if f, err := os.Open(fullPath); err == nil {
 			buf := make([]byte, 512)
