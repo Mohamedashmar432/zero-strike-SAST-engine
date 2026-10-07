@@ -243,3 +243,9 @@ cases:
   - file: cases/clean.py
     language: python
     expect: []
+  - file: cases/vuln_hardcoded_creds.py
+    language: python
+    expect: [{rule_id: ZS-PY-140, min_count: 1}, {rule_id: ZS-PY-141, min_count: 1}, {rule_id: ZS-PY-142, min_count: 1}, {rule_id: ZS-PY-143, min_count: 2}, {rule_id: ZS-PY-144, min_count: 1}, {rule_id: ZS-PY-145, min_count: 2}, {rule_id: ZS-PY-146, min_count: 1}]
+  - file: cases/clean_hardcoded_creds.py
+    language: python
+    expect: []

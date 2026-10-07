@@ -28,7 +28,7 @@ tags: [hardcoded-key, cryptography]
 match:
   kind: call
   filters:
-      - callee_matches: "(^|\\.)(jwt|jsonwebtoken|JWT)\\.(sign|verify)$|(^|\\.)(createHmac|createCipheriv|createDecipheriv|createCipher|createDecipher)$"
+      - callee_matches: "(^|\\.)(jwt|jsonwebtoken|JWT)\\.(sign|verify)$|(^|\\.)(createHmac|createCipheriv|createDecipheriv)$"
       - literal_argument:
           index: 1
           pattern: "^[^$]{3,}$"

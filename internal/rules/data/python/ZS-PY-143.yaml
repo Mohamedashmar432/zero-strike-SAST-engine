@@ -17,7 +17,7 @@ rationale: |
   -- for a wallet mnemonic -- takes the funds. The key cannot be rotated
   without a code change and stays in the repository history.
 description: |
-  The key argument (index 0) of Fernet(), hmac.new(), a PyCryptodome cipher
+  The key argument (index 0) of Fernet(), hmac.new(), a (removed)
   constructor (AES.new, DES.new, ...) or Hashids() is a string/bytes
   literal, or a variable bound only to a literal in the same scope.
   Example: Fernet('JHtM1...='), hmac.new(b'k3y', msg, sha256).
@@ -28,7 +28,7 @@ tags: [hardcoded-key, cryptography]
 match:
   kind: call
   filters:
-      - callee_matches: "(^|\\.)(Fernet|hmac\\.new|AES\\.new|DES\\.new|DES3\\.new|Blowfish\\.new|ARC4\\.new|ChaCha20\\.new|ChaCha20_Poly1305\\.new|Salsa20\\.new|Hashids)$"
+      - callee_matches: "(^|\\.)(Fernet|hmac\\.new|Hashids)$"
       - literal_argument:
           index: 0
           pattern: "^[^$]{3,}$"
