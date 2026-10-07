@@ -1,0 +1,54 @@
+id: ZS-PY-145
+lifecycle: released
+name: Hardcoded Credential in Environment Default
+version: "1.0.0"
+language: python
+category: authentication
+severity: high
+confidence: medium
+cwe:
+  - CWE-798
+owasp:
+  - "A07:2025"
+rationale: |
+  os.environ.get('SECRET', 'literal') looks configurable, but the literal is
+  the value wherever the variable is unset -- local, CI, and any production
+  host where it was forgotten. The application then silently runs on a
+  secret anyone with the source knows.
+description: |
+  os.environ.get / os.getenv whose variable name (argument 0) names a
+  secret, password, token or key, with a string-literal default (argument 1)
+  of 4 or more non-space characters. Placeholders are excluded.
+message: "Hardcoded default for a secret environment variable - fail at start-up when it is unset instead of falling back to a literal"
+references:
+  - https://cwe.mitre.org/data/definitions/798.html
+tags: [hardcoded-credential, authentication, env-fallback]
+match:
+  kind: call
+  filters:
+      - callee_matches: "^(os\\.environ\\.get|os\\.getenv|environ\\.get|getenv)$"
+      - literal_argument:
+          index: 0
+          pattern: "(?i)(SECRET|PASSWORD|PASSWD|PWD|TOKEN|API_?KEY|PRIVATE_?KEY|PASSPHRASE)"
+      - literal_argument:
+          index: 1
+          pattern: "^\\S{4,}$"
+      - not:
+          kind: call
+          filters:
+            - literal_argument:
+                index: 1
+                pattern: "(?i)(changeme|change_me|change-me|xxx|example|placeholder|dummy|sample|your[_-]|redacted|replace[_-]?me|<[^>]*>|\\$\\{|\\{\\{|%s|^[bru]?[\"'`]\\*+[\"'`]$)"
+      - not:
+          kind: call
+          filters:
+            - literal_argument:
+                index: 0
+                pattern: "(?i)(^PWD$|PUBLIC|PUBLISHABLE|(_URL|_URI|_HOST|_PATH|_PREFIX|_NAME|_ID|_REGION|_FILE|_DIR|_ALG|_ALGORITHM|_EXPIRY|_TTL|_ISSUER|_AUDIENCE|_HEADER)$)"
+      - not:
+          kind: call
+          filters:
+            - literal_argument:
+                index: 1
+                pattern: "^(https?://|wss?://|/|\\./|\\.\\./)"
+fix_suggestion: "Use os.environ['NAME'] (fails loudly when unset) and keep the value in a secrets manager."

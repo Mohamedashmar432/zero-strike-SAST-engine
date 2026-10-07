@@ -1,0 +1,41 @@
+id: ZS-JS-144
+lifecycle: released
+name: Hardcoded Cryptographic Key Passed to Crypto API
+version: "1.0.0"
+language: javascript
+category: authentication
+severity: high
+confidence: medium
+cwe:
+  - CWE-321
+owasp:
+  - "A04:2025"
+rationale: |
+  A signing or encryption key written as a literal in the call that uses it
+  is known to everyone who can read the source. With it an attacker forges
+  JWTs and HMAC signatures (any user, any role), decrypts protected data, or
+  -- for a wallet mnemonic -- takes the funds. The key cannot be rotated
+  without a code change and stays in the repository history.
+description: |
+  The key argument (index 1) of jwt.sign / jwt.verify (jsonwebtoken) or
+  crypto.createHmac / createCipheriv / createDecipheriv is a string literal,
+  or a variable bound only to a string literal in the same scope.
+  Example: crypto.createHmac('sha256', 'pa4qacea4VK9').
+message: "Hardcoded cryptographic key passed directly to a crypto/JWT API - load the key from a secrets manager or environment"
+references:
+  - https://cwe.mitre.org/data/definitions/321.html
+tags: [hardcoded-key, cryptography]
+match:
+  kind: call
+  filters:
+      - callee_matches: "(^|\\.)(jwt|jsonwebtoken|JWT)\\.(sign|verify)$|(^|\\.)(createHmac|createCipheriv|createDecipheriv|createCipher|createDecipher)$"
+      - literal_argument:
+          index: 1
+          pattern: "^[^$]{3,}$"
+      - not:
+          kind: call
+          filters:
+            - literal_argument:
+                index: 1
+                pattern: "(?i)(changeme|change_me|change-me|xxx|example|placeholder|dummy|sample|your[_-]|redacted|replace[_-]?me|<[^>]*>|\\$\\{|\\{\\{|%s|^[bru]?[\"'`]\\*+[\"'`]$)"
+fix_suggestion: "Generate the key with a CSPRNG, store it in a secrets manager or environment variable, and read it at start-up."

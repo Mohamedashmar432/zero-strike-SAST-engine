@@ -70,6 +70,14 @@ type filterYAML struct {
 	ArgumentKindNotAt         *argKindYAML `yaml:"argument_kind_not_at"`
 	HasBareExcept             bool         `yaml:"has_bare_except"`
 	HasEmptyExceptHandler     bool         `yaml:"has_empty_except_handler"`
+	CalleeMatches             string       `yaml:"callee_matches"`
+	LiteralArgument           *litArgYAML  `yaml:"literal_argument"`
+	LHSFlowsToCall            string       `yaml:"lhs_flows_to_call"`
+}
+
+type litArgYAML struct {
+	Index   int    `yaml:"index"`
+	Pattern string `yaml:"pattern"`
 }
 
 type defaultLoader struct {
@@ -207,6 +215,11 @@ func convertFilters(fyamls []filterYAML) []Filter {
 			ArgumentKindNotAt:         convertArgKind(f.ArgumentKindNotAt),
 			HasBareExcept:             f.HasBareExcept,
 			HasEmptyExceptHandler:     f.HasEmptyExceptHandler,
+			CalleeMatches:             f.CalleeMatches,
+			LHSFlowsToCall:            f.LHSFlowsToCall,
+		}
+		if f.LiteralArgument != nil {
+			filter.LiteralArgument = &LiteralArgumentPattern{Index: f.LiteralArgument.Index, Pattern: f.LiteralArgument.Pattern}
 		}
 		if f.Kwarg != nil {
 			filter.Kwarg = &KwargPattern{Name: f.Kwarg.Name, NamePattern: f.Kwarg.NamePattern, ValuePattern: f.Kwarg.ValuePattern}

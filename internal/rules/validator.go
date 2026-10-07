@@ -2,6 +2,7 @@ package rules
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/ir"
@@ -25,6 +26,7 @@ var validNodeKinds = map[string]bool{
 	string(ir.NodeKindAttribute):  true,
 	string(ir.NodeKindBinaryOp):   true,
 	string(ir.NodeKindAssert):     true,
+	string(ir.NodeKindKeywordArg): true,
 }
 
 var validSeverities = map[string]bool{
@@ -75,6 +77,28 @@ func (v *defaultValidator) Validate(rule *Rule) []string {
 			if !validNodeKinds[k] {
 				errs = append(errs, fmt.Sprintf("match.filters[%d].argument_kind_not_at: unknown node kind %q", i, k))
 			}
+		}
+	}
+
+	// A malformed regex in one of these filters would make the engine's
+	// MatchString call fail and the filter silently reject every node.
+	// Catch it at load time instead.
+	for i, f := range rule.Match.Filters {
+		check := func(field, re string) {
+			if re == "" {
+				return
+			}
+			if _, err := regexp.Compile(re); err != nil {
+				errs = append(errs, fmt.Sprintf("match.filters[%d].%s: invalid regex: %v", i, field, err))
+			}
+		}
+		check("callee_matches", f.CalleeMatches)
+		check("lhs_flows_to_call", f.LHSFlowsToCall)
+		if f.LiteralArgument != nil {
+			if f.LiteralArgument.Pattern == "" {
+				errs = append(errs, fmt.Sprintf("match.filters[%d].literal_argument: pattern must not be empty", i))
+			}
+			check("literal_argument.pattern", f.LiteralArgument.Pattern)
 		}
 	}
 

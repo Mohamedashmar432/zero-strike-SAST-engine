@@ -1,0 +1,32 @@
+id: ZS-PY-146
+lifecycle: released
+name: Hardcoded Encryption Key
+version: "1.0.0"
+language: python
+category: authentication
+severity: high
+confidence: medium
+cwe:
+  - CWE-321
+owasp:
+  - "A04:2025"
+rationale: |
+  A signing or encryption key written as a literal in the call that uses it
+  is known to everyone who can read the source. With it an attacker forges
+  JWTs and HMAC signatures (any user, any role), decrypts protected data, or
+  -- for a wallet mnemonic -- takes the funds. The key cannot be rotated
+  without a code change and stays in the repository history.
+description: |
+  A variable named like a key (key, secret_key, enc_key, encryption_key,
+  signing_key, aes_key, fernet_key, hmac_key) is assigned a base64-looking
+  string literal of 32 or more characters -- the shape of a generated
+  Fernet/AES/HMAC key, as opposed to a dictionary key or a config name.
+message: "Hardcoded encryption key - generate it with a CSPRNG and load it from a secrets manager or environment"
+references:
+  - https://cwe.mitre.org/data/definitions/321.html
+tags: [hardcoded-key, cryptography]
+match:
+  kind: assignment
+  lhs_identifier: "(?i)(^|_)(key|secret_key|enc_key|encryption_key|signing_key|aes_key|fernet_key|hmac_key|cipher_key)$"
+  rhs_literal: "^[bru]?[\"'][A-Za-z0-9+/_-]{32,}={0,2}[\"']$"
+fix_suggestion: "Load the key from the environment (os.environ['APP_KEY']) or a secrets manager."

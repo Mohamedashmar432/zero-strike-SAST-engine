@@ -506,6 +506,13 @@ func plausibleValue(captured string) bool {
 	}
 
 	v := strings.ToLower(raw)
+	// A credential variable compared to or set to a language sentinel
+	// (newPassword === 'undefined', <password>null</password>) is a check for
+	// absence, not a secret.
+	switch v {
+	case "null", "none", "nil", "undefined", "true", "false", "empty":
+		return false
+	}
 	for _, t := range placeholderTokens {
 		if strings.Contains(v, t) {
 			return false

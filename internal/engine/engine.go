@@ -4,6 +4,7 @@ import (
 	"context"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/analyzer"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/analyzer/taint"
@@ -374,12 +375,219 @@ func evalFilter(f rules.Filter, n *ir.IRNode, taintedVars, weak map[string]bool,
 			return false
 		}
 	}
+	if f.CalleeMatches != "" {
+		if n.Kind != ir.NodeKindCall || !cachedRegexp(f.CalleeMatches).MatchString(calleeText(n)) {
+			return false
+		}
+	}
+	if f.LiteralArgument != nil {
+		if !literalArgumentMatches(n, *f.LiteralArgument) {
+			return false
+		}
+	}
+	if f.LHSFlowsToCall != "" {
+		if !lhsFlowsToCall(n, cachedRegexp(f.LHSFlowsToCall)) {
+			return false
+		}
+	}
 	if f.Not != nil {
 		if matchNode(*f.Not, n, taintedVars, weak, lang) {
 			return false
 		}
 	}
 	return true
+}
+
+// regexpCache memoises the regexes of the newer filters (callee_matches,
+// literal_argument, lhs_flows_to_call). callee_matches runs on every call
+// node of every file, so compiling per evaluation -- what regexp.MatchString
+// does -- would dominate the hot path. The Validator has already rejected
+// malformed patterns, so a compile failure here means "match nothing".
+var regexpCache sync.Map // pattern -> *regexp.Regexp
+
+var matchNothing = regexp.MustCompile(`[^\s\S]`)
+
+func cachedRegexp(pattern string) *regexp.Regexp {
+	if re, ok := regexpCache.Load(pattern); ok {
+		return re.(*regexp.Regexp)
+	}
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		re = matchNothing
+	}
+	actual, _ := regexpCache.LoadOrStore(pattern, re)
+	return actual.(*regexp.Regexp)
+}
+
+// literalArgumentMatches reports whether the call's positional argument at
+// spec.Index is itself a literal whose text matches spec.Pattern. The
+// argument node is checked directly, never its descendants: a dict or object
+// payload containing literals is not a literal argument.
+func literalArgumentMatches(n *ir.IRNode, spec rules.LiteralArgumentPattern) bool {
+	args := argumentNodes(n)
+	i := spec.Index
+	if i < 0 {
+		i += len(args)
+	}
+	if i < 0 || i >= len(args) {
+		return false
+	}
+	a := args[i]
+	if a.Kind == ir.NodeKindIdentifier {
+		a = boundLiteral(n, a.Text)
+		if a == nil {
+			return false
+		}
+	}
+	if a.Kind != ir.NodeKindLiteral {
+		return false
+	}
+	return cachedRegexp(spec.Pattern).MatchString(literalText(a))
+}
+
+// boundLiteral resolves an identifier argument to the literal it is bound to:
+// the right-hand side of the assignments to name in the call's enclosing
+// function, falling back to the file's top level. It returns nil unless every
+// assignment to name in that scope is a plain literal -- a variable that is
+// sometimes computed is not a hardcoded value. This is what lets
+// `const mnemonic = '...'; fromPhrase(mnemonic)` and
+// `key = '...'; Fernet(key)` match like an inline literal.
+func boundLiteral(call *ir.IRNode, name string) *ir.IRNode {
+	for scope := enclosingScope(call); scope != nil; scope = enclosingScope(scope) {
+		var lit *ir.IRNode
+		consistent := true
+		seen := false
+		ir.Walk(scope, func(c *ir.IRNode) bool {
+			// Nested functions are their own scope; the outer walk must not
+			// pick up their locals.
+			if c != scope && c.Kind == ir.NodeKindFunction {
+				return false
+			}
+			if c.Kind != ir.NodeKindAssignment || len(c.Children) == 0 {
+				return true
+			}
+			if lhs, _ := c.Attrs["lhs"].(string); strings.TrimSpace(lhs) != name {
+				return true
+			}
+			seen = true
+			rhs := c.Children[len(c.Children)-1]
+			if rhs.Kind != ir.NodeKindLiteral {
+				consistent = false
+				return true
+			}
+			lit = rhs
+			return true
+		})
+		if seen {
+			if consistent {
+				return lit
+			}
+			return nil
+		}
+		if scope.Parent == nil {
+			break
+		}
+	}
+	return nil
+}
+
+// enclosingScope returns the nearest function ancestor of n, or the root.
+// Called on a root it returns nil.
+func enclosingScope(n *ir.IRNode) *ir.IRNode {
+	if n.Parent == nil {
+		return nil
+	}
+	p := n.Parent
+	for p.Parent != nil && p.Kind != ir.NodeKindFunction {
+		p = p.Parent
+	}
+	return p
+}
+
+// literalText returns a literal's value text. Builders set Text on string
+// literals to the unquoted value; a literal whose Text is empty (a prefixed
+// Python bytes literal b'...' keeps its own children) falls back to the
+// concatenated text of its leaves.
+func literalText(n *ir.IRNode) string {
+	if n.Text != "" {
+		return n.Text
+	}
+	var b strings.Builder
+	for _, d := range ir.Descendants(n) {
+		if len(d.Children) == 0 {
+			b.WriteString(d.Text)
+		}
+	}
+	return b.String()
+}
+
+// lhsFlowsToCall reports whether an assignment's target identifier is passed
+// as an argument to a call whose callee chain matches re, anywhere in the
+// enclosing function (or the whole file for a top-level assignment). The
+// callee chain is the call's own callee text plus the callee text of every
+// call nested in its receiver, so createHash('sha256').update(secret) reaches
+// createHash.
+func lhsFlowsToCall(n *ir.IRNode, re *regexp.Regexp) bool {
+	if n.Kind != ir.NodeKindAssignment {
+		return false
+	}
+	name, _ := n.Attrs["lhs"].(string)
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return false
+	}
+	scope := n
+	for scope.Parent != nil && scope.Kind != ir.NodeKindFunction {
+		scope = scope.Parent
+	}
+	found := false
+	ir.Walk(scope, func(c *ir.IRNode) bool {
+		if found {
+			return false
+		}
+		if c.Kind != ir.NodeKindCall || !argumentsReference(c, name) {
+			return true
+		}
+		for _, t := range calleeChain(c) {
+			if re.MatchString(t) {
+				found = true
+				return false
+			}
+		}
+		return true
+	})
+	return found
+}
+
+// argumentsReference reports whether name appears as an identifier in any of
+// the call's arguments (or their subtrees).
+func argumentsReference(c *ir.IRNode, name string) bool {
+	for _, a := range argumentNodes(c) {
+		if a.Kind == ir.NodeKindIdentifier && a.Text == name {
+			return true
+		}
+		for _, d := range ir.Descendants(a) {
+			if d.Kind == ir.NodeKindIdentifier && d.Text == name {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// calleeChain returns the callee text of c and of every call nested in c's
+// callee expression (the receiver side of a method chain).
+func calleeChain(c *ir.IRNode) []string {
+	out := []string{calleeText(c)}
+	if len(c.Children) == 0 {
+		return out
+	}
+	for _, d := range ir.Descendants(c.Children[0]) {
+		if d.Kind == ir.NodeKindCall {
+			out = append(out, calleeText(d))
+		}
+	}
+	return out
 }
 
 // anyExceptHandler reports whether any except clause recorded on a try_statement

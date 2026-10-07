@@ -149,11 +149,19 @@ func mapKind(nodeType string) ir.NodeKind {
 		return ir.NodeKindTry
 	case "attribute":
 		return ir.NodeKindAttribute
-	case "binary_operator":
+	case "binary_operator", "comparison_operator":
+		// comparison_operator (a == b, a != b, a in b, ...) used to fall to
+		// Unknown, so `password == 'jacktheripper'` -- the Bandit B105 shape
+		// of a hardcoded credential -- was invisible to every rule.
 		return ir.NodeKindBinaryOp
 	case "assert_statement":
 		return ir.NodeKindAssert
-	case "keyword_argument":
+	case "keyword_argument", "pair":
+		// A dict entry {'password': 'admin123'} is the same key/value shape as
+		// a call's password='admin123' keyword, and JS/TS already lower object
+		// pairs this way. kwarg_name keeps the key's raw source (quotes
+		// included) so existing kwarg filters, which name bare keywords like
+		// shell or verify, do not start matching dict keys.
 		return ir.NodeKindKeywordArg
 	default:
 		return ir.NodeKindUnknown
@@ -217,10 +225,25 @@ func extractAttrs(n *ir.IRNode, node *sitter.Node, source []byte) {
 	case "keyword_argument":
 		if name := node.ChildByFieldName("name"); name != nil {
 			n.Attrs["kwarg_name"] = name.Content(source)
+			n.Attrs["lhs"] = name.Content(source)
 		}
 		if value := node.ChildByFieldName("value"); value != nil {
 			n.Attrs["kwarg_value"] = value.Content(source)
+			n.Attrs["rhs"] = value.Content(source)
 		}
+	case "pair":
+		// lhs is the key with its quotes stripped, so a rule's lhs_identifier
+		// matches the same way for {'password': x} and password=x.
+		if key := node.ChildByFieldName("key"); key != nil {
+			n.Attrs["kwarg_name"] = key.Content(source)
+			n.Attrs["lhs"] = unquoteLiteral(key.Content(source))
+		}
+		if value := node.ChildByFieldName("value"); value != nil {
+			n.Attrs["kwarg_value"] = value.Content(source)
+			n.Attrs["rhs"] = value.Content(source)
+		}
+	case "comparison_operator":
+		setComparisonAttrs(n, node, source)
 	case "try_statement":
 		var handlers []ir.ExceptHandler
 		for i := 0; i < int(node.ChildCount()); i++ {
@@ -233,6 +256,29 @@ func extractAttrs(n *ir.IRNode, node *sitter.Node, source []byte) {
 			n.Attrs["except_handlers"] = handlers
 		}
 	}
+}
+
+// setComparisonAttrs records lhs/rhs/operator on a two-operand equality
+// comparison (a == b, a != b). Chained (a == b == c) and non-equality
+// comparisons get no attrs, so lhs_identifier/rhs_literal rules never match
+// them. The operands are normalised so a literal sits on the rhs:
+// 'admin' == password is recorded as lhs=password, rhs='admin', which lets
+// one rule cover both spellings.
+func setComparisonAttrs(n *ir.IRNode, node *sitter.Node, source []byte) {
+	if node.ChildCount() != 3 {
+		return
+	}
+	op := node.Child(1).Type()
+	if op != "==" && op != "!=" {
+		return
+	}
+	left, right := node.Child(0), node.Child(2)
+	if left.Type() == "string" && right.Type() != "string" {
+		left, right = right, left
+	}
+	n.Attrs["lhs"] = left.Content(source)
+	n.Attrs["rhs"] = right.Content(source)
+	n.Attrs["operator"] = op
 }
 
 // extractParameters collects the declared parameter names of a
