@@ -51,3 +51,15 @@ cases:
   - file: cases/clean_static_markup.html
     language: html
     expect: []
+  - file: cases/vuln_020_template_safe.html
+    language: html
+    expect: [{rule_id: ZS-HTML-020, min_count: 1}]
+  - file: cases/vuln_021_autoescape_off.html
+    language: html
+    expect: [{rule_id: ZS-HTML-021, min_count: 1}]
+  - file: cases/vuln_022_commented_expr.html
+    language: html
+    expect: [{rule_id: ZS-HTML-022, min_count: 1}]
+  - file: cases/clean_template_escaped.html
+    language: html
+    expect: []
