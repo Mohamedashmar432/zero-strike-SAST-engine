@@ -39,7 +39,7 @@ match:
   # spawnSync imported from another package do not match.
   callee_suffix: true
   filters:
-    - callee_canonical: "^(child_process\.)?spawnSync$"
+    - callee_canonical: '^(child_process\.)?spawnSync$'
     # DELIBERATELY UNINDEXED — see ZS-JS-075, from which this is ported.
     # spawnSync(command, args, options) is dangerous at both index 0 (the
     # program) and index 1 (the argv array); the corpus case

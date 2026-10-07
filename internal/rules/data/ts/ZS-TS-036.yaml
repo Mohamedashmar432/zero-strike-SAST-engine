@@ -45,7 +45,7 @@ match:
     # require/import of it, or not import-bound at all. A first-party HTTP
     # wrapper imported as `http` does not match, and this.http.get (Angular
     # HttpClient) no longer renders as http.get in the first place.
-    - callee_canonical: "^https?\.get$"
+    - callee_canonical: '^https?\.get$'
     - tainted_argument: true
       # http.get(url|options, callback) and http.get(url, options, callback):
       # the destination is argument 0 in both shapes -- either the URL string

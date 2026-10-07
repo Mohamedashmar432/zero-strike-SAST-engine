@@ -44,6 +44,6 @@ match:
   # fork imported from another package do not match.
   callee_suffix: true
   filters:
-    - callee_canonical: "^(child_process\.)?fork$"
+    - callee_canonical: '^(child_process\.)?fork$'
     - tainted_argument: true
 fix_suggestion: "Never let request data determine which module fork() loads; restrict it to a fixed, allowlisted set of internal worker scripts."

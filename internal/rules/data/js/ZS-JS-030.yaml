@@ -44,6 +44,6 @@ match:
   # execFile imported from another package do not match.
   callee_suffix: true
   filters:
-    - callee_canonical: "^(child_process\.)?execFile$"
+    - callee_canonical: '^(child_process\.)?execFile$'
     - tainted_argument: true
 fix_suggestion: "Never build the executable name or arguments from unsanitized input; validate against an allowlist, and never pass a shell interpreter (sh, cmd.exe) as the executable with a tainted script argument."

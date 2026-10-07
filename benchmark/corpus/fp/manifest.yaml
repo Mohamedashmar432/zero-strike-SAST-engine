@@ -105,3 +105,9 @@ cases:
   - file: cases/safe_xss_csharp.cs
     language: csharp
     expect: []
+  - file: cases/safe_g3_js.js
+    language: javascript
+    expect: []
+  - file: cases/safe_g3_ts.ts
+    language: typescript
+    expect: []

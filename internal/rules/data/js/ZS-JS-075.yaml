@@ -38,7 +38,7 @@ match:
   # spawnSync imported from another package do not match.
   callee_suffix: true
   filters:
-    - callee_canonical: "^(child_process\.)?spawnSync$"
+    - callee_canonical: '^(child_process\.)?spawnSync$'
     # DELIBERATELY UNINDEXED. spawnSync(command, args, options) is dangerous
     # at BOTH index 0 (the program) and index 1 (the argv array) — the corpus
     # case is spawnSync('sh', ['-c', cmd]), whose taint is at index 1, while

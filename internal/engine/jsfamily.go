@@ -27,7 +27,7 @@ type fileCtx struct {
 	root    *ir.IRNode
 
 	jsOnce   bool
-	bindings map[string]string        // local name -> canonical module path
+	bindings map[string]string       // local name -> canonical module path
 	objDecls map[string][]*ir.IRNode // local name -> object-literal initializers
 
 	lastNode *ir.IRNode

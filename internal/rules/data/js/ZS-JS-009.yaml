@@ -32,6 +32,6 @@ match:
   kind: call
   filters:
     # console.error/warn/info write to the same server logs as console.log.
-    - callee_pattern: "^console\.(log|error|warn|info)$"
+    - callee_pattern: '^console\.(log|error|warn|info)$'
     - argument_identifier_matches: "(?i)(password|secret|apiKey|token)"
 fix_suggestion: "Redact or omit sensitive values before logging; log an identifier instead of the secret itself."

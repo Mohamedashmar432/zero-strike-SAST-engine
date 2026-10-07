@@ -30,6 +30,6 @@ match:
     # require/import of it, or not import-bound at all. A first-party HTTP
     # wrapper imported as `http` does not match, and this.http.get (Angular
     # HttpClient) no longer renders as http.get in the first place.
-    - callee_canonical: "^https?\.get$"
+    - callee_canonical: '^https?\.get$'
     - argument_literal_matches: "^http://"
 fix_suggestion: "Use HTTPS (https://) for all remote network communications."

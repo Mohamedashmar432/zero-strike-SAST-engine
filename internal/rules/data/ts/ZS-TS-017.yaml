@@ -40,7 +40,7 @@ match:
     # parseXml and parseXmlString on any libxmljs binding (libxml, libxmljs,
     # xml). The noent:true gate is what makes the match specific; the options
     # object may be inline or a same-file object literal passed by name.
-    - callee_pattern: "(^|\.)parseXml(String)?$"
+    - callee_pattern: '(^|\.)parseXml(String)?$'
     - kwarg:
         name: noent
         value_pattern: "^true$"

@@ -41,6 +41,6 @@ match:
   # execSync imported from another package do not match.
   callee_suffix: true
   filters:
-    - callee_canonical: "^(child_process\.)?execSync$"
+    - callee_canonical: '^(child_process\.)?execSync$'
     - tainted_argument: true
 fix_suggestion: "Use execFileSync(binary, [args]) so arguments are never shell-interpreted, and validate user-supplied values against an allowlist."

@@ -40,7 +40,7 @@ match:
   # execFileSync imported from another package do not match.
   callee_suffix: true
   filters:
-    - callee_canonical: "^(child_process\.)?execFileSync$"
+    - callee_canonical: '^(child_process\.)?execFileSync$'
     # DELIBERATELY UNINDEXED — see ZS-JS-076, from which this is ported.
     # execFileSync(file, args, options) is dangerous at index 0 (the
     # executable, as in the corpus case execFileSync(tool)) and at index 1

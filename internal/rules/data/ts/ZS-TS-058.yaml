@@ -37,14 +37,14 @@ match:
     # collection.findOne, db.reviewsCollection.findOne, db.collection('x').findOne,
     # UserModel.findOne. The exact `collection.findOne` callee only matched a
     # variable that happened to be called collection.
-    - callee_pattern: "(?i)(collection|model)(\(\))?\.findOne$"
+    - callee_pattern: '(?i)(collection|model)(\(\))?\.findOne$'
     # A $where filter is owned by the dedicated $where rule (one finding
     # per call).
     - not:
         kind: call
         filters:
           - kwarg:
-              name_pattern: "^['\"]?\$where['\"]?$"
+              name_pattern: '^["'']?\$where["'']?$'
               value_pattern: ""
     - tainted_argument: true
 fix_suggestion: "Pass user values as plain scalar filter values, validate their types, and never interpolate input into $where."

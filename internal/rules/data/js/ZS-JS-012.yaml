@@ -49,6 +49,6 @@ match:
   # exec imported from another package do not match.
   callee_suffix: true
   filters:
-    - callee_canonical: "^(child_process\.)?exec$"
+    - callee_canonical: '^(child_process\.)?exec$'
     - tainted_argument: true
 fix_suggestion: "Use execFile()/spawn() with an argument array instead of a shell string, or strictly allowlist/validate the input before building the command."
