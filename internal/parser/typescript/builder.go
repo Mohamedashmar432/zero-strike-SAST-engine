@@ -230,7 +230,7 @@ func extractAttrs(n *ir.IRNode, node *sitter.Node, source []byte) {
 			child := node.Child(i)
 			if child.Type() == "catch_clause" {
 				body := child.ChildByFieldName("body")
-				handlers = append(handlers, ir.ExceptHandler{IsEmptyBody: isEmptyBlockBody(body)})
+				handlers = append(handlers, ir.ExceptHandler{IsEmptyBody: isEmptyBlockBody(body), HasComment: hasCommentChild(body)})
 			}
 		}
 		if len(handlers) > 0 {
@@ -284,6 +284,20 @@ func extractParameters(node *sitter.Node, source []byte) []string {
 		}
 	}
 	return out
+}
+
+// hasCommentChild reports whether a statement_block (catch body) holds a
+// comment among its direct children.
+func hasCommentChild(body *sitter.Node) bool {
+	if body == nil {
+		return false
+	}
+	for i := 0; i < int(body.ChildCount()); i++ {
+		if body.Child(i).Type() == "comment" {
+			return true
+		}
+	}
+	return false
 }
 
 // isEmptyBlockBody reports whether a statement_block (catch body) contains no

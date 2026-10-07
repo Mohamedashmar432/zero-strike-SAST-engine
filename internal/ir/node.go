@@ -36,6 +36,10 @@ type ExceptHandler struct {
 	IsBare      bool     // true when the clause has no exception type (bare "except:")
 	Types       []string // exception type names/expressions, empty when IsBare
 	IsEmptyBody bool     // true when the handler body is just "pass"
+	// HasComment is true when the handler body contains a comment. An empty
+	// handler that says "// ignore" or "# best effort" is a documented
+	// decision rather than a forgotten one.
+	HasComment bool
 }
 
 // IRNode is a node in the ZeroStrike Intermediate Representation.

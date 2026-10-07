@@ -23,8 +23,13 @@ rationale: |
   auth step, can rely on the empty handler to swallow the failure and let
   the request proceed as if it had passed.
 description: |
-  Detects a catch block with an empty body (no statements). Fires once per
-  try block containing at least one such handler.
+  A catch block with no statements and no comment silently swallows every
+  error from its try block, so a failed operation -- including a security
+  control such as a signature or permission check -- is treated as success.
+  Not flagged: a catch holding a comment that explains the swallow, and a
+  try block whose only calls parse or convert input (JSON.parse, parseInt,
+  new URL, decodeURIComponent, *.parse), where falling back on malformed
+  input is the intent.
 message: "Empty catch block detected — log or handle the exception instead of silently discarding it"
 references:
   - https://cwe.mitre.org/data/definitions/390.html
@@ -32,5 +37,16 @@ tags: [exception-handling, empty-handler, fail-open]
 match:
   kind: try
   filters:
-    - has_empty_except_handler: true
+    # An empty catch with no comment. A comment ("// ignore", "/* best
+    # effort */") documents a deliberate swallow.
+    - except_handler:
+        empty: true
+        commented: false
+    # A try whose only work is parsing or converting (JSON.parse, parseInt,
+    # new URL) has an obvious fallback when the input is malformed; nothing
+    # security-relevant can fail open there.
+    - not:
+        kind: try
+        filters:
+          - try_body_calls_only: "^(JSON\\.parse|parseInt|parseFloat|Number|BigInt|Date|Date\\.parse|URL|URLSearchParams|decodeURIComponent|decodeURI|atob|Buffer\\.from|structuredClone|[A-Za-z_$][\\w$]*\\.parse)$"
 fix_suggestion: "At minimum log the error (console.error(e)) instead of silently discarding it in the catch block."

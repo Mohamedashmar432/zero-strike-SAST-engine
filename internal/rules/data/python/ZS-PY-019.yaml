@@ -5,7 +5,7 @@ version: "1.0.0"
 language: python
 category: security-misconfiguration
 severity: medium
-confidence: low
+confidence: high
 cwe:
   - CWE-16
 owasp:
@@ -17,15 +17,16 @@ rationale: |
   poison password-reset links (when the host is reflected into an email
   link), or bypass host-based routing and security controls.
 description: |
-  Flags any assignment to Django's ALLOWED_HOSTS setting for manual review.
-  A wildcard value (e.g. ['*']) disables Django's Host header validation, but
-  this rule cannot yet distinguish a wildcard from a safe explicit host list —
-  every assignment is flagged; confirm no wildcard is present.
-message: "ALLOWED_HOSTS assignment detected — confirm it does not contain a wildcard ('*')"
+  Flags an assignment to Django's ALLOWED_HOSTS whose list or tuple contains
+  the wildcard '*', which disables Django's Host header validation. An
+  explicit host list is not flagged.
+message: "ALLOWED_HOSTS contains the wildcard '*' — Django's Host header validation is disabled"
 references:
   - https://owasp.org/Top10/2025/A02_2025-Security_Misconfiguration/
 tags: [misconfiguration, django, allowed-hosts]
 match:
   kind: assignment
   lhs_identifier: "^ALLOWED_HOSTS$"
+  # A '*' element anywhere in the list/tuple literal.
+  rhs_literal: '[\[(,]\s*[''"]\*[''"]\s*[\]),]'
 fix_suggestion: "List explicit hostnames in ALLOWED_HOSTS; never use '*' in production."

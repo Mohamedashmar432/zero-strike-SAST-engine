@@ -25,6 +25,10 @@ type Expectation struct {
 	RuleID     string                 `yaml:"rule_id,omitempty"`
 	MinCount   int                    `yaml:"min_count,omitempty"`
 	Dependency *DependencyExpectation `yaml:"dependency,omitempty"`
+	// CWE, when set, additionally requires the matching finding to carry this
+	// CWE, so a corpus case pins a rule's weakness classification and not
+	// just its firing.
+	CWE string `yaml:"cwe,omitempty"`
 }
 
 // Case is one labeled corpus file: what it is, and what it should (or, for
@@ -50,6 +54,12 @@ type Manifest struct {
 	// so the fp/ corpus still exercises role filtering for real — if every
 	// corpus opted in, nothing would test the filter.
 	IncludeTests bool `yaml:"include_tests,omitempty"`
+
+	// IncludeHardening scans this corpus with hardening- and quality-tier
+	// findings kept (see core.Tier), for manifests that assert those rules.
+	// The fp/ corpus deliberately leaves it off, so it verifies that the
+	// default output excludes them.
+	IncludeHardening bool `yaml:"include_hardening,omitempty"`
 }
 
 // CorpusDir is one loaded corpus subdirectory (e.g. "python", "secrets").

@@ -1,0 +1,8 @@
+# ZS-CFG-012: a third-party action on a mutable tag.
+name: ci
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: coverallsapp/github-action@v2

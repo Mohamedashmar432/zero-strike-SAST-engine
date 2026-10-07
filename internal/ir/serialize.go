@@ -8,7 +8,7 @@ import "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
 // removed, renamed, or its meaning changes) - the AST cache stores this
 // value alongside cached IR and invalidates on a mismatch rather than risk
 // deserializing stale/incompatible IR.
-const SchemaVersion = 1
+const SchemaVersion = 2
 
 // SerialNode is the flat, JSON-serializable form of one IRNode, used by the
 // AST cache to persist parsed IR across scan runs. Unlike IRNode, it has no
@@ -242,6 +242,9 @@ func coerceExceptHandlers(v any) any {
 			}
 			if isEmpty, ok := m["IsEmptyBody"].(bool); ok {
 				h.IsEmptyBody = isEmpty
+			}
+			if hasComment, ok := m["HasComment"].(bool); ok {
+				h.HasComment = hasComment
 			}
 			if types, ok := m["Types"]; ok {
 				if coerced, ok := coerceStringSlice(types).([]string); ok {

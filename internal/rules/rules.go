@@ -93,6 +93,73 @@ type Filter struct {
 	// HasEmptyExceptHandler requires a try_statement node to contain at least one
 	// except clause whose body is just "pass" (see ir.ExceptHandler.IsEmptyBody).
 	HasEmptyExceptHandler bool
+
+	// ExceptHandler requires a try_statement node to have at least one except
+	// / catch clause satisfying every constraint set on the pattern. Unlike
+	// HasBareExcept and HasEmptyExceptHandler, which each test one property
+	// of "any" clause, it tests all properties against the SAME clause --
+	// "is there an empty handler that is also broad" cannot be expressed as
+	// two independent any-clause checks.
+	ExceptHandler *ExceptHandlerPattern
+
+	// TryBodyCallsOnly matches a try_statement whose protected block makes at
+	// least one call and every call's callee text matches this regex. Used
+	// negated: a try that only parses or converts (JSON.parse, parseInt, new
+	// URL) has an obvious, deliberate fallback when it fails.
+	TryBodyCallsOnly string
+
+	// ContextIdentifierMatches requires the name the matched expression's
+	// value is bound to -- the assignment target, the object key, or for a
+	// returned value the enclosing function's name -- to match this regex.
+	// The name is normalised to lower snake_case first (sessionToken ->
+	// session_token), so a pattern can anchor on word boundaries with
+	// (^|_)token(_|$) instead of matching substrings. The climb stops at the
+	// enclosing statement: Math.random() used for a captcha operand or a
+	// shuffle never reaches a security-named binding.
+	ContextIdentifierMatches string
+
+	// EnclosingFunctionCalls requires the innermost enclosing function (or the
+	// module, for top-level code) to contain a call whose callee text matches
+	// this regex. Used negated, e.g. jwt.decode is only a missing-verification
+	// bug when nothing in the same function verifies the token.
+	EnclosingFunctionCalls string
+
+	// EnclosingFunctionMentions requires the innermost enclosing function (or
+	// module) to contain an identifier or literal matching this regex. Used
+	// negated to recognise intent, e.g. an MD5 digest built inside a
+	// "checksum" task is an integrity label, not a security control.
+	EnclosingFunctionMentions string
+
+	// ArgumentLiteralIndex narrows ArgumentLiteralMatches to one positional
+	// argument (negative counts from the end), e.g. "the program spawned is a
+	// shell" rather than "some literal somewhere in the argv is 'sh'".
+	ArgumentLiteralIndex *int
+
+	// AnyOf passes when at least one of the listed filters passes. Each entry
+	// is a full Filter, so the keys inside one entry are ANDed together. It
+	// exists because a rule's filter list is a conjunction, and sinks like
+	// child_process.spawn are dangerous under any of several conditions
+	// (tainted program, shell: true, or a shell interpreter with -c).
+	AnyOf []Filter
+}
+
+// ExceptHandlerPattern constrains one except/catch clause. Every non-nil field
+// must hold for the same clause. See ir.ExceptHandler for the recorded
+// properties.
+type ExceptHandlerPattern struct {
+	// Bare: the clause names no exception type (Python "except:").
+	Bare *bool
+	// Empty: the handler body does nothing (Python "pass", JS "{}" or a
+	// body holding only comments).
+	Empty *bool
+	// Broad: the clause catches everything -- bare, a JS catch (untyped), or
+	// a catch-all type such as Exception, BaseException or Throwable. A
+	// handler for FileNotFoundError or KeyError is narrow: swallowing it is
+	// ordinary EAFP control flow, not a hidden failure.
+	Broad *bool
+	// Commented: the handler body contains a comment. An empty handler that
+	// carries "// ignore" or "# best effort" documents a deliberate choice.
+	Commented *bool
 }
 
 // MatchPattern is a typed description of what IR node pattern to find.
@@ -135,6 +202,22 @@ type Rule struct {
 	Rationale     string
 	// Lifecycle is one of draft, validated, released, retired (see Validator).
 	Lifecycle string
+	// Tier is the output tier of this rule's findings: security (the default
+	// when empty), hardening or quality. Non-security tiers are left out of
+	// default scan output and counted in the report instead; --include-hardening
+	// brings them back. See core.Tier.
+	Tier core.Tier
+	// OncePerFile reports only the first match of this rule in each file. Set
+	// it on rules that describe a file- or app-wide policy rather than a
+	// per-call defect (an app-wide cors() default registered on several
+	// routes is one policy, not one finding per route).
+	OncePerFile bool
+	// SkipContexts lists execution contexts the rule does not apply to.
+	// "browser" covers inline <script> blocks in HTML, Angular modules
+	// (importing @angular/core), "use client" React modules and files under
+	// a frontend/ source root: a server-side sink such as log forging into
+	// console.log has no meaning in a browser's devtools console.
+	SkipContexts []string
 }
 
 // Registry provides rule lookup by language and category.

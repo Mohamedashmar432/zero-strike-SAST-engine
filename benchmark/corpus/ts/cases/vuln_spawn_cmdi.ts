@@ -1,6 +1,5 @@
-// ZS-TS-027: command injection — spawn() with the command argument sourced
-// directly inline from req.body (no intermediate variable)
+// ZS-TS-027: command injection — spawn() runs a program chosen by the request.
 import { spawn } from 'child_process';
-function ping(req: any, res: any) {
-  spawn('ping', ['-c', '2', req.body.host]);
-}
+app.post('/run', (req: any, res: any) => {
+  spawn(req.body.tool, ['--version']);
+});

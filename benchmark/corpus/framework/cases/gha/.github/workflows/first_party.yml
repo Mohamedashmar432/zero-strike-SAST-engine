@@ -1,0 +1,12 @@
+# True negative for ZS-CFG-012: GitHub-owned actions (actions/*, github/*) on
+# major tags, and a third-party action pinned to a full commit SHA.
+name: ci
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+      - uses: github/codeql-action/init@v3
+      - uses: coverallsapp/github-action@ac593985615ec2ede58e132d2e21d2b1cbd6127c

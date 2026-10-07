@@ -1,4 +1,8 @@
 version: "1"
+# Some cases here assert hardening/quality-tier rules (see core.Tier), which
+# default scan output leaves out. The fp/ corpus keeps the default, so it
+# verifies the exclusion itself.
+include_hardening: true
 cases:
   - file: cases/vuln_eval.py
     language: python
@@ -14,7 +18,7 @@ cases:
     expect: [{rule_id: ZS-PY-005, min_count: 1}]
   - file: cases/vuln_hashlib.py
     language: python
-    expect: [{rule_id: ZS-PY-007, min_count: 1}]
+    expect: [{rule_id: ZS-PY-007, min_count: 1, cwe: CWE-328}]
   - file: cases/vuln_path_traversal.py
     language: python
     expect: [{rule_id: ZS-PY-008, min_count: 1}]
@@ -243,3 +247,26 @@ cases:
   - file: cases/clean.py
     language: python
     expect: []
+  # Empty-handler / bare-except precision and dedup (ZS-PY-023 is quality tier;
+  # include_hardening is on for this corpus so a duplicate would show as FP).
+  - file: cases/vuln_bare_except_pass.py
+    language: python
+    expect: [{rule_id: ZS-PY-024, min_count: 1}]
+  - file: cases/clean_except_handlers.py
+    language: python
+    expect: []
+  - file: cases/clean_allowed_hosts.py
+    language: python
+    expect: []
+  - file: cases/vuln_sqlite_trace.py
+    language: python
+    expect: [{rule_id: ZS-PY-078, min_count: 2, cwe: CWE-532}]
+  - file: cases/clean_sqlite_trace.py
+    language: python
+    expect: []
+  - file: cases/vuln_weak_hash_const.py
+    language: python
+    expect: [{rule_id: ZS-PY-056, min_count: 1, cwe: CWE-328}]
+  - file: cases/vuln_log_secret_once.py
+    language: python
+    expect: [{rule_id: ZS-PY-022, min_count: 1}]

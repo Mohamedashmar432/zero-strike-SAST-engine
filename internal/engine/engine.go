@@ -114,6 +114,23 @@ type MatchContext struct {
 	Index   *RuleIndex // prebuilt at rule-load time, shared across files
 	File    *analyzer.AnalysisResult
 	Project *Project
+	// Browser marks code that runs in a browser rather than on a server: an
+	// inline <script> in an HTML document, an Angular or "use client" module,
+	// or a file under a frontend/ source root (see IsBrowserContext). Rules
+	// listing "browser" in SkipContexts do not run against it.
+	Browser bool
+}
+
+// matchEnv is the per-file state every filter may consult. Bundled so a new
+// piece of file context does not mean re-threading every helper's signature.
+type matchEnv struct {
+	tainted map[string]bool
+	weak    map[string]bool
+	lang    core.Language
+	// consts maps module-level names bound exactly once, to a literal, to
+	// that literal's value (ALGORITHM = 'sha1'), so argument_literal_matches
+	// sees through a named constant. See moduleConstants.
+	consts map[string]string
 }
 
 // Engine matches rules against an AnalysisResult.
@@ -132,9 +149,16 @@ func (e *defaultEngine) Match(_ context.Context, mc *MatchContext) ([]MatchResul
 		return nil, nil
 	}
 	taintedVars := mc.File.TaintedVars
-	weakVars := mc.File.WeakTaintVars
-	var out []MatchResult
 	fileLang := mc.File.IR.Language
+	env := &matchEnv{
+		tainted: taintedVars,
+		weak:    mc.File.WeakTaintVars,
+		lang:    fileLang,
+		consts:  moduleConstants(mc.File.IR.Root),
+	}
+	var out []MatchResult
+	// reported tracks rules with OncePerFile that have already matched here.
+	reported := map[*rules.Rule]bool{}
 	// consider evaluates one candidate rule against n.
 	//
 	// The three index buckets are iterated separately rather than gathered
@@ -157,7 +181,16 @@ func (e *defaultEngine) Match(_ context.Context, mc *MatchContext) ([]MatchResul
 		if r.Language != fileLang {
 			return
 		}
-		if matchNode(r.Match, n, taintedVars, weakVars, fileLang) {
+		if mc.Browser && skipsContext(r, "browser") {
+			return
+		}
+		if r.OncePerFile && reported[r] {
+			return
+		}
+		if matchNode(r.Match, n, env) {
+			if r.OncePerFile {
+				reported[r] = true
+			}
 			out = append(out, MatchResult{Rule: r, Node: n, TaintedVar: taintedIdentifierFor(r.Match, n, taintedVars, fileLang)})
 		}
 	}
@@ -226,7 +259,7 @@ func attributeText(n *ir.IRNode) string {
 // matchNode checks whether a node satisfies the match pattern.
 // Callee matching is already handled by the index; matchNode covers
 // Identifier, Literal, and Filter constraints.
-func matchNode(pattern rules.MatchPattern, n *ir.IRNode, taintedVars, weak map[string]bool, lang core.Language) bool {
+func matchNode(pattern rules.MatchPattern, n *ir.IRNode, env *matchEnv) bool {
 	if ir.NodeKind(pattern.Kind) != n.Kind {
 		return false
 	}
@@ -254,14 +287,15 @@ func matchNode(pattern rules.MatchPattern, n *ir.IRNode, taintedVars, weak map[s
 		}
 	}
 	for _, f := range pattern.Filters {
-		if !evalFilter(f, n, taintedVars, weak, lang) {
+		if !evalFilter(f, n, env) {
 			return false
 		}
 	}
 	return true
 }
 
-func evalFilter(f rules.Filter, n *ir.IRNode, taintedVars, weak map[string]bool, lang core.Language) bool {
+func evalFilter(f rules.Filter, n *ir.IRNode, env *matchEnv) bool {
+	taintedVars, weak, lang := env.tainted, env.weak, env.lang
 	if f.ArgumentCount != nil {
 		ac, _ := n.Attrs["argument_count"].(int)
 		if ac != *f.ArgumentCount {
@@ -344,13 +378,19 @@ func evalFilter(f rules.Filter, n *ir.IRNode, taintedVars, weak map[string]bool,
 		}
 	}
 	if f.ArgumentLiteralMatches != "" {
-		if !anyArgument(n, func(a *ir.IRNode) bool {
-			if a.Kind != ir.NodeKindLiteral {
+		pred := func(a *ir.IRNode) bool {
+			value, ok := literalValue(a, env.consts)
+			if !ok {
 				return false
 			}
-			matched, err := regexp.MatchString(f.ArgumentLiteralMatches, a.Text)
+			matched, err := regexp.MatchString(f.ArgumentLiteralMatches, value)
 			return err == nil && matched
-		}) {
+		}
+		if f.ArgumentLiteralIndex != nil {
+			if !argumentAt(n, *f.ArgumentLiteralIndex, pred) {
+				return false
+			}
+		} else if !anyArgument(n, pred) {
 			return false
 		}
 	}
@@ -374,8 +414,68 @@ func evalFilter(f rules.Filter, n *ir.IRNode, taintedVars, weak map[string]bool,
 			return false
 		}
 	}
+	if f.ExceptHandler != nil {
+		if !anyExceptHandler(n, func(h ir.ExceptHandler) bool { return exceptHandlerMatches(*f.ExceptHandler, h) }) {
+			return false
+		}
+	}
+	if f.TryBodyCallsOnly != "" {
+		if !tryBodyCallsOnly(n, f.TryBodyCallsOnly) {
+			return false
+		}
+	}
+	if f.ContextIdentifierMatches != "" {
+		re := compiled(f.ContextIdentifierMatches)
+		if re == nil {
+			return false
+		}
+		found := false
+		for _, name := range contextNames(n) {
+			if re.MatchString(snakeCase(name)) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+	if f.EnclosingFunctionCalls != "" {
+		re := compiled(f.EnclosingFunctionCalls)
+		if re == nil {
+			return false
+		}
+		if !scopeContains(n, func(d *ir.IRNode) bool {
+			return d.Kind == ir.NodeKindCall && re.MatchString(calleeText(d))
+		}) {
+			return false
+		}
+	}
+	if f.EnclosingFunctionMentions != "" {
+		re := compiled(f.EnclosingFunctionMentions)
+		if re == nil {
+			return false
+		}
+		if !scopeContains(n, func(d *ir.IRNode) bool {
+			return (d.Kind == ir.NodeKindIdentifier || d.Kind == ir.NodeKindLiteral) && re.MatchString(d.Text)
+		}) {
+			return false
+		}
+	}
+	if f.AnyOf != nil {
+		passed := false
+		for _, sub := range f.AnyOf {
+			if evalFilter(sub, n, env) {
+				passed = true
+				break
+			}
+		}
+		if !passed {
+			return false
+		}
+	}
 	if f.Not != nil {
-		if matchNode(*f.Not, n, taintedVars, weak, lang) {
+		if matchNode(*f.Not, n, env) {
 			return false
 		}
 	}
@@ -587,7 +687,19 @@ func anyArgument(n *ir.IRNode, pred func(*ir.IRNode) bool) bool {
 // tainted identifier's text that satisfied it. Returns "" when the rule
 // matched without using either filter — the common case for most rules.
 func taintedIdentifierFor(pattern rules.MatchPattern, n *ir.IRNode, taintedVars map[string]bool, lang core.Language) string {
-	for _, f := range pattern.Filters {
+	return taintedIdentifierInFilters(pattern.Filters, n, taintedVars, lang)
+}
+
+// taintedIdentifierInFilters is taintedIdentifierFor over a filter list,
+// recursing into any_of entries (which keep positive polarity) but never
+// into a not sub-pattern.
+func taintedIdentifierInFilters(filters []rules.Filter, n *ir.IRNode, taintedVars map[string]bool, lang core.Language) string {
+	for _, f := range filters {
+		if len(f.AnyOf) > 0 {
+			if id := taintedIdentifierInFilters(f.AnyOf, n, taintedVars, lang); id != "" {
+				return id
+			}
+		}
 		if f.TaintedArgument {
 			if id := firstTaintedArgument(n, taintedVars, lang); id != "" {
 				return id

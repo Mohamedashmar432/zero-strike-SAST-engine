@@ -1,0 +1,40 @@
+id: ZS-PY-078
+lifecycle: released
+name: SQLite Statement Trace Written to Output or Logs
+version: "1.0.0"
+language: python
+category: logging
+severity: medium
+confidence: high
+cwe:
+  - CWE-532
+owasp:
+  - "A09:2025"
+rationale: |
+  sqlite3.Connection.set_trace_callback() invokes the callback with the SQL
+  text of every statement the connection executes. That text carries every
+  value interpolated into the query and, where the SQLite build expands bound
+  parameters, the bound values too. Wiring it to print or a logger copies the
+  passwords, session tokens, MFA secrets and personal data the application
+  writes and looks up into stdout or the log stream,
+  where it outlives the request and is readable by anyone with access to the
+  logs, log shippers or container output.
+description: |
+  Flags conn.set_trace_callback(f) on any receiver where the callback is the
+  print builtin or a logging / logger / log method (logging.debug,
+  logger.info, log.warning, ...). A custom callback that redacts or filters
+  statements is not flagged, and neither is set_trace_callback(None), which
+  turns tracing off.
+message: "set_trace_callback() sends every executed SQL statement to output/logs — sensitive data exposure"
+references:
+  - https://cwe.mitre.org/data/definitions/532.html
+  - https://docs.python.org/3/library/sqlite3.html#sqlite3.Connection.set_trace_callback
+tags: [logging, sqlite, sensitive-data]
+match:
+  kind: call
+  callee: set_trace_callback
+  callee_suffix: true
+  filters:
+    - argument_count: 1
+    - argument_identifier_matches: "^(print|logging|_?logger|_?log|LOGGER|LOG)$"
+fix_suggestion: "Remove the trace callback in production code, or pass a callback that logs only statement shapes (no bound values) at DEBUG behind an explicit opt-in."

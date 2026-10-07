@@ -99,6 +99,7 @@ func BuildFinding(result engine.MatchResult, mc *engine.MatchContext, source []b
 		Remediation:  result.Rule.FixSuggestion,
 		Kind:         core.FindingKindSAST,
 		TaintContext: taintCtx,
+		Tier:         result.Rule.Tier,
 	}
 }
 

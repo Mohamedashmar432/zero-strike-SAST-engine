@@ -91,6 +91,17 @@ func parseGroupBy(raw string) (report.GroupBy, error) {
 	}
 }
 
+// tierExcludedNotice is the stderr line telling the user that hardening- or
+// quality-tier findings were held back, so the exclusion is never silent even
+// for someone who does not read the report's Stats block. "" when nothing was
+// excluded.
+func tierExcludedNotice(n int) string {
+	if n == 0 {
+		return ""
+	}
+	return fmt.Sprintf("note: %d hardening/quality-tier finding(s) not shown (see Stats.TierExcludedByRule); re-run with --include-hardening to list them", n)
+}
+
 func scanCmd() *cobra.Command {
 	var (
 		flagFormat       string
@@ -107,6 +118,7 @@ func scanCmd() *cobra.Command {
 		flagAllowFile    string
 		flagExcludeDirs  []string
 		flagIncludeTests bool
+		flagIncludeHard  bool
 		flagGroupBy      string
 		flagServer       string
 		flagToken        string
@@ -174,6 +186,7 @@ func scanCmd() *cobra.Command {
 				AllowFile:             flagAllowFile,
 				ExcludeDirs:           flagExcludeDirs,
 				IncludeTests:          flagIncludeTests,
+				IncludeHardening:      flagIncludeHard,
 			}
 
 			pipe, err := pipeline.New(cfg)
@@ -248,6 +261,9 @@ func scanCmd() *cobra.Command {
 				FilesSkipped:  result.FilesSkipped,
 				TotalFindings: len(result.Findings),
 				Suppressed:    result.Suppressed,
+
+				TierExcluded:       result.TierExcluded,
+				TierExcludedByRule: result.TierExcludedByRule,
 				BySeverity:    make(map[core.Severity]int),
 				ByLanguage:    make(map[core.Language]int),
 				ByCategory:    make(map[string]int),
@@ -320,6 +336,9 @@ func scanCmd() *cobra.Command {
 			if err := repObj.Render(rep, out); err != nil {
 				return fmt.Errorf("render: %w", err)
 			}
+			if msg := tierExcludedNotice(result.TierExcluded); msg != "" {
+				fmt.Fprintln(os.Stderr, msg)
+			}
 			// Local --output writing is now fully done — everything below is
 			// additive upload; a network failure here can never cost the
 			// user their local report.
@@ -366,6 +385,7 @@ func scanCmd() *cobra.Command {
 	cmd.Flags().StringVar(&flagAllowFile, "allow-file", "", "path to allowlist YAML (default: <root>/.zs-allow.yaml)")
 	cmd.Flags().StringSliceVar(&flagExcludeDirs, "exclude-dir", nil, "directory names to skip, e.g. --exclude-dir gen --exclude-dir templates")
 	cmd.Flags().BoolVar(&flagIncludeTests, "include-tests", false, "scan test/fixture paths too (tests/, testdata/, conftest.py, *_test.go, *.spec.ts, ...); off by default because production rule semantics do not hold there")
+	cmd.Flags().BoolVar(&flagIncludeHard, "include-hardening", false, "also report hardening- and quality-tier findings (missing SRI, unpinned first-party CI actions, missing helmet, bare except:, ...); off by default because they have no exploit path of their own. Excluded findings are always counted in Stats.TierExcluded")
 	cmd.Flags().StringVar(&flagGroupBy, "group-by", "", "group findings in the report: file|rule|severity|language (default: no grouping for json, severity for html; ignored by sarif)")
 	cmd.Flags().StringVar(&flagServer, "server", "", "portal server base URL (enables report upload together with --token)")
 	cmd.Flags().StringVar(&flagToken, "token", "", "portal project token — alone determines which project a scan belongs to")

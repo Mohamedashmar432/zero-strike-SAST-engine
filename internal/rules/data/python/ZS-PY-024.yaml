@@ -22,9 +22,13 @@ rationale: |
   security control, since there is no log entry or alert to reveal that the
   check was bypassed.
 description: |
-  An except handler whose body is just "pass" silently swallows the exception
-  with no logging or recovery. Fires once per try block containing at least
-  one such handler (not once per clause).
+  A catch-all except handler (bare except:, Exception or BaseException) whose
+  body is just "pass" silently swallows every failure with no logging or
+  recovery. Fires once per try block containing at least one such handler.
+  Not flagged: a handler for a narrow exception type (except
+  FileNotFoundError: pass around os.remove, except KeyError: pass) -- that is
+  ordinary EAFP control flow about one specific, expected failure -- and an
+  empty handler carrying a comment, which documents a deliberate choice.
 message: "except clause with an empty (pass-only) body detected — log or handle the exception"
 references:
   - https://cwe.mitre.org/data/definitions/390.html
@@ -32,5 +36,8 @@ tags: [exception-handling, empty-handler, fail-open]
 match:
   kind: try
   filters:
-    - has_empty_except_handler: true
+    - except_handler:
+        empty: true
+        broad: true
+        commented: false
 fix_suggestion: "At minimum log the exception (logging.exception(...)) instead of silently passing."

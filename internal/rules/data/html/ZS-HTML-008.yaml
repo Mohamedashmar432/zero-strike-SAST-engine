@@ -4,8 +4,13 @@ name: Password Field Without Safe autocomplete
 version: "1.0.0"
 language: html
 category: sensitive-data
-severity: low
+severity: info
 confidence: medium
+# Hardening tier. Browsers ignore autocomplete=off on password fields and
+# NIST SP 800-63B encourages password managers, so this is a browser-storage
+# policy note, not a credential-protection weakness. Left out of default
+# output; reported with --include-hardening.
+tier: hardening
 cwe:
   - CWE-522
 owasp:
@@ -18,9 +23,11 @@ rationale: |
   recovered. Declaring the intended autocomplete behavior is the documented way
   to keep control of how a credential field is remembered.
 description: |
-  Flags <input type="password"> elements whose autocomplete attribute is absent
-  or set to anything other than off, new-password, or current-password.
-message: "Password <input> without a controlled autocomplete (off/new-password/current-password) — credential may be cached insecurely"
+  Flags <input type="password"> elements that explicitly opt in to generic
+  autocomplete (autocomplete="on"). A password field with no autocomplete
+  attribute is not flagged: that is the browser default every password manager
+  is built around, and flagging it reported every login form on the web.
+message: "Password <input> with autocomplete=\"on\" — prefer new-password/current-password so the browser handles the credential as a password"
 references:
   - https://cwe.mitre.org/data/definitions/522.html
   - https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/autocomplete
@@ -32,10 +39,7 @@ match:
     - kwarg:
         name: type
         value_pattern: "(?i)^password$"
-    - not:
-        kind: call
-        filters:
-          - kwarg:
-              name: autocomplete
-              value_pattern: "(?i)^(off|new-password|current-password)$"
+    - kwarg:
+        name: autocomplete
+        value_pattern: '(?i)^\s*on\s*$'
 fix_suggestion: "Set autocomplete=\"new-password\" on sign-up/change forms and autocomplete=\"current-password\" on login forms (or \"off\" to opt out)."

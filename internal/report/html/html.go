@@ -109,7 +109,8 @@ td{padding:.6rem .75rem;font-size:.875rem;border-top:1px solid #dee2e6;vertical-
 <div class="stats">
   <div class="stat-card"><div class="n">{{.Report.Stats.FilesScanned}}</div><div class="l">Files Scanned</div></div>
   <div class="stat-card"><div class="n">{{.Report.Stats.TotalFindings}}</div><div class="l">Total Findings</div></div>
-  <div class="stat-card"><div class="n">{{.Report.Stats.Suppressed}}</div><div class="l">Suppressed</div></div>
+  <div class="stat-card"><div class="n">{{.Report.Stats.Suppressed}}</div><div class="l">Suppressed</div></div>{{if .Report.Stats.TierExcluded}}
+  <div class="stat-card"><div class="n">{{.Report.Stats.TierExcluded}}</div><div class="l">Hardening/quality not shown (--include-hardening)</div></div>{{end}}
 </div>
 {{if .Groups}}{{$mode := .GroupBy}}{{range .Groups}}
 <h2>{{displayLabel $mode .Label}} ({{len .Findings}})</h2>

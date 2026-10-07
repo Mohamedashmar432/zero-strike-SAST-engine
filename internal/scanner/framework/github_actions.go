@@ -40,6 +40,9 @@ func detectGitHubActionsUnpinned(path string, data []byte) []core.Finding {
 		if strings.HasPrefix(action, "./") || strings.HasPrefix(action, "docker://") {
 			continue // local or docker container actions
 		}
+		if isFirstPartyAction(action) {
+			continue
+		}
 		if len(m) < 3 || len(m[2]) == 0 {
 			// No version specified at all
 			out = append(out, buildUnpinnedActionFinding(path, action, "missing", i+1))
@@ -53,9 +56,23 @@ func detectGitHubActionsUnpinned(path string, data []byte) []core.Finding {
 	return out
 }
 
+// isFirstPartyAction reports whether an action is published by GitHub itself
+// (the actions/ and github/ owners, e.g. actions/checkout, github/codeql-action).
+// Those are maintained by the platform that already runs the workflow, so a
+// major-version tag on them is not a third-party supply-chain dependency;
+// OpenSSF Scorecard and zizmor treat them the same way.
+func isFirstPartyAction(action string) bool {
+	owner, _, _ := strings.Cut(strings.ToLower(action), "/")
+	return owner == "actions" || owner == "github"
+}
+
+// buildUnpinnedActionFinding reports a third-party action on a mutable ref.
+// The finding is hardening tier: a mutable tag is a supply-chain hygiene gap
+// in CI, not a weakness reachable in the scanned application, so it is left
+// out of default output and counted instead (see core.Tier).
 func buildUnpinnedActionFinding(path, action, ref string, line int) core.Finding {
 	loc := core.Location{File: path, StartLine: line, EndLine: line}
-	return findings.BuildConfigFinding(
+	f := findings.BuildConfigFinding(
 		"ZS-CFG-012",
 		"GitHub Action Not Pinned to SHA",
 		"Action "+action+"@"+ref+" is not pinned to a full commit SHA in "+path+" — mutable tags present supply chain risks",
@@ -67,4 +84,6 @@ func buildUnpinnedActionFinding(path, action, ref string, line int) core.Finding
 		[]string{"CWE-829"},
 		[]string{"A03:2025"},
 	)
+	f.Tier = core.TierHardening
+	return f
 }
