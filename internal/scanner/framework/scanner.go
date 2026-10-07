@@ -62,7 +62,8 @@ func (s *FrameworkScanner) fingerprintPath(path string) string {
 func (s *FrameworkScanner) Name() string { return "framework" }
 
 func (s *FrameworkScanner) Accepts(entry walker.FileEntry) bool {
-	if entry.IsBinary {
+	// AssetData entries are for the secrets scanner only (FileEntry.AssetData).
+	if entry.IsBinary || entry.AssetData {
 		return false
 	}
 	for _, c := range checks {

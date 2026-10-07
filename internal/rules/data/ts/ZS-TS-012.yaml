@@ -34,7 +34,7 @@ references:
 tags: [hardcoded-credential, authentication]
 match:
   kind: assignment
-  lhs_identifier: "(?i)(password|secret|apiKey|token)"
+  lhs_identifier: "(?i)(password|passwd|pwd|secret|apiKey|token|(^|_)pw$)"
   rhs_literal: "^[\"'`].+[\"'`]$"
   filters:
     # A guarded sentinel is not a leaked credential: it is a known-bad value

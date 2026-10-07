@@ -1,0 +1,40 @@
+id: ZS-PY-140
+lifecycle: released
+name: Hardcoded Credential in Comparison
+version: "1.0.0"
+language: python
+category: authentication
+severity: high
+confidence: medium
+cwe:
+  - CWE-798
+owasp:
+  - "A07:2025"
+rationale: |
+  A credential compared against a string literal is a hardcoded password:
+  anyone who can read the source, the repository history or a decompiled
+  build can log in with it, and it cannot be rotated without a code change.
+  This is the shape of most backdoor and default-account logins
+  (if password == 'admin123'), and the Bandit B105 pattern.
+description: |
+  A variable, attribute or subscript named like a credential (password,
+  passwd, pwd, secret, token, api_key) is compared with == / != (=== / !==
+  in JS/TS) to a non-empty string literal. Operands are normalised, so
+  'admin' == password matches too. Placeholder and sentinel values
+  (changeme, None, undefined, '', 'password') are excluded.
+message: "Credential compared against a hardcoded literal - verify against a stored hash loaded from configuration, not a value in source"
+references:
+  - https://cwe.mitre.org/data/definitions/798.html
+tags: [hardcoded-credential, authentication]
+match:
+  kind: binary_op
+  lhs_identifier: "(?i)(^|[._\\['\"])(password|passwd|pwd|passphrase|secret|secret_key|api_?key|token|auth_?token|access_?token)['\"\\]]*$"
+  rhs_literal: "^[bru]?[\"'][^\"'\\s]{4,}[\"']$"
+  filters:
+      - not:
+          kind: binary_op
+          rhs_literal: "(?i)(changeme|change_me|change-me|xxx|example|placeholder|dummy|sample|your[_-]|redacted|replace[_-]?me|<[^>]*>|\\$\\{|\\{\\{|%s|^[bru]?[\"'`]\\*+[\"'`]$)"
+      - not:
+          kind: binary_op
+          rhs_literal: "(?i)^[bru]?[\"'`](null|none|nil|undefined|true|false|empty|bearer|basic|string|text|hidden|required|password|passwd|secret|token)[\"'`]$"
+fix_suggestion: "Remove the literal; compare a hash of the submitted value against a hash stored outside the source (database or secrets manager), using a constant-time comparison."

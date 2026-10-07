@@ -328,3 +328,52 @@ func TestWalk_SubdirectoryRecursion(t *testing.T) {
 		}
 	}
 }
+
+// TestWalk_AssetDirEmitsOnlyDataFiles covers the data-only descent into
+// static/public/assets/media: code there stays skipped, but committed data
+// files are emitted flagged AssetData so only the secrets scanner reads them.
+func TestWalk_AssetDirEmitsOnlyDataFiles(t *testing.T) {
+	root := makeTempDir(t)
+	writeFile(t, filepath.Join(root, "static", "jquery.min.js"), "eval('bad')")
+	writeFile(t, filepath.Join(root, "static", "app.js"), "eval('bad')")
+	writeFile(t, filepath.Join(root, "data", "static", "users.yml"), "- email: a")
+	writeFile(t, filepath.Join(root, "public", "conf", "settings.json"), "{}")
+	writeFile(t, filepath.Join(root, "public", ".env.production"), "A=b")
+	writeFile(t, filepath.Join(root, "public", "node_modules", "x.json"), "{}")
+	writeFile(t, filepath.Join(root, "app.py"), "# kept")
+
+	entries, errs := walker.NewWalker(nil).Walk(root)
+	got := map[string]bool{}
+	for e := range entries {
+		rel, _ := filepath.Rel(root, e.Path)
+		got[filepath.ToSlash(rel)] = e.AssetData
+	}
+	for range errs {
+	}
+	want := map[string]bool{
+		"app.py":                    false,
+		"data/static/users.yml":     true,
+		"public/conf/settings.json": true,
+		"public/.env.production":    true,
+	}
+	if len(got) != len(want) {
+		t.Fatalf("got %v, want %v", got, want)
+	}
+	for p, asset := range want {
+		if a, ok := got[p]; !ok || a != asset {
+			t.Errorf("%s: emitted=%v AssetData=%v, want emitted with AssetData=%v", p, ok, a, asset)
+		}
+	}
+}
+
+// TestWalk_ExcludedAssetDirNeverEntered: a user's explicit ExcludeDirs entry
+// wins over the data-only descent.
+func TestWalk_ExcludedAssetDirNeverEntered(t *testing.T) {
+	root := makeTempDir(t)
+	writeFile(t, filepath.Join(root, "static", "users.yml"), "- a")
+	writeFile(t, filepath.Join(root, "app.py"), "# kept")
+	paths, _ := collectWalk(t, walker.NewWalker(&walker.Options{ExcludeDirs: []string{"static"}}), root)
+	if len(paths) != 1 || filepath.Base(paths[0]) != "app.py" {
+		t.Fatalf("expected only app.py, got %v", paths)
+	}
+}

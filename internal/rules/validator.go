@@ -27,6 +27,7 @@ var validNodeKinds = map[string]bool{
 	string(ir.NodeKindBinaryOp):   true,
 	string(ir.NodeKindAssert):     true,
 	string(ir.NodeKindDecorator):  true,
+	string(ir.NodeKindKeywordArg): true,
 }
 
 var validSeverities = map[string]bool{
@@ -81,6 +82,20 @@ func (v *defaultValidator) Validate(rule *Rule) []string {
 	}
 
 	errs = append(errs, validateFilterRegexes(rule.Match.Filters, "match.filters")...)
+	for i, f := range rule.Match.Filters {
+		if f.LHSFlowsToCall != "" {
+			if _, err := regexp.Compile(f.LHSFlowsToCall); err != nil {
+				errs = append(errs, fmt.Sprintf("match.filters[%d].lhs_flows_to_call: invalid regex: %v", i, err))
+			}
+		}
+		if f.LiteralArgument != nil {
+			if f.LiteralArgument.Pattern == "" {
+				errs = append(errs, fmt.Sprintf("match.filters[%d].literal_argument: pattern must not be empty", i))
+			} else if _, err := regexp.Compile(f.LiteralArgument.Pattern); err != nil {
+				errs = append(errs, fmt.Sprintf("match.filters[%d].literal_argument.pattern: invalid regex: %v", i, err))
+			}
+		}
+	}
 
 	if rule.Match.CalleeSuffix && rule.Match.Callee == "" {
 		errs = append(errs, "match.callee_suffix: requires a callee")

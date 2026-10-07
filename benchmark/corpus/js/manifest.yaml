@@ -264,4 +264,9 @@ cases:
   - file: cases/vuln_path_join_traversal.js
     language: javascript
     expect: [{rule_id: ZS-JS-091, min_count: 1}]
-
+  - file: cases/vuln_hardcoded_creds.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-140, min_count: 1}, {rule_id: ZS-JS-141, min_count: 1}, {rule_id: ZS-JS-143, min_count: 2}, {rule_id: ZS-JS-144, min_count: 2}, {rule_id: ZS-JS-146, min_count: 1}, {rule_id: ZS-JS-142, min_count: 1}, {rule_id: ZS-JS-145, min_count: 1}]
+  - file: cases/clean_hardcoded_creds.js
+    language: javascript
+    expect: []

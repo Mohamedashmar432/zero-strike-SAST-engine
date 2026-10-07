@@ -1,0 +1,38 @@
+id: ZS-TS-146
+lifecycle: released
+name: Hardcoded Password Passed to Hashing or User-Creation API
+version: "1.0.0"
+language: typescript
+category: authentication
+severity: high
+confidence: medium
+cwe:
+  - CWE-798
+owasp:
+  - "A07:2025"
+rationale: |
+  A literal passed to a password-hashing or user-creation API is a hardcoded
+  password: hashing it at run time does not hide it, because the plaintext
+  is in the source. It is typically a seeded default or admin account that
+  exists, with a publicly known password, in every deployment.
+description: |
+  The password argument (index 0) of bcrypt.hash / hashSync or argon2.hash is
+  a string literal.
+message: "Hardcoded password passed to a password-hashing API - generate seeded passwords at run time or read them from configuration"
+references:
+  - https://cwe.mitre.org/data/definitions/798.html
+tags: [hardcoded-credential, authentication]
+match:
+  kind: call
+  filters:
+      - callee_matches: "(^|\\.)(bcrypt|bcryptjs|argon2)\\.(hash|hashSync)$"
+      - literal_argument:
+          index: 0
+          pattern: "^\\S{4,}$"
+      - not:
+          kind: call
+          filters:
+            - literal_argument:
+                index: 0
+                pattern: "(?i)(changeme|change_me|change-me|xxx|example|placeholder|dummy|sample|your[_-]|redacted|replace[_-]?me|<[^>]*>|\\$\\{|\\{\\{|%s|^[bru]?[\"'`]\\*+[\"'`]$)"
+fix_suggestion: "Do not seed accounts with literal passwords; generate a random password per deployment or require it from the environment."

@@ -12,6 +12,15 @@ type FileEntry struct {
 	Size     int64
 	IsBinary bool     // true if the first 512 bytes contain a null byte
 	Role     FileRole // test/fixture material, or production code — see ClassifyRole
+
+	// AssetData marks a data file (yml/yaml/json/env) found under a static
+	// asset directory (static/, public/, assets/, media/). Those directories
+	// stay skipped for code scanning -- they hold bundled and vendored JS
+	// nobody can fix -- but committed data files there are where seed users,
+	// API configs and credentials live (juice-shop's data/static/users.yml).
+	// Only the secrets scanner accepts these entries; every other scanner
+	// must reject them so the skip keeps its FP-control purpose.
+	AssetData bool
 }
 
 // Options controls the behaviour of a Walker.

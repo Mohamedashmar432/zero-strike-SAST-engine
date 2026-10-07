@@ -21,6 +21,14 @@ type ArgumentKindPattern struct {
 	Kinds []string
 }
 
+// LiteralArgumentPattern requires the positional argument at Index (0-based,
+// negative counts from the end) to BE a literal -- the argument node itself,
+// not something inside it -- whose text matches Pattern.
+type LiteralArgumentPattern struct {
+	Index   int
+	Pattern string
+}
+
 type Filter struct {
 	Not           *MatchPattern
 	ArgumentCount *int
@@ -119,6 +127,22 @@ type Filter struct {
 	// os.path.join(BASE, f"templates/{id}.html") reads as "*/templates/*.html".
 	// A handle opened read-only never matches.
 	WrittenFileMatches string
+
+	// LiteralArgument requires the argument at a position to be a literal
+	// matching a regex: a hardcoded key passed straight to jwt.encode or
+	// createHmac. Unlike ArgumentLiteralMatches it is positional and does not
+	// look inside the argument, so jwt.encode({'role': 'admin'}, key) does not
+	// match on the payload's literals.
+	LiteralArgument *LiteralArgumentPattern
+
+	// LHSFlowsToCall requires the assignment's target variable to be passed,
+	// within the same function (or the file, for a top-level assignment), as
+	// an argument to a call whose callee chain matches this regex. The chain
+	// includes calls in the receiver, so createHash('sha256').update(secret)
+	// counts as reaching createHash. It separates a hardcoded value that is
+	// key material (it feeds a cipher, HMAC or JWT signer: CWE-321) from one
+	// that is a credential (CWE-798).
+	LHSFlowsToCall string
 
 	HasBareExcept bool
 	// HasEmptyExceptHandler requires a try_statement node to contain at least one

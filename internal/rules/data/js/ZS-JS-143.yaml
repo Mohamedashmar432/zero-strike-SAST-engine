@@ -1,0 +1,45 @@
+id: ZS-JS-143
+lifecycle: released
+name: Hardcoded Credential in Environment Fallback
+version: "1.0.0"
+language: javascript
+category: authentication
+severity: high
+confidence: medium
+cwe:
+  - CWE-798
+owasp:
+  - "A07:2025"
+rationale: |
+  process.env.X || 'literal' looks configurable, but the literal is the
+  value in every environment where the variable is unset -- local, CI,
+  preview deployments, and any production host where someone forgot to set
+  it. The application then runs on a secret anyone with the source knows,
+  silently, because nothing fails at start-up.
+description: |
+  An assignment of process.env.X || / ?? '<literal>', where X names a
+  secret, key, token or password. Public/publishable keys are excluded. When
+  the assigned value feeds a crypto or JWT API the CWE-321 sibling rule
+  reports it instead.
+message: "Hardcoded fallback credential - fail at start-up when the environment variable is unset instead of falling back to a literal"
+references:
+  - https://cwe.mitre.org/data/definitions/798.html
+tags: [hardcoded-credential, authentication, env-fallback]
+match:
+  kind: assignment
+  rhs_literal: "(?i)^process\\.env\\.[A-Za-z0-9_]*(SECRET|PASSWORD|PASSWD|_PWD|TOKEN|KEY|PASSPHRASE)[A-Za-z0-9_]*\\s*(\\|\\||\\?\\?)\\s*[\"'`][^\"'`\\s$]{4,}[\"'`]$"
+  filters:
+      - not:
+          kind: assignment
+          filters:
+            - lhs_flows_to_call: "(^|\\.)(createHash|createHmac|createCipheriv|createDecipheriv|createCipher|createDecipher|createSecretKey|scrypt|scryptSync|pbkdf2|pbkdf2Sync|hkdf|hkdfSync|sign|verify|SignJWT|jwtVerify|importKey|AES\\.encrypt|AES\\.decrypt|HmacSHA256|HmacSHA512)$"
+      - not:
+          kind: assignment
+          rhs_literal: "(?i)^process\\.env\\.([A-Za-z0-9_]*(PUBLIC|PUBLISHABLE)|[A-Za-z0-9_]*(_URL|_URI|_HOST|_PATH|_PREFIX|_NAME|_ID|_REGION|_FILE|_DIR|_ALG|_ALGORITHM|_EXPIRY|_EXPIRES_IN|_TTL|_ISSUER|_AUDIENCE|_HEADER)\\b)|(\\|\\||\\?\\?)\\s*[\"'`](https?://|wss?://|/|\\./|\\.\\./)"
+      - not:
+          kind: assignment
+          rhs_literal: "(?i)(changeme|change_me|change-me|xxx|example|placeholder|dummy|sample|your[_-]|redacted|replace[_-]?me|<[^>]*>|\\$\\{|\\{\\{|%s|^[bru]?[\"'`]\\*+[\"'`]$)"
+      - not:
+          kind: assignment
+          rhs_literal: "(?i)^[bru]?[\"'`](null|none|nil|undefined|true|false|empty|bearer|basic|string|text|hidden|required|password|passwd|secret|token)[\"'`]$"
+fix_suggestion: "Remove the fallback literal and throw at start-up if the variable is missing."

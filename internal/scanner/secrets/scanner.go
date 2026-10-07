@@ -7,6 +7,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"unicode"
 
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/analyzer"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
@@ -34,7 +35,27 @@ type detector struct {
 	// `password = "test-pw"` carries no such signal and is almost always a
 	// fixture.
 	generic bool
+
+	// cwe is the weakness this detector's hit represents, carried onto the
+	// finding so SARIF consumers and CWE-keyed policy see secret findings at
+	// all (they used to ship with no CWE). CWE-798 for credentials, tokens
+	// and API keys -- something that authenticates a caller. CWE-321 for key
+	// material -- something that signs or encrypts, where the harm is forged
+	// or decrypted data rather than a borrowed identity.
+	cwe string
+
+	// comparison marks a detector whose whole shape is a value compared
+	// against a literal (password === 'x'). The "==" / "!=" entries of
+	// assertionContext exist to drop test assertions about credentials;
+	// for this detector the comparison IS the hardcoded credential, so only
+	// the assertion-call words still apply.
+	comparison bool
 }
+
+const (
+	cweHardcodedCredential = "CWE-798"
+	cweHardcodedKey        = "CWE-321"
+)
 
 var detectors = []detector{
 	{
@@ -70,6 +91,7 @@ var detectors = []detector{
 		detectorID: "private-key-pem",
 		pattern:    regexp.MustCompile(`-----BEGIN (?:RSA |DSA |EC |OPENSSH |PGP )?PRIVATE KEY(?: BLOCK)?-----`),
 		severity:   core.SeverityCritical,
+		cwe:        cweHardcodedKey,
 	},
 	{
 		ruleID:     "ZS-SEC-006",
@@ -208,6 +230,60 @@ var detectors = []detector{
 		pattern:    regexp.MustCompile(`(sk-(?:proj-)?[a-zA-Z0-9\-_]{32,})`),
 		severity:   core.SeverityHigh,
 	},
+	{
+		// A credential checked against a literal: if (password === 'admin123').
+		// ZS-SEC-004 only knows the assignment shape ([:=] then a quote), so
+		// the comparison form -- the most common way a backdoor or default
+		// login is written -- was invisible. The key may be a subscript or
+		// property (req.body.password, request.form['password']), hence the
+		// optional closing quote/bracket before the operator.
+		ruleID:     "ZS-SEC-027",
+		detectorID: "hardcoded-password-comparison",
+		pattern:    regexp.MustCompile(`(?i)(?:password|passwd|pwd)['"\]]*\s*(?:===?|!==?)\s*["']([^"']{4,})["']`),
+		severity:   core.SeverityHigh,
+		generic:    true,
+		comparison: true,
+	},
+	{
+		// XML credential elements: <password>...</password> in config.xml,
+		// web.config-style files and Maven settings. The key=value detectors
+		// never see these because the value sits between tags.
+		ruleID:     "ZS-SEC-028",
+		detectorID: "xml-credential",
+		pattern:    regexp.MustCompile(`(?i)<(?:password|passwd|pwd|secret|api[_-]?key|access[_-]?token|client[_-]?secret)>\s*([^<\s][^<]{3,}?)\s*</`),
+		severity:   core.SeverityHigh,
+		generic:    true,
+	},
+	{
+		// Node-provider API keys embedded in the RPC URL path rather than in
+		// a key= parameter: wss://eth-mainnet.g.alchemy.com/v2/<key> and
+		// https://mainnet.infura.io/v3/<project-id>. The path segment is the
+		// whole credential, so the provider's own URL shape is the signal.
+		ruleID:     "ZS-SEC-029",
+		detectorID: "rpc-url-api-key",
+		pattern:    regexp.MustCompile(`(?:alchemy\.com/v2/|alchemyapi\.io/v2/|infura\.io/v3/)([A-Za-z0-9_-]{20,})`),
+		severity:   core.SeverityHigh,
+	},
+	{
+		// A base32 TOTP/MFA seed. Anyone holding it generates valid one-time
+		// codes forever, so it is key material (CWE-321), not a password.
+		ruleID:     "ZS-SEC-030",
+		detectorID: "totp-seed",
+		pattern:    regexp.MustCompile(`(?i:totp|otp|mfa|2fa)[_-]?(?i:secret|seed|key)['"]?\s*[:=]\s*['"]?([A-Z2-7]{16,})(?:['"\s,;]|$)`),
+		severity:   core.SeverityHigh,
+		minEntropy: 3.0,
+		generic:    true,
+		cwe:        cweHardcodedKey,
+	},
+}
+
+// weakness returns the CWE a detector's findings carry. Every detector not
+// explicitly marked as key material is a credential or token.
+func (d detector) weakness() string {
+	if d.cwe != "" {
+		return d.cwe
+	}
+	return cweHardcodedCredential
 }
 
 // SecretsScanner detects hardcoded secrets via regex patterns.
@@ -237,9 +313,34 @@ func (s *SecretsScanner) Scan(_ context.Context, files []walker.FileEntry) ([]co
 
 func scanContent(path string, data []byte) []core.Finding {
 	var out []core.Finding
+
+	// Structured passes first. A dotenv or compose line they already judged
+	// (reported or deliberately rejected) is not re-judged by the line
+	// regexes below, which would otherwise report the same credential twice
+	// under a second rule ID, or report the `${VAR}` reference the structured
+	// pass correctly recognised as indirection.
+	handled := map[int]bool{}
+	if isDotenvFile(path) {
+		fs, lines := scanDotenv(path, data)
+		out = append(out, fs...)
+		for l := range lines {
+			handled[l] = true
+		}
+	}
+	if isComposeFile(path) {
+		fs, lines := scanCompose(path, data)
+		out = append(out, fs...)
+		for l := range lines {
+			handled[l] = true
+		}
+	}
+
 	lines := bytes.Split(data, []byte("\n"))
 	for lineNum, line := range lines {
 		for _, d := range detectors {
+			if d.generic && handled[lineNum+1] {
+				continue
+			}
 			match := d.pattern.FindSubmatch(line)
 			if match == nil {
 				continue
@@ -255,25 +356,29 @@ func scanContent(path string, data []byte) []core.Finding {
 			if suppress.Suppressed(data, lineNum+1, lineNum+1, d.ruleID) {
 				continue
 			}
-			if d.generic && !plausibleSecret(captured, line) {
+			if d.generic && !plausibleSecret(captured, line, d.comparison) {
 				continue
 			}
-			name := d.detectorID
-			f := findings.BuildSecretFinding(
-				d.detectorID,
-				d.ruleID,
-				name,
-				"Potential "+name+" detected",
-				path,
-				lineNum+1,
-				captured,
-				shannonEntropy(string(captured)),
-				d.severity,
-			)
-			out = append(out, f)
+			out = append(out, newFinding(d.detectorID, d.ruleID, d.weakness(), path, lineNum+1, captured, d.severity))
 		}
 	}
 	return out
+}
+
+// newFinding builds a secret finding with its CWE attached.
+func newFinding(detectorID, ruleID, cwe, path string, line int, captured []byte, sev core.Severity) core.Finding {
+	return findings.BuildSecretFinding(
+		detectorID,
+		ruleID,
+		detectorID,
+		"Potential "+detectorID+" detected",
+		path,
+		line,
+		captured,
+		shannonEntropy(string(captured)),
+		sev,
+		[]string{cwe},
+	)
 }
 
 func shannonEntropy(s string) float64 {
@@ -329,8 +434,44 @@ var assertionContext = []string{
 // credential rather than a placeholder, an example endpoint, or an assertion
 // operand. line is the full source line, which carries the context the
 // captured value alone cannot show.
-func plausibleSecret(captured, line []byte) bool {
-	raw := strings.TrimSpace(string(captured))
+func plausibleSecret(captured, line []byte, comparison bool) bool {
+	if !plausibleValue(string(captured)) {
+		return false
+	}
+	l := strings.ToLower(string(line))
+	for _, a := range assertionContext {
+		if comparison && (a == "==" || a == "!=") {
+			continue
+		}
+		if strings.Contains(l, a) {
+			return false
+		}
+	}
+	return true
+}
+
+// interpolationMarkers are the openers of a template or shell expansion. A
+// captured "value" containing one is a reference to a secret resolved at run
+// time -- password = '${security.hash(req.body.password)}' inside a SQL
+// template, TOKEN="$(cat $TOKEN_FILE)" in a shell script, {{ .Values.pw }} in
+// a Helm chart -- never the literal secret itself.
+var interpolationMarkers = []string{"${", "$(", "{{", "<%", "#{", "%("}
+
+// htmlTagRe matches an HTML/XML tag inside a captured value. Documentation
+// pages that show an injection payload (password='<b>anything' OR '1'='1</b>')
+// match the password='...' shape, but markup inside the value marks it as
+// rendered prose rather than a credential.
+var htmlTagRe = regexp.MustCompile(`<[a-zA-Z/!][^>]*>`)
+
+// plausibleValue reports whether a captured generic value looks like a live
+// credential rather than a placeholder, an example endpoint, a run-time
+// reference, or prose. It looks at the value only; plausibleSecret adds the
+// line-context checks.
+func plausibleValue(captured string) bool {
+	raw := strings.TrimSpace(captured)
+	if raw == "" {
+		return false
+	}
 
 	// A value wrapped in angle brackets is a documentation placeholder, never
 	// a live credential: <your-password>, <dev sentinel value>,
@@ -342,8 +483,36 @@ func plausibleSecret(captured, line []byte) bool {
 	if strings.HasPrefix(raw, "<") && strings.HasSuffix(raw, ">") {
 		return false
 	}
+	for _, m := range interpolationMarkers {
+		if strings.Contains(raw, m) {
+			return false
+		}
+	}
+	// $NAME / %NAME% are shell and batch variable references.
+	if raw[0] == '$' || (raw[0] == '%' && strings.HasSuffix(raw, "%")) {
+		return false
+	}
+	if htmlTagRe.MatchString(raw) {
+		return false
+	}
+	// Whitespace inside the value means a sentence, not a secret: a UI
+	// string ("no_secret": "Only admin can access, ..."), an i18n label
+	// ("INVALID_TOKEN": "Invalid token"), a log message. Generated secrets
+	// and real-world passwords practically never contain spaces, and the
+	// cost of missing the rare passphrase is far below the cost of
+	// reporting every translated label that mentions a token.
+	if strings.IndexFunc(raw, unicode.IsSpace) >= 0 {
+		return false
+	}
 
 	v := strings.ToLower(raw)
+	// A credential variable compared to or set to a language sentinel
+	// (newPassword === 'undefined', <password>null</password>) is a check for
+	// absence, not a secret.
+	switch v {
+	case "null", "none", "nil", "undefined", "true", "false", "empty":
+		return false
+	}
 	for _, t := range placeholderTokens {
 		if strings.Contains(v, t) {
 			return false
@@ -351,12 +520,6 @@ func plausibleSecret(captured, line []byte) bool {
 	}
 	for _, h := range exampleHosts {
 		if strings.Contains(v, h) {
-			return false
-		}
-	}
-	l := strings.ToLower(string(line))
-	for _, a := range assertionContext {
-		if strings.Contains(l, a) {
 			return false
 		}
 	}

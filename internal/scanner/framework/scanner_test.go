@@ -268,3 +268,15 @@ services:
 		t.Errorf("expected 0 findings for unprivileged compose file, got %+v", fsClean)
 	}
 }
+
+// AssetData entries (data files under static/public/assets) are for the
+// secrets scanner only; see walker.FileEntry.AssetData.
+func TestFrameworkScanner_RejectsAssetData(t *testing.T) {
+	s := &FrameworkScanner{}
+	if s.Accepts(walker.FileEntry{Path: "public/docker-compose.yml", AssetData: true}) {
+		t.Error("framework scanner must not accept AssetData entries")
+	}
+	if !s.Accepts(walker.FileEntry{Path: "docker-compose.yml"}) {
+		t.Error("framework scanner must accept a root docker-compose.yml")
+	}
+}

@@ -39,6 +39,27 @@ var credentialRuleIDs = map[string]bool{
 	"ZS-JAVA-005": true,
 	"ZS-PHP-005":  true,
 	"ZS-CS-006":   true,
+	// v0.37.0 credential detectors (CWE-798). The comparison, pair and
+	// keyword forms routinely land on the same line as ZS-SEC-004/027, and
+	// one hardcoded credential is one finding. Key-material rules (CWE-321)
+	// are deliberately absent: merging one into a CWE-798 finding would
+	// drop the more specific weakness.
+	"ZS-SEC-027": true, // hardcoded-password-comparison
+	"ZS-SEC-028": true, // xml-credential
+	"ZS-SEC-031": true, // dotenv-secret
+	"ZS-SEC-032": true, // compose-env-secret
+	"ZS-PY-140":  true,
+	"ZS-PY-141":  true,
+	"ZS-PY-144":  true,
+	"ZS-PY-145":  true,
+	"ZS-JS-140":  true,
+	"ZS-JS-141":  true,
+	"ZS-JS-143":  true,
+	"ZS-JS-146":  true,
+	"ZS-TS-140":  true,
+	"ZS-TS-141":  true,
+	"ZS-TS-143":  true,
+	"ZS-TS-146":  true,
 }
 
 // normalizedClass returns the cross-engine finding class for f, or "" when f
@@ -78,6 +99,16 @@ func (d *defaultDeduplicator) Deduplicate(findings []core.Finding) []core.Findin
 			k = classKey(class, f)
 		}
 		if i, dup := seen[k]; dup {
+			if preferred(f, out[i]) {
+				// Keep the AST-backed finding as the representative and
+				// record the line-regex one under also_reported_by. Scanners
+				// run concurrently, so "first one in" was a coin toss over
+				// which rule ID (and message) the user saw for one credential.
+				prev := out[i]
+				out[i] = f
+				mergeDuplicate(&out[i], prev)
+				continue
+			}
 			mergeDuplicate(&out[i], f)
 			continue
 		}
@@ -109,4 +140,12 @@ func mergeDuplicate(kept *core.Finding, dropped core.Finding) {
 	} else {
 		kept.Metadata[key] = dropped.RuleID
 	}
+}
+
+// preferred reports whether candidate should replace kept as the
+// representative of a merged credential class: a SAST finding (it carries
+// the AST node, enclosing symbol and rule-specific remediation) wins over a
+// secret-scanner line match. Otherwise the first finding stays.
+func preferred(candidate, kept core.Finding) bool {
+	return candidate.Kind == core.FindingKindSAST && kept.Kind != core.FindingKindSAST
 }

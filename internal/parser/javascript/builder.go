@@ -204,12 +204,19 @@ func extractAttrs(n *ir.IRNode, node *sitter.Node, source []byte) {
 			n.Attrs["rhs"] = value.Content(source)
 		}
 	case "pair":
+		// lhs/rhs mirror kwarg_name/kwarg_value so assignment-style
+		// lhs_identifier/rhs_literal rules can match object entries such as
+		// { password: 'letmein' }. lhs drops the quotes of a string key.
 		if key := node.ChildByFieldName("key"); key != nil {
 			n.Attrs["kwarg_name"] = key.Content(source)
+			n.Attrs["lhs"] = unquoteLiteral(key.Content(source))
 		}
 		if value := node.ChildByFieldName("value"); value != nil {
 			n.Attrs["kwarg_value"] = value.Content(source)
+			n.Attrs["rhs"] = value.Content(source)
 		}
+	case "binary_expression":
+		setEqualityAttrs(n, node, source)
 	case "try_statement":
 		var handlers []ir.ExceptHandler
 		for i := 0; i < int(node.ChildCount()); i++ {
@@ -257,6 +264,29 @@ func extractParameters(node *sitter.Node, source []byte) []string {
 		}
 	}
 	return out
+}
+
+// equalityOps are the operators whose operands setEqualityAttrs records.
+var equalityOps = map[string]bool{"==": true, "===": true, "!=": true, "!==": true}
+
+// setEqualityAttrs records lhs/rhs/operator on an equality binary_expression
+// (a === b, a != b) so lhs_identifier/rhs_literal rules can match a
+// credential compared to a literal. Operands are normalised so a string
+// literal sits on the rhs ('admin' === pw becomes lhs=pw, rhs='admin').
+// Other operators get no attrs and so never match those rules.
+func setEqualityAttrs(n *ir.IRNode, node *sitter.Node, source []byte) {
+	op := node.ChildByFieldName("operator")
+	left, right := node.ChildByFieldName("left"), node.ChildByFieldName("right")
+	if op == nil || left == nil || right == nil || !equalityOps[op.Type()] {
+		return
+	}
+	isStr := func(x *sitter.Node) bool { return x.Type() == "string" || x.Type() == "template_string" }
+	if isStr(left) && !isStr(right) {
+		left, right = right, left
+	}
+	n.Attrs["lhs"] = left.Content(source)
+	n.Attrs["rhs"] = right.Content(source)
+	n.Attrs["operator"] = op.Type()
 }
 
 // isEmptyBlockBody reports whether a statement_block (catch body) contains no

@@ -72,9 +72,16 @@ type filterYAML struct {
 	CalleeMatches             string       `yaml:"callee_matches"`
 	DecoratorStackMatches     string       `yaml:"decorator_stack_matches"`
 	EnclosingFunctionMatches  string       `yaml:"enclosing_function_matches"`
-	ArgumentNotConstant   *int         `yaml:"argument_not_constant"`
+	ArgumentNotConstant       *int         `yaml:"argument_not_constant"`
 	WrittenFileMatches        string       `yaml:"written_file_matches"`
 	HasEmptyExceptHandler     bool         `yaml:"has_empty_except_handler"`
+	LiteralArgument           *litArgYAML  `yaml:"literal_argument"`
+	LHSFlowsToCall            string       `yaml:"lhs_flows_to_call"`
+}
+
+type litArgYAML struct {
+	Index   int    `yaml:"index"`
+	Pattern string `yaml:"pattern"`
 }
 
 type defaultLoader struct {
@@ -215,8 +222,12 @@ func convertFilters(fyamls []filterYAML) []Filter {
 			CalleeMatches:             f.CalleeMatches,
 			DecoratorStackMatches:     f.DecoratorStackMatches,
 			EnclosingFunctionMatches:  f.EnclosingFunctionMatches,
-			ArgumentNotConstant:   f.ArgumentNotConstant,
+			ArgumentNotConstant:       f.ArgumentNotConstant,
 			WrittenFileMatches:        f.WrittenFileMatches,
+			LHSFlowsToCall:            f.LHSFlowsToCall,
+		}
+		if f.LiteralArgument != nil {
+			filter.LiteralArgument = &LiteralArgumentPattern{Index: f.LiteralArgument.Index, Pattern: f.LiteralArgument.Pattern}
 		}
 		if f.Kwarg != nil {
 			filter.Kwarg = &KwargPattern{Name: f.Kwarg.Name, NamePattern: f.Kwarg.NamePattern, ValuePattern: f.Kwarg.ValuePattern}

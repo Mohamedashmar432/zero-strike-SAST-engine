@@ -1,0 +1,43 @@
+id: ZS-TS-141
+lifecycle: released
+name: Hardcoded Credential in Object or Keyword Argument
+version: "1.0.0"
+language: typescript
+category: authentication
+severity: high
+confidence: medium
+cwe:
+  - CWE-798
+owasp:
+  - "A07:2025"
+rationale: |
+  A credential written as a literal value in a dict/object entry or keyword
+  argument -- {'password': 'admin123'}, new User({password: 'letmein'}),
+  create_user(password='hunter2') -- ships wherever the code ships and seeds
+  a known login into every environment the code runs in. Seed and fixture
+  scripts are the common source; they are still real default credentials
+  when they run against a deployed database.
+description: |
+  A dict/object entry or keyword argument whose key is exactly a credential
+  name (password, passwd, pwd, secret, client_secret, api_key, access_token,
+  private_key) has a string literal of 4 or more non-space characters as its
+  value. In JS/TS an environment fallback (process.env.X || 'literal') counts
+  too: the literal is what runs whenever the variable is unset.
+  Placeholders, run-time references and field-name values ('password')
+  are excluded.
+message: "Hardcoded credential in a dict/object entry or keyword argument - load it from the environment or a secrets manager"
+references:
+  - https://cwe.mitre.org/data/definitions/798.html
+tags: [hardcoded-credential, authentication]
+match:
+  kind: keyword_argument
+  lhs_identifier: "(?i)^(password|passwd|pwd|passphrase|pass_?word|secret|secret_?key|client_?secret|api_?key|apikey|access_?token|auth_?token|private_?key)$"
+  rhs_literal: "(?i)^(process\\.env\\.[A-Za-z0-9_]+\\s*(\\|\\||\\?\\?)\\s*)?[\"'`][^\"'`\\s$]{4,}[\"'`]$"
+  filters:
+      - not:
+          kind: keyword_argument
+          rhs_literal: "(?i)(changeme|change_me|change-me|xxx|example|placeholder|dummy|sample|your[_-]|redacted|replace[_-]?me|<[^>]*>|\\$\\{|\\{\\{|%s|^[bru]?[\"'`]\\*+[\"'`]$)"
+      - not:
+          kind: keyword_argument
+          rhs_literal: "(?i)^[bru]?[\"'`](null|none|nil|undefined|true|false|empty|bearer|basic|string|text|hidden|required|password|passwd|secret|token)[\"'`]$"
+fix_suggestion: "Read the credential from the environment or a secrets manager; for seed users, generate a random password at seed time and print it once."

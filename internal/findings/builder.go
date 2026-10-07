@@ -104,12 +104,16 @@ func BuildFinding(result engine.MatchResult, mc *engine.MatchContext, source []b
 
 // BuildSecretFinding constructs a core.Finding for a detected secret.
 // rawSecret is hashed immediately and never stored in the returned Finding.
+// cwe is the detector's weakness (CWE-798 for credentials and tokens, CWE-321
+// for key material); without it SARIF consumers and CWE-keyed policies see a
+// secret finding as unclassified.
 func BuildSecretFinding(
 	detectorID, ruleID, ruleName, message, filePath string,
 	line int,
 	rawSecret []byte,
 	entropy float64,
 	severity core.Severity,
+	cwe []string,
 ) core.Finding {
 	// Fingerprint: sha256(detectorID + "|" + hex(sha256(rawSecret[:32])))[:16]
 	cap := len(rawSecret)
@@ -137,6 +141,7 @@ func BuildSecretFinding(
 		Language:    core.LangUnknown,
 		Fingerprint: fingerprint,
 		Kind:        core.FindingKindSecret,
+		CWE:         cwe,
 		Secret: &core.SecretFinding{
 			DetectorID: detectorID,
 			Entropy:    entropy,
