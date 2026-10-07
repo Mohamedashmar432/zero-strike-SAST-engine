@@ -1,0 +1,34 @@
+id: ZS-TS-138
+lifecycle: released
+name: "Mass assignment via Prisma data spread"
+version: "1.0.0"
+language: typescript
+category: injection
+severity: medium
+confidence: medium
+cwe:
+  - CWE-915
+owasp:
+  - "A08:2025"
+rationale: |
+  Passing untrusted input as Prisma's whole `data` object, directly or
+  spread into it ({ ...updates }), writes every column the client chose to
+  send. A profile update then also changes role, ownership or billing
+  fields the endpoint never meant to expose.
+description: |
+  A Prisma model create/createMany/update/updateMany call receives a
+  `data` value that is a tainted variable, or an object literal spreading
+  a tainted value ({ ...updates }, { ...JSON.parse(raw) }).
+message: "Prisma data built from untrusted input as a whole - mass assignment of unintended fields"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Mass_Assignment_Cheat_Sheet.html
+tags: [mass-assignment, injection, prisma]
+match:
+  kind: call
+  filters:
+    - callee_pattern: "[\\w$]\\.[\\w$]+\\.(create|createMany|update|updateMany)$"
+    - kwarg:
+        name: data
+        value_pattern: ""
+        value_tainted: true
+fix_suggestion: "Pick the permitted fields explicitly (data: { name: input.name }) or parse the input with a schema (zod, yup) that strips unknown keys."

@@ -11,6 +11,12 @@ type KwargPattern struct {
 	Name         string // exact keyword argument name, e.g. "debug" ("" = any)
 	NamePattern  string // regex against the argument name, e.g. "^on[a-z]+$" ("" = any)
 	ValuePattern string // regex against the argument's value text, e.g. "^True$" ("" = any)
+	// ValueTainted additionally requires the argument's value to carry taint
+	// as a whole object (JS/TS): a tainted identifier, member or call, or an
+	// object literal that spreads a tainted value ({...req.body}). A tainted
+	// value nested under some other key does not count; that is what makes
+	// this a mass-assignment test rather than "anything tainted somewhere".
+	ValueTainted bool
 }
 
 // Filter is a typed constraint on a match pattern.
@@ -19,6 +25,15 @@ type KwargPattern struct {
 type ArgumentKindPattern struct {
 	Index int
 	Kinds []string
+}
+
+// ArgumentTextPattern names one positional argument and a regex matched
+// against that argument's own expression text (see engine.exprText): a
+// literal's unquoted value, an identifier's name, or a dotted member chain
+// such as req.body. A negative Index counts from the end.
+type ArgumentTextPattern struct {
+	Index   int
+	Pattern string
 }
 
 type Filter struct {
@@ -90,6 +105,41 @@ type Filter struct {
 	RequireRealSource bool
 
 	HasBareExcept bool
+
+	// CalleePattern is a regex matched against the call's callee text as the
+	// engine renders it. For JavaScript/TypeScript that rendering keeps every
+	// receiver: this.http.get, res.status().send, new RegExp().exec. It lets
+	// one rule cover a family of receivers/methods that a single exact or
+	// suffix callee cannot (res.send / res.status(500).json / NextResponse.json).
+	CalleePattern string
+	// CalleeCanonical is a regex matched against the callee with its root
+	// identifier replaced by the module it was imported or required from
+	// (JS/TS): `const cp = require('child_process'); cp.exec(x)` and
+	// `import { exec } from 'node:child_process'; exec(x)` both canonicalize
+	// to child_process.exec. A root with no import binding is left as written.
+	CalleeCanonical string
+	// CalleeResolved requires the callee's root identifier to be bound by an
+	// import or require in the same file. It is what keeps a generic name
+	// (request, got) from matching a local function of the same name.
+	CalleeResolved bool
+	// ArgumentMatchesAt requires the positional argument at Index to render
+	// to text matching Pattern. The check is on the argument itself, not its
+	// subtree.
+	ArgumentMatchesAt *ArgumentTextPattern
+	// DynamicStringArgumentIndex requires the argument at this index to be a
+	// string built at runtime: a template literal with a ${} substitution or
+	// a + concatenation. Used where building the string at all is the bug
+	// (prisma.$queryRawUnsafe), so no taint is required.
+	DynamicStringArgumentIndex *int
+	// ArgumentReferencesErrorBinding requires an argument to reference a
+	// caught error (JS/TS): the binding of an enclosing catch clause, the
+	// first parameter of an enclosing err-first or .catch() callback, or a
+	// variable assigned from one in the same function. It matches the
+	// binding, not the name: a key or property spelled `error` is not a
+	// reference, and neither are err.code / err.status style fields or a
+	// comparison such as `err instanceof X`.
+	ArgumentReferencesErrorBinding bool
+
 	// HasEmptyExceptHandler requires a try_statement node to contain at least one
 	// except clause whose body is just "pass" (see ir.ExceptHandler.IsEmptyBody).
 	HasEmptyExceptHandler bool

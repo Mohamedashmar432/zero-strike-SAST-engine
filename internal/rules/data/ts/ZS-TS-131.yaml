@@ -1,0 +1,33 @@
+id: ZS-TS-131
+lifecycle: released
+name: "Path Traversal via res.download"
+version: "1.0.0"
+language: typescript
+category: path-traversal
+severity: high
+confidence: medium
+cwe:
+  - CWE-22
+owasp:
+  - "A01:2025"
+rationale: |
+  res.download() streams the named file to the client as an attachment.
+  With an attacker-influenced path, ../ sequences or an absolute path let
+  the requester download any file the process can read: configuration
+  with secrets, other users' uploads, source code. path.resolve() does not
+  help on its own; it only normalizes the escape.
+description: |
+  res.download() is called with a path (argument 0) that traces back to an
+  untrusted source.
+message: "res.download() called with a tainted path - path traversal risk"
+references:
+  - https://owasp.org/www-community/attacks/Path_Traversal
+  - https://expressjs.com/en/api.html#res.download
+tags: [path-traversal, file-access, express]
+match:
+  kind: call
+  filters:
+    - callee_pattern: "^(res|response)\\.download$"
+    - tainted_argument: true
+      tainted_argument_index: 0
+fix_suggestion: "Resolve the path and confirm it stays inside the download directory (or pass the { root } option with a basename) before calling res.download()."

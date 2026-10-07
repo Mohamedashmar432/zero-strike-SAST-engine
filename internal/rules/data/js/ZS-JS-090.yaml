@@ -16,6 +16,8 @@ rationale: |
   network eavesdropping and tampering.
 description: |
   Detects http.get() called with hardcoded http:// scheme URLs.
+
+  When `http` is bound by an import or require, it must be the Node http/https module; this.http.get (an Angular HttpClient member) is a different callee.
 message: "http.get() called with unencrypted http:// URL — use https://"
 references:
   - https://owasp.org/www-community/vulnerabilities/Cleartext_Transmission_of_Sensitive_Information
@@ -24,5 +26,10 @@ match:
   kind: call
   callee: http.get
   filters:
+    # `http` must be the Node http/https module: either bound by
+    # require/import of it, or not import-bound at all. A first-party HTTP
+    # wrapper imported as `http` does not match, and this.http.get (Angular
+    # HttpClient) no longer renders as http.get in the first place.
+    - callee_canonical: "^https?\.get$"
     - argument_literal_matches: "^http://"
 fix_suggestion: "Use HTTPS (https://) for all remote network communications."

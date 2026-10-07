@@ -28,14 +28,19 @@ description: |
   Detects libxmljs.parseXmlString() calls configured with noent: true,
   which enables external entity resolution (XXE) regardless of whether the
   parsed content itself is independently proven tainted.
+
+  Matches parseXml and parseXmlString under any receiver name, and reads the options from a same-file object literal when they are passed as a variable.
 message: "libxmljs.parseXmlString() called with noent:true — XML external entity (XXE) injection risk"
 references:
   - https://owasp.org/www-community/vulnerabilities/XML_External_Entity_(XXE)_Processing
 tags: [xxe, injection, libxmljs]
 match:
   kind: call
-  callee: libxmljs.parseXmlString
   filters:
+    # parseXml and parseXmlString on any libxmljs binding (libxml, libxmljs,
+    # xml). The noent:true gate is what makes the match specific; the options
+    # object may be inline or a same-file object literal passed by name.
+    - callee_pattern: "(^|\.)parseXml(String)?$"
     - kwarg:
         name: noent
         value_pattern: "^true$"

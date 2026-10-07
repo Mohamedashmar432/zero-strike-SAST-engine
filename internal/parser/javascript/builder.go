@@ -172,6 +172,22 @@ func extractAttrs(n *ir.IRNode, node *sitter.Node, source []byte) {
 		if params := extractParameters(node, source); len(params) > 0 {
 			n.Attrs["parameters"] = params
 		}
+		// The first parameter of an err-first / .catch() callback holds an
+		// error object; the engine's argument_references_error_binding filter
+		// reads it (CWE-209: error details sent in a response).
+		if eb := errorCallbackParam(node, source); eb != "" {
+			n.Attrs["error_param"] = eb
+		}
+	case "catch_clause":
+		if eb := catchBinding(node, source); eb != "" {
+			n.Attrs["error_binding"] = eb
+		}
+	case "property_identifier":
+		// property_identifier lowers to NodeKindIdentifier like a variable
+		// reference does. Mark it so a filter that needs a *reference* to a
+		// binding (err) can tell `err` apart from the key in {err: 1} or the
+		// property in x.err.
+		n.Attrs["prop"] = true
 	case "return_statement":
 		// Capture the returned expression's text for the taint
 		// function-summary pass (see internal/analyzer/taint).

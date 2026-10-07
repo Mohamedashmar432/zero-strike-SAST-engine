@@ -132,9 +132,9 @@ func (e *defaultEngine) Match(_ context.Context, mc *MatchContext) ([]MatchResul
 		return nil, nil
 	}
 	taintedVars := mc.File.TaintedVars
-	weakVars := mc.File.WeakTaintVars
-	var out []MatchResult
 	fileLang := mc.File.IR.Language
+	fc := newFileCtx(mc.File.IR, taintedVars, mc.File.WeakTaintVars)
+	var out []MatchResult
 	// consider evaluates one candidate rule against n.
 	//
 	// The three index buckets are iterated separately rather than gathered
@@ -157,7 +157,7 @@ func (e *defaultEngine) Match(_ context.Context, mc *MatchContext) ([]MatchResul
 		if r.Language != fileLang {
 			return
 		}
-		if matchNode(r.Match, n, taintedVars, weakVars, fileLang) {
+		if matchNode(r.Match, n, fc) {
 			out = append(out, MatchResult{Rule: r, Node: n, TaintedVar: taintedIdentifierFor(r.Match, n, taintedVars, fileLang)})
 		}
 	}
@@ -167,7 +167,7 @@ func (e *defaultEngine) Match(_ context.Context, mc *MatchContext) ([]MatchResul
 			consider(n, r)
 		}
 		if n.Kind == ir.NodeKindCall {
-			text := calleeText(n)
+			text := fc.callee(n)
 			for _, r := range mc.Index.byCallee[text] {
 				consider(n, r)
 			}
@@ -182,8 +182,31 @@ func (e *defaultEngine) Match(_ context.Context, mc *MatchContext) ([]MatchResul
 	return out, nil
 }
 
+// calleeTextFor extracts the callee text of a call node in lang's rendering.
+// JavaScript and TypeScript use jsCalleeText, which keeps non-identifier
+// receivers as placeholder segments (this.http.get, res.status().send); every
+// other language keeps the historical calleeText rendering.
+func calleeTextFor(n *ir.IRNode, lang core.Language) string {
+	if isJSLike(lang) {
+		return jsCalleeText(n, nil)
+	}
+	return calleeText(n)
+}
+
+// attributeTextFor is calleeTextFor's counterpart for a bare attribute node.
+func attributeTextFor(n *ir.IRNode, lang core.Language) string {
+	if isJSLike(lang) {
+		return jsExprText(n, nil)
+	}
+	return attributeText(n)
+}
+
 // calleeText extracts the callee name from a call node.
 // Handles plain calls (eval) and attribute calls (os.system, pickle.loads).
+//
+// For JavaScript/TypeScript use calleeTextFor: this rendering drops every
+// child that is not an Identifier or Attribute, so `this.http.get` collapsed
+// to `http.get` and `res.status(500).send` to `send`.
 func calleeText(n *ir.IRNode) string {
 	for _, c := range n.Children {
 		switch c.Kind {
@@ -226,7 +249,7 @@ func attributeText(n *ir.IRNode) string {
 // matchNode checks whether a node satisfies the match pattern.
 // Callee matching is already handled by the index; matchNode covers
 // Identifier, Literal, and Filter constraints.
-func matchNode(pattern rules.MatchPattern, n *ir.IRNode, taintedVars, weak map[string]bool, lang core.Language) bool {
+func matchNode(pattern rules.MatchPattern, n *ir.IRNode, fc *fileCtx) bool {
 	if ir.NodeKind(pattern.Kind) != n.Kind {
 		return false
 	}
@@ -254,14 +277,15 @@ func matchNode(pattern rules.MatchPattern, n *ir.IRNode, taintedVars, weak map[s
 		}
 	}
 	for _, f := range pattern.Filters {
-		if !evalFilter(f, n, taintedVars, weak, lang) {
+		if !evalFilter(f, n, fc) {
 			return false
 		}
 	}
 	return true
 }
 
-func evalFilter(f rules.Filter, n *ir.IRNode, taintedVars, weak map[string]bool, lang core.Language) bool {
+func evalFilter(f rules.Filter, n *ir.IRNode, fc *fileCtx) bool {
+	taintedVars, weak, lang := fc.tainted, fc.weak, fc.lang
 	if f.ArgumentCount != nil {
 		ac, _ := n.Attrs["argument_count"].(int)
 		if ac != *f.ArgumentCount {
@@ -271,7 +295,7 @@ func evalFilter(f rules.Filter, n *ir.IRNode, taintedVars, weak map[string]bool,
 	if f.HasAttribute != "" {
 		found := false
 		for _, c := range n.Children {
-			if c.Kind == ir.NodeKindAttribute && strings.Contains(attributeText(c), f.HasAttribute) {
+			if c.Kind == ir.NodeKindAttribute && strings.Contains(attributeTextFor(c, lang), f.HasAttribute) {
 				found = true
 				break
 			}
@@ -312,7 +336,7 @@ func evalFilter(f rules.Filter, n *ir.IRNode, taintedVars, weak map[string]bool,
 		}
 	}
 	if f.Kwarg != nil {
-		if !anyArgument(n, func(a *ir.IRNode) bool {
+		pred := func(a *ir.IRNode) bool {
 			if a.Kind != ir.NodeKindKeywordArg {
 				return false
 			}
@@ -327,8 +351,15 @@ func evalFilter(f rules.Filter, n *ir.IRNode, taintedVars, weak map[string]bool,
 			}
 			value, _ := a.Attrs["kwarg_value"].(string)
 			matched, err := regexp.MatchString(f.Kwarg.ValuePattern, value)
-			return err == nil && matched
-		}) {
+			if err != nil || !matched {
+				return false
+			}
+			return !f.Kwarg.ValueTainted || fc.kwargValueTainted(a)
+		}
+		// JS/TS: an options object is as often a named local as an inline
+		// literal (const opts = {noent: true}; parseXml(data, opts)). Look
+		// through an identifier argument to its same-file object initializer.
+		if !anyArgument(n, pred) && !fc.anyResolvedObjectArgument(n, pred) {
 			return false
 		}
 	}
@@ -364,6 +395,9 @@ func evalFilter(f rules.Filter, n *ir.IRNode, taintedVars, weak map[string]bool,
 			return false
 		}
 	}
+	if !fc.evalJSFilters(f, n) {
+		return false
+	}
 	if f.HasBareExcept {
 		if !anyExceptHandler(n, func(h ir.ExceptHandler) bool { return h.IsBare }) {
 			return false
@@ -375,7 +409,7 @@ func evalFilter(f rules.Filter, n *ir.IRNode, taintedVars, weak map[string]bool,
 		}
 	}
 	if f.Not != nil {
-		if matchNode(*f.Not, n, taintedVars, weak, lang) {
+		if matchNode(*f.Not, n, fc) {
 			return false
 		}
 	}
@@ -440,9 +474,9 @@ func isDirectSourceExpression(n *ir.IRNode, lang core.Language) bool {
 		// include the trailing paren — the assignment-based check sees it
 		// naturally via raw RHS source text, so calleeText needs it added
 		// back explicitly here.
-		return taint.IsSource(lang, calleeText(n)+"(")
+		return taint.IsSource(lang, calleeTextFor(n, lang)+"(")
 	case ir.NodeKindAttribute:
-		return taint.IsSource(lang, attributeText(n))
+		return taint.IsSource(lang, attributeTextFor(n, lang))
 	case ir.NodeKindIdentifier:
 		return taint.IsSource(lang, n.Text)
 	default:
@@ -624,11 +658,11 @@ func firstTaintedArgument(n *ir.IRNode, taintedVars map[string]bool, lang core.L
 	}
 	for _, argRoot := range n.Children[1:] {
 		if isDirectSourceExpression(argRoot, lang) {
-			return sourceExpressionText(argRoot)
+			return sourceExpressionText(argRoot, lang)
 		}
 		for _, d := range ir.Descendants(argRoot) {
 			if isDirectSourceExpression(d, lang) {
-				return sourceExpressionText(d)
+				return sourceExpressionText(d, lang)
 			}
 		}
 	}
@@ -640,12 +674,12 @@ func firstTaintedArgument(n *ir.IRNode, taintedVars map[string]bool, lang core.L
 // field — the same text isDirectSourceExpression tested against the source
 // patterns (with the call form's trailing "(" omitted, since it's only
 // needed for the regex match, not for display).
-func sourceExpressionText(n *ir.IRNode) string {
+func sourceExpressionText(n *ir.IRNode, lang core.Language) string {
 	switch n.Kind {
 	case ir.NodeKindCall:
-		return calleeText(n)
+		return calleeTextFor(n, lang)
 	case ir.NodeKindAttribute:
-		return attributeText(n)
+		return attributeTextFor(n, lang)
 	default:
 		return n.Text
 	}
@@ -671,11 +705,11 @@ func firstTaintedRHSIdentifier(n *ir.IRNode, taintedVars map[string]bool, lang c
 		}
 	}
 	if isDirectSourceExpression(rhs, lang) {
-		return sourceExpressionText(rhs)
+		return sourceExpressionText(rhs, lang)
 	}
 	for _, d := range ir.Descendants(rhs) {
 		if isDirectSourceExpression(d, lang) {
-			return sourceExpressionText(d)
+			return sourceExpressionText(d, lang)
 		}
 	}
 	return ""

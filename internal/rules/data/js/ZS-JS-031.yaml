@@ -28,6 +28,8 @@ description: |
   source expression used directly inline as the argument — e.g.
   fork(req.body.modulePath) — not only via a previously-assigned named
   variable).
+
+  The callee must resolve to child_process.fork through its import or require binding (any local name, node: prefix included), or be a bare fork() with no import binding in the file.
 message: "fork() called with a tainted module path — arbitrary code execution risk"
 references:
   - https://nodejs.org/api/child_process.html#child_processforkmodulepath-args-options
@@ -35,6 +37,13 @@ tags: [command-injection, injection, child-process, rce]
 match:
   kind: call
   callee: fork
+  # Any receiver ending in .fork is a candidate (cp.fork, child_process.fork,
+  # require('child_process').fork); callee_canonical then requires the callee
+  # to resolve to the child_process module, or to be the bare name with no
+  # import binding. So new RegExp(p).exec(s), re.exec(s) and a redux-saga
+  # fork imported from another package do not match.
+  callee_suffix: true
   filters:
+    - callee_canonical: "^(child_process\.)?fork$"
     - tainted_argument: true
 fix_suggestion: "Never let request data determine which module fork() loads; restrict it to a fixed, allowlisted set of internal worker scripts."

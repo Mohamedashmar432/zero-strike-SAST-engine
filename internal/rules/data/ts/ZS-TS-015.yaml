@@ -30,13 +30,18 @@ description: |
   A raw Sequelize query is executed with a query string that traces back to
   an untrusted source (intra-procedural taint tracking), indicating SQL
   built by string concatenation instead of parameter binding.
+
+  Matches sequelize.query on any receiver chain (db.sequelize.query, models.sequelize.query, sequelize.query).
 message: "db.sequelize.query() called with a tainted query string — use parameter binding instead"
 references:
   - https://owasp.org/www-community/attacks/SQL_Injection
 tags: [sqli, injection, sequelize]
 match:
   kind: call
-  callee: db.sequelize.query
+  # Dot-boundary suffix: db.sequelize.query, models.sequelize.query and a
+  # bare sequelize.query all match; the exact callee only matched `db`.
+  callee: sequelize.query
+  callee_suffix: true
   filters:
     - tainted_argument: true
 fix_suggestion: "Use Sequelize's replacements/bind parameter binding instead of concatenating values into the query string."

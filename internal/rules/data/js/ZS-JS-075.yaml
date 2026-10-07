@@ -22,6 +22,8 @@ description: |
   Detects calls to spawnSync() (child_process, commonly destructured as
   spawnSync) where an argument traces back to an untrusted source
   (intra-procedural taint tracking). Sibling of ZS-JS-029 (spawn).
+
+  The callee must resolve to child_process.spawnSync through its import or require binding (any local name, node: prefix included), or be a bare spawnSync() with no import binding in the file.
 message: "spawnSync() called with a tainted argument — use an argument array without shell, and validate input"
 references:
   - https://owasp.org/www-community/attacks/Command_Injection
@@ -29,7 +31,14 @@ tags: [command-injection, child-process]
 match:
   kind: call
   callee: spawnSync
+  # Any receiver ending in .spawnSync is a candidate (cp.spawnSync, child_process.spawnSync,
+  # require('child_process').spawnSync); callee_canonical then requires the callee
+  # to resolve to the child_process module, or to be the bare name with no
+  # import binding. So new RegExp(p).exec(s), re.exec(s) and a redux-saga
+  # spawnSync imported from another package do not match.
+  callee_suffix: true
   filters:
+    - callee_canonical: "^(child_process\.)?spawnSync$"
     # DELIBERATELY UNINDEXED. spawnSync(command, args, options) is dangerous
     # at BOTH index 0 (the program) and index 1 (the argv array) — the corpus
     # case is spawnSync('sh', ['-c', cmd]), whose taint is at index 1, while

@@ -48,6 +48,12 @@ type kwargYAML struct {
 	Name         string `yaml:"name"`
 	NamePattern  string `yaml:"name_pattern"`
 	ValuePattern string `yaml:"value_pattern"`
+	ValueTainted bool   `yaml:"value_tainted"`
+}
+
+type argTextYAML struct {
+	Index   int    `yaml:"index"`
+	Pattern string `yaml:"pattern"`
 }
 
 type argKindYAML struct {
@@ -70,6 +76,13 @@ type filterYAML struct {
 	ArgumentKindNotAt         *argKindYAML `yaml:"argument_kind_not_at"`
 	HasBareExcept             bool         `yaml:"has_bare_except"`
 	HasEmptyExceptHandler     bool         `yaml:"has_empty_except_handler"`
+
+	CalleePattern                  string       `yaml:"callee_pattern"`
+	CalleeCanonical                string       `yaml:"callee_canonical"`
+	CalleeResolved                 bool         `yaml:"callee_resolved"`
+	ArgumentMatchesAt              *argTextYAML `yaml:"argument_matches_at"`
+	DynamicStringArgumentIndex     *int         `yaml:"dynamic_string_argument_index"`
+	ArgumentReferencesErrorBinding bool         `yaml:"argument_references_error_binding"`
 }
 
 type defaultLoader struct {
@@ -207,9 +220,18 @@ func convertFilters(fyamls []filterYAML) []Filter {
 			ArgumentKindNotAt:         convertArgKind(f.ArgumentKindNotAt),
 			HasBareExcept:             f.HasBareExcept,
 			HasEmptyExceptHandler:     f.HasEmptyExceptHandler,
+
+			CalleePattern:                  f.CalleePattern,
+			CalleeCanonical:                f.CalleeCanonical,
+			CalleeResolved:                 f.CalleeResolved,
+			DynamicStringArgumentIndex:     f.DynamicStringArgumentIndex,
+			ArgumentReferencesErrorBinding: f.ArgumentReferencesErrorBinding,
+		}
+		if f.ArgumentMatchesAt != nil {
+			filter.ArgumentMatchesAt = &ArgumentTextPattern{Index: f.ArgumentMatchesAt.Index, Pattern: f.ArgumentMatchesAt.Pattern}
 		}
 		if f.Kwarg != nil {
-			filter.Kwarg = &KwargPattern{Name: f.Kwarg.Name, NamePattern: f.Kwarg.NamePattern, ValuePattern: f.Kwarg.ValuePattern}
+			filter.Kwarg = &KwargPattern{Name: f.Kwarg.Name, NamePattern: f.Kwarg.NamePattern, ValuePattern: f.Kwarg.ValuePattern, ValueTainted: f.Kwarg.ValueTainted}
 		}
 		if f.Not != nil {
 			mp := convertMatch(*f.Not)
