@@ -4,7 +4,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"sync"
 	"unicode"
 
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
@@ -21,7 +20,7 @@ type fileCtx struct {
 	weak    map[string]bool
 	lang    core.Language
 	root    *ir.IRNode
-	aliases map[string]string
+	aliases map[string]string // Python import table
 
 	indexed bool
 	assigns map[string][]*ir.IRNode // simple-name LHS -> assignment nodes
@@ -33,22 +32,31 @@ type fileCtx struct {
 	// literal's value, so argument_literal_matches sees through a named
 	// constant. See moduleConstants.
 	consts map[string]string
+
+	// JS/TS only: module bindings and object-literal initializers that some
+	// filters resolve through (see jsfamily.go).
+	jsOnce   bool
+	bindings map[string]string       // local name -> canonical module path
+	objDecls map[string][]*ir.IRNode // local name -> object-literal initializers
+
+	lastNode *ir.IRNode // memo for callee()
+	lastText string
 }
 
-func newFileCtx(root *ir.IRNode, tainted, weak map[string]bool, lang core.Language) *fileCtx {
-	fc := &fileCtx{tainted: tainted, weak: weak, lang: lang, root: root, consts: moduleConstants(root)}
-	if lang == core.LangPython && root != nil {
-		fc.aliases, _ = root.Attrs["import_aliases"].(map[string]string)
+func newFileCtx(f *ir.IRFile, tainted, weak map[string]bool) *fileCtx {
+	fc := &fileCtx{tainted: tainted, weak: weak, lang: f.Language, root: f.Root, consts: moduleConstants(f.Root)}
+	if f.Language == core.LangPython && f.Root != nil {
+		fc.aliases, _ = f.Root.Attrs["import_aliases"].(map[string]string)
 	}
 	return fc
 }
 
-// canonicalCallee resolves the first segment of a dotted callee through the
+// canonicalAlias resolves the first segment of a dotted callee through the
 // file's import table: with `from hashlib import md5`, "md5" becomes
 // "hashlib.md5"; with `import xml.etree.ElementTree as ET`, "ET.fromstring"
 // becomes "xml.etree.ElementTree.fromstring". Returns text unchanged when
 // nothing applies (every non-Python file).
-func (fc *fileCtx) canonicalCallee(text string) string {
+func (fc *fileCtx) canonicalAlias(text string) string {
 	if len(fc.aliases) == 0 || text == "" {
 		return text
 	}
@@ -62,28 +70,6 @@ func (fc *fileCtx) canonicalCallee(text string) string {
 	return text
 }
 
-var regexCache sync.Map // pattern -> *regexp.Regexp (nil when invalid)
-
-// cachedRegex compiles pattern once per process. Rule patterns are a small,
-// fixed set, so the cache is bounded by the rule pack.
-func cachedRegex(pattern string) *regexp.Regexp {
-	if v, ok := regexCache.Load(pattern); ok {
-		re, _ := v.(*regexp.Regexp)
-		return re
-	}
-	re, err := regexp.Compile(pattern)
-	if err != nil {
-		re = nil
-	}
-	regexCache.Store(pattern, re)
-	return re
-}
-
-func regexMatch(pattern, s string) bool {
-	re := cachedRegex(pattern)
-	return re != nil && re.MatchString(s)
-}
-
 // evalContextFilters evaluates the filters that need more than the node
 // itself: the callee's canonical form, the decorator stack, the enclosing
 // function, and local def-use for path constant folding.
@@ -93,8 +79,8 @@ func evalContextFilters(f rules.Filter, n *ir.IRNode, fc *fileCtx) bool {
 			return false
 		}
 		text := calleeText(n)
-		canon := fc.canonicalCallee(text)
-		if !regexMatch(f.CalleeMatches, text) && !(canon != text && regexMatch(f.CalleeMatches, canon)) {
+		canon := fc.canonicalAlias(text)
+		if !regexMatches(f.CalleeMatches, text) && !(canon != text && regexMatches(f.CalleeMatches, canon)) {
 			return false
 		}
 	}
@@ -105,7 +91,7 @@ func evalContextFilters(f rules.Filter, n *ir.IRNode, fc *fileCtx) bool {
 		}
 		found := false
 		for _, d := range stack {
-			if regexMatch(f.DecoratorStackMatches, d) {
+			if regexMatches(f.DecoratorStackMatches, d) {
 				found = true
 				break
 			}
@@ -120,7 +106,7 @@ func evalContextFilters(f rules.Filter, n *ir.IRNode, fc *fileCtx) bool {
 			return false
 		}
 		name, _ := fn.Attrs["function_name"].(string)
-		if !regexMatch(f.EnclosingFunctionMatches, name) {
+		if !regexMatches(f.EnclosingFunctionMatches, name) {
 			return false
 		}
 	}
@@ -139,7 +125,7 @@ func evalContextFilters(f rules.Filter, n *ir.IRNode, fc *fileCtx) bool {
 			return false
 		}
 		shape, ok := fc.writtenFileShape(n)
-		if !ok || !regexMatch(f.WrittenFileMatches, shape) {
+		if !ok || !regexMatches(f.WrittenFileMatches, shape) {
 			return false
 		}
 	}
@@ -307,7 +293,7 @@ func (fc *fileCtx) isConstPath(n *ir.IRNode, depth int) bool {
 		}
 		callee := n.Children[0]
 		switch {
-		case constPathFuncs[fc.canonicalCallee(calleeText(n))] && callee.Kind != ir.NodeKindCall:
+		case constPathFuncs[fc.canonicalAlias(calleeText(n))] && callee.Kind != ir.NodeKindCall:
 		case callee.Kind == ir.NodeKindAttribute && len(callee.Children) >= 2:
 			m := callee.Children[len(callee.Children)-1]
 			if m.Kind != ir.NodeKindIdentifier || !constPathMethods[m.Text] || !fc.isConstPath(callee.Children[0], depth+1) {
@@ -403,7 +389,7 @@ func (fc *fileCtx) fileTargetShape(recv, use *ir.IRNode, depth int) (string, boo
 	switch recv.Kind {
 	case ir.NodeKindCall:
 		args := argumentNodes(recv)
-		switch fc.canonicalCallee(calleeText(recv)) {
+		switch fc.canonicalAlias(calleeText(recv)) {
 		case "open", "io.open", "codecs.open", "builtins.open":
 			if len(args) == 0 || !openModeWrites(recv, args) {
 				return "", false
@@ -515,7 +501,7 @@ func (fc *fileCtx) pathShape(n, use *ir.IRNode, depth int) string {
 		return "*"
 	case ir.NodeKindCall:
 		args := argumentNodes(n)
-		switch fc.canonicalCallee(calleeText(n)) {
+		switch fc.canonicalAlias(calleeText(n)) {
 		case "os.path.join", "pathlib.Path", "pathlib.PurePath", "pathlib.PosixPath", "pathlib.WindowsPath":
 			parts := make([]string, 0, len(args))
 			for _, a := range args {
@@ -753,7 +739,7 @@ func tryBodyCallsOnly(n *ir.IRNode, pattern string) bool {
 	if n.Kind != ir.NodeKindTry {
 		return false
 	}
-	re := cachedRegex(pattern)
+	re := cachedRegexp(pattern)
 	if re == nil {
 		return false
 	}

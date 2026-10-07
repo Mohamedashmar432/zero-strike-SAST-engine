@@ -1,0 +1,42 @@
+id: ZS-TS-120
+lifecycle: released
+name: "Error details sent in HTTP response"
+version: "1.0.0"
+language: typescript
+category: error-handling
+severity: low
+confidence: medium
+cwe:
+  - CWE-209
+owasp:
+  - "A10:2025"
+rationale: |
+  Sending a caught error object, its message or its stack to the client
+  discloses internals the client has no use for: SQL fragments and table
+  names from a failed query, file-system paths, library versions, stack
+  frames and occasionally the very values (connection strings, tokens)
+  that triggered the failure. Attackers use these messages to map the
+  application and to tune injection payloads (error-based SQL injection
+  reads data straight out of database error text). Many APIs return
+  err.message on purpose, which is why this ships at low severity: it is
+  an information-exposure finding, not an exploit on its own.
+description: |
+  A response writer (res.send/json/jsonp/end/write, res.status(n).send/json,
+  NextResponse.json, Response.json, new Response) receives an argument that
+  references a caught error: the binding of an enclosing catch clause, the
+  first parameter of an err-first or .catch()/.then(_, cb) callback, or a
+  variable assigned from one in the same function (result.error = err).
+  The binding is matched, not the name: an object key or property spelled
+  `error`, err.code/err.status style fields, and comparisons such as
+  `err instanceof X` do not count.
+message: "Caught error sent in the HTTP response - log it server-side and return a generic message"
+references:
+  - https://cwe.mitre.org/data/definitions/209.html
+  - https://owasp.org/www-community/Improper_Error_Handling
+tags: [error-handling, information-disclosure]
+match:
+  kind: call
+  filters:
+    - callee_pattern: "^(res|response|resp|reply|ctx\\.res)\\.(status\\(\\)\\.)?(send|json|jsonp|end|write)$|^(NextResponse|Response)(\\.json)?$"
+    - argument_references_error_binding: true
+fix_suggestion: "Log the error server-side and send a generic message (and a correlation id) to the client instead of the error object, message or stack."

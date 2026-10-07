@@ -51,6 +51,12 @@ type kwargYAML struct {
 	Name         string `yaml:"name"`
 	NamePattern  string `yaml:"name_pattern"`
 	ValuePattern string `yaml:"value_pattern"`
+	ValueTainted bool   `yaml:"value_tainted"`
+}
+
+type argTextYAML struct {
+	Index   int    `yaml:"index"`
+	Pattern string `yaml:"pattern"`
 }
 
 type argKindYAML struct {
@@ -87,13 +93,18 @@ type filterYAML struct {
 	EnclosingFunctionMentions string       `yaml:"enclosing_function_mentions"`
 	ArgumentLiteralIndex      *int         `yaml:"argument_literal_index"`
 	AnyOf                     []filterYAML `yaml:"any_of"`
+	CalleePattern                  string       `yaml:"callee_pattern"`
+	CalleeCanonical                string       `yaml:"callee_canonical"`
+	CalleeResolved                 bool         `yaml:"callee_resolved"`
+	ArgumentMatchesAt              *argTextYAML `yaml:"argument_matches_at"`
+	DynamicStringArgumentIndex     *int         `yaml:"dynamic_string_argument_index"`
+	ArgumentReferencesErrorBinding bool         `yaml:"argument_references_error_binding"`
 }
 
 type litArgYAML struct {
 	Index   int    `yaml:"index"`
 	Pattern string `yaml:"pattern"`
 }
-
 
 type exceptYAML struct {
 	Bare      *bool `yaml:"bare"`
@@ -251,6 +262,11 @@ func convertFilters(fyamls []filterYAML) []Filter {
 			EnclosingFunctionCalls:    f.EnclosingFunctionCalls,
 			EnclosingFunctionMentions: f.EnclosingFunctionMentions,
 			ArgumentLiteralIndex:      f.ArgumentLiteralIndex,
+			CalleePattern:                  f.CalleePattern,
+			CalleeCanonical:                f.CalleeCanonical,
+			CalleeResolved:                 f.CalleeResolved,
+			DynamicStringArgumentIndex:     f.DynamicStringArgumentIndex,
+			ArgumentReferencesErrorBinding: f.ArgumentReferencesErrorBinding,
 		}
 		if f.LiteralArgument != nil {
 			filter.LiteralArgument = &LiteralArgumentPattern{Index: f.LiteralArgument.Index, Pattern: f.LiteralArgument.Pattern}
@@ -268,8 +284,11 @@ func convertFilters(fyamls []filterYAML) []Filter {
 				Commented: f.ExceptHandler.Commented,
 			}
 		}
+		if f.ArgumentMatchesAt != nil {
+			filter.ArgumentMatchesAt = &ArgumentTextPattern{Index: f.ArgumentMatchesAt.Index, Pattern: f.ArgumentMatchesAt.Pattern}
+		}
 		if f.Kwarg != nil {
-			filter.Kwarg = &KwargPattern{Name: f.Kwarg.Name, NamePattern: f.Kwarg.NamePattern, ValuePattern: f.Kwarg.ValuePattern}
+			filter.Kwarg = &KwargPattern{Name: f.Kwarg.Name, NamePattern: f.Kwarg.NamePattern, ValuePattern: f.Kwarg.ValuePattern, ValueTainted: f.Kwarg.ValueTainted}
 		}
 		if f.Not != nil {
 			mp := convertMatch(*f.Not)

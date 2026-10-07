@@ -280,3 +280,67 @@ cases:
   - file: cases/vuln_http_const_url.ts
     language: typescript
     expect: [{rule_id: ZS-TS-088, min_count: 1}]
+
+  - file: cases/vuln_g3_120.ts
+    language: typescript
+    expect: [{rule_id: ZS-TS-120, min_count: 1}]
+  - file: cases/vuln_g3_121.ts
+    language: typescript
+    expect: [{rule_id: ZS-TS-121, min_count: 1}]
+  - file: cases/vuln_g3_122.ts
+    language: typescript
+    expect: [{rule_id: ZS-TS-122, min_count: 1}]
+  - file: cases/vuln_g3_123.ts
+    language: typescript
+    expect: [{rule_id: ZS-TS-123, min_count: 1}]
+  - file: cases/vuln_g3_124.ts
+    language: typescript
+    expect: [{rule_id: ZS-TS-124, min_count: 1}]
+  - file: cases/vuln_g3_125.ts
+    language: typescript
+    expect: [{rule_id: ZS-TS-125, min_count: 1}]
+  - file: cases/vuln_g3_126.ts
+    language: typescript
+    expect: [{rule_id: ZS-TS-126, min_count: 1}]
+  - file: cases/vuln_g3_127.ts
+    language: typescript
+    expect: [{rule_id: ZS-TS-127, min_count: 1}]
+  - file: cases/vuln_g3_128.ts
+    language: typescript
+    expect: [{rule_id: ZS-TS-128, min_count: 1}]
+  - file: cases/vuln_g3_129.ts
+    language: typescript
+    expect: [{rule_id: ZS-TS-129, min_count: 1}]
+  - file: cases/vuln_g3_130.ts
+    language: typescript
+    expect: [{rule_id: ZS-TS-130, min_count: 1}]
+  - file: cases/vuln_g3_131.ts
+    language: typescript
+    expect: [{rule_id: ZS-TS-131, min_count: 1}]
+  - file: cases/vuln_g3_132.ts
+    language: typescript
+    expect: [{rule_id: ZS-TS-132, min_count: 1}]
+  - file: cases/vuln_g3_133.ts
+    language: typescript
+    expect: [{rule_id: ZS-TS-133, min_count: 1}]
+  - file: cases/vuln_g3_134.ts
+    language: typescript
+    expect: [{rule_id: ZS-TS-134, min_count: 1}]
+  - file: cases/vuln_g3_135.ts
+    language: typescript
+    expect: [{rule_id: ZS-TS-135, min_count: 1}]
+  - file: cases/vuln_g3_136.ts
+    language: typescript
+    expect: [{rule_id: ZS-TS-136, min_count: 1}]
+  - file: cases/vuln_g3_137.ts
+    language: typescript
+    expect: [{rule_id: ZS-TS-137, min_count: 1}]
+  - file: cases/vuln_g3_138.ts
+    language: typescript
+    expect: [{rule_id: ZS-TS-138, min_count: 1}]
+  - file: cases/vuln_g3_139.ts
+    language: typescript
+    expect: [{rule_id: ZS-TS-139, min_count: 1}]
+  - file: cases/vuln_g3_140.ts
+    language: typescript
+    expect: [{rule_id: ZS-TS-151, min_count: 1}]

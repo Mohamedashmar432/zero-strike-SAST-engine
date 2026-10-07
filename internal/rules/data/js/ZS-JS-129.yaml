@@ -1,0 +1,33 @@
+id: ZS-JS-129
+lifecycle: released
+name: "XPath injection"
+version: "1.0.0"
+language: javascript
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-643
+owasp:
+  - "A05:2025"
+rationale: |
+  An XPath expression built from user input can be rewritten the same way
+  SQL can: a value of `' or '1'='1` turns a lookup of one node into a
+  selection of every node, which is how XML-backed logins are bypassed and
+  whole XML documents are exfiltrated.
+description: |
+  xpath.evaluate/select/select1/parse (the npm xpath package, under any
+  import name) or document.evaluate receives an expression (argument 0)
+  that traces back to an untrusted source.
+message: "XPath expression built from untrusted input - XPath injection"
+references:
+  - https://owasp.org/www-community/attacks/XPATH_Injection
+  - https://cwe.mitre.org/data/definitions/643.html
+tags: [xpath-injection, injection, xml]
+match:
+  kind: call
+  filters:
+    - callee_canonical: "^(xpath\\.(evaluate|select1?|parse)|document\\.evaluate)$"
+    - tainted_argument: true
+      tainted_argument_index: 0
+fix_suggestion: "Pass user values as XPath variables (the xpath package's evaluate() variables option) or validate them against a strict allowlist before building the expression."

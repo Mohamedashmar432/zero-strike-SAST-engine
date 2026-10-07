@@ -4,7 +4,6 @@ import (
 	"context"
 	"regexp"
 	"strings"
-	"sync"
 
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/analyzer"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/analyzer/taint"
@@ -139,7 +138,7 @@ func (e *defaultEngine) Match(_ context.Context, mc *MatchContext) ([]MatchResul
 	}
 	taintedVars := mc.File.TaintedVars
 	fileLang := mc.File.IR.Language
-	fc := newFileCtx(mc.File.IR.Root, taintedVars, mc.File.WeakTaintVars, fileLang)
+	fc := newFileCtx(mc.File.IR, taintedVars, mc.File.WeakTaintVars)
 	var out []MatchResult
 	// reported tracks rules with OncePerFile that have already matched here.
 	reported := map[*rules.Rule]bool{}
@@ -186,12 +185,12 @@ func (e *defaultEngine) Match(_ context.Context, mc *MatchContext) ([]MatchResul
 		if n.Kind == ir.NodeKindCall {
 			// text is the callee as written; canon resolves its first
 			// segment through the file's import table (Python only, see
-			// canonicalCallee), so `from hashlib import md5; md5(x)` reaches
+			// canonicalAlias), so `from hashlib import md5; md5(x)` reaches
 			// a rule written against hashlib.md5. Both forms are offered:
 			// rules written against a conventional alias (ET.fromstring)
 			// must keep matching the written text.
-			text := calleeText(n)
-			canon := fc.canonicalCallee(text)
+			text := fc.callee(n)
+			canon := fc.canonicalAlias(text)
 			for _, r := range mc.Index.byCallee[text] {
 				consider(n, r)
 			}
@@ -220,8 +219,31 @@ func (e *defaultEngine) Match(_ context.Context, mc *MatchContext) ([]MatchResul
 	return out, nil
 }
 
+// calleeTextFor extracts the callee text of a call node in lang's rendering.
+// JavaScript and TypeScript use jsCalleeText, which keeps non-identifier
+// receivers as placeholder segments (this.http.get, res.status().send); every
+// other language keeps the historical calleeText rendering.
+func calleeTextFor(n *ir.IRNode, lang core.Language) string {
+	if isJSLike(lang) {
+		return jsCalleeText(n, nil)
+	}
+	return calleeText(n)
+}
+
+// attributeTextFor is calleeTextFor's counterpart for a bare attribute node.
+func attributeTextFor(n *ir.IRNode, lang core.Language) string {
+	if isJSLike(lang) {
+		return jsExprText(n, nil)
+	}
+	return attributeText(n)
+}
+
 // calleeText extracts the callee name from a call node.
 // Handles plain calls (eval) and attribute calls (os.system, pickle.loads).
+//
+// For JavaScript/TypeScript use calleeTextFor: this rendering drops every
+// child that is not an Identifier or Attribute, so `this.http.get` collapsed
+// to `http.get` and `res.status(500).send` to `send`.
 func calleeText(n *ir.IRNode) string {
 	for _, c := range n.Children {
 		switch c.Kind {
@@ -318,7 +340,7 @@ func evalFilter(f rules.Filter, n *ir.IRNode, fc *fileCtx) bool {
 	if f.HasAttribute != "" {
 		found := false
 		for _, c := range n.Children {
-			if c.Kind == ir.NodeKindAttribute && strings.Contains(attributeText(c), f.HasAttribute) {
+			if c.Kind == ir.NodeKindAttribute && strings.Contains(attributeTextFor(c, lang), f.HasAttribute) {
 				found = true
 				break
 			}
@@ -359,7 +381,7 @@ func evalFilter(f rules.Filter, n *ir.IRNode, fc *fileCtx) bool {
 		}
 	}
 	if f.Kwarg != nil {
-		if !anyArgument(n, func(a *ir.IRNode) bool {
+		pred := func(a *ir.IRNode) bool {
 			if a.Kind != ir.NodeKindKeywordArg {
 				return false
 			}
@@ -374,8 +396,15 @@ func evalFilter(f rules.Filter, n *ir.IRNode, fc *fileCtx) bool {
 			}
 			value, _ := a.Attrs["kwarg_value"].(string)
 			matched, err := regexp.MatchString(f.Kwarg.ValuePattern, value)
-			return err == nil && matched
-		}) {
+			if err != nil || !matched {
+				return false
+			}
+			return !f.Kwarg.ValueTainted || fc.kwargValueTainted(a)
+		}
+		// JS/TS: an options object is as often a named local as an inline
+		// literal (const opts = {noent: true}; parseXml(data, opts)). Look
+		// through an identifier argument to its same-file object initializer.
+		if !anyArgument(n, pred) && !fc.anyResolvedObjectArgument(n, pred) {
 			return false
 		}
 	}
@@ -417,6 +446,9 @@ func evalFilter(f rules.Filter, n *ir.IRNode, fc *fileCtx) bool {
 			return false
 		}
 	}
+	if !fc.evalJSFilters(f, n) {
+		return false
+	}
 	if f.HasBareExcept {
 		if !anyExceptHandler(n, func(h ir.ExceptHandler) bool { return h.IsBare }) {
 			return false
@@ -448,7 +480,7 @@ func evalFilter(f rules.Filter, n *ir.IRNode, fc *fileCtx) bool {
 		}
 	}
 	if f.ContextIdentifierMatches != "" {
-		re := cachedRegex(f.ContextIdentifierMatches)
+		re := cachedRegexp(f.ContextIdentifierMatches)
 		if re == nil {
 			return false
 		}
@@ -464,7 +496,7 @@ func evalFilter(f rules.Filter, n *ir.IRNode, fc *fileCtx) bool {
 		}
 	}
 	if f.EnclosingFunctionCalls != "" {
-		re := cachedRegex(f.EnclosingFunctionCalls)
+		re := cachedRegexp(f.EnclosingFunctionCalls)
 		if re == nil {
 			return false
 		}
@@ -475,7 +507,7 @@ func evalFilter(f rules.Filter, n *ir.IRNode, fc *fileCtx) bool {
 		}
 	}
 	if f.EnclosingFunctionMentions != "" {
-		re := cachedRegex(f.EnclosingFunctionMentions)
+		re := cachedRegexp(f.EnclosingFunctionMentions)
 		if re == nil {
 			return false
 		}
@@ -503,27 +535,6 @@ func evalFilter(f rules.Filter, n *ir.IRNode, fc *fileCtx) bool {
 		}
 	}
 	return true
-}
-
-// regexpCache memoises the regexes of the newer filters (callee_matches,
-// literal_argument, lhs_flows_to_call). callee_matches runs on every call
-// node of every file, so compiling per evaluation -- what regexp.MatchString
-// does -- would dominate the hot path. The Validator has already rejected
-// malformed patterns, so a compile failure here means "match nothing".
-var regexpCache sync.Map // pattern -> *regexp.Regexp
-
-var matchNothing = regexp.MustCompile(`[^\s\S]`)
-
-func cachedRegexp(pattern string) *regexp.Regexp {
-	if re, ok := regexpCache.Load(pattern); ok {
-		return re.(*regexp.Regexp)
-	}
-	re, err := regexp.Compile(pattern)
-	if err != nil {
-		re = matchNothing
-	}
-	actual, _ := regexpCache.LoadOrStore(pattern, re)
-	return actual.(*regexp.Regexp)
 }
 
 // literalArgumentMatches reports whether the call's positional argument at
@@ -755,9 +766,9 @@ func isDirectSourceExpression(n *ir.IRNode, lang core.Language) bool {
 		// include the trailing paren — the assignment-based check sees it
 		// naturally via raw RHS source text, so calleeText needs it added
 		// back explicitly here.
-		return taint.IsSource(lang, calleeText(n)+"(")
+		return taint.IsSource(lang, calleeTextFor(n, lang)+"(")
 	case ir.NodeKindAttribute:
-		return taint.IsSource(lang, attributeText(n))
+		return taint.IsSource(lang, attributeTextFor(n, lang))
 	case ir.NodeKindIdentifier:
 		return taint.IsSource(lang, n.Text)
 	default:
@@ -951,11 +962,11 @@ func firstTaintedArgument(n *ir.IRNode, taintedVars map[string]bool, lang core.L
 	}
 	for _, argRoot := range n.Children[1:] {
 		if isDirectSourceExpression(argRoot, lang) {
-			return sourceExpressionText(argRoot)
+			return sourceExpressionText(argRoot, lang)
 		}
 		for _, d := range ir.Descendants(argRoot) {
 			if isDirectSourceExpression(d, lang) {
-				return sourceExpressionText(d)
+				return sourceExpressionText(d, lang)
 			}
 		}
 	}
@@ -967,12 +978,12 @@ func firstTaintedArgument(n *ir.IRNode, taintedVars map[string]bool, lang core.L
 // field — the same text isDirectSourceExpression tested against the source
 // patterns (with the call form's trailing "(" omitted, since it's only
 // needed for the regex match, not for display).
-func sourceExpressionText(n *ir.IRNode) string {
+func sourceExpressionText(n *ir.IRNode, lang core.Language) string {
 	switch n.Kind {
 	case ir.NodeKindCall:
-		return calleeText(n)
+		return calleeTextFor(n, lang)
 	case ir.NodeKindAttribute:
-		return attributeText(n)
+		return attributeTextFor(n, lang)
 	default:
 		return n.Text
 	}
@@ -998,11 +1009,11 @@ func firstTaintedRHSIdentifier(n *ir.IRNode, taintedVars map[string]bool, lang c
 		}
 	}
 	if isDirectSourceExpression(rhs, lang) {
-		return sourceExpressionText(rhs)
+		return sourceExpressionText(rhs, lang)
 	}
 	for _, d := range ir.Descendants(rhs) {
 		if isDirectSourceExpression(d, lang) {
-			return sourceExpressionText(d)
+			return sourceExpressionText(d, lang)
 		}
 	}
 	return ""

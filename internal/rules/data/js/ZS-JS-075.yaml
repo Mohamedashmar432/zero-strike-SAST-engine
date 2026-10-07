@@ -29,6 +29,7 @@ description: |
   interpreter (sh, bash, cmd, powershell, ...) with a tainted later argument.
   A tainted argv element passed to a fixed, non-shell program is not command
   injection -- no shell ever parses it -- and is not reported here.
+  The callee must resolve to child_process.spawnSync through its import or require binding (any local name, node: prefix included), or be a bare spawnSync() with no import binding in the file.
 message: "spawnSync() called with a tainted argument — use an argument array without shell, and validate input"
 references:
   - https://owasp.org/www-community/attacks/Command_Injection
@@ -36,7 +37,14 @@ tags: [command-injection, child-process]
 match:
   kind: call
   callee: spawnSync
+  # Any receiver ending in .spawnSync is a candidate (cp.spawnSync, child_process.spawnSync,
+  # require('child_process').spawnSync); callee_canonical then requires the callee
+  # to resolve to the child_process module, or to be the bare name with no
+  # import binding. So new RegExp(p).exec(s), re.exec(s) and a redux-saga
+  # spawnSync imported from another package do not match.
+  callee_suffix: true
   filters:
+    - callee_canonical: '^(child_process\.)?spawnSync$'
     # spawn/spawnSync execute a program directly with an argv array; no shell
     # parses the arguments. Command injection (CWE-78) needs one of:
     - any_of:

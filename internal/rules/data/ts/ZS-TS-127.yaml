@@ -1,0 +1,38 @@
+id: ZS-TS-127
+lifecycle: released
+name: "MongoDB $where built from a dynamic string"
+version: "1.0.0"
+language: typescript
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-943
+owasp:
+  - "A05:2025"
+rationale: |
+  MongoDB evaluates a $where clause as JavaScript on the server. Building
+  that clause by concatenation or template interpolation lets whoever
+  controls the interpolated value rewrite the predicate (`' || '1'=='1`),
+  read unrelated documents, or burn server CPU with a busy loop. The
+  concatenation itself is the defect, so no taint is required: there is no
+  safe way to splice data into a $where string.
+description: |
+  A MongoDB/Mongoose query method (find, findOne, update*, delete*, count,
+  aggregate, where, ...) on any receiver receives a filter whose $where
+  value is a + concatenation, a template literal with a ${} substitution,
+  or a variable. The filter may be inline or a same-file object literal
+  passed by name.
+message: "$where clause built from a dynamic string - NoSQL/JavaScript injection"
+references:
+  - https://owasp.org/www-community/attacks/NoSQL_injection
+  - https://www.mongodb.com/docs/manual/reference/operator/query/where/
+tags: [nosql-injection, injection, mongodb]
+match:
+  kind: call
+  filters:
+    - callee_pattern: "\\.(find|findOne|findOneAndUpdate|findOneAndDelete|findOneAndReplace|count|countDocuments|update|updateOne|updateMany|deleteOne|deleteMany|remove|where|aggregate)$"
+    - kwarg:
+        name_pattern: "^['\\\"]?\\$where['\\\"]?$"
+        value_pattern: "(\\+|\\$\\{)|^[A-Za-z_$][\\w$.]*$"
+fix_suggestion: "Replace $where with ordinary query operators ({ orderId: String(id) }) or $expr; never build JavaScript source from data."

@@ -27,6 +27,8 @@ description: |
   traces back to an untrusted source (intra-procedural taint tracking,
   including a source expression used directly inline as the argument, not
   only via a previously-assigned named variable).
+
+  The callee must resolve to child_process.execFile through its import or require binding (any local name, node: prefix included), or be a bare execFile() with no import binding in the file.
 message: "execFile() called with a tainted argument — command injection / arbitrary program execution risk"
 references:
   - https://owasp.org/www-community/attacks/Command_Injection
@@ -35,6 +37,13 @@ tags: [command-injection, injection, child-process]
 match:
   kind: call
   callee: execFile
+  # Any receiver ending in .execFile is a candidate (cp.execFile, child_process.execFile,
+  # require('child_process').execFile); callee_canonical then requires the callee
+  # to resolve to the child_process module, or to be the bare name with no
+  # import binding. So new RegExp(p).exec(s), re.exec(s) and a redux-saga
+  # execFile imported from another package do not match.
+  callee_suffix: true
   filters:
+    - callee_canonical: '^(child_process\.)?execFile$'
     - tainted_argument: true
 fix_suggestion: "Never build the executable name or arguments from unsanitized input; validate against an allowlist, and never pass a shell interpreter (sh, cmd.exe) as the executable with a tainted script argument."

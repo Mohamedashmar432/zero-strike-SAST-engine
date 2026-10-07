@@ -186,6 +186,18 @@ func extractAttrs(n *ir.IRNode, node *sitter.Node, source []byte) {
 		if params := extractParameters(node, source); len(params) > 0 {
 			n.Attrs["parameters"] = params
 		}
+		// See the JavaScript builder: error-carrying callback parameter,
+		// catch binding and property-name marker for the engine's
+		// argument_references_error_binding filter.
+		if eb := errorCallbackParam(node, source); eb != "" {
+			n.Attrs["error_param"] = eb
+		}
+	case "catch_clause":
+		if eb := catchBinding(node, source); eb != "" {
+			n.Attrs["error_binding"] = eb
+		}
+	case "property_identifier":
+		n.Attrs["prop"] = true
 	case "return_statement":
 		// Capture the returned expression's text for the taint
 		// function-summary pass (see internal/analyzer/taint).

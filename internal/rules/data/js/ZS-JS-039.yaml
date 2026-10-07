@@ -27,13 +27,27 @@ description: |
   in this rule set (pool.query, client.query), this matches the literal
   receiver name "collection" and will not fire if the Collection object is
   bound to a differently-named variable.
+
+  The receiver may be any expression whose name ends in collection or model (case-insensitive), including db.collection('name'). Filters that use $where are reported by the $where rule instead.
 message: "collection.find() called with a tainted argument — validate/escape input before building the query filter"
 references:
   - https://owasp.org/www-community/attacks/NoSQL_injection
 tags: [nosql-injection, injection, mongodb]
 match:
   kind: call
-  callee: collection.find
   filters:
+    # Any receiver named like a MongoDB collection or model:
+    # collection.find, db.reviewsCollection.find, db.collection('x').find,
+    # UserModel.find. The exact `collection.find` callee only matched a
+    # variable that happened to be called collection.
+    - callee_pattern: '(?i)(collection|model)(\(\))?\.find$'
+    # A $where filter is owned by the dedicated $where rule (one finding
+    # per call).
+    - not:
+        kind: call
+        filters:
+          - kwarg:
+              name_pattern: '^["'']?\$where["'']?$'
+              value_pattern: ""
     - tainted_argument: true
 fix_suggestion: "Never interpolate user input into $where or a query operator; pass user values as plain scalar filter values and validate their types first."

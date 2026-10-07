@@ -1,0 +1,41 @@
+id: ZS-TS-126
+lifecycle: released
+name: "Raw Set-Cookie header without HttpOnly"
+version: "1.0.0"
+language: typescript
+category: security-misconfiguration
+severity: medium
+confidence: medium
+cwe:
+  - CWE-1004
+owasp:
+  - "A02:2025"
+rationale: |
+  A credential cookie written by hand without the HttpOnly attribute is
+  readable from document.cookie, so any XSS on the origin turns into
+  session theft.
+description: |
+  res.setHeader/header/set/append('Set-Cookie', value) where the value sets
+  a credential-named cookie (token, session, jwt, sid, auth) and contains
+  no `; HttpOnly` attribute.
+message: "Set-Cookie header for a credential cookie has no HttpOnly attribute"
+references:
+  - https://cwe.mitre.org/data/definitions/1004.html
+tags: [misconfiguration, cookie]
+match:
+  kind: call
+  filters:
+    - callee_pattern: "^(res|response|resp|reply)\\.(setHeader|header|set|append)$"
+    - argument_matches_at:
+        index: 0
+        pattern: "(?i)^set-cookie$"
+    - argument_matches_at:
+        index: 1
+        pattern: "(?i)^\\s*[\\w.$-]*(token|session|jwt|sid|sess|auth)[\\w.$-]*="
+    - not:
+        kind: call
+        filters:
+          - argument_matches_at:
+              index: 1
+              pattern: "(?i);\\s*httponly\\b"
+fix_suggestion: "Add `; HttpOnly` (and Secure, SameSite) to the cookie, or set it with res.cookie(name, value, { httpOnly: true, secure: true })."

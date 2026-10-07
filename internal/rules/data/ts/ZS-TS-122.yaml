@@ -1,0 +1,53 @@
+id: ZS-TS-122
+lifecycle: released
+name: "Session cookie set without httpOnly"
+version: "1.0.0"
+language: typescript
+category: security-misconfiguration
+severity: medium
+confidence: medium
+cwe:
+  - CWE-1004
+owasp:
+  - "A02:2025"
+rationale: |
+  Express's res.cookie() defaults httpOnly to false, so a session or token
+  cookie set without the option is readable from document.cookie. Any XSS
+  anywhere on the origin then becomes session theft: the injected script
+  reads the cookie and sends it to the attacker. Omitting the flag is as
+  dangerous as setting it to false explicitly, it is just less visible.
+description: |
+  res.cookie() sets a cookie whose name looks like a credential (token,
+  session, jwt, sid, auth) with no options object, or with an inline
+  options object that has no httpOnly key at all. An explicit
+  httpOnly: false is reported by ZS-JS-073 / ZS-TS-071; options passed as
+  a variable are not inspected, and an empty value (clearing a cookie) is
+  ignored.
+message: "Credential cookie set without httpOnly (Express defaults it to false) - readable from JavaScript"
+references:
+  - https://cwe.mitre.org/data/definitions/1004.html
+  - https://expressjs.com/en/api.html#res.cookie
+tags: [misconfiguration, cookie, express]
+match:
+  kind: call
+  filters:
+    - callee_pattern: "^(res|response|resp)\\.cookie$"
+    - argument_matches_at:
+        index: 0
+        pattern: "(?i)(token|session|jwt|(^|[-_.])(sid|sess|auth)([-_.]|$)|^auth)"
+    - argument_kind_not_at:
+        index: 2
+        kinds: [identifier, attribute, call]
+    - not:
+        kind: call
+        filters:
+          - kwarg:
+              name: httpOnly
+              value_pattern: ""
+    - not:
+        kind: call
+        filters:
+          - argument_matches_at:
+              index: 1
+              pattern: "^$"
+fix_suggestion: "Pass { httpOnly: true, secure: true, sameSite: 'lax' } (or stricter) when setting session or token cookies."

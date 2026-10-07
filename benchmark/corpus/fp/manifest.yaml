@@ -136,3 +136,9 @@ cases:
   - file: cases/hardening_express_no_helmet.js
     language: javascript
     expect: []
+  - file: cases/safe_g3_js.js
+    language: javascript
+    expect: []
+  - file: cases/safe_g3_ts.ts
+    language: typescript
+    expect: []

@@ -1,0 +1,39 @@
+id: ZS-JS-150
+lifecycle: released
+name: "Open Redirect (next/navigation redirect)"
+version: "1.0.0"
+language: javascript
+category: open-redirect
+severity: medium
+confidence: medium
+cwe:
+  - CWE-601
+owasp:
+  - "A01:2025"
+rationale: |
+  next/navigation's redirect() and permanentRedirect() navigate to any URL
+  they are given, including other origins. Fed from form data or search
+  params, they become an open redirect inside a server action or page.
+description: |
+  redirect/permanentRedirect imported from next/navigation (under any local
+  name) with a destination (argument 0) that traces back to untrusted
+  input. A destination whose leading constant segment is a same-site path
+  ('/appointments/${id}') or a fixed origin is not reported.
+message: "next/navigation redirect to a tainted destination - open redirect risk"
+references:
+  - https://cwe.mitre.org/data/definitions/601.html
+  - https://nextjs.org/docs/app/api-reference/functions/redirect
+tags: [open-redirect, nextjs]
+match:
+  kind: call
+  filters:
+    - callee_canonical: "^next\\.navigation\\.(redirect|permanentRedirect)$"
+    - tainted_argument: true
+      tainted_argument_index: 0
+    - not:
+        kind: call
+        filters:
+          - argument_matches_at:
+              index: 0
+              pattern: "^(/[^/\\\\]|https?://[^/$]+/)"
+fix_suggestion: "Accept only relative paths (starting with a single '/') or destinations whose origin is on an allowlist before redirecting."
