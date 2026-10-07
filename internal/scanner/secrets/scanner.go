@@ -343,6 +343,12 @@ func plausibleSecret(captured, line []byte) bool {
 		return false
 	}
 
+	// A value that is a template expression ({{ csrf_token }}, ${TOKEN}, <%= x %>)
+	// is substituted at render time; the literal in source is not a credential.
+	if strings.HasPrefix(raw, "{{") || strings.HasPrefix(raw, "${") || strings.HasPrefix(raw, "<%") {
+		return false
+	}
+
 	v := strings.ToLower(raw)
 	for _, t := range placeholderTokens {
 		if strings.Contains(v, t) {

@@ -264,11 +264,11 @@ func scanCmd() *cobra.Command {
 
 				TierExcluded:       result.TierExcluded,
 				TierExcludedByRule: result.TierExcludedByRule,
-				BySeverity:    make(map[core.Severity]int),
-				ByLanguage:    make(map[core.Language]int),
-				ByCategory:    make(map[string]int),
-				ByScanner:     make(map[string]int),
-				ByKind:        make(map[core.FindingKind]int),
+				BySeverity:         make(map[core.Severity]int),
+				ByLanguage:         make(map[core.Language]int),
+				ByCategory:         make(map[string]int),
+				ByScanner:          make(map[string]int),
+				ByKind:             make(map[core.FindingKind]int),
 			}
 
 			for _, f := range result.Findings {

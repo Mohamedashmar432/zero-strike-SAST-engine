@@ -6,10 +6,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/uuid"
-	sitter "github.com/smacker/go-tree-sitter"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/ir"
+	"github.com/google/uuid"
+	sitter "github.com/smacker/go-tree-sitter"
 )
 
 // IRBuilder converts a Python tree-sitter CST into an ir.IRFile.

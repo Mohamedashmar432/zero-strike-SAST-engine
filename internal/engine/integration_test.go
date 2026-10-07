@@ -268,7 +268,7 @@ func TestIntegration_HardcodedCredentialFiresZSPY020(t *testing.T) {
 
 func TestIntegration_BareExceptFiresZSPY023(t *testing.T) {
 	_, idx := loadPythonRules(t)
-	results := matchSource(t, idx, "try:\n    do_thing()\nexcept:\n    pass\n")
+	results := matchSource(t, idx, "try:\n    do_thing()\nexcept:\n    log()\n")
 	if !hasRule(results, "ZS-PY-023") {
 		t.Error("expected ZS-PY-023 to fire on a bare except:")
 	}
@@ -284,7 +284,7 @@ func TestIntegration_TypedExceptDoesNotFireZSPY023(t *testing.T) {
 
 func TestIntegration_EmptyExceptHandlerFiresZSPY024(t *testing.T) {
 	_, idx := loadPythonRules(t)
-	results := matchSource(t, idx, "try:\n    do_thing()\nexcept ValueError:\n    pass\n")
+	results := matchSource(t, idx, "try:\n    do_thing()\nexcept Exception:\n    pass\n")
 	if !hasRule(results, "ZS-PY-024") {
 		t.Error("expected ZS-PY-024 to fire on an empty (pass-only) except handler")
 	}

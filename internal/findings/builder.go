@@ -5,10 +5,10 @@ import (
 	"encoding/hex"
 	"strings"
 
-	"github.com/google/uuid"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/engine"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/symboltable"
+	"github.com/google/uuid"
 )
 
 // DependencyInput carries the fields needed to build a DependencyFinding.
