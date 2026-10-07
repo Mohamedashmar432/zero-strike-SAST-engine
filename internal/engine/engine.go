@@ -132,9 +132,9 @@ func (e *defaultEngine) Match(_ context.Context, mc *MatchContext) ([]MatchResul
 		return nil, nil
 	}
 	taintedVars := mc.File.TaintedVars
-	weakVars := mc.File.WeakTaintVars
-	var out []MatchResult
 	fileLang := mc.File.IR.Language
+	fc := newFileCtx(mc.File.IR.Root, taintedVars, mc.File.WeakTaintVars, fileLang)
+	var out []MatchResult
 	// consider evaluates one candidate rule against n.
 	//
 	// The three index buckets are iterated separately rather than gathered
@@ -157,7 +157,7 @@ func (e *defaultEngine) Match(_ context.Context, mc *MatchContext) ([]MatchResul
 		if r.Language != fileLang {
 			return
 		}
-		if matchNode(r.Match, n, taintedVars, weakVars, fileLang) {
+		if matchNode(r.Match, n, fc) {
 			out = append(out, MatchResult{Rule: r, Node: n, TaintedVar: taintedIdentifierFor(r.Match, n, taintedVars, fileLang)})
 		}
 	}
@@ -167,13 +167,34 @@ func (e *defaultEngine) Match(_ context.Context, mc *MatchContext) ([]MatchResul
 			consider(n, r)
 		}
 		if n.Kind == ir.NodeKindCall {
+			// text is the callee as written; canon resolves its first
+			// segment through the file's import table (Python only, see
+			// canonicalCallee), so `from hashlib import md5; md5(x)` reaches
+			// a rule written against hashlib.md5. Both forms are offered:
+			// rules written against a conventional alias (ET.fromstring)
+			// must keep matching the written text.
 			text := calleeText(n)
+			canon := fc.canonicalCallee(text)
 			for _, r := range mc.Index.byCallee[text] {
 				consider(n, r)
 			}
-			for _, r := range mc.Index.byCalleeSuffix[lastCalleeSegment(text)] {
-				if calleeSuffixMatches(r.Match.Callee, text) {
+			if canon != text {
+				for _, r := range mc.Index.byCallee[canon] {
 					consider(n, r)
+				}
+			}
+			suffixRule := func(r *rules.Rule) {
+				if calleeSuffixMatches(r.Match.Callee, text) || (canon != text && calleeSuffixMatches(r.Match.Callee, canon)) {
+					consider(n, r)
+				}
+			}
+			last, canonLast := lastCalleeSegment(text), lastCalleeSegment(canon)
+			for _, r := range mc.Index.byCalleeSuffix[last] {
+				suffixRule(r)
+			}
+			if canonLast != last {
+				for _, r := range mc.Index.byCalleeSuffix[canonLast] {
+					suffixRule(r)
 				}
 			}
 		}
@@ -226,7 +247,7 @@ func attributeText(n *ir.IRNode) string {
 // matchNode checks whether a node satisfies the match pattern.
 // Callee matching is already handled by the index; matchNode covers
 // Identifier, Literal, and Filter constraints.
-func matchNode(pattern rules.MatchPattern, n *ir.IRNode, taintedVars, weak map[string]bool, lang core.Language) bool {
+func matchNode(pattern rules.MatchPattern, n *ir.IRNode, fc *fileCtx) bool {
 	if ir.NodeKind(pattern.Kind) != n.Kind {
 		return false
 	}
@@ -248,20 +269,29 @@ func matchNode(pattern rules.MatchPattern, n *ir.IRNode, taintedVars, weak map[s
 	}
 	if pattern.RHSLiteral != "" {
 		rhs, _ := n.Attrs["rhs"].(string)
+		if n.Kind == ir.NodeKindReturn {
+			// On a return node rhs_literal matches the returned expression,
+			// the same "value being produced" an assignment's RHS is.
+			rhs, _ = n.Attrs["return_expr"].(string)
+		}
 		matched, err := regexp.MatchString(pattern.RHSLiteral, rhs)
 		if err != nil || !matched {
 			return false
 		}
 	}
 	for _, f := range pattern.Filters {
-		if !evalFilter(f, n, taintedVars, weak, lang) {
+		if !evalFilter(f, n, fc) {
 			return false
 		}
 	}
 	return true
 }
 
-func evalFilter(f rules.Filter, n *ir.IRNode, taintedVars, weak map[string]bool, lang core.Language) bool {
+func evalFilter(f rules.Filter, n *ir.IRNode, fc *fileCtx) bool {
+	taintedVars, weak, lang := fc.tainted, fc.weak, fc.lang
+	if !evalContextFilters(f, n, fc) {
+		return false
+	}
 	if f.ArgumentCount != nil {
 		ac, _ := n.Attrs["argument_count"].(int)
 		if ac != *f.ArgumentCount {
@@ -375,7 +405,7 @@ func evalFilter(f rules.Filter, n *ir.IRNode, taintedVars, weak map[string]bool,
 		}
 	}
 	if f.Not != nil {
-		if matchNode(*f.Not, n, taintedVars, weak, lang) {
+		if matchNode(*f.Not, n, fc) {
 			return false
 		}
 	}

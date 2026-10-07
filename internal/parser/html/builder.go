@@ -43,6 +43,10 @@ func (b *IRBuilder) Build(path string, source []byte) (*ir.IRFile, []ir.BuildWar
 	}
 	var elems []*ir.IRNode
 	collectElements(result.RootNode, source, path, root, &elems)
+	// Template expressions and tags follow the elements: a separate,
+	// document-ordered tail of call nodes whose callees (template.expr,
+	// template.tag, template.comment_expr) no element can carry.
+	elems = append(elems, collectTemplateNodes(result.RootNode, source, path, root)...)
 	root.Children = elems
 	return &ir.IRFile{
 		Language: core.LangHTML,

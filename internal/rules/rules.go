@@ -89,6 +89,37 @@ type Filter struct {
 	// is the whole point, such as SQL and command injection, or recall drops.
 	RequireRealSource bool
 
+	// CalleeMatches requires a call's callee text to match this regex. It is
+	// tested against both the callee as written and, for Python, its
+	// import-canonicalized form (md5 -> hashlib.md5), so one rule can cover a
+	// family of callees (hashlib.md5|sha1|sha256) that would otherwise need
+	// one rule file per exact callee.
+	CalleeMatches string
+	// DecoratorStackMatches requires one decorator on the same definition to
+	// match this regex. On a decorator node it reads the decorator's own
+	// stack ("decorator_stack"); on a function/class node its "decorators".
+	// Used negatively to skip csrf_exempt views that also carry require_GET.
+	DecoratorStackMatches string
+	// EnclosingFunctionMatches requires the nearest enclosing function's name
+	// to match this regex, e.g. a random-module call inside generate_token().
+	EnclosingFunctionMatches string
+	// ArgumentNotConstant suppresses the match when the positional argument
+	// at this index is a compile-time constant. In every language a literal
+	// with no interpolated expression is constant (a template literal with a
+	// ${} substitution is not). Python additionally folds paths: __file__,
+	// and os.path.join/dirname/abspath, pathlib.Path and "/" joins built only
+	// from constants, followed through local variables whose every
+	// assignment is itself constant.
+	ArgumentNotConstant *int
+	// WrittenFileMatches requires a file-write call (f.write(x),
+	// Path(p).write_text(x)) to write to a handle whose path matches this
+	// regex. The path is resolved from the receiver: an open(path, mode) /
+	// Path(path) call, directly or through a local variable or `with ... as`
+	// binding. Unknown path segments render as "*", so
+	// os.path.join(BASE, f"templates/{id}.html") reads as "*/templates/*.html".
+	// A handle opened read-only never matches.
+	WrittenFileMatches string
+
 	HasBareExcept bool
 	// HasEmptyExceptHandler requires a try_statement node to contain at least one
 	// except clause whose body is just "pass" (see ir.ExceptHandler.IsEmptyBody).

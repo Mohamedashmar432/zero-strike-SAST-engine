@@ -32,7 +32,12 @@ var Version = "dev"
 //	3 - tainted_argument_min_index filter, so a sink can ignore leading
 //	    plumbing arguments (fmt.Fprintf's io.Writer) while still treating
 //	    every remaining argument as data
-const MatchSemanticsRevision = 3
+//	4 - Python import-alias canonicalization for rule dispatch, decorator
+//	    nodes, callee_matches / decorator_stack_matches /
+//	    enclosing_function_matches / argument_not_constant /
+//	    written_file_matches filters, rhs_literal on return nodes, and HTML
+//	    template-expression nodes
+const MatchSemanticsRevision = 4
 
 // CacheKey returns the identity the finding and IR caches must key on, pairing
 // the release version with the matching-semantics revision so that either one

@@ -1,0 +1,36 @@
+id: ZS-PY-092
+lifecycle: released
+name: XML Parser External Entities Enabled
+version: "1.0.0"
+language: python
+category: xxe
+severity: high
+confidence: high
+cwe:
+  - CWE-611
+owasp:
+  - "A02:2025"
+rationale: |
+  xml.sax and xml.dom.pulldom parsers resolve external general and
+  parameter entities only when feature_external_ges / feature_external_pes
+  is switched on. Turning it on lets a document declare an entity that
+  points at file:///etc/passwd or an internal URL and have the parser read
+  it into the result: classic XXE, giving file disclosure and SSRF.
+description: |
+  Flags parser.setFeature(feature_external_ges | feature_external_pes,
+  True) on any receiver. The feature constant is matched by name (bare,
+  or as xml.sax.handler.feature_external_ges), and the value must be the
+  literal True.
+message: "XML parser configured to resolve external entities (XXE)"
+references:
+  - https://docs.python.org/3/library/xml.sax.handler.html
+  - https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html
+tags: [xxe, xml, sax]
+match:
+  kind: call
+  callee: setFeature
+  callee_suffix: true
+  filters:
+    - argument_identifier_matches: "^feature_external_(ges|pes)$"
+    - argument_literal_matches: "^True$"
+fix_suggestion: "Leave feature_external_ges/feature_external_pes off (the default) or parse with defusedxml."

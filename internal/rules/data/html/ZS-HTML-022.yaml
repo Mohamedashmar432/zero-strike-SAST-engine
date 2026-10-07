@@ -1,0 +1,34 @@
+id: ZS-HTML-022
+lifecycle: released
+name: Template Value Rendered Inside an HTML Comment
+version: "1.0.0"
+language: html
+category: information-disclosure
+severity: low
+confidence: medium
+cwe:
+  - CWE-615
+owasp:
+  - "A02:2025"
+rationale: |
+  An HTML comment hides markup from the rendered page but not from the
+  response: the server still evaluates every {{ ... }} inside it and sends
+  the value to the browser, where view-source or any proxy shows it.
+  Commented-out debugging blocks are the usual source, and they tend to
+  print exactly the fields nobody meant to show (SSNs, API keys, internal
+  IDs).
+description: |
+  Flags a {{ ... }} expression inside <!-- ... --> in a server-rendered
+  template. A document only counts as server-rendered when it also contains
+  a {% ... %} tag; Angular and Vue never evaluate interpolations inside
+  comments, so a commented {{ }} there is inert. Expressions inside
+  server-side comments ({# #}, {% comment %}) are never rendered and are
+  not reported.
+message: "Template value rendered inside an HTML comment; it is sent to every client"
+references:
+  - https://cwe.mitre.org/data/definitions/615.html
+tags: [information-disclosure, template, comment]
+match:
+  kind: call
+  callee: template.comment_expr
+fix_suggestion: "Delete the commented-out markup, or use a server-side comment ({# ... #} / {% comment %}) that is never rendered."

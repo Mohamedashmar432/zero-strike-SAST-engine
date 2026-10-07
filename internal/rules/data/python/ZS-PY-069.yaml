@@ -22,7 +22,9 @@ description: |
   Detects assignments where the left-hand side looks security-sensitive
   (token, otp, secret, password, session, csrf, api key) and the
   right-hand side calls the random module (randint, random, choice,
-  randrange, getrandbits, shuffle).
+  choices, sample, randrange, getrandbits, randbytes, shuffle). Siblings:
+  ZS-PY-094 (getrandbits of key size, any variable name) and ZS-PY-095
+  (the same call returned from a token-named function).
 
   Confidence is low: the heuristic keys on variable naming, so benign uses
   (e.g. a "token" that is not a security credential) may be flagged.
@@ -33,5 +35,5 @@ tags: [weak-crypto, weak-prng, random]
 match:
   kind: assignment
   lhs_identifier: "(?i)(otp|token|secret|password|csrf|session|api[_-]?key)"
-  rhs_literal: "random\\.(randint|random|choice|randrange|getrandbits|shuffle)"
+  rhs_literal: "random\\.(randint|random|choices?|randrange|getrandbits|shuffle|sample|randbytes)"
 fix_suggestion: "Use secrets.token_urlsafe()/secrets.choice()/secrets.randbelow() — the random module is not cryptographically secure."

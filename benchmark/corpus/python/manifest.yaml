@@ -12,9 +12,11 @@ cases:
   - file: cases/vuln_os_system.py
     language: python
     expect: [{rule_id: ZS-PY-005, min_count: 1}]
+  # md5 is a broken digest (ZS-PY-007) and, applied to a password, also a
+  # fast unsalted password hash (ZS-PY-096): two weaknesses, two findings.
   - file: cases/vuln_hashlib.py
     language: python
-    expect: [{rule_id: ZS-PY-007, min_count: 1}]
+    expect: [{rule_id: ZS-PY-007, min_count: 1}, {rule_id: ZS-PY-096, min_count: 1}]
   - file: cases/vuln_path_traversal.py
     language: python
     expect: [{rule_id: ZS-PY-008, min_count: 1}]
@@ -29,7 +31,7 @@ cases:
     expect: [{rule_id: ZS-PY-004, min_count: 1}]
   - file: cases/vuln_sha1.py
     language: python
-    expect: [{rule_id: ZS-PY-011, min_count: 1}]
+    expect: [{rule_id: ZS-PY-011, min_count: 1}, {rule_id: ZS-PY-096, min_count: 1}]
   - file: cases/vuln_subprocess_call.py
     language: python
     expect: [{rule_id: ZS-PY-012, min_count: 1}]
@@ -132,6 +134,7 @@ cases:
       - {rule_id: ZS-PY-002, min_count: 1}
       - {rule_id: ZS-PY-004, min_count: 1}
       - {rule_id: ZS-PY-007, min_count: 1}
+      - {rule_id: ZS-PY-096, min_count: 1}
       - {rule_id: ZS-PY-012, min_count: 1}
       - {rule_id: ZS-PY-025, min_count: 1}
       - {rule_id: ZS-PY-027, min_count: 1}
@@ -240,6 +243,38 @@ cases:
   - file: cases/vuln_jinja2_template.py
     language: python
     expect: [{rule_id: ZS-PY-077, min_count: 1}]
+  - file: cases/vuln_csrf_exempt.py
+    language: python
+    expect: [{rule_id: ZS-PY-090, min_count: 1}]
+  - file: cases/vuln_glob_pattern.py
+    language: python
+    expect: [{rule_id: ZS-PY-091, min_count: 1}]
+  - file: cases/vuln_sax_external_entities.py
+    language: python
+    expect: [{rule_id: ZS-PY-092, min_count: 1}]
+  - file: cases/vuln_imagemath_eval.py
+    language: python
+    expect: [{rule_id: ZS-PY-093, min_count: 1}]
+  - file: cases/vuln_getrandbits_key.py
+    language: python
+    expect: [{rule_id: ZS-PY-094, min_count: 1}]
+  - file: cases/vuln_random_token_return.py
+    language: python
+    expect: [{rule_id: ZS-PY-095, min_count: 1}]
+  - file: cases/vuln_password_fast_hash.py
+    language: python
+    expect: [{rule_id: ZS-PY-096, min_count: 1}]
+  # The uuid-derived template path is genuinely non-constant, so ZS-PY-008
+  # also (correctly) reports the second open(); the plugin path is folded.
+  - file: cases/vuln_write_code_file.py
+    language: python
+    expect: [{rule_id: ZS-PY-097, min_count: 2}, {rule_id: ZS-PY-008, min_count: 1}]
+  - file: cases/vuln_set_cookie_flags.py
+    language: python
+    expect: [{rule_id: ZS-PY-098, min_count: 1}, {rule_id: ZS-PY-099, min_count: 1}]
+  - file: cases/clean_context_rules.py
+    language: python
+    expect: []
   - file: cases/clean.py
     language: python
     expect: []

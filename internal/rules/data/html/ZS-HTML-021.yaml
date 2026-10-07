@@ -1,0 +1,31 @@
+id: ZS-HTML-021
+lifecycle: released
+name: Template Auto-Escaping Turned Off
+version: "1.0.0"
+language: html
+category: xss
+severity: high
+confidence: medium
+cwe:
+  - CWE-79
+owasp:
+  - "A05:2025"
+rationale: |
+  {% autoescape off %} (Django) and {% autoescape false %} (Jinja2,
+  Nunjucks, Twig) disable HTML escaping for every expression in the block.
+  Each variable rendered inside it is then emitted as raw markup, so any one
+  of them that carries user data is an XSS sink, and later edits to the
+  block silently inherit the unsafe mode.
+description: |
+  Flags an autoescape block tag whose argument is off or false.
+message: "Template auto-escaping turned off for a block; every value inside renders as raw HTML (XSS)"
+references:
+  - https://docs.djangoproject.com/en/stable/ref/templates/builtins/#autoescape
+  - https://jinja.palletsprojects.com/en/stable/templates/#autoescape-overrides
+tags: [xss, template, django, jinja]
+match:
+  kind: call
+  callee: template.tag
+  filters:
+    - argument_literal_matches: "^autoescape\\s+(off|false)\\b"
+fix_suggestion: "Remove the autoescape off/false block and escape by default; mark individual, sanitized values safe if markup is required."

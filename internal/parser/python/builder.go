@@ -5,6 +5,7 @@ package python
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 	sitter "github.com/smacker/go-tree-sitter"
@@ -34,6 +35,11 @@ func (b *IRBuilder) Build(path string, source []byte) (*ir.IRFile, []ir.BuildWar
 	defer result.Tree.Close()
 	var warnings []ir.BuildWarning
 	root := b.buildNode(result.RootNode, source, nil, path, &warnings)
+	if root != nil {
+		if aliases := importAliases(result.RootNode, source); len(aliases) > 0 {
+			root.Attrs["import_aliases"] = aliases
+		}
+	}
 	return &ir.IRFile{
 		Language: core.LangPython,
 		Path:     path,
@@ -155,6 +161,8 @@ func mapKind(nodeType string) ir.NodeKind {
 		return ir.NodeKindAssert
 	case "keyword_argument":
 		return ir.NodeKindKeywordArg
+	case "decorator":
+		return ir.NodeKindDecorator
 	default:
 		return ir.NodeKindUnknown
 	}
@@ -191,6 +199,42 @@ func extractAttrs(n *ir.IRNode, node *sitter.Node, source []byte) {
 		}
 		if params := extractParameters(node, source); len(params) > 0 {
 			n.Attrs["parameters"] = params
+		}
+		if decs := decoratorStack(node.Parent(), source); len(decs) > 0 {
+			n.Attrs["decorators"] = decs
+		}
+	case "class_definition":
+		if decs := decoratorStack(node.Parent(), source); len(decs) > 0 {
+			n.Attrs["decorators"] = decs
+		}
+	case "decorator":
+		// Lowered so rules can see decorators at all: before this a
+		// decorated_definition's decorators were anonymous Unknown nodes and
+		// no rule could express "a view decorated @csrf_exempt". Every
+		// decorator of a stack becomes its own node, and each one carries the
+		// whole stack so a rule can also reason about its siblings (e.g.
+		// csrf_exempt next to require_GET).
+		name, args := decoratorNameArgs(node, source)
+		n.Text = name
+		if args != "" {
+			n.Attrs["decorator_args"] = args
+		}
+		if stack := decoratorStack(node.Parent(), source); len(stack) > 0 {
+			n.Attrs["decorator_stack"] = stack
+		}
+		if def := decoratedDefinition(node.Parent()); def != nil {
+			if nm := def.ChildByFieldName("name"); nm != nil {
+				n.Attrs["decorated_name"] = nm.Content(source)
+			}
+		}
+	case "as_pattern":
+		// `with open(p, "w") as f:` binds f without an assignment node.
+		// Recording the bound name lets the engine resolve what a later
+		// f.write(...) writes to (see the written_file_matches filter).
+		for i := 0; i < int(node.ChildCount()); i++ {
+			if c := node.Child(i); c.Type() == "as_pattern_target" {
+				n.Attrs["as_name"] = strings.TrimSpace(c.Content(source))
+			}
 		}
 	case "assignment", "augmented_assignment":
 		if lhs := node.ChildByFieldName("left"); lhs != nil {
@@ -307,4 +351,152 @@ func isEmptyPassBody(body *sitter.Node) bool {
 		stmts = append(stmts, c)
 	}
 	return len(stmts) == 1 && stmts[0].Type() == "pass_statement"
+}
+
+// decoratorNameArgs returns a decorator's dotted name without call
+// arguments ("app.route" for "@app.route('/x', methods=['POST'])") and the
+// argument list text, or "" when the decorator is not called.
+func decoratorNameArgs(dec *sitter.Node, source []byte) (string, string) {
+	for i := 0; i < int(dec.ChildCount()); i++ {
+		c := dec.Child(i)
+		switch c.Type() {
+		case "@", "comment":
+			continue
+		case "call":
+			name := ""
+			if fn := c.ChildByFieldName("function"); fn != nil {
+				name = compactSpace(fn.Content(source))
+			}
+			args := ""
+			if a := c.ChildByFieldName("arguments"); a != nil {
+				args = a.Content(source)
+			}
+			return name, args
+		default:
+			return compactSpace(c.Content(source)), ""
+		}
+	}
+	return "", ""
+}
+
+// decoratedDefinition returns the function/class definition a
+// decorated_definition wraps, or nil when n is not a decorated_definition.
+func decoratedDefinition(n *sitter.Node) *sitter.Node {
+	if n == nil || n.Type() != "decorated_definition" {
+		return nil
+	}
+	if def := n.ChildByFieldName("definition"); def != nil {
+		return def
+	}
+	for i := 0; i < int(n.ChildCount()); i++ {
+		if c := n.Child(i); c.Type() == "function_definition" || c.Type() == "class_definition" {
+			return c
+		}
+	}
+	return nil
+}
+
+// decoratorStack lists the names of every decorator on a
+// decorated_definition, outermost first. It returns nil for any other node,
+// so an undecorated definition gets no "decorators" attribute.
+func decoratorStack(n *sitter.Node, source []byte) []string {
+	if n == nil || n.Type() != "decorated_definition" {
+		return nil
+	}
+	var out []string
+	for i := 0; i < int(n.ChildCount()); i++ {
+		if c := n.Child(i); c.Type() == "decorator" {
+			if name, _ := decoratorNameArgs(c, source); name != "" {
+				out = append(out, name)
+			}
+		}
+	}
+	return out
+}
+
+// compactSpace removes all whitespace from a dotted-name expression, which
+// tree-sitter allows to span lines inside parentheses.
+func compactSpace(s string) string {
+	return strings.Join(strings.Fields(s), "")
+}
+
+// importAliases builds the file's import table: local name -> canonical
+// dotted path, for every binding that differs from the name it introduces.
+//
+//	from hashlib import md5             md5 -> hashlib.md5
+//	from PIL import ImageMath as IM     IM  -> PIL.ImageMath
+//	import xml.etree.ElementTree as ET  ET  -> xml.etree.ElementTree
+//
+// A plain `import os` binds os to os and needs no entry. Relative imports
+// (`from . import views`) and wildcard imports are skipped: neither names a
+// canonical module. A local name bound to two different targets anywhere in
+// the file, or also defined locally as a function or class, is dropped as
+// ambiguous rather than guessed.
+func importAliases(root *sitter.Node, source []byte) map[string]string {
+	out := make(map[string]string)
+	ambiguous := make(map[string]bool)
+	defined := make(map[string]bool)
+	bind := func(local, canonical string) {
+		if local == "" || canonical == "" || local == canonical {
+			return
+		}
+		if prev, ok := out[local]; ok && prev != canonical {
+			ambiguous[local] = true
+		}
+		out[local] = canonical
+	}
+	var walk func(n *sitter.Node)
+	walk = func(n *sitter.Node) {
+		switch n.Type() {
+		case "function_definition", "class_definition":
+			if nm := n.ChildByFieldName("name"); nm != nil {
+				defined[nm.Content(source)] = true
+			}
+		case "import_statement":
+			for i := 0; i < int(n.NamedChildCount()); i++ {
+				c := n.NamedChild(i)
+				if c.Type() != "aliased_import" {
+					continue
+				}
+				name, alias := c.ChildByFieldName("name"), c.ChildByFieldName("alias")
+				if name != nil && alias != nil {
+					bind(alias.Content(source), compactSpace(name.Content(source)))
+				}
+			}
+			return
+		case "import_from_statement":
+			mod := n.ChildByFieldName("module_name")
+			if mod == nil || mod.Type() != "dotted_name" {
+				return // relative import or malformed
+			}
+			module := compactSpace(mod.Content(source))
+			for i := 0; i < int(n.NamedChildCount()); i++ {
+				c := n.NamedChild(i)
+				if c.StartByte() == mod.StartByte() && c.EndByte() == mod.EndByte() {
+					continue
+				}
+				switch c.Type() {
+				case "dotted_name":
+					nm := compactSpace(c.Content(source))
+					bind(nm, module+"."+nm)
+				case "aliased_import":
+					name, alias := c.ChildByFieldName("name"), c.ChildByFieldName("alias")
+					if name != nil && alias != nil {
+						bind(alias.Content(source), module+"."+compactSpace(name.Content(source)))
+					}
+				}
+			}
+			return
+		}
+		for i := 0; i < int(n.ChildCount()); i++ {
+			walk(n.Child(i))
+		}
+	}
+	walk(root)
+	for k := range out {
+		if ambiguous[k] || defined[k] {
+			delete(out, k)
+		}
+	}
+	return out
 }

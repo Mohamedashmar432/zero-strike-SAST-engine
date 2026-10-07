@@ -20,16 +20,18 @@ rationale: |
   primary datastore.
 description: |
   A variable whose name suggests sensitive data (password, secret, api_key,
-  token) is passed directly to logging.info(). Note: only logging.info() is
-  covered — other levels (debug/warning/error) and print() are not yet
-  detected by this single rule.
-message: "Sensitive-looking value passed to logging.info() — avoid logging credentials"
+  token) is passed to a logging call: debug/info/warning/warn/error/
+  exception/critical on any receiver, so the logging module, a
+  module-level logger, self.logger and custom log objects alike. Names
+  interpolated into an f-string argument count, since the f-string's
+  replacement fields are part of the argument. print() is not covered.
+message: "Sensitive-looking value passed to a logging call; avoid logging credentials"
 references:
   - https://cwe.mitre.org/data/definitions/532.html
 tags: [logging, information-disclosure]
 match:
   kind: call
-  callee: logging.info
   filters:
+    - callee_matches: "\\.(debug|info|warning|warn|error|exception|critical)$"
     - argument_identifier_matches: "(?i)(password|secret|api_key|token)"
 fix_suggestion: "Redact or omit sensitive values before logging; log an identifier instead of the secret itself."

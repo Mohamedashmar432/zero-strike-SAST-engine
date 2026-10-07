@@ -2,6 +2,7 @@ package rules
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/ir"
@@ -25,6 +26,7 @@ var validNodeKinds = map[string]bool{
 	string(ir.NodeKindAttribute):  true,
 	string(ir.NodeKindBinaryOp):   true,
 	string(ir.NodeKindAssert):     true,
+	string(ir.NodeKindDecorator):  true,
 }
 
 var validSeverities = map[string]bool{
@@ -78,6 +80,8 @@ func (v *defaultValidator) Validate(rule *Rule) []string {
 		}
 	}
 
+	errs = append(errs, validateFilterRegexes(rule.Match.Filters, "match.filters")...)
+
 	if rule.Match.CalleeSuffix && rule.Match.Callee == "" {
 		errs = append(errs, "match.callee_suffix: requires a callee")
 	}
@@ -108,6 +112,34 @@ func (v *defaultValidator) Validate(rule *Rule) []string {
 	}
 	if !validLifecycles[rule.Lifecycle] {
 		errs = append(errs, fmt.Sprintf("lifecycle: invalid value %q", rule.Lifecycle))
+	}
+	return errs
+}
+
+// validateFilterRegexes compiles the regex-valued filters added for the
+// context-aware rules, recursing into `not` sub-patterns. The engine treats a
+// regex that fails to compile as "no match", so a typo would otherwise turn a
+// positive filter into a rule that never fires and a negative one into a
+// no-op, silently.
+func validateFilterRegexes(fs []Filter, at string) []string {
+	var errs []string
+	for i, f := range fs {
+		for name, pat := range map[string]string{
+			"callee_matches":             f.CalleeMatches,
+			"decorator_stack_matches":    f.DecoratorStackMatches,
+			"enclosing_function_matches": f.EnclosingFunctionMatches,
+			"written_file_matches":       f.WrittenFileMatches,
+		} {
+			if pat == "" {
+				continue
+			}
+			if _, err := regexp.Compile(pat); err != nil {
+				errs = append(errs, fmt.Sprintf("%s[%d].%s: %v", at, i, name, err))
+			}
+		}
+		if f.Not != nil {
+			errs = append(errs, validateFilterRegexes(f.Not.Filters, fmt.Sprintf("%s[%d].not.filters", at, i))...)
+		}
 	}
 	return errs
 }

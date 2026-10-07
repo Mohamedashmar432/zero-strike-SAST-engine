@@ -1,0 +1,32 @@
+id: ZS-PY-093
+lifecycle: released
+name: Pillow ImageMath Expression Evaluation
+version: "1.0.0"
+language: python
+category: code-injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-94
+owasp:
+  - "A05:2025"
+rationale: |
+  PIL.ImageMath.eval evaluates its expression string with Python's eval
+  (CVE-2023-50447 showed the restricted environment can be escaped), and
+  ImageMath.unsafe_eval does so by design. An expression built from user
+  input runs arbitrary code in the server process.
+description: |
+  Flags ImageMath.eval / ImageMath.unsafe_eval whose expression argument
+  is not a constant literal, whether ImageMath is reached as PIL.ImageMath,
+  a from-import, or an alias.
+message: "ImageMath expression evaluated from a non-constant string (code injection)"
+references:
+  - https://nvd.nist.gov/vuln/detail/CVE-2023-50447
+  - https://pillow.readthedocs.io/en/stable/reference/ImageMath.html
+tags: [code-injection, eval, pillow]
+match:
+  kind: call
+  filters:
+    - callee_matches: "(^|\\.)ImageMath\\.(eval|unsafe_eval)$"
+    - argument_not_constant: 0
+fix_suggestion: "Never build an ImageMath expression from input; use ImageMath.lambda_eval with a fixed function, or map user choices onto a fixed set of expressions."

@@ -69,6 +69,11 @@ type filterYAML struct {
 	RequireRealSource         bool         `yaml:"require_real_source"`
 	ArgumentKindNotAt         *argKindYAML `yaml:"argument_kind_not_at"`
 	HasBareExcept             bool         `yaml:"has_bare_except"`
+	CalleeMatches             string       `yaml:"callee_matches"`
+	DecoratorStackMatches     string       `yaml:"decorator_stack_matches"`
+	EnclosingFunctionMatches  string       `yaml:"enclosing_function_matches"`
+	ArgumentNotConstant   *int         `yaml:"argument_not_constant"`
+	WrittenFileMatches        string       `yaml:"written_file_matches"`
 	HasEmptyExceptHandler     bool         `yaml:"has_empty_except_handler"`
 }
 
@@ -207,6 +212,11 @@ func convertFilters(fyamls []filterYAML) []Filter {
 			ArgumentKindNotAt:         convertArgKind(f.ArgumentKindNotAt),
 			HasBareExcept:             f.HasBareExcept,
 			HasEmptyExceptHandler:     f.HasEmptyExceptHandler,
+			CalleeMatches:             f.CalleeMatches,
+			DecoratorStackMatches:     f.DecoratorStackMatches,
+			EnclosingFunctionMatches:  f.EnclosingFunctionMatches,
+			ArgumentNotConstant:   f.ArgumentNotConstant,
+			WrittenFileMatches:        f.WrittenFileMatches,
 		}
 		if f.Kwarg != nil {
 			filter.Kwarg = &KwargPattern{Name: f.Kwarg.Name, NamePattern: f.Kwarg.NamePattern, ValuePattern: f.Kwarg.ValuePattern}

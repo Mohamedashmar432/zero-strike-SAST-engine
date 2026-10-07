@@ -1,0 +1,49 @@
+id: ZS-PY-098
+lifecycle: released
+name: Cookie Set Without HttpOnly
+version: "1.0.0"
+language: python
+category: security-misconfiguration
+severity: low
+confidence: medium
+cwe:
+  - CWE-1004
+owasp:
+  - "A02:2025"
+rationale: |
+  Django's and Flask/Werkzeug's set_cookie default to httponly=False, so a
+  cookie set without the flag is readable from document.cookie. Any XSS
+  anywhere on the origin can then read it, which for a session or auth
+  cookie means account takeover.
+description: |
+  Flags response.set_cookie(...) (any receiver) without httponly set to a
+  true value. A non-literal httponly= value is treated as set. Calls that
+  clear a cookie (an empty-string value, max_age=0, expires=0 or a 1970
+  date) are skipped, as is delete_cookie, which is a different method.
+message: "Cookie set without HttpOnly; readable by any script on the page"
+references:
+  - https://owasp.org/www-community/HttpOnly
+  - https://docs.djangoproject.com/en/stable/ref/request-response/#django.http.HttpResponse.set_cookie
+tags: [cookie, misconfiguration, django, flask]
+match:
+  kind: call
+  callee: set_cookie
+  callee_suffix: true
+  filters:
+    - not:
+        kind: call
+        filters:
+          - kwarg:
+              name: httponly
+              value_pattern: "^(True|1|[^FN0].*|F[^a].*|N[^o].*)$"
+    - not:
+        kind: call
+        filters:
+          - argument_literal_matches: "^$"
+    - not:
+        kind: call
+        filters:
+          - kwarg:
+              name_pattern: "^(max_age|expires)$"
+              value_pattern: "^(0|-[0-9]+|.*1970.*)$"
+fix_suggestion: "Pass httponly=True (and secure=True, samesite='Lax') to set_cookie for any cookie scripts do not need to read."

@@ -1,0 +1,40 @@
+id: ZS-PY-097
+lifecycle: released
+name: Untrusted Content Written to Code or Template File
+version: "1.0.0"
+language: python
+category: code-injection
+severity: critical
+confidence: medium
+cwe:
+  - CWE-94
+owasp:
+  - "A05:2025"
+rationale: |
+  Writing request data into a .py module that is later imported, or into
+  a template the framework later renders, turns the data into code: the
+  module runs with the server's privileges and the template language
+  ({% %}, {{ }}) evaluates on render, giving remote code execution or
+  server-side template injection. The danger is the written content, not
+  the file name, which is why a path-traversal finding on the same open()
+  describes the wrong bug.
+description: |
+  Flags write()/write_text()/writelines() calls whose content argument is
+  tainted when the handle being written was opened (in a write mode) on a
+  path that ends in .py/.pyw, a Jinja template extension, or an .html/.txt
+  file under a templates/ directory. The path is resolved from the open()
+  or Path() call through local variables and `with ... as` bindings; the
+  parts of it that are not literals do not matter.
+message: "Untrusted content written to a Python module or template file (code / template injection)"
+references:
+  - https://cwe.mitre.org/data/definitions/94.html
+  - https://portswigger.net/web-security/server-side-template-injection
+tags: [code-injection, ssti, file-write]
+match:
+  kind: call
+  filters:
+    - callee_matches: "\\.(write|write_text|writelines)$"
+    - tainted_argument: true
+      tainted_argument_index: 0
+    - written_file_matches: "(?i)(\\.pyw?|\\.j2|\\.jinja2?|(^|/)templates?/.*\\.(html?|txt|xml))$"
+fix_suggestion: "Never write request data into code or templates. Store user content as data (database, JSON) and render it through an auto-escaping template variable."

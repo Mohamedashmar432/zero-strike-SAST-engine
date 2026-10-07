@@ -23,7 +23,11 @@ description: |
   literal. The rule is still a syntactic approximation: it reports any
   non-literal path, tainted or not, because a path assembled from a
   parameter is the case worth triaging and requiring real-source taint here
-  drops it. A literal path cannot be traversed and is excluded outright.
+  drops it. A constant path cannot be traversed and is excluded outright:
+  a string literal, and also a path built only from literals and __file__
+  with os.path.join/dirname/abspath, pathlib.Path or "/" (followed through
+  local variables whose every assignment is constant), which is how code
+  addresses files that ship next to it.
 message: "open() called with a variable path — validate and sanitize the path before use"
 references:
   - https://owasp.org/www-community/attacks/Path_Traversal
@@ -40,4 +44,7 @@ match:
     - argument_kind_not_at:
         index: 0
         kinds: [literal]
+    # os.path.join(os.path.dirname(__file__), "data.json") is as fixed as a
+    # literal; only the parts a caller can influence make a path traversable.
+    - argument_not_constant: 0
 fix_suggestion: "Validate the path with os.path.realpath() and confirm it stays within the allowed directory."
