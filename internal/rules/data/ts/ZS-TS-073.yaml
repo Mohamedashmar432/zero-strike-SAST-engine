@@ -23,6 +23,13 @@ description: |
   spawnSync) where an argument traces back to an untrusted source
   (intra-procedural taint tracking). Sibling of ZS-JS-029 (spawn).
   Ported verbatim from ZS-JS-075, same match shape.
+
+  Fires only when the call can reach a shell or run an attacker-chosen
+  program: the program (argument 0) is tainted, shell is enabled (shell: true
+  or a shell path) with any tainted argument, or the program is a shell
+  interpreter (sh, bash, cmd, powershell, ...) with a tainted later argument.
+  A tainted argv element passed to a fixed, non-shell program is not command
+  injection -- no shell ever parses it -- and is not reported here.
 message: "spawnSync() called with a tainted argument — use an argument array without shell, and validate input"
 references:
   - https://owasp.org/www-community/attacks/Command_Injection
@@ -31,11 +38,22 @@ match:
   kind: call
   callee: spawnSync
   filters:
-    # DELIBERATELY UNINDEXED — see ZS-JS-075, from which this is ported.
-    # spawnSync(command, args, options) is dangerous at both index 0 (the
-    # program) and index 1 (the argv array); the corpus case
-    # spawnSync('sh', ['-c', cmd]) is tainted at index 1. Only the options bag
-    # at index 2 is a non-sink, and one index cannot express "0 or 1", so
-    # pinning either would silently drop real detections.
-    - tainted_argument: true
+    # spawn/spawnSync execute a program directly with an argv array; no shell
+    # parses the arguments. Command injection (CWE-78) needs one of:
+    - any_of:
+        # the program itself is attacker-controlled;
+        - tainted_argument: true
+          tainted_argument_index: 0
+        # a shell is enabled (shell: true, or a shell path string) and any
+        # argument is attacker-controlled;
+        - kwarg:
+            name: shell
+            value_pattern: "^(true|[\"'`].+[\"'`])$"
+          tainted_argument: true
+        # or the program is a shell interpreter and a later argv element
+        # (the -c script) is attacker-controlled.
+        - argument_literal_matches: "^(sh|bash|zsh|dash|ksh|/bin/(ba|z|da|k)?sh|/usr/bin/(ba|z)?sh|cmd|cmd\\.exe|powershell|powershell\\.exe|pwsh)$"
+          argument_literal_index: 0
+          tainted_argument: true
+          tainted_argument_min_index: 1
 fix_suggestion: "Pass the program and each argument as array elements with shell disabled, and allowlist any user-derived values."

@@ -2,7 +2,7 @@ version: "1"
 cases:
   - file: cases/vuln_eval.js
     language: javascript
-    expect: [{rule_id: ZS-JS-001, min_count: 1}]
+    expect: [{rule_id: ZS-JS-001, min_count: 1, cwe: CWE-94}]
   - file: cases/vuln_tls.js
     language: javascript
     expect: [{rule_id: ZS-JS-006, min_count: 1}]
@@ -71,7 +71,7 @@ cases:
     expect: [{rule_id: ZS-JS-025, min_count: 1}]
   - file: cases/vuln_weak_hash.js
     language: javascript
-    expect: [{rule_id: ZS-JS-026, min_count: 1}]
+    expect: [{rule_id: ZS-JS-026, min_count: 1, cwe: CWE-328}]
   - file: cases/vuln_cors_header.js
     language: javascript
     expect: [{rule_id: ZS-JS-027, min_count: 1}]
@@ -218,7 +218,7 @@ cases:
     expect: [{rule_id: ZS-JS-073, min_count: 1}]
   - file: cases/vuln_errorhandler.js
     language: javascript
-    expect: [{rule_id: ZS-JS-074, min_count: 1}]
+    expect: [{rule_id: ZS-JS-074, min_count: 1, cwe: CWE-489}]
   - file: cases/vuln_spawnsync.js
     language: javascript
     expect: [{rule_id: ZS-JS-075, min_count: 1}]
@@ -270,3 +270,7 @@ cases:
   - file: cases/clean_hardcoded_creds.js
     language: javascript
     expect: []
+  # Module-level constant resolution for argument_literal_matches.
+  - file: cases/vuln_http_const_url.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-090, min_count: 1}]

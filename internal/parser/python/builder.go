@@ -7,10 +7,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/uuid"
-	sitter "github.com/smacker/go-tree-sitter"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/ir"
+	"github.com/google/uuid"
+	sitter "github.com/smacker/go-tree-sitter"
 )
 
 // IRBuilder converts a Python tree-sitter CST into an ir.IRFile.
@@ -380,7 +380,28 @@ func buildExceptHandler(clause *sitter.Node, source []byte) ir.ExceptHandler {
 	}
 	h.IsBare = len(h.Types) == 0
 	h.IsEmptyBody = isEmptyPassBody(body)
+	h.HasComment = clauseHasComment(clause)
 	return h
+}
+
+// clauseHasComment reports whether an except clause carries a comment, either
+// inside its block or between the colon and the block (tree-sitter-python
+// attaches a trailing "except X:  # why" comment to the clause itself).
+func clauseHasComment(clause *sitter.Node) bool {
+	var walk func(n *sitter.Node) bool
+	walk = func(n *sitter.Node) bool {
+		for i := 0; i < int(n.ChildCount()); i++ {
+			c := n.Child(i)
+			if c.Type() == "comment" {
+				return true
+			}
+			if c.Type() == "block" && walk(c) {
+				return true
+			}
+		}
+		return false
+	}
+	return walk(clause)
 }
 
 // isEmptyPassBody reports whether a block's only statement is "pass".

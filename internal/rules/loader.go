@@ -31,6 +31,9 @@ type ruleYAML struct {
 	FixSuggestion string    `yaml:"fix_suggestion"`
 	Rationale     string    `yaml:"rationale"`
 	Lifecycle     string    `yaml:"lifecycle"`
+	Tier          string    `yaml:"tier"`
+	OncePerFile   bool      `yaml:"once_per_file"`
+	SkipContexts  []string  `yaml:"skip_contexts"`
 }
 
 type matchYAML struct {
@@ -77,11 +80,26 @@ type filterYAML struct {
 	HasEmptyExceptHandler     bool         `yaml:"has_empty_except_handler"`
 	LiteralArgument           *litArgYAML  `yaml:"literal_argument"`
 	LHSFlowsToCall            string       `yaml:"lhs_flows_to_call"`
+	ExceptHandler             *exceptYAML  `yaml:"except_handler"`
+	TryBodyCallsOnly          string       `yaml:"try_body_calls_only"`
+	ContextIdentifierMatches  string       `yaml:"context_identifier_matches"`
+	EnclosingFunctionCalls    string       `yaml:"enclosing_function_calls"`
+	EnclosingFunctionMentions string       `yaml:"enclosing_function_mentions"`
+	ArgumentLiteralIndex      *int         `yaml:"argument_literal_index"`
+	AnyOf                     []filterYAML `yaml:"any_of"`
 }
 
 type litArgYAML struct {
 	Index   int    `yaml:"index"`
 	Pattern string `yaml:"pattern"`
+}
+
+
+type exceptYAML struct {
+	Bare      *bool `yaml:"bare"`
+	Empty     *bool `yaml:"empty"`
+	Broad     *bool `yaml:"broad"`
+	Commented *bool `yaml:"commented"`
 }
 
 type defaultLoader struct {
@@ -173,6 +191,9 @@ func (l *defaultLoader) parseYAML(source string, data []byte) ([]*Rule, error) {
 		FixSuggestion: ry.FixSuggestion,
 		Rationale:     ry.Rationale,
 		Lifecycle:     ry.Lifecycle,
+		Tier:          core.Tier(ry.Tier),
+		OncePerFile:   ry.OncePerFile,
+		SkipContexts:  ry.SkipContexts,
 		Match:         convertMatch(ry.Match),
 	}
 
@@ -225,9 +246,27 @@ func convertFilters(fyamls []filterYAML) []Filter {
 			ArgumentNotConstant:       f.ArgumentNotConstant,
 			WrittenFileMatches:        f.WrittenFileMatches,
 			LHSFlowsToCall:            f.LHSFlowsToCall,
+			TryBodyCallsOnly:          f.TryBodyCallsOnly,
+			ContextIdentifierMatches:  f.ContextIdentifierMatches,
+			EnclosingFunctionCalls:    f.EnclosingFunctionCalls,
+			EnclosingFunctionMentions: f.EnclosingFunctionMentions,
+			ArgumentLiteralIndex:      f.ArgumentLiteralIndex,
 		}
 		if f.LiteralArgument != nil {
 			filter.LiteralArgument = &LiteralArgumentPattern{Index: f.LiteralArgument.Index, Pattern: f.LiteralArgument.Pattern}
+		}
+		if f.AnyOf != nil {
+			// Keep an explicit "any_of: []" non-nil so the validator can
+			// reject it; a nil AnyOf means the key was absent.
+			filter.AnyOf = append([]Filter{}, convertFilters(f.AnyOf)...)
+		}
+		if f.ExceptHandler != nil {
+			filter.ExceptHandler = &ExceptHandlerPattern{
+				Bare:      f.ExceptHandler.Bare,
+				Empty:     f.ExceptHandler.Empty,
+				Broad:     f.ExceptHandler.Broad,
+				Commented: f.ExceptHandler.Commented,
+			}
 		}
 		if f.Kwarg != nil {
 			filter.Kwarg = &KwargPattern{Name: f.Kwarg.Name, NamePattern: f.Kwarg.NamePattern, ValuePattern: f.Kwarg.ValuePattern}

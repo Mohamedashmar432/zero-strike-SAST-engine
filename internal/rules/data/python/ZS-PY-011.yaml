@@ -7,7 +7,9 @@ category: cryptography
 severity: medium
 confidence: high
 cwe:
-  - CWE-327
+  # CWE-328 (Use of Weak Hash) is the precise weakness for MD5/SHA-1; CWE-327
+  # (broken or risky crypto algorithm) is its broader parent.
+  - CWE-328
 owasp:
   - "A04:2025"
 rationale: |

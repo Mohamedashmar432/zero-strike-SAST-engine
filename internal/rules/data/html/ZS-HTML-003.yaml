@@ -18,9 +18,15 @@ rationale: |
   ready-made XSS injection point (e.g. an attacker-supplied value that closes the
   attribute and opens onerror=).
 description: |
-  Flags any element carrying an attribute whose name matches ^on[a-z]+$ — the
-  full family of inline DOM event handlers — regardless of tag.
-message: "Inline event-handler attribute (on*) — moves executable JS into markup and blocks a strict CSP (XSS risk)"
+  Flags an inline DOM event-handler attribute (any name matching ^on[a-z]+$,
+  on any tag) whose value is assembled by a server-side template: it contains
+  a {{ }}, {% %}, ${ } or <%= %> interpolation. A handler with constant code
+  (onclick="toggleTheme()") holds no untrusted data; it is a CSP-hardening
+  concern, not XSS, and is not reported. The interpolated form is the
+  injection point: the template engine HTML-escapes the value, but the
+  browser HTML-decodes the attribute before running it as JavaScript, so
+  escaping does not stop an attacker-supplied ');alert(1);//.
+message: "Template value interpolated into an inline event handler (on*) — HTML escaping does not protect a JavaScript context (XSS)"
 references:
   - https://cwe.mitre.org/data/definitions/79.html
   - https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP
@@ -30,4 +36,5 @@ match:
   filters:
     - kwarg:
         name_pattern: "^on[a-z]+$"
+        value_pattern: '\{\{|\{%|\$\{|<%[=-]?'
 fix_suggestion: "Remove the inline handler and bind the event in an external/CSP-allowed script with addEventListener, then serve a strict Content-Security-Policy."

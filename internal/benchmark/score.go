@@ -92,6 +92,7 @@ func ScoreCorpus(ctx context.Context, dirs []CorpusDir, enableGraphs bool) (*Sum
 			EnableGraphs:          enableGraphs,
 			SCAOnError:            "warn",
 			IncludeTests:          dir.Manifest.IncludeTests,
+			IncludeHardening:      dir.Manifest.IncludeHardening,
 		}
 		pipe, err := pipeline.New(cfg)
 		if err != nil {
@@ -210,7 +211,18 @@ func expectationMatches(exp Expectation, f core.Finding) bool {
 			strings.EqualFold(f.Dependency.Package, exp.Dependency.Package) &&
 			strings.EqualFold(f.Dependency.Ecosystem, exp.Dependency.Ecosystem)
 	}
-	return f.RuleID == exp.RuleID
+	if f.RuleID != exp.RuleID {
+		return false
+	}
+	if exp.CWE == "" {
+		return true
+	}
+	for _, c := range f.CWE {
+		if c == exp.CWE {
+			return true
+		}
+	}
+	return false
 }
 
 func expectationLabel(exp Expectation) string {

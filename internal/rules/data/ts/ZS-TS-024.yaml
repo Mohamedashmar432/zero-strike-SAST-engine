@@ -7,7 +7,9 @@ category: cryptography
 severity: medium
 confidence: medium
 cwe:
-  - CWE-327
+  # CWE-328 (Use of Weak Hash) is the precise weakness for MD5/SHA-1;
+  # CWE-327 (broken or risky crypto algorithm) is its broader parent.
+  - CWE-328
 owasp:
   - "A04:2025"
 rationale: |
@@ -34,4 +36,10 @@ match:
   callee: crypto.createHash
   filters:
     - argument_literal_matches: "(?i)^(md5|sha1)$"
+    # An MD5/SHA-1 digest built to label file contents (a .md5 checksum file,
+    # an ETag) is non-adversarial integrity labelling, not a security control.
+    - not:
+        kind: call
+        filters:
+          - enclosing_function_mentions: "(?i)(checksum|etag)"
 fix_suggestion: "Replace crypto.createHash('md5')/crypto.createHash('sha1') with crypto.createHash('sha256'), or use bcrypt/argon2 for password hashing."

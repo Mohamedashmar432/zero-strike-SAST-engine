@@ -271,6 +271,9 @@ func coerceExceptHandlers(v any) any {
 			if isEmpty, ok := m["IsEmptyBody"].(bool); ok {
 				h.IsEmptyBody = isEmpty
 			}
+			if hasComment, ok := m["HasComment"].(bool); ok {
+				h.HasComment = hasComment
+			}
 			if types, ok := m["Types"]; ok {
 				if coerced, ok := coerceStringSlice(types).([]string); ok {
 					h.Types = coerced

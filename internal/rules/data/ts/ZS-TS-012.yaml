@@ -34,9 +34,34 @@ references:
 tags: [hardcoded-credential, authentication]
 match:
   kind: assignment
-  lhs_identifier: "(?i)(password|passwd|pwd|secret|apiKey|token|(^|_)pw$)"
+  # The credential word must end the name or be followed by a word boundary
+  # (_, digit, capital): secretKey, API_TOKEN, jwtSecret -- but not tokenizer.
+  lhs_identifier: "(?i:password|passwd|pwd|secret|api_?key|token)(?:$|[_A-Z0-9])|(?i:(^|_)pw$)"
   rhs_literal: "^[\"'`].+[\"'`]$"
   filters:
+    # Names that end in a descriptor hold metadata about a credential, not the
+    # credential: BeeTokenAddress, tokenUrl, passwordField, secretName.
+    - not:
+        kind: assignment
+        lhs_identifier: "(?i)(address|addr|url|uri|endpoint|path|name|label|field|header|type|count|length|len|prefix|suffix|format|regex|pattern|placeholder|id|key_?name)$"
+    # A template literal with ${...} is assembled at runtime (e.g. from
+    # randomBytes), not hardcoded.
+    - not:
+        kind: assignment
+        rhs_literal: "^`.*\\$\\{"
+    # A public EVM address (0x + 40 hex) is not a secret.
+    - not:
+        kind: assignment
+        rhs_literal: "^[\"'`]0x[0-9a-fA-F]{40}[\"'`]$"
+    # The whole value is a server-side template placeholder filled per
+    # request ("{{ csrf_token }}", "<%= token %>"), not a literal secret.
+    - not:
+        kind: assignment
+        rhs_literal: "^[\"'`]\\s*(\\{\\{.*\\}\\}|\\{%.*%\\}|<%.*%>)\\s*[\"'`]$"
+    # CSRF/XSRF tokens are per-session anti-forgery values, not credentials.
+    - not:
+        kind: assignment
+        lhs_identifier: "(?i)(csrf|xsrf)"
     # A guarded sentinel is not a leaked credential: it is a known-bad value
     # that exists so a start-up check can recognise it and refuse to boot.
     # The report that motivated this flagged INSECURE_JWT_SECRET as a HIGH

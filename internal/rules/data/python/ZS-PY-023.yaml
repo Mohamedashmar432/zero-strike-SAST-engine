@@ -4,8 +4,14 @@ name: Bare except Clause
 version: "1.0.0"
 language: python
 category: error-handling
-severity: medium
+severity: low
 confidence: high
+# Quality tier: a bare except is a code-quality weakness (CWE-396) with no
+# exploitable behaviour of its own. Left out of default output; reported with
+# --include-hardening. A bare except whose body is empty is a swallowed error
+# and is reported by ZS-PY-024 (security tier) instead, so the same clause is
+# never reported twice.
+tier: quality
 cwe:
   - CWE-396
 owasp:
@@ -21,7 +27,8 @@ rationale: |
 description: |
   A bare "except:" clause catches every exception, including SystemExit and
   KeyboardInterrupt. Fires once per try block containing at least one
-  bare except clause (not once per clause).
+  bare except clause that does something (an empty bare except is
+  ZS-PY-024's finding).
 message: "Bare except: clause detected — catch specific exception types instead"
 references:
   - https://cwe.mitre.org/data/definitions/396.html
@@ -29,5 +36,7 @@ tags: [exception-handling, bare-except]
 match:
   kind: try
   filters:
-    - has_bare_except: true
+    - except_handler:
+        bare: true
+        empty: false
 fix_suggestion: "Catch a specific exception type, e.g. except ValueError:, instead of a bare except:."

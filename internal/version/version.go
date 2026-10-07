@@ -37,7 +37,12 @@ var Version = "dev"
 //	    enclosing_function_matches / argument_not_constant /
 //	    written_file_matches filters, rhs_literal on return nodes, and HTML
 //	    template-expression nodes
-const MatchSemanticsRevision = 4
+//	5 - output tiers (hardening/quality excluded by default), skip_contexts
+//	    (browser), once_per_file, except_handler / try_body_calls_only /
+//	    context_identifier_matches / enclosing_function_* / any_of /
+//	    argument_literal_index filters, module-constant resolution for
+//	    argument_literal_matches
+const MatchSemanticsRevision = 5
 
 // CacheKey returns the identity the finding and IR caches must key on, pairing
 // the release version with the matching-semantics revision so that either one

@@ -505,6 +505,12 @@ func plausibleValue(captured string) bool {
 		return false
 	}
 
+	// A value that is a template expression ({{ csrf_token }}, ${TOKEN}, <%= x %>)
+	// is substituted at render time; the literal in source is not a credential.
+	if strings.HasPrefix(raw, "{{") || strings.HasPrefix(raw, "${") || strings.HasPrefix(raw, "<%") {
+		return false
+	}
+
 	v := strings.ToLower(raw)
 	// A credential variable compared to or set to a language sentinel
 	// (newPassword === 'undefined', <password>null</password>) is a check for

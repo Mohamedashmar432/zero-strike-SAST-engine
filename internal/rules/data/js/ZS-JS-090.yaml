@@ -25,4 +25,12 @@ match:
   callee: http.get
   filters:
     - argument_literal_matches: "^http://"
+      argument_literal_index: 0
+    # Loopback traffic never leaves the host, so there is no network path on
+    # which it could be read or tampered with.
+    - not:
+        kind: call
+        filters:
+          - argument_literal_matches: '^http://(localhost|127\.[0-9.]+|\[::1\]|0\.0\.0\.0)([:/]|$)'
+            argument_literal_index: 0
 fix_suggestion: "Use HTTPS (https://) for all remote network communications."

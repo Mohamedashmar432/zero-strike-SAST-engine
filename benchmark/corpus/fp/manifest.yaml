@@ -105,3 +105,34 @@ cases:
   - file: cases/safe_xss_csharp.cs
     language: csharp
     expect: []
+
+  # Precision narrowing from the RealVuln triage (v0.37.0). Each construct
+  # below was a verified false positive in a real repository.
+  - file: cases/safe_spawn_argv.js
+    language: javascript
+    expect: []
+  - file: cases/safe_spawn_argv.ts
+    language: typescript
+    expect: []
+  - file: cases/safe_logging_and_random.ts
+    language: typescript
+    expect: []
+  - file: cases/safe_logging_and_random.js
+    language: javascript
+    expect: []
+  - file: cases/frontend/src/app/basket.service.ts
+    language: typescript
+    expect: []
+
+  # Output tiers. Hardening- and quality-tier findings are left out of default
+  # output (and counted in Stats.TierExcluded); this corpus runs with the
+  # default, so any of them appearing here means the tier filter broke.
+  - file: cases/quality_tier_default.py
+    language: python
+    expect: []
+  - file: cases/hardening_tier_default.html
+    language: html
+    expect: []
+  - file: cases/hardening_express_no_helmet.js
+    language: javascript
+    expect: []

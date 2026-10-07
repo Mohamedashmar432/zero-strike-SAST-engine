@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- Versionless vendor loaders cannot take an SRI hash (ZS-HTML-005 skips them). -->
+    <script src="https://kit.fontawesome.com/a1b2c3d4e5.js" crossorigin="anonymous"></script>
+    <script src="https://apis.google.com/js/platform.js" async defer></script>
+  </head>
+  <body>
+    <!-- Constant inline handlers hold no untrusted data (not ZS-HTML-003). -->
+    <button onclick="toggleTheme()">Theme</button>
+    <button onclick="window.location.href='/xss'">Back to lab</button>
+    <!-- Same-origin target=_blank links: relative and template URL tags (not ZS-HTML-001). -->
+    <a href="/docs/guide" target="_blank">Guide</a>
+    <a href="{% url 'api_data' %}" target="_blank">API data</a>
+    <!-- Loopback subresource: never crosses a network (not ZS-HTML-006). -->
+    <img src="http://127.0.0.1:5000/status.png" alt="local status">
+    <img src="http://localhost:8080/logo.png" alt="local logo">
+    <!-- Password field with the browser default (not ZS-HTML-008). -->
+    <form action="/login" method="post">
+      <input type="password" name="pw" required>
+    </form>
+    <!-- console output in a browser is the user's own devtools (not ZS-JS-083). -->
+    <script>
+      console.log(location.hash);
+    </script>
+  </body>
+</html>

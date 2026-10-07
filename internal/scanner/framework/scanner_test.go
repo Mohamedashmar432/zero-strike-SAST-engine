@@ -215,8 +215,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v2
+      - uses: tj-actions/checkout@v3
+      - uses: acme/setup-node@v2
 `)
 	fs := detectGitHubActionsUnpinned(".github/workflows/ci.yml", vuln)
 	if len(fs) != 2 {

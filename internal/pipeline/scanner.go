@@ -30,6 +30,11 @@ type ScanResult struct {
 	FilesScanned int
 	FilesSkipped int
 	Suppressed   int // findings filtered by allowlist
+	// TierExcluded counts hardening/quality-tier findings left out because
+	// ScanConfig.IncludeHardening was off; TierExcludedByRule breaks the
+	// count down by rule ID so a reader can see exactly what was held back.
+	TierExcluded       int
+	TierExcludedByRule map[string]int
 }
 
 type scanDiagnostic struct {
@@ -172,6 +177,25 @@ func openCache(cfg ScanConfig, ruleSetHash string) (cache.FindingCache, cache.AS
 	return mgr.Findings, mgr.AST
 }
 
+// excludeNonSecurityTiers drops findings outside the security tier, counting
+// each one in result.TierExcluded and result.TierExcludedByRule. Done after
+// dedup so a finding reported by two engines is counted once.
+func excludeNonSecurityTiers(all []core.Finding, result *ScanResult) []core.Finding {
+	kept := all[:0]
+	for _, f := range all {
+		if f.Tier.IsDefault() {
+			kept = append(kept, f)
+			continue
+		}
+		result.TierExcluded++
+		if result.TierExcludedByRule == nil {
+			result.TierExcludedByRule = map[string]int{}
+		}
+		result.TierExcludedByRule[f.RuleID]++
+	}
+	return kept
+}
+
 // Run executes the scan and returns results.
 func (p *ScanPipeline) Run(ctx context.Context) (*ScanResult, error) {
 	fileCh, errCh := p.walker.Walk(p.config.RootPath)
@@ -276,6 +300,10 @@ func (p *ScanPipeline) Run(ctx context.Context) (*ScanResult, error) {
 	}
 
 	all := p.dedup.Deduplicate(p.collector.All())
+
+	if !p.config.IncludeHardening {
+		all = excludeNonSecurityTiers(all, &result)
+	}
 
 	if p.allowList != nil {
 		kept := all[:0]
