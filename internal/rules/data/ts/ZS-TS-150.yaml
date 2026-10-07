@@ -1,4 +1,4 @@
-id: ZS-TS-120
+id: ZS-TS-150
 lifecycle: released
 name: Angular Sanitizer Bypassed for a Dynamic Value
 version: "1.0.0"
