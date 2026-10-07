@@ -34,6 +34,10 @@ func New(onError string) *SCAScanner {
 func (s *SCAScanner) Name() string { return "sca" }
 
 func (s *SCAScanner) Accepts(entry walker.FileEntry) bool {
+	// AssetData entries are for the secrets scanner only (FileEntry.AssetData).
+	if entry.AssetData {
+		return false
+	}
 	base := filepath.Base(entry.Path)
 	return base == "package-lock.json" ||
 		base == "package.json" ||

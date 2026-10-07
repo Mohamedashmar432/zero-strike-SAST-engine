@@ -14,8 +14,8 @@ import (
 
 func TestBuildSecretFinding_Fingerprint(t *testing.T) {
 	rawSecret := []byte("AKIAIOSFODNN7EXAMPLE")
-	f1 := findings.BuildSecretFinding("aws-access-key", "ZS-SEC-001", "AWS Key", "found", "a.py", 1, rawSecret, 3.5, core.SeverityCritical)
-	f2 := findings.BuildSecretFinding("aws-access-key", "ZS-SEC-001", "AWS Key", "found", "b.py", 5, rawSecret, 3.5, core.SeverityCritical)
+	f1 := findings.BuildSecretFinding("aws-access-key", "ZS-SEC-001", "AWS Key", "found", "a.py", 1, rawSecret, 3.5, core.SeverityCritical, []string{"CWE-798"})
+	f2 := findings.BuildSecretFinding("aws-access-key", "ZS-SEC-001", "AWS Key", "found", "b.py", 5, rawSecret, 3.5, core.SeverityCritical, []string{"CWE-798"})
 	if f1.Fingerprint != f2.Fingerprint {
 		t.Errorf("same secret in two files should produce same fingerprint: %q vs %q", f1.Fingerprint, f2.Fingerprint)
 	}

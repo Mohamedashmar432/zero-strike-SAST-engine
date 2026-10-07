@@ -75,7 +75,9 @@ func New(allRules []*rules.Rule, rootPath string, findingCache cache.FindingCach
 func (s *SASTScanner) Name() string { return "sast" }
 
 func (s *SASTScanner) Accepts(entry walker.FileEntry) bool {
-	return !entry.IsBinary
+	// AssetData entries come from static/public/assets dirs, entered only so
+	// the secrets scanner can read data files there — see FileEntry.AssetData.
+	return !entry.IsBinary && !entry.AssetData
 }
 
 func (s *SASTScanner) Scan(ctx context.Context, files []walker.FileEntry) ([]core.Finding, []analyzer.Diagnostic, error) {

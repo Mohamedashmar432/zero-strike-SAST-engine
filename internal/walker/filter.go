@@ -64,6 +64,41 @@ func isSkippedDir(dirName string, extra []string) bool {
 	return false
 }
 
+// assetDataDirs are the hardcodedSkipDirs that the walker still enters, in
+// data-only mode, so the secrets scanner can read committed data files there.
+// See FileEntry.AssetData.
+var assetDataDirs = map[string]bool{"static": true, "assets": true, "public": true, "media": true}
+
+// assetDataExts are the file extensions emitted from inside an asset
+// directory: configuration and seed data, never code.
+var assetDataExts = map[string]bool{".yml": true, ".yaml": true, ".json": true, ".env": true}
+
+// isAssetDataDir reports whether dirName is a default-skipped asset directory
+// that is entered in data-only mode. A directory the user excluded explicitly
+// (Options.ExcludeDirs) is never entered.
+func isAssetDataDir(dirName string, extra []string) bool {
+	if !assetDataDirs[dirName] {
+		return false
+	}
+	for _, d := range extra {
+		if dirName == d {
+			return false
+		}
+	}
+	return true
+}
+
+// isAssetDataFile reports whether a file inside an asset directory is a data
+// file the secrets scanner should see: a yml/yaml/json/env file or a dotenv
+// file (.env, .env.production).
+func isAssetDataFile(name string) bool {
+	lower := strings.ToLower(name)
+	if lower == ".env" || strings.HasPrefix(lower, ".env.") {
+		return true
+	}
+	return assetDataExts[filepath.Ext(lower)]
+}
+
 // isSkippedExt reports whether the file identified by name should be excluded
 // based on its extension.
 func isSkippedExt(name string, extra []string) bool {
