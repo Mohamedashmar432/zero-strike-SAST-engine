@@ -57,6 +57,7 @@ type CreateScanRequest struct {
 	Hostname       string `json:"hostname,omitempty"`
 	GitCommit      string `json:"git_commit,omitempty"`
 	Branch         string `json:"branch,omitempty"`
+	RepoURL        string `json:"repo_url,omitempty"`
 	ScanLabel      string `json:"scan_label,omitempty"`
 }
 

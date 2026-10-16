@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 
@@ -26,6 +27,7 @@ func uploadCmd() *cobra.Command {
 		flagServer     string
 		flagToken      string
 		flagScanLabel  string
+		flagRepoDir    string
 	)
 
 	cmd := &cobra.Command{
@@ -49,11 +51,21 @@ func uploadCmd() *cobra.Command {
 				fmt.Fprintln(os.Stderr, "warning: --project-id is deprecated and ignored; the token alone determines the project")
 			}
 
+			// Git metadata comes from --repo-dir (default cwd), never from --report's location.
+			repoDir, err := filepath.Abs(flagRepoDir)
+			if err != nil {
+				repoDir = flagRepoDir
+			}
+			commit, branch, repoURL := gitInfo(ctx, repoDir)
+
 			client := portal.New(flagServer, flagToken)
 			hostname, _ := os.Hostname()
 			resp, err := client.CreateScan(ctx, portal.CreateScanRequest{
 				ScannerVersion: version.Version,
 				Hostname:       hostname,
+				GitCommit:      commit,
+				Branch:         branch,
+				RepoURL:        repoURL,
 				ScanLabel:      flagScanLabel,
 			})
 			if err != nil {
@@ -85,6 +97,7 @@ func uploadCmd() *cobra.Command {
 	cmd.Flags().StringVar(&flagServer, "server", "", "portal server base URL (required)")
 	cmd.Flags().StringVar(&flagToken, "token", "", "portal project token (required) — alone determines which project a scan belongs to")
 	cmd.Flags().StringVar(&flagScanLabel, "scan-label", "", "optional label for this scan")
+	cmd.Flags().StringVar(&flagRepoDir, "repo-dir", ".", "git checkout to read commit, branch and remote URL from")
 	cmd.MarkFlagRequired("report")
 	cmd.MarkFlagRequired("server")
 	cmd.MarkFlagRequired("token")

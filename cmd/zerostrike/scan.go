@@ -168,7 +168,7 @@ func scanCmd() *cobra.Command {
 			// CreateScan call (below) needs them before the pipeline runs.
 			hostname, _ := os.Hostname()
 			absRoot, _ := filepath.Abs(rootPath)
-			gitCommit, gitBranch := gitInfo(ctx, absRoot)
+			gitCommit, gitBranch, gitRepoURL := gitInfo(ctx, absRoot)
 
 			cfg := pipeline.ScanConfig{
 				RootPath:              rootPath,
@@ -207,6 +207,7 @@ func scanCmd() *cobra.Command {
 					Hostname:       hostname,
 					GitCommit:      gitCommit,
 					Branch:         gitBranch,
+					RepoURL:        gitRepoURL,
 					ScanLabel:      flagScanLabel,
 				})
 				if err != nil {
