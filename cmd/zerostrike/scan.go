@@ -108,6 +108,7 @@ func scanCmd() *cobra.Command {
 		flagOutput       string
 		flagLang         []string
 		flagRules        string
+		flagExtraRules   string
 		flagNoCache      bool
 		flagWorkers      int
 		flagEnableSec    bool
@@ -176,6 +177,7 @@ func scanCmd() *cobra.Command {
 				OutputFormat:          flagFormat,
 				OutputFile:            flagOutput,
 				RulesDir:              flagRules,
+				ExtraRulesDir:         flagExtraRules,
 				WorkerCount:           flagWorkers,
 				NoCache:               flagNoCache,
 				EnableSecrets:         flagEnableSec,
@@ -376,6 +378,7 @@ func scanCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&flagOutput, "output", "o", "", "output file (default: stdout)")
 	cmd.Flags().StringSliceVar(&flagLang, "lang", nil, "languages to scan (default: auto-detect)")
 	cmd.Flags().StringVar(&flagRules, "rules", "", "rules directory (default: embedded)")
+	cmd.Flags().StringVar(&flagExtraRules, "extra-rules", "", "directory of extra YAML rules loaded in addition to the active rules (IDs must not collide)")
 	cmd.Flags().BoolVar(&flagNoCache, "no-cache", false, "disable file cache")
 	cmd.Flags().IntVar(&flagWorkers, "workers", 0, "worker count (default: NumCPU)")
 	cmd.Flags().BoolVar(&flagEnableSec, "enable-secrets", false, "enable the Secrets scanner")

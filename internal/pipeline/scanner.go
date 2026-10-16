@@ -2,6 +2,8 @@ package pipeline
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io/fs"
 	"os"
@@ -78,6 +80,15 @@ func New(cfg ScanConfig) (*ScanPipeline, error) {
 	if err != nil {
 		return nil, fmt.Errorf("pipeline: hash rule set: %w", err)
 	}
+	if cfg.ExtraRulesDir != "" {
+		// Fold the extra rules in so editing a custom rule invalidates the cache.
+		extraHash, err := rules.HashRuleSet(os.DirFS(cfg.ExtraRulesDir), []string{"."})
+		if err != nil {
+			return nil, fmt.Errorf("pipeline: hash extra rules: %w", err)
+		}
+		sum := sha256.Sum256([]byte(ruleSetHash + "|extra|" + extraHash))
+		ruleSetHash = hex.EncodeToString(sum[:])
+	}
 
 	findingCache, astCache := openCache(cfg, ruleSetHash)
 
@@ -131,7 +142,25 @@ func loadAllRules(cfg ScanConfig) ([]*rules.Rule, error) {
 		}
 		all = append(all, rs...)
 	}
-	return all, nil
+	if cfg.ExtraRulesDir == "" {
+		return all, nil
+	}
+
+	seen := make(map[string]bool, len(all))
+	for _, r := range all {
+		seen[r.ID] = true
+	}
+	extra, err := rules.NewLoader(os.DirFS(cfg.ExtraRulesDir)).LoadDir(".")
+	if err != nil {
+		return nil, fmt.Errorf("extra rules %s: %w", cfg.ExtraRulesDir, err)
+	}
+	for _, r := range extra {
+		if seen[r.ID] {
+			return nil, fmt.Errorf("extra rules %s: rule ID %s duplicates an existing rule", cfg.ExtraRulesDir, r.ID)
+		}
+		seen[r.ID] = true
+	}
+	return append(all, extra...), nil
 }
 
 // rulesFS returns the fs.FS to load rules from.

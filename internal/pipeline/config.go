@@ -9,6 +9,7 @@ type ScanConfig struct {
 	OutputFormat          string          // "json" | "sarif" | "html"
 	OutputFile            string          // "" = stdout
 	RulesDir              string          // "" = use embedded rules
+	ExtraRulesDir         string          // "" = none; extra rules loaded IN ADDITION to the active set
 	WorkerCount           int             // 0 = runtime.NumCPU()
 	EnableGraphs          bool
 	NoCache               bool
