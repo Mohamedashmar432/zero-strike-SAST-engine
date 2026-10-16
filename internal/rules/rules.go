@@ -19,6 +19,14 @@ type KwargPattern struct {
 	ValueTainted bool
 }
 
+// LoggedIdentifierPattern configures Filter.LoggedIdentifier. All three are
+// regular expressions; ExcludeSuffix and SanitizerCallee may be empty.
+type LoggedIdentifierPattern struct {
+	Pattern         string
+	ExcludeSuffix   string
+	SanitizerCallee string
+}
+
 // Filter is a typed constraint on a match pattern.
 // ArgumentKindPattern names one positional argument and a set of IR node
 // kinds. A negative Index counts from the end, matching argumentAt.
@@ -85,6 +93,18 @@ type Filter struct {
 	// ArgumentIdentifierMatches requires at least one identifier anywhere in the call's
 	// argument list to match this regex, e.g. a variable named "password" passed to print().
 	ArgumentIdentifierMatches string
+	// LoggedIdentifier is the precise form of ArgumentIdentifierMatches for
+	// "is a sensitive value being logged". ArgumentIdentifierMatches accepts
+	// any identifier anywhere in the argument subtree, so it also fires on
+	// keyword-argument *names* (secret_name=...), on metadata identifiers
+	// (config.api_key_secret_name) and on values already passed through a
+	// sanitizer. This filter walks the argument subtrees value-side only:
+	// keyword-argument name nodes are skipped, a call whose callee matches
+	// SanitizerCallee is not descended into, and each identifier must match
+	// Pattern and must not match ExcludeSuffix. It is evaluated per
+	// identifier, never per call, so a sensitive value logged next to a
+	// metadata field still matches.
+	LoggedIdentifier *LoggedIdentifierPattern
 	// ArgumentLiteralMatches requires at least one literal anywhere in the call's
 	// argument list to match this regex, e.g. "MD5" passed to MessageDigest.getInstance().
 	ArgumentLiteralMatches string

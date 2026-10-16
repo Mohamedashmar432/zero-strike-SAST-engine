@@ -54,6 +54,12 @@ type kwargYAML struct {
 	ValueTainted bool   `yaml:"value_tainted"`
 }
 
+type loggedIdentifierYAML struct {
+	Pattern         string `yaml:"pattern"`
+	ExcludeSuffix   string `yaml:"exclude_suffix"`
+	SanitizerCallee string `yaml:"sanitizer_callee"`
+}
+
 type argTextYAML struct {
 	Index   int    `yaml:"index"`
 	Pattern string `yaml:"pattern"`
@@ -65,40 +71,41 @@ type argKindYAML struct {
 }
 
 type filterYAML struct {
-	Not                            *matchYAML   `yaml:"not"`
-	ArgumentCount                  *int         `yaml:"argument_count"`
-	HasAttribute                   string       `yaml:"has_attribute"`
-	TaintedArgument                bool         `yaml:"tainted_argument"`
-	TaintedArgumentIndex           *int         `yaml:"tainted_argument_index"`
-	TaintedArgumentMinIndex        *int         `yaml:"tainted_argument_min_index"`
-	TaintedRHS                     bool         `yaml:"tainted_rhs"`
-	Kwarg                          *kwargYAML   `yaml:"kwarg"`
-	ArgumentIdentifierMatches      string       `yaml:"argument_identifier_matches"`
-	ArgumentLiteralMatches         string       `yaml:"argument_literal_matches"`
-	RequireRealSource              bool         `yaml:"require_real_source"`
-	ArgumentKindNotAt              *argKindYAML `yaml:"argument_kind_not_at"`
-	HasBareExcept                  bool         `yaml:"has_bare_except"`
-	CalleeMatches                  string       `yaml:"callee_matches"`
-	DecoratorStackMatches          string       `yaml:"decorator_stack_matches"`
-	EnclosingFunctionMatches       string       `yaml:"enclosing_function_matches"`
-	ArgumentNotConstant            *int         `yaml:"argument_not_constant"`
-	WrittenFileMatches             string       `yaml:"written_file_matches"`
-	HasEmptyExceptHandler          bool         `yaml:"has_empty_except_handler"`
-	LiteralArgument                *litArgYAML  `yaml:"literal_argument"`
-	LHSFlowsToCall                 string       `yaml:"lhs_flows_to_call"`
-	ExceptHandler                  *exceptYAML  `yaml:"except_handler"`
-	TryBodyCallsOnly               string       `yaml:"try_body_calls_only"`
-	ContextIdentifierMatches       string       `yaml:"context_identifier_matches"`
-	EnclosingFunctionCalls         string       `yaml:"enclosing_function_calls"`
-	EnclosingFunctionMentions      string       `yaml:"enclosing_function_mentions"`
-	ArgumentLiteralIndex           *int         `yaml:"argument_literal_index"`
-	AnyOf                          []filterYAML `yaml:"any_of"`
-	CalleePattern                  string       `yaml:"callee_pattern"`
-	CalleeCanonical                string       `yaml:"callee_canonical"`
-	CalleeResolved                 bool         `yaml:"callee_resolved"`
-	ArgumentMatchesAt              *argTextYAML `yaml:"argument_matches_at"`
-	DynamicStringArgumentIndex     *int         `yaml:"dynamic_string_argument_index"`
-	ArgumentReferencesErrorBinding bool         `yaml:"argument_references_error_binding"`
+	Not                            *matchYAML            `yaml:"not"`
+	ArgumentCount                  *int                  `yaml:"argument_count"`
+	HasAttribute                   string                `yaml:"has_attribute"`
+	TaintedArgument                bool                  `yaml:"tainted_argument"`
+	TaintedArgumentIndex           *int                  `yaml:"tainted_argument_index"`
+	TaintedArgumentMinIndex        *int                  `yaml:"tainted_argument_min_index"`
+	TaintedRHS                     bool                  `yaml:"tainted_rhs"`
+	Kwarg                          *kwargYAML            `yaml:"kwarg"`
+	ArgumentIdentifierMatches      string                `yaml:"argument_identifier_matches"`
+	ArgumentLiteralMatches         string                `yaml:"argument_literal_matches"`
+	LoggedIdentifier               *loggedIdentifierYAML `yaml:"logged_identifier"`
+	RequireRealSource              bool                  `yaml:"require_real_source"`
+	ArgumentKindNotAt              *argKindYAML          `yaml:"argument_kind_not_at"`
+	HasBareExcept                  bool                  `yaml:"has_bare_except"`
+	CalleeMatches                  string                `yaml:"callee_matches"`
+	DecoratorStackMatches          string                `yaml:"decorator_stack_matches"`
+	EnclosingFunctionMatches       string                `yaml:"enclosing_function_matches"`
+	ArgumentNotConstant            *int                  `yaml:"argument_not_constant"`
+	WrittenFileMatches             string                `yaml:"written_file_matches"`
+	HasEmptyExceptHandler          bool                  `yaml:"has_empty_except_handler"`
+	LiteralArgument                *litArgYAML           `yaml:"literal_argument"`
+	LHSFlowsToCall                 string                `yaml:"lhs_flows_to_call"`
+	ExceptHandler                  *exceptYAML           `yaml:"except_handler"`
+	TryBodyCallsOnly               string                `yaml:"try_body_calls_only"`
+	ContextIdentifierMatches       string                `yaml:"context_identifier_matches"`
+	EnclosingFunctionCalls         string                `yaml:"enclosing_function_calls"`
+	EnclosingFunctionMentions      string                `yaml:"enclosing_function_mentions"`
+	ArgumentLiteralIndex           *int                  `yaml:"argument_literal_index"`
+	AnyOf                          []filterYAML          `yaml:"any_of"`
+	CalleePattern                  string                `yaml:"callee_pattern"`
+	CalleeCanonical                string                `yaml:"callee_canonical"`
+	CalleeResolved                 bool                  `yaml:"callee_resolved"`
+	ArgumentMatchesAt              *argTextYAML          `yaml:"argument_matches_at"`
+	DynamicStringArgumentIndex     *int                  `yaml:"dynamic_string_argument_index"`
+	ArgumentReferencesErrorBinding bool                  `yaml:"argument_references_error_binding"`
 }
 
 type litArgYAML struct {
@@ -267,6 +274,13 @@ func convertFilters(fyamls []filterYAML) []Filter {
 			CalleeResolved:                 f.CalleeResolved,
 			DynamicStringArgumentIndex:     f.DynamicStringArgumentIndex,
 			ArgumentReferencesErrorBinding: f.ArgumentReferencesErrorBinding,
+		}
+		if f.LoggedIdentifier != nil {
+			filter.LoggedIdentifier = &LoggedIdentifierPattern{
+				Pattern:         f.LoggedIdentifier.Pattern,
+				ExcludeSuffix:   f.LoggedIdentifier.ExcludeSuffix,
+				SanitizerCallee: f.LoggedIdentifier.SanitizerCallee,
+			}
 		}
 		if f.LiteralArgument != nil {
 			filter.LiteralArgument = &LiteralArgumentPattern{Index: f.LiteralArgument.Index, Pattern: f.LiteralArgument.Pattern}

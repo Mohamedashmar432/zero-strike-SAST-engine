@@ -212,3 +212,32 @@ func TestSecretsScanner_OpenAI(t *testing.T) {
 		t.Errorf("expected ZS-SEC-026 in findings, got %+v", fs)
 	}
 }
+
+// A boolean kwarg whose value is a call on a module name is code, not a key:
+// the unquoted match used to capture the module name.
+func TestSecretsScanner_APIKey_CallExpressionNotFlagged(t *testing.T) {
+	for _, line := range []string{
+		`    has_api_key=ai_provider_config_service.has_api_key(config),`,
+		`    api_key=provider_config_service(config)`,
+		`    api_key = provider_settings_lookup`,
+		`    api_key=settings_registry_entries[0]`,
+	} {
+		if hasRule(scanContent("service.py", []byte(line)), "ZS-SEC-003") {
+			t.Errorf("code reference must not be reported as a generic API key: %q", line)
+		}
+	}
+}
+
+// Real keys keep firing: unquoted YAML values, quoted values (even when
+// snake_case shaped), and a mixed-case token.
+func TestSecretsScanner_APIKey_UnquotedYAMLStillFlagged(t *testing.T) {
+	for _, line := range []string{
+		`api_key: Zk3Qp9Lm2Xv7Bn4Tr8Wc1Yd6Hs5Jf0Ga`,
+		`api_key = "provider_config_service_abcdef"`,
+		`apiKey: 'aB3xZ9kLmN2pQrStUvWxYz'`,
+	} {
+		if !hasRule(scanContent("settings.yaml", []byte(line)), "ZS-SEC-003") {
+			t.Errorf("expected ZS-SEC-003 on %q", line)
+		}
+	}
+}

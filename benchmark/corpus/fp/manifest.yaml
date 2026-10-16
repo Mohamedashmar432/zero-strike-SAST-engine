@@ -145,3 +145,27 @@ cases:
   - file: cases/sequelize_where.ts
     language: typescript
     expect: []
+  # Workstream B (portal scan triage): credential-shaped names, label maps,
+  # call-expression kwargs, arrow-function setInterval, mkdtemp cleanup helper,
+  # logging metadata and non-security SHA1.
+  - file: cases/credential_shaped_names.py
+    language: python
+    expect: []
+  - file: cases/label_map.py
+    language: python
+    expect: []
+  - file: cases/api_key_kwarg_call.py
+    language: python
+    expect: []
+  - file: cases/arrow_setinterval.tsx
+    language: typescript
+    expect: []
+  - file: cases/rmtree_helper_param.py
+    language: python
+    expect: []
+  - file: cases/logging_secret_metadata.py
+    language: python
+    expect: []
+  - file: cases/sha1_not_for_security.py
+    language: python
+    expect: []

@@ -419,6 +419,9 @@ func evalFilter(f rules.Filter, n *ir.IRNode, fc *fileCtx) bool {
 			return false
 		}
 	}
+	if f.LoggedIdentifier != nil && !loggedIdentifierMatches(n, f.LoggedIdentifier, lang) {
+		return false
+	}
 	if f.ArgumentLiteralMatches != "" {
 		pred := func(a *ir.IRNode) bool {
 			value, ok := literalValue(a, fc.consts)
@@ -902,6 +905,87 @@ func anyArgument(n *ir.IRNode, pred func(*ir.IRNode) bool) bool {
 				return true
 			}
 		}
+	}
+	return false
+}
+
+// loggedIdentifierMatches implements Filter.LoggedIdentifier: it reports
+// whether any argument subtree of the call n carries a sensitive-looking
+// identifier in value position. Keyword-argument name nodes are skipped, calls
+// to a sanitizer are not descended into, and identifiers ending in a metadata
+// suffix are ignored.
+func loggedIdentifierMatches(n *ir.IRNode, p *rules.LoggedIdentifierPattern, lang core.Language) bool {
+	if n.Kind != ir.NodeKindCall || len(n.Children) < 2 || p.Pattern == "" {
+		return false
+	}
+	pattern := cachedRegexp(p.Pattern)
+	var exclude, sanitizer *regexp.Regexp
+	if p.ExcludeSuffix != "" {
+		exclude = cachedRegexp(p.ExcludeSuffix)
+	}
+	if p.SanitizerCallee != "" {
+		sanitizer = cachedRegexp(p.SanitizerCallee)
+	}
+	var walk func(node *ir.IRNode) bool
+	walk = func(node *ir.IRNode) bool {
+		switch node.Kind {
+		case ir.NodeKindCall:
+			// The root of the logging call itself is never walked (only its
+			// arguments), so a call seen here is a nested one.
+			if sanitizer != nil && sanitizer.MatchString(calleeTextFor(node, lang)) {
+				return false
+			}
+		case ir.NodeKindKeywordArg:
+			// The first child is the keyword name. A name that is plain
+			// metadata (secret_name=..., has_api_key=True) is not a logged
+			// secret, but a sensitive-looking name carrying a non-literal
+			// value (password=pw) is: the value is what gets logged.
+			if len(node.Children) > 0 && node.Children[0].Kind == ir.NodeKindIdentifier {
+				name := node.Children[0].Text
+				value, _ := node.Attrs["kwarg_value"].(string)
+				if pattern.MatchString(name) && (exclude == nil || !exclude.MatchString(name)) && !isLiteralText(value) {
+					return true
+				}
+			}
+			for i, c := range node.Children {
+				if i == 0 && c.Kind == ir.NodeKindIdentifier {
+					continue
+				}
+				if walk(c) {
+					return true
+				}
+			}
+			return false
+		case ir.NodeKindIdentifier:
+			if pattern.MatchString(node.Text) && (exclude == nil || !exclude.MatchString(node.Text)) {
+				return true
+			}
+		}
+		for _, c := range node.Children {
+			if walk(c) {
+				return true
+			}
+		}
+		return false
+	}
+	for _, argRoot := range n.Children[1:] {
+		if walk(argRoot) {
+			return true
+		}
+	}
+	return false
+}
+
+// isLiteralText reports whether a keyword-argument value is written as a
+// literal (string, number, True/False/None) rather than a reference.
+func isLiteralText(v string) bool {
+	v = strings.TrimSpace(v)
+	if v == "" || v == "True" || v == "False" || v == "None" || v == "true" || v == "false" || v == "null" {
+		return true
+	}
+	switch v[0] {
+	case '"', '\'', '`', '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
+		return true
 	}
 	return false
 }

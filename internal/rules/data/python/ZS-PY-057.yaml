@@ -36,6 +36,15 @@ match:
     # argument 0 is the command line. The remaining positional and keyword
     # parameters are process plumbing, so a tainted cwd=, env= or timeout=
     # is not command injection.
-    - tainted_argument: true
-      tainted_argument_index: 0
+    #
+    # High only for a real attacker-controlled source or an explicit shell=True.
+    # A command built from nothing but a function parameter (a list[str] argv
+    # with shell unset) is re-graded to ZS-PY-147 (argument injection).
+    - any_of:
+        - tainted_argument: true
+          tainted_argument_index: 0
+          require_real_source: true
+        - kwarg:
+            name: shell
+            value_pattern: "^True$"
 fix_suggestion: "Pass a list of strings (subprocess.Popen([prog, arg])) with shell=False, and allowlist any user-derived values."

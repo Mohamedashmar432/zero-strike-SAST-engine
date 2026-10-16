@@ -1,0 +1,48 @@
+id: ZS-PY-147
+lifecycle: released
+name: subprocess Argv Built from a Function Parameter
+version: "1.0.0"
+language: python
+category: command-injection
+severity: medium
+confidence: low
+cwe:
+  - CWE-88
+owasp:
+  - "A05:2025"
+rationale: |
+  A subprocess.Popen() whose command comes straight from a function parameter
+  hands the caller control of the program arguments. With shell unset the
+  command is not parsed by a shell, so the worst case is argument injection
+  (an attacker-chosen flag or operand) rather than arbitrary command
+  execution -- but only if every caller passes a list. It is worth a review
+  of the callers, not a high-severity alert.
+description: |
+  subprocess.Popen() is called with argument 0 traced only to a function
+  parameter (no matched untrusted source, no shell=True). This is the
+  re-graded form of ZS-PY-057, which now reports only real-source taint or
+  shell=True.
+message: "subprocess.Popen() argv comes from a function parameter - confirm callers pass a validated list, never a request-derived string"
+references:
+  - https://cwe.mitre.org/data/definitions/88.html
+tags: [argument-injection, subprocess, popen]
+match:
+  kind: call
+  callee: subprocess.Popen
+  filters:
+    - tainted_argument: true
+      tainted_argument_index: 0
+    # Anything ZS-PY-057 reports is not repeated here.
+    - not:
+        kind: call
+        filters:
+          - tainted_argument: true
+            tainted_argument_index: 0
+            require_real_source: true
+    - not:
+        kind: call
+        filters:
+          - kwarg:
+              name: shell
+              value_pattern: "^True$"
+fix_suggestion: "Validate the arguments before they reach Popen (allowlist the program and its flags) and keep shell unset."

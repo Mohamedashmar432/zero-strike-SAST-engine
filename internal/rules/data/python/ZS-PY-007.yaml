@@ -27,4 +27,14 @@ tags: [weak-crypto, md5, sha1, hash]
 match:
   kind: call
   callee: hashlib.md5
+  filters:
+    # usedforsecurity=False is an explicit, greppable claim that the digest is
+    # a non-cryptographic identifier (cache key, dedup key), the same trust
+    # model as a suppression comment.
+    - not:
+        kind: call
+        filters:
+          - kwarg:
+              name: usedforsecurity
+              value_pattern: "^False$"
 fix_suggestion: "Replace hashlib.md5() with hashlib.sha256() or use bcrypt/argon2 for passwords."
