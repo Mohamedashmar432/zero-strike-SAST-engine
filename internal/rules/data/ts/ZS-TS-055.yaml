@@ -30,4 +30,14 @@ match:
   callee: setInterval
   filters:
     - tainted_argument: true
+      # Only argument 0 is executed as code; a tainted *delay* is not code
+      # injection. Mirrors ZS-TS-054 (setTimeout).
+      tainted_argument_index: 0
+      # Parameter-only taint is not enough: setInterval takes an ordinary
+      # argument in ordinary code. See taint.Result.Weak.
+      require_real_source: true
+    # A function as argument 0 is the fix this rule recommends; never report it.
+    - argument_kind_not_at:
+        index: 0
+        kinds: [function_def]
 fix_suggestion: "Always pass a function to setInterval(); never a string built from user input."

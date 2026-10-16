@@ -311,3 +311,9 @@ cases:
   - file: cases/vuln_log_secret_once.py
     language: python
     expect: [{rule_id: ZS-PY-022, min_count: 1}]
+  - file: cases/vuln_subprocess_param_argv.py
+    language: python
+    expect: [{rule_id: ZS-PY-147, min_count: 1}]
+  - file: cases/vuln_sha1_usedforsecurity_true.py
+    language: python
+    expect: [{rule_id: ZS-PY-011, min_count: 1}]

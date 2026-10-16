@@ -41,5 +41,21 @@ match:
     # value shouting INSECURE_ at the reader is already a deliberate signal.
     - not:
         kind: assignment
-        lhs_identifier: "(?i)^[$@]?(INSECURE|PLACEHOLDER|CHANGEME|CHANGE_ME|DEV_ONLY|EXAMPLE|DUMMY|FAKE|SAMPLE|DEFAULT)_"
+        lhs_identifier: "(?i)^[$@_]*(INSECURE|PLACEHOLDER|CHANGEME|CHANGE_ME|DEV_ONLY|EXAMPLE|DUMMY|FAKE|SAMPLE|DEFAULT)_"
+    # Value filters shared with the sibling rules ZS-PY-140/141: placeholder
+    # vocabulary, and exact scheme/sentinel words that are never a secret.
+    - not:
+        kind: assignment
+        rhs_literal: "(?i)(changeme|change_me|change-me|xxx|example|placeholder|dummy|sample|your[_-]|redacted|replace[_-]?me|<[^>]*>|\\$\\{|\\{\\{|%s|^[bru]?[\"'`]\\*+[\"'`]$)"
+    - not:
+        kind: assignment
+        rhs_literal: "(?i)^[bru]?[\"'`](null|none|nil|undefined|true|false|empty|bearer|basic|string|text|hidden|required|password|passwd|secret|token|not-needed)[\"'`]$"
+    # A name that ends in a metadata suffix describes the credential (its URL,
+    # type, scheme, header) rather than holding it: TOKEN_URL, token_type,
+    # repo_token_auth_scheme. A suffix test is used instead of tightening
+    # rhs_literal, which would also drop literal credentials that sit inside
+    # conditional expressions.
+    - not:
+        kind: assignment
+        lhs_identifier: "(?i)(_url|_uri|_endpoint|_type|_scheme|_name|_id|_header|_prefix|_path|_field|_param)$"
 fix_suggestion: "Replace the literal with os.environ['...'] or a secrets manager lookup."

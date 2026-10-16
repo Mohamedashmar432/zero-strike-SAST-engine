@@ -39,5 +39,5 @@ match:
           rhs_literal: "(?i)(changeme|change_me|change-me|xxx|example|placeholder|dummy|sample|your[_-]|redacted|replace[_-]?me|<[^>]*>|\\$\\{|\\{\\{|%s|^[bru]?[\"'`]\\*+[\"'`]$)"
       - not:
           kind: keyword_argument
-          rhs_literal: "(?i)^[bru]?[\"'`](null|none|nil|undefined|true|false|empty|bearer|basic|string|text|hidden|required|password|passwd|secret|token)[\"'`]$"
+          rhs_literal: "(?i)^[bru]?[\"'`](null|none|nil|undefined|true|false|empty|bearer|basic|string|text|hidden|required|not-needed|(secrets?|passwords?|passwds?|tokens?|credentials?|api[ _-]?keys?))[\"'`]$"
 fix_suggestion: "Read the credential from the environment or a secrets manager; for seed users, generate a random password at seed time and print it once."

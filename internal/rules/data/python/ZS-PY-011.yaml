@@ -28,4 +28,14 @@ tags: [weak-crypto, sha1, hash]
 match:
   kind: call
   callee: hashlib.sha1
+  filters:
+    # usedforsecurity=False is an explicit, greppable claim that the digest is
+    # a non-cryptographic identifier (cache key, dedup key), the same trust
+    # model as a suppression comment.
+    - not:
+        kind: call
+        filters:
+          - kwarg:
+              name: usedforsecurity
+              value_pattern: "^False$"
 fix_suggestion: "Replace hashlib.sha1() with hashlib.sha256() or use bcrypt/argon2 for passwords."

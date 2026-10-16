@@ -33,5 +33,12 @@ match:
   kind: call
   filters:
     - callee_matches: "\\.(debug|info|warning|warn|error|exception|critical)$"
-    - argument_identifier_matches: "(?i)(password|secret|api_key|token)"
+    # Value-side only: keyword names (secret_name=...), metadata identifiers
+    # (config.api_key_secret_name) and arguments already passed through a
+    # sanitizer are not a logged secret. Evaluated per identifier, so a real
+    # secret logged next to a metadata field still fires.
+    - logged_identifier:
+        pattern: "(?i)(password|secret|api_key|token)"
+        exclude_suffix: "(?i)_(name|id|type|scheme|url|path|count|len|prefix)$"
+        sanitizer_callee: "(?i)(sanitiz|redact|mask|scrub|hash)"
 fix_suggestion: "Redact or omit sensitive values before logging; log an identifier instead of the secret itself."

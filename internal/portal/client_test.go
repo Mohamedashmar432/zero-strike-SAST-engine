@@ -34,6 +34,7 @@ func TestCreateScan_Success(t *testing.T) {
 		Hostname:       "host1",
 		GitCommit:      "deadbeef",
 		Branch:         "main",
+		RepoURL:        "https://github.com/org/repo",
 		ScanLabel:      "nightly",
 	}
 	resp, err := client.CreateScan(context.Background(), req)
@@ -57,6 +58,32 @@ func TestCreateScan_Success(t *testing.T) {
 	}
 	if gotBody != req {
 		t.Errorf("request body = %+v, want %+v", gotBody, req)
+	}
+}
+
+func TestCreateScan_RepoURLPayload(t *testing.T) {
+	var raw map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		raw = nil
+		json.NewDecoder(r.Body).Decode(&raw)
+		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(CreateScanResponse{ScanID: "x", Status: "pending"})
+	}))
+	defer srv.Close()
+	client := New(srv.URL, "zst_live_test")
+
+	if _, err := client.CreateScan(context.Background(), CreateScanRequest{RepoURL: "https://github.com/org/repo"}); err != nil {
+		t.Fatalf("CreateScan: %v", err)
+	}
+	if raw["repo_url"] != "https://github.com/org/repo" {
+		t.Errorf("repo_url = %v, want the URL", raw["repo_url"])
+	}
+
+	if _, err := client.CreateScan(context.Background(), CreateScanRequest{}); err != nil {
+		t.Fatalf("CreateScan: %v", err)
+	}
+	if _, present := raw["repo_url"]; present {
+		t.Errorf("repo_url present in payload when empty: %v", raw)
 	}
 }
 

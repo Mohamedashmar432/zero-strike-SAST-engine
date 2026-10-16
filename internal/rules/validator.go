@@ -169,6 +169,23 @@ func validateFilters(where string, fs []Filter) []string {
 				errs = append(errs, fmt.Sprintf("%s.%s: %v", at, name, err))
 			}
 		}
+		if f.LoggedIdentifier != nil {
+			if f.LoggedIdentifier.Pattern == "" {
+				errs = append(errs, at+".logged_identifier: pattern is required")
+			}
+			for name, re := range map[string]string{
+				"pattern":          f.LoggedIdentifier.Pattern,
+				"exclude_suffix":   f.LoggedIdentifier.ExcludeSuffix,
+				"sanitizer_callee": f.LoggedIdentifier.SanitizerCallee,
+			} {
+				if re == "" {
+					continue
+				}
+				if _, err := regexp.Compile(re); err != nil {
+					errs = append(errs, fmt.Sprintf("%s.logged_identifier.%s: %v", at, name, err))
+				}
+			}
+		}
 		if f.ArgumentLiteralIndex != nil && f.ArgumentLiteralMatches == "" {
 			errs = append(errs, at+".argument_literal_index: requires argument_literal_matches")
 		}

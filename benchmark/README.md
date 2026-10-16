@@ -80,6 +80,15 @@ case is self-describing.
   dvna/dvpwa scans). A transient OSV outage can make SCA recall look like
   a regression when it isn't — see `docs/roadmap/ARCHITECTURE-DECISIONS.md`
   and the Sprint 15+16 release notes for the accepted risk.
+- **`ZS-PY-065` (shutil.rmtree) no longer flags a helper whose path parameter
+  is fed by a request handler in another function.** The rule now requires a
+  real taint source (`require_real_source`), because every function parameter
+  is seeded as weak taint and cleanup helpers are normally handed `mkdtemp()`
+  paths. Probed with
+  `TestPrecision_RmtreeInterproceduralVariantProbe`: the two-function variant
+  (`def rmtree_logged(path)` called from a handler with `request.args`) is not
+  reported with `--enable-graphs` either, so the interprocedural flow is a
+  known false negative until cross-function taint reaches this sink.
 
 None of these gaps are covered by the `--min-recall`/`--max-fp` CI gate's
 current scope; they're listed here so "the corpus passed" isn't read as

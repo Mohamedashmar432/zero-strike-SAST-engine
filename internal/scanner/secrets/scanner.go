@@ -36,6 +36,14 @@ type detector struct {
 	// fixture.
 	generic bool
 
+	// rejectCodeRefs makes the detector read its pattern as (quote)(value) and
+	// drop an unquoted value that is a code reference rather than a literal:
+	// followed by '.', '(' or '[' (a call or member access), or shaped like a
+	// snake_case identifier. has_api_key=ai_provider_config_service.has_api_key(c)
+	// otherwise reports the module name as a key. A quoted value is always a
+	// literal and is never rejected here.
+	rejectCodeRefs bool
+
 	// cwe is the weakness this detector's hit represents, carried onto the
 	// finding so SARIF consumers and CWE-keyed policy see secret findings at
 	// all (they used to ship with no CWE). CWE-798 for credentials, tokens
@@ -73,10 +81,13 @@ var detectors = []detector{
 	{
 		ruleID:     "ZS-SEC-003",
 		detectorID: "generic-api-key",
-		pattern:    regexp.MustCompile(`(?i)api[_\-]?key\s*[:=]\s*["']?([a-zA-Z0-9_\-]{20,64})["']?`),
-		severity:   core.SeverityHigh,
-		minEntropy: 3.0,
-		generic:    true,
+		// Group 1 is the optional opening quote, group 2 the value. The quote is
+		// captured so an unquoted match can be told apart from a quoted one.
+		pattern:        regexp.MustCompile(`(?i)api[_\-]?key\s*[:=]\s*(["']?)([a-zA-Z0-9_\-]{20,64})["']?`),
+		severity:       core.SeverityHigh,
+		minEntropy:     3.0,
+		generic:        true,
+		rejectCodeRefs: true,
 	},
 	{
 		ruleID:     "ZS-SEC-004",
@@ -350,6 +361,14 @@ func scanContent(path string, data []byte) []core.Finding {
 			if len(match) > 1 {
 				captured = match[1]
 			}
+			if d.rejectCodeRefs {
+				if loc := d.pattern.FindSubmatchIndex(line); loc != nil && len(loc) >= 6 {
+					captured = line[loc[4]:loc[5]]
+					if loc[3] == loc[2] && looksLikeCodeRef(line[loc[5]:], captured) {
+						continue
+					}
+				}
+			}
 			if d.minEntropy > 0 && shannonEntropy(string(captured)) < d.minEntropy {
 				continue
 			}
@@ -363,6 +382,21 @@ func scanContent(path string, data []byte) []core.Finding {
 		}
 	}
 	return out
+}
+
+// snakeIdentifier is the shape of a plain lowercase snake_case identifier
+// (ai_provider_config_service). Digits are deliberately not allowed: a real
+// lowercase key such as sk_live_4f9... mixes them in, an identifier rarely does.
+var snakeIdentifier = regexp.MustCompile(`^[a-z]+(_[a-z]+)+$`)
+
+// looksLikeCodeRef reports whether an unquoted value is a code reference: the
+// text after it starts a call or member access, or the value itself is an
+// identifier-shaped snake_case name.
+func looksLikeCodeRef(rest, value []byte) bool {
+	if len(rest) > 0 && (rest[0] == '.' || rest[0] == '(' || rest[0] == '[') {
+		return true
+	}
+	return snakeIdentifier.Match(value)
 }
 
 // newFinding builds a secret finding with its CWE attached.
