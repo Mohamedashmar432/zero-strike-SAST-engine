@@ -47,8 +47,130 @@ func parseLockFileWithErr(path string, data []byte) ([]Dependency, error) {
 		return parsePomXML(path, data), nil
 	case strings.HasPrefix(base, "requirements") && strings.HasSuffix(base, ".txt"):
 		return parseRequirementsTxt(path, data), nil
+	case base == "packages.lock.json":
+		return parseNuGetLock(path, data)
+	case isDotnetProject(base), base == "Directory.Packages.props", base == "Directory.Build.props":
+		return parseMSBuildPackages(path, data)
+	case strings.EqualFold(base, "packages.config"):
+		return parsePackagesConfig(path, data)
 	}
 	return nil, nil
+}
+
+// isDotnetProject reports whether base is an SDK-style or legacy .NET project file.
+func isDotnetProject(base string) bool {
+	ext := strings.ToLower(filepath.Ext(base))
+	return ext == ".csproj" || ext == ".fsproj" || ext == ".vbproj"
+}
+
+// parseNuGetLock parses a NuGet packages.lock.json (RestorePackagesWithLockFile). It holds the
+// resolved version of every package, transitive ones included, per target framework -- the
+// authoritative answer whenever it exists, which is why a project file beside it is skipped.
+func parseNuGetLock(path string, data []byte) ([]Dependency, error) {
+	var lock struct {
+		Dependencies map[string]map[string]struct {
+			Type     string `json:"type"`
+			Resolved string `json:"resolved"`
+		} `json:"dependencies"`
+	}
+	if err := json.Unmarshal(data, &lock); err != nil {
+		return nil, err
+	}
+	var deps []Dependency
+	for _, framework := range lock.Dependencies {
+		for name, entry := range framework {
+			if name == "" || entry.Resolved == "" || entry.Type == "Project" {
+				continue // "Project" entries are sibling projects in the solution, not packages
+			}
+			deps = append(deps, Dependency{
+				Ecosystem: "NuGet",
+				Package:   name,
+				Version:   entry.Resolved,
+				Manifest:  path,
+				Direct:    entry.Type == "Direct",
+			})
+		}
+	}
+	return deps, nil
+}
+
+// parseMSBuildPackages reads <PackageReference> from a project file, and <PackageVersion> from
+// Directory.Packages.props (central package management, where the project files carry no versions
+// at all). Both the attribute form (Version="1.2.3") and the child-element form are accepted.
+func parseMSBuildPackages(path string, data []byte) ([]Dependency, error) {
+	type ref struct {
+		Include   string `xml:"Include,attr"`
+		Update    string `xml:"Update,attr"`
+		Version   string `xml:"Version,attr"`
+		VersionEl string `xml:"Version"`
+	}
+	var proj struct {
+		ItemGroups []struct {
+			PackageReference []ref `xml:"PackageReference"`
+			PackageVersion   []ref `xml:"PackageVersion"`
+		} `xml:"ItemGroup"`
+	}
+	if err := xml.Unmarshal(data, &proj); err != nil {
+		return nil, err
+	}
+	var deps []Dependency
+	add := func(r ref) {
+		name := strings.TrimSpace(r.Include)
+		if name == "" {
+			name = strings.TrimSpace(r.Update)
+		}
+		version := exactNuGetVersion(r.Version)
+		if version == "" {
+			version = exactNuGetVersion(r.VersionEl)
+		}
+		if name == "" || version == "" {
+			return
+		}
+		deps = append(deps, Dependency{Ecosystem: "NuGet", Package: name, Version: version, Manifest: path, Direct: true})
+	}
+	for _, g := range proj.ItemGroups {
+		for _, r := range g.PackageReference {
+			add(r)
+		}
+		for _, r := range g.PackageVersion {
+			add(r)
+		}
+	}
+	return deps, nil
+}
+
+// parsePackagesConfig parses the legacy (.NET Framework) packages.config.
+func parsePackagesConfig(path string, data []byte) ([]Dependency, error) {
+	var cfg struct {
+		Packages []struct {
+			ID      string `xml:"id,attr"`
+			Version string `xml:"version,attr"`
+		} `xml:"package"`
+	}
+	if err := xml.Unmarshal(data, &cfg); err != nil {
+		return nil, err
+	}
+	var deps []Dependency
+	for _, p := range cfg.Packages {
+		if v := exactNuGetVersion(p.Version); p.ID != "" && v != "" {
+			deps = append(deps, Dependency{Ecosystem: "NuGet", Package: p.ID, Version: v, Manifest: path, Direct: true})
+		}
+	}
+	return deps, nil
+}
+
+// exactNuGetVersion returns v when it names one concrete version ("12.0.1", or the exact-match
+// range "[12.0.1]"), and "" for anything OSV cannot be asked about: an open range ("[1.0,2.0)"),
+// a floating version ("1.*") or an unexpanded MSBuild property ("$(JsonVersion)").
+func exactNuGetVersion(v string) string {
+	v = strings.TrimSpace(v)
+	if strings.HasPrefix(v, "[") && strings.HasSuffix(v, "]") && !strings.Contains(v, ",") {
+		v = strings.TrimSpace(v[1 : len(v)-1])
+	}
+	if v == "" || strings.ContainsAny(v, "*$(),[]") {
+		return ""
+	}
+	return v
 }
 
 // parseRequirementsTxt parses a pip requirements.txt file.
