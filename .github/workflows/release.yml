@@ -118,11 +118,23 @@ jobs:
           # `create`, else `upload --clobber` onto the existing release. Without this, a
           # re-run after a partial failure (e.g. the portal-publish step below 502'd) dies
           # here on "release already exists" and never reaches the step that needs retrying.
-          gh release create "${{ github.ref_name }}" zerostrike_* checksums.txt \
-            --repo "${{ github.repository }}" \
-            --title "${{ github.ref_name }}" --generate-notes \
-          || gh release upload "${{ github.ref_name }}" zerostrike_* checksums.txt \
-            --repo "${{ github.repository }}" --clobber
+          publish() {
+            gh release create "${{ github.ref_name }}" zerostrike_* checksums.txt \
+              --repo "${{ github.repository }}" \
+              --title "${{ github.ref_name }}" --generate-notes \
+            || gh release upload "${{ github.ref_name }}" zerostrike_* checksums.txt \
+              --repo "${{ github.repository }}" --clobber
+          }
+          # The runner's route to api.github.com times out now and then (v0.39.0's first run
+          # died on "dial tcp ...:443: i/o timeout" before sending a byte). Retry with backoff
+          # rather than failing the whole release on one dropped connection.
+          for attempt in 1 2 3 4 5; do
+            if publish; then exit 0; fi
+            echo "::warning::GitHub release publish failed (attempt $attempt/5); retrying in $((attempt * 20))s"
+            sleep $((attempt * 20))
+          done
+          echo "::error::GitHub release publish failed after 5 attempts"
+          exit 1
 
       # Portal's /api/v1/downloads/zerostrike/latest/{os-arch} (what the portal's own
       # onboarding UI tells users to curl in their CI) only ever serves binaries a prior
