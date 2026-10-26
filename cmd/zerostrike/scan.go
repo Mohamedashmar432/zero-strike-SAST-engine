@@ -289,6 +289,11 @@ func scanCmd() *cobra.Command {
 			// Build diagnostics
 			var diags []analyzer.Diagnostic
 			for _, d := range result.Diagnostics {
+				// A skipped dependency scan reads as "no vulnerable dependencies" to every CI gate,
+				// so it must be visible in the build log, not only inside the report.
+				if strings.HasPrefix(d.Message, "SCA scan skipped") {
+					fmt.Fprintf(os.Stderr, "WARNING: dependency vulnerabilities were NOT checked: %s\n", d.Message)
+				}
 				diags = append(diags, analyzer.Diagnostic{
 					Severity: "info",
 					Message:  d.Message,

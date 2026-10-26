@@ -485,7 +485,9 @@ func deduplicateDeps(deps []Dependency) []Dependency {
 	seen := make(map[string]struct{}, len(deps))
 	out := deps[:0]
 	for _, d := range deps {
-		key := d.Ecosystem + "|" + d.Package + "|" + d.Version
+		// Per manifest: the same vulnerable package in two sub-projects is two places to fix, and
+		// each must be reported against its own manifest.
+		key := d.Ecosystem + "|" + d.Package + "|" + d.Version + "|" + d.Manifest
 		if _, ok := seen[key]; ok {
 			continue
 		}

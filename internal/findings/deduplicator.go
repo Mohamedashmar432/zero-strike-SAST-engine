@@ -95,7 +95,12 @@ func (d *defaultDeduplicator) Deduplicate(findings []core.Finding) []core.Findin
 	out := make([]core.Finding, 0, len(findings))
 	for _, f := range findings {
 		k := intraRunKey(f)
-		if class := normalizedClass(f); class != "" {
+		if f.Kind == core.FindingKindSCA {
+			// Dependency findings have no line: every advisory in one manifest sits at line 0 under
+			// the same rule ID, so the location key collapsed a whole lockfile into whichever advisory
+			// arrived first. Their identity is package + advisory (the fingerprint), per manifest.
+			k = "sca|" + f.Fingerprint + "|" + f.Location.File
+		} else if class := normalizedClass(f); class != "" {
 			k = classKey(class, f)
 		}
 		if i, dup := seen[k]; dup {

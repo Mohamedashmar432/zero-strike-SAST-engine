@@ -52,7 +52,13 @@ func (s *SCAScanner) Accepts(entry walker.FileEntry) bool {
 func (s *SCAScanner) Scan(ctx context.Context, files []walker.FileEntry) ([]core.Finding, []analyzer.Diagnostic, error) {
 	var deps []Dependency
 	var diags []analyzer.Diagnostic
+	locked := lockedDirs(files)
 	for _, f := range files {
+		// package.json holds ranges ("^4.17.15"), not installed versions; next to a lockfile it
+		// would report the range's floor as installed and flag vulnerabilities the lock already fixed.
+		if filepath.Base(f.Path) == "package.json" && locked[filepath.Dir(f.Path)] {
+			continue
+		}
 		data, err := os.ReadFile(f.Path)
 		if err != nil {
 			diags = append(diags, analyzer.Diagnostic{
@@ -75,6 +81,18 @@ func (s *SCAScanner) Scan(ctx context.Context, files []walker.FileEntry) ([]core
 	findings, scanDiags, err := s.scanDeps(ctx, deduplicateDeps(deps))
 	diags = append(diags, scanDiags...)
 	return findings, diags, err
+}
+
+// lockedDirs is the set of directories holding an npm-family lockfile.
+func lockedDirs(files []walker.FileEntry) map[string]bool {
+	out := map[string]bool{}
+	for _, f := range files {
+		switch filepath.Base(f.Path) {
+		case "package-lock.json", "yarn.lock", "pnpm-lock.yaml":
+			out[filepath.Dir(f.Path)] = true
+		}
+	}
+	return out
 }
 
 // scanDeps runs the OSV query for a resolved dependency list.
