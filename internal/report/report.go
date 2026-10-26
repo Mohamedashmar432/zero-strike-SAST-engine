@@ -20,6 +20,9 @@ type ScanStats struct {
 	ByScanner     map[string]int           // "sast" | "secret" | "sca" → count
 	ByKind        map[core.FindingKind]int // FindingKindSAST | FindingKindSecret | FindingKindSCA → count
 	Suppressed    int                      // findings filtered by allowlist
+	// AcceptedExemptions counts findings moved out of Findings because a portal admin accepted
+	// them (see Report.AcceptedExemptions). Not included in TotalFindings or BySeverity.
+	AcceptedExemptions int
 	// TierExcluded is the number of hardening/quality-tier findings left out
 	// of this report (see core.Tier); TierExcludedByRule lists them per rule
 	// ID. Both are zero/empty when the scan ran with --include-hardening.
@@ -38,9 +41,26 @@ type Report struct {
 	Branch         string
 	Hostname       string
 	Findings       []core.Finding
-	Stats          ScanStats
-	Diagnostics    []analyzer.Diagnostic
-	GroupBy        GroupBy
+	// AcceptedExemptions holds findings the scanner still detected but a portal admin has accepted
+	// as a false positive (or, for a dependency, an accepted risk). They are reported, never
+	// counted: not in Findings, Stats.TotalFindings, BySeverity or the exit code.
+	//
+	// The finding sits one level deeper ("Finding": {...}) on purpose. The CI gates customers
+	// already have in their pipeline YAML count `^      "Severity": "critical"` -- exactly six
+	// spaces, i.e. a field of a Findings element. Nested here, a Severity line is indented eight
+	// and those unchanged gates do not count it. TestReportLayoutContract locks this in.
+	AcceptedExemptions []ExemptedFinding
+	Stats              ScanStats
+	Diagnostics        []analyzer.Diagnostic
+	GroupBy            GroupBy
+}
+
+// ExemptedFinding is one finding matched by an admin-accepted exemption.
+type ExemptedFinding struct {
+	Fingerprint string
+	File        string // repo-relative, as the exemption names it
+	Kind        string // "false_positive" | "accepted_risk"
+	Finding     core.Finding
 }
 
 // Reporter renders a Report to an io.Writer in a specific format.

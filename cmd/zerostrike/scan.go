@@ -202,6 +202,7 @@ func scanCmd() *cobra.Command {
 			// expensive scan nobody can report.
 			var portalClient *portal.Client
 			var scanID string
+			var exemptions []portal.Exemption
 			if upload {
 				portalClient = portal.New(flagServer, flagToken)
 				resp, err := portalClient.CreateScan(ctx, portal.CreateScanRequest{
@@ -217,7 +218,14 @@ func scanCmd() *cobra.Command {
 					os.Exit(2)
 				}
 				scanID = resp.ScanID
+				exemptions = resp.AcceptedExemptions
 				fmt.Fprintf(os.Stderr, "scan registered for project %q (%s)\n", resp.ProjectName, resp.ProjectID)
+			} else if path := os.Getenv(exemptionsFileEnv); path != "" {
+				// Fail towards blocking: an unreadable list leaves every finding counted.
+				var lerr error
+				if exemptions, lerr = loadExemptionsFile(path); lerr != nil {
+					fmt.Fprintf(os.Stderr, "warning: could not read admin-accepted exemptions (%v); every finding will count\n", lerr)
+				}
 			}
 
 			// langreg is populated by each language package's cgo-gated init();
@@ -258,12 +266,23 @@ func scanCmd() *cobra.Command {
 				return fmt.Errorf("scan failed: %w", err)
 			}
 
+			// Admin-accepted exemptions (false positive / accepted dependency risk) are still
+			// detected and reported, but leave the counted findings: the stats, the exit code and the
+			// Findings array the CI gate greps all exclude them.
+			var exempted []report.ExemptedFinding
+			result.Findings, exempted = applyExemptions(result.Findings, exemptions, rootPath, absRoot)
+			if len(exempted) > 0 {
+				fmt.Fprintf(os.Stderr, "thinkShield: %d finding(s) accepted by a portal admin (false positive / accepted risk) -- reported, not counted\n", len(exempted))
+			}
+
 			// Build stats
 			stats := report.ScanStats{
 				FilesScanned:  result.FilesScanned,
 				FilesSkipped:  result.FilesSkipped,
 				TotalFindings: len(result.Findings),
 				Suppressed:    result.Suppressed,
+
+				AcceptedExemptions: len(exempted),
 
 				TierExcluded:       result.TierExcluded,
 				TierExcludedByRule: result.TierExcludedByRule,
@@ -310,8 +329,9 @@ func scanCmd() *cobra.Command {
 				GitCommit:      gitCommit,
 				Branch:         gitBranch,
 				Hostname:       hostname,
-				Findings:       result.Findings,
-				Stats:          stats,
+				Findings:           result.Findings,
+				AcceptedExemptions: exempted,
+				Stats:              stats,
 				Diagnostics:    diags,
 				GroupBy:        groupBy,
 			}

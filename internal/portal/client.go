@@ -67,6 +67,17 @@ type CreateScanResponse struct {
 	Status      string `json:"status"`
 	ProjectID   string `json:"project_id"`
 	ProjectName string `json:"project_name"`
+	// AcceptedExemptions are findings a portal admin reviewed and exempted from the CI gate
+	// (false positive, or accepted risk for a dependency). Absent on older portals.
+	AcceptedExemptions []Exemption `json:"accepted_exemptions"`
+}
+
+// Exemption identifies one admin-accepted finding: it is skipped only when BOTH the fingerprint and
+// the repo-relative file match, because the fingerprint itself carries no path.
+type Exemption struct {
+	Fingerprint string `json:"fingerprint"`
+	File        string `json:"file"`
+	Kind        string `json:"kind"` // "false_positive" | "accepted_risk"
 }
 
 // CreateScan registers a new scan with the portal and returns the

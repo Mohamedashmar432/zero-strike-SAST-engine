@@ -4,6 +4,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/portal"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/report"
 	jsonreport "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/report/json"
@@ -235,4 +237,70 @@ func runGit(ctx context.Context, dir string, args ...string) string {
 		return ""
 	}
 	return strings.TrimSpace(string(out))
+}
+
+// exemptionsFileEnv names a JSON file of exemptions (the portal's accepted_exemptions array) for a
+// scan run without --server/--token -- the Azure DevOps Classic scripts register the scan
+// themselves and hand the list over this way. An older scanner simply ignores the variable.
+const exemptionsFileEnv = "ZEROSTRIKE_ACCEPTED_EXEMPTIONS_FILE"
+
+// loadExemptionsFile reads exemptions from path. A missing or unreadable file is an error the caller
+// reports: silently ignoring it would make an exempted finding block the pipeline with no clue why.
+func loadExemptionsFile(path string) ([]portal.Exemption, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var out []portal.Exemption
+	if len(bytes.TrimSpace(data)) == 0 {
+		return nil, nil
+	}
+	if err := json.Unmarshal(data, &out); err != nil {
+		return nil, fmt.Errorf("parse %s: %w", path, err)
+	}
+	return out, nil
+}
+
+// repoRelative is the form the portal stores a finding's path in, so an exemption can be compared:
+// forward slashes, the scan root stripped (the scanner echoes an absolute root in every path when
+// it was started with one, e.g. Azure DevOps' $BUILD_SOURCESDIRECTORY), and no leading "./".
+func repoRelative(file, rootPath, absRoot string) string {
+	f := strings.ReplaceAll(file, "\\", "/")
+	for _, root := range []string{absRoot, rootPath} {
+		r := strings.TrimRight(strings.ReplaceAll(root, "\\", "/"), "/")
+		if r == "" || r == "." {
+			continue
+		}
+		if strings.HasPrefix(f, r+"/") {
+			f = f[len(r)+1:]
+			break
+		}
+	}
+	for strings.HasPrefix(f, "./") {
+		f = f[2:]
+	}
+	return f
+}
+
+// applyExemptions splits findings into those that count and those an admin-accepted exemption
+// matches -- by fingerprint AND repo-relative file, never by fingerprint alone.
+func applyExemptions(findings []core.Finding, exemptions []portal.Exemption, rootPath, absRoot string) ([]core.Finding, []report.ExemptedFinding) {
+	if len(exemptions) == 0 {
+		return findings, nil
+	}
+	kinds := make(map[[2]string]string, len(exemptions))
+	for _, e := range exemptions {
+		kinds[[2]string{e.Fingerprint, repoRelative(e.File, "", "")}] = e.Kind
+	}
+	active := make([]core.Finding, 0, len(findings))
+	var exempted []report.ExemptedFinding
+	for _, f := range findings {
+		rel := repoRelative(f.Location.File, rootPath, absRoot)
+		if kind, ok := kinds[[2]string{f.Fingerprint, rel}]; ok && f.Fingerprint != "" {
+			exempted = append(exempted, report.ExemptedFinding{Fingerprint: f.Fingerprint, File: rel, Kind: kind, Finding: f})
+			continue
+		}
+		active = append(active, f)
+	}
+	return active, exempted
 }
