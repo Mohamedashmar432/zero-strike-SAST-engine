@@ -331,6 +331,7 @@ func scanCmd() *cobra.Command {
 				Hostname:       hostname,
 				Findings:           result.Findings,
 				AcceptedExemptions: exempted,
+				Dependencies:       buildDependencyRefs(result.Dependencies, rootPath, absRoot),
 				Stats:              stats,
 				Diagnostics:    diags,
 				GroupBy:        groupBy,

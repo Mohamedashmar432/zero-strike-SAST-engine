@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/analyzer"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
@@ -18,6 +19,12 @@ import (
 type SCAScanner struct {
 	client  *osvClient
 	onError string // "warn" | "fail"
+
+	// inventory is every dependency parsed in the last Scan, deduped per manifest. nil until
+	// Scan has run; non-nil (possibly empty) afterwards, so a consumer can tell "SCA did not
+	// run" from "SCA ran and found no manifests".
+	mu        sync.Mutex
+	inventory []Dependency
 }
 
 // New returns an SCAScanner. onError controls behaviour on network failure.
@@ -88,9 +95,24 @@ func (s *SCAScanner) Scan(ctx context.Context, files []walker.FileEntry) ([]core
 		}
 		deps = append(deps, fileDeps...)
 	}
-	findings, scanDiags, err := s.scanDeps(ctx, deduplicateDeps(deps))
+	deps = deduplicateDeps(deps)
+	s.mu.Lock()
+	s.inventory = append([]Dependency{}, deps...) // non-nil even when empty
+	s.mu.Unlock()
+	findings, scanDiags, err := s.scanDeps(ctx, deps)
 	diags = append(diags, scanDiags...)
 	return findings, diags, err
+}
+
+// Inventory returns a copy of every dependency the last Scan parsed (not only the vulnerable
+// ones), or nil if Scan has not run. An empty non-nil slice means Scan ran and found none.
+func (s *SCAScanner) Inventory() []Dependency {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.inventory == nil {
+		return nil
+	}
+	return append([]Dependency{}, s.inventory...)
 }
 
 // lockedDirs returns the directories holding an npm-family lockfile and those holding a NuGet

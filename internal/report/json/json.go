@@ -29,6 +29,7 @@ type groupedDoc struct {
 	GitCommit      string
 	Branch         string
 	Hostname       string
+	Dependencies   []report.DependencyRef `json:"Dependencies,omitzero"`
 	Stats          report.ScanStats
 	Diagnostics    []analyzer.Diagnostic
 	GroupBy        report.GroupBy
@@ -52,6 +53,7 @@ func (r *jsonReporter) Render(rep *report.Report, dest io.Writer) error {
 		GitCommit:      rep.GitCommit,
 		Branch:         rep.Branch,
 		Hostname:       rep.Hostname,
+		Dependencies:   rep.Dependencies,
 		Stats:          rep.Stats,
 		Diagnostics:    rep.Diagnostics,
 		GroupBy:        rep.GroupBy,

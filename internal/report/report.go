@@ -50,9 +50,26 @@ type Report struct {
 	// spaces, i.e. a field of a Findings element. Nested here, a Severity line is indented eight
 	// and those unchanged gates do not count it. TestReportLayoutContract locks this in.
 	AcceptedExemptions []ExemptedFinding
+	// Dependencies is the full inventory the SCA scanner parsed from the manifests, vulnerable or
+	// not, so the portal can match advisories published after this scan. Sorted by ecosystem,
+	// package, version, manifest. omitzero (not omitempty) is deliberate: nil means SCA did not
+	// run and the key is absent, while an empty non-nil slice means SCA ran over no manifests and
+	// serialises as []. The element has no Severity field, so the CI-gate grep cannot match it.
+	Dependencies []DependencyRef `json:"Dependencies,omitzero"`
 	Stats              ScanStats
 	Diagnostics        []analyzer.Diagnostic
 	GroupBy            GroupBy
+}
+
+// DependencyRef is one parsed dependency. Manifest is repo-relative with forward slashes.
+// Direct is whatever the manifest parser said; the yarn and pnpm parsers set it true for every
+// entry, so consumers must not trust it for those ecosystems' lockfiles.
+type DependencyRef struct {
+	Ecosystem string
+	Package   string
+	Version   string
+	Manifest  string
+	Direct    bool
 }
 
 // ExemptedFinding is one finding matched by an admin-accepted exemption.

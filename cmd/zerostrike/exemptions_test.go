@@ -2,15 +2,20 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/portal"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/report"
 	jsonreport "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/report/json"
+	scascan "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/scanner/sca"
 )
 
 func finding(fp, file string, sev core.Severity) core.Finding {
@@ -92,5 +97,91 @@ func TestLoadExemptionsFile(t *testing.T) {
 	}
 	if _, err := loadExemptionsFile(filepath.Join(t.TempDir(), "missing.json")); err == nil {
 		t.Error("missing file must be reported, not ignored")
+	}
+}
+
+// Dependencies must not disturb the gate: nothing inside it may look like a Findings element's
+// Severity field (six spaces), and the existing counted/exempted layout must be unchanged.
+func TestReportLayoutContractWithDependencies(t *testing.T) {
+	active, exempted := applyExemptions(
+		[]core.Finding{finding("fp1", "a.py", core.SeverityCritical), finding("fp2", "b.py", core.SeverityHigh)},
+		[]portal.Exemption{{Fingerprint: "fp2", File: "b.py", Kind: "accepted_risk"}},
+		".", "/repo",
+	)
+	deps := buildDependencyRefs([]scascan.Dependency{
+		{Ecosystem: "PyPI", Package: "requests", Version: "2.31.0", Manifest: "/repo/requirements.txt", Direct: true},
+		{Ecosystem: "npm", Package: "lodash", Version: "4.17.21", Manifest: "/repo/web/package-lock.json"},
+	}, ".", "/repo")
+	rep := &report.Report{Findings: active, AcceptedExemptions: exempted, Dependencies: deps}
+	var buf bytes.Buffer
+	if err := jsonreport.New().Render(rep, &buf); err != nil {
+		t.Fatal(err)
+	}
+	count := func(sev string) int {
+		return len(regexp.MustCompile(`(?m)^      "Severity": "` + sev + `"`).FindAllIndex(buf.Bytes(), -1))
+	}
+	if count("critical") != 1 || count("high") != 0 {
+		t.Errorf("gate counts changed: critical=%d high=%d", count("critical"), count("high"))
+	}
+	var doc struct{ Dependencies []map[string]any }
+	if err := json.Unmarshal(buf.Bytes(), &doc); err != nil {
+		t.Fatal(err)
+	}
+	if len(doc.Dependencies) != 2 {
+		t.Fatalf("Dependencies has %d entries, want 2", len(doc.Dependencies))
+	}
+	for _, d := range doc.Dependencies {
+		if _, bad := d["Severity"]; bad {
+			t.Error("a Dependencies element carries a Severity key")
+		}
+	}
+	if doc.Dependencies[0]["Manifest"] != "requirements.txt" || doc.Dependencies[1]["Manifest"] != "web/package-lock.json" {
+		t.Errorf("manifests not repo-relative/sorted: %v", doc.Dependencies)
+	}
+}
+
+func TestBuildDependencyRefsSortedCappedAndNilAware(t *testing.T) {
+	if got := buildDependencyRefs(nil, ".", "/repo"); got != nil {
+		t.Errorf("nil inventory = %v, want nil", got)
+	}
+	if got := buildDependencyRefs([]scascan.Dependency{}, ".", "/repo"); got == nil || len(got) != 0 {
+		t.Errorf("empty inventory = %#v, want empty non-nil", got)
+	}
+	got := buildDependencyRefs([]scascan.Dependency{
+		{Ecosystem: "npm", Package: "b", Version: "1", Manifest: "m"},
+		{Ecosystem: "PyPI", Package: "z", Version: "1", Manifest: "m"},
+		{Ecosystem: "npm", Package: "a", Version: "2", Manifest: "m"},
+		{Ecosystem: "npm", Package: "a", Version: "1", Manifest: "m"},
+	}, ".", "/repo")
+	var order []string
+	for _, d := range got {
+		order = append(order, d.Ecosystem+"/"+d.Package+"@"+d.Version)
+	}
+	if want := []string{"PyPI/z@1", "npm/a@1", "npm/a@2", "npm/b@1"}; !reflect.DeepEqual(order, want) {
+		t.Errorf("order = %v, want %v", order, want)
+	}
+	big := make([]scascan.Dependency, maxDependencyRefs+10)
+	for i := range big {
+		big[i] = scascan.Dependency{Ecosystem: "npm", Package: fmt.Sprintf("p%06d", i), Version: "1", Manifest: "m"}
+	}
+	if n := len(buildDependencyRefs(big, ".", "/repo")); n != maxDependencyRefs {
+		t.Errorf("cap: got %d, want %d", n, maxDependencyRefs)
+	}
+}
+
+// Absent when SCA is off, [] when SCA ran over a tree with no manifests.
+func TestDependenciesKeyPresence(t *testing.T) {
+	render := func(deps []report.DependencyRef) string {
+		var buf bytes.Buffer
+		if err := jsonreport.New().Render(&report.Report{Dependencies: deps}, &buf); err != nil {
+			t.Fatal(err)
+		}
+		return buf.String()
+	}
+	if out := render(buildDependencyRefs(nil, ".", "/repo")); strings.Contains(out, `"Dependencies"`) {
+		t.Error("Dependencies key present although SCA did not run")
+	}
+	if out := render(buildDependencyRefs([]scascan.Dependency{}, ".", "/repo")); !regexp.MustCompile(`"Dependencies": \[\]`).MatchString(out) {
+		t.Errorf("empty inventory must serialise as []:\n%s", out)
 	}
 }

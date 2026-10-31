@@ -37,6 +37,9 @@ type ScanResult struct {
 	// count down by rule ID so a reader can see exactly what was held back.
 	TierExcluded       int
 	TierExcludedByRule map[string]int
+	// Dependencies is the SCA scanner's full parsed inventory: nil when SCA was not enabled,
+	// empty non-nil when it ran over no manifests.
+	Dependencies []scascan.Dependency
 }
 
 type scanDiagnostic struct {
@@ -52,6 +55,7 @@ type ScanPipeline struct {
 	collector findings.Collector
 	dedup     findings.Deduplicator
 	allowList *findings.AllowList
+	sca       *scascan.SCAScanner // nil unless cfg.EnableSCA
 }
 
 // New creates a ScanPipeline. Returns an error if rules fail to load or
@@ -93,6 +97,7 @@ func New(cfg ScanConfig) (*ScanPipeline, error) {
 	findingCache, astCache := openCache(cfg, ruleSetHash)
 
 	var scanners []scanner.Scanner
+	var sca *scascan.SCAScanner
 	scanners = append(scanners, sast.New(allRules, cfg.RootPath, findingCache, astCache, cfg.EnableGraphs, cfg.WorkerCount))
 	if cfg.EnableSecrets {
 		scanners = append(scanners, secrets.New())
@@ -102,7 +107,8 @@ func New(cfg ScanConfig) (*ScanPipeline, error) {
 		if onError == "" {
 			onError = "warn"
 		}
-		scanners = append(scanners, scascan.New(onError))
+		sca = scascan.New(onError)
+		scanners = append(scanners, sca)
 	}
 	if cfg.EnableFrameworkChecks {
 		scanners = append(scanners, framework.New(cfg.RootPath))
@@ -128,6 +134,7 @@ func New(cfg ScanConfig) (*ScanPipeline, error) {
 		collector: findings.NewCollector(),
 		dedup:     findings.NewDeduplicator(),
 		allowList: al,
+		sca:       sca,
 	}, nil
 }
 
@@ -349,5 +356,8 @@ func (p *ScanPipeline) Run(ctx context.Context) (*ScanResult, error) {
 	findings.Correlate(all)
 
 	result.Findings = all
+	if p.sca != nil {
+		result.Dependencies = p.sca.Inventory()
+	}
 	return &result, nil
 }

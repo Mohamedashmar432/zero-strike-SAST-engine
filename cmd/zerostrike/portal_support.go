@@ -11,12 +11,14 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"sort"
 	"strings"
 
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/portal"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/report"
 	jsonreport "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/report/json"
+	scascan "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/scanner/sca"
 )
 
 // uploadFlagsError enforces that --server/--token are either both set
@@ -303,4 +305,48 @@ func applyExemptions(findings []core.Finding, exemptions []portal.Exemption, roo
 		active = append(active, f)
 	}
 	return active, exempted
+}
+
+// maxDependencyRefs bounds Report.Dependencies so a monorepo with an enormous lockfile set cannot
+// produce an unbounded report. Beyond it the sorted list is truncated, with a warning.
+const maxDependencyRefs = 50000
+
+// buildDependencyRefs turns the SCA inventory into the report's sorted, repo-relative
+// Dependencies array. nil in (SCA did not run) gives nil out, so the key is omitted; an empty
+// non-nil inventory gives an empty non-nil slice, which serialises as [].
+//
+// Direct is passed through untouched. The yarn and pnpm parsers set Direct=true for every
+// entry, so consumers must not trust it for those lockfiles.
+func buildDependencyRefs(deps []scascan.Dependency, rootPath, absRoot string) []report.DependencyRef {
+	if deps == nil {
+		return nil
+	}
+	out := make([]report.DependencyRef, 0, len(deps))
+	for _, d := range deps {
+		out = append(out, report.DependencyRef{
+			Ecosystem: d.Ecosystem,
+			Package:   d.Package,
+			Version:   d.Version,
+			Manifest:  repoRelative(d.Manifest, rootPath, absRoot),
+			Direct:    d.Direct,
+		})
+	}
+	sort.Slice(out, func(i, j int) bool {
+		a, b := out[i], out[j]
+		if a.Ecosystem != b.Ecosystem {
+			return a.Ecosystem < b.Ecosystem
+		}
+		if a.Package != b.Package {
+			return a.Package < b.Package
+		}
+		if a.Version != b.Version {
+			return a.Version < b.Version
+		}
+		return a.Manifest < b.Manifest
+	})
+	if len(out) > maxDependencyRefs {
+		fmt.Fprintf(os.Stderr, "WARNING: dependency inventory truncated to %d of %d entries; the portal will not match new advisories against the rest\n", maxDependencyRefs, len(out))
+		out = out[:maxDependencyRefs]
+	}
+	return out
 }
