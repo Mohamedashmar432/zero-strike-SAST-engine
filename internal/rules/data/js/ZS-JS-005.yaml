@@ -33,4 +33,7 @@ match:
   lhs_identifier: "outerHTML"
   filters:
     - tainted_rhs: true
+    - not:
+        kind: assignment
+        rhs_literal: "^\\s*(?:(?:DOMPurify|purify)\\.sanitize|sanitizeHtml|filterXSS)\\((?:[^()]|\\([^()]*\\))*\\)\\s*$"
 fix_suggestion: "Use createElement/appendChild instead of outerHTML, or sanitize with DOMPurify before assignment."

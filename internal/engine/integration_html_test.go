@@ -59,6 +59,8 @@ func TestIntegration_HTMLRulesFire(t *testing.T) {
 		{"ZS-HTML-008", `<input type="password" autocomplete="on">`},
 		{"ZS-HTML-009", `<meta http-equiv="refresh" content="0;url=http://evil.com">`},
 		{"ZS-HTML-010", `<iframe src="https://x.com" sandbox="allow-scripts allow-same-origin"></iframe>`},
+		{"ZS-HTML-023", `<div>{{{ user.bio }}}</div>`},
+		{"ZS-HTML-024", `<div ng-bind-html-unsafe="post.body"></div><div x-html="comment"></div><span data-bind="html: bio"></span>`},
 	}
 	for _, c := range cases {
 		if !hasRule(matchHTMLSource(t, idx, c.src), c.rule) {
@@ -85,6 +87,8 @@ func TestIntegration_HTMLRulesStaySilent(t *testing.T) {
 		{"ZS-HTML-008", `<input type="password" autocomplete="new-password">`},
 		{"ZS-HTML-009", `<meta charset="utf-8">`},
 		{"ZS-HTML-010", `<iframe src="https://x.com" sandbox="allow-scripts"></iframe>`},
+		{"ZS-HTML-023", `<div>{{ user.bio }}</div>`},
+		{"ZS-HTML-024", `<div x-html="'<b>s</b>'"></div><span data-bind="text: bio"></span>`},
 	}
 	for _, c := range cases {
 		if hasRule(matchHTMLSource(t, idx, c.src), c.rule) {

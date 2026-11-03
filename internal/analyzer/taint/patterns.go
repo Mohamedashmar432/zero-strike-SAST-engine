@@ -36,10 +36,19 @@ var jsPatterns = languagePatterns{
 		regexp.MustCompile(`req\.(query|body|params)`),
 		regexp.MustCompile(`location\.(search|hash)`),
 		regexp.MustCompile(`window\.location`),
+		regexp.MustCompile(`document\.(location|URL|documentURI|baseURI|referrer|cookie)\b`),
+		regexp.MustCompile(`(^|[^\w$.])location\.href\b`),
+		regexp.MustCompile(`window\.name\b`),
+		regexp.MustCompile(`(local|session)Storage\.getItem\(`),
+		regexp.MustCompile(`searchParams\.get\(|useSearchParams\(|useParams\(|router\.query\b`),
+		regexp.MustCompile(`(clipboardData|dataTransfer)\.getData\(`),
+		regexp.MustCompile(`(^|[^\w$.])(event|evt|ev|e)\.data\b`),
 	},
 	Sanitizers: []*regexp.Regexp{
 		regexp.MustCompile(`DOMPurify\.sanitize\(`),
 		regexp.MustCompile(`encodeURIComponent\(`),
+		regexp.MustCompile(`sanitizeHtml\(`),
+		regexp.MustCompile(`filterXSS\(`),
 	},
 }
 

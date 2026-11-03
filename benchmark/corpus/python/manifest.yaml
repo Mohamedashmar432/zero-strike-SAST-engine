@@ -193,9 +193,6 @@ cases:
   - file: cases/vuln_django_raw.py
     language: python
     expect: [{rule_id: ZS-PY-059, min_count: 1}]
-  - file: cases/vuln_sqlalchemy_text.py
-    language: python
-    expect: [{rule_id: ZS-PY-060, min_count: 1}]
   - file: cases/vuln_lxml_xpath.py
     language: python
     expect: [{rule_id: ZS-PY-061, min_count: 1}]

@@ -1,0 +1,32 @@
+id: ZS-JS-159
+lifecycle: released
+name: Lit unsafeHTML/unsafeSVG with Dynamic Value
+version: "1.0.0"
+language: javascript
+category: xss
+severity: medium
+confidence: medium
+cwe:
+  - CWE-79
+owasp:
+  - "A05:2025"
+rationale: |
+  Lit's unsafeHTML() and unsafeSVG() directives render a string as raw
+  HTML or SVG, bypassing the template engine's escaping. A non-constant
+  argument that carries untrusted content leads to DOM XSS.
+description: |
+  Detects calls to unsafeHTML()/unsafeSVG() that are bound to an import
+  (so a locally defined helper of the same name is not flagged) and whose
+  argument is not a constant.
+message: "unsafeHTML/unsafeSVG renders a dynamic value as raw markup - sanitize with DOMPurify or render as text"
+references:
+  - https://lit.dev/docs/templates/directives/#unsafehtml
+  - https://owasp.org/www-community/attacks/xss/
+tags: [xss, lit, unsafehtml]
+match:
+  kind: call
+  filters:
+    - callee_pattern: "^unsafe(HTML|SVG)$"
+    - callee_resolved: true
+    - argument_not_constant: 0
+fix_suggestion: "Render untrusted content as plain text in the template, or pass it through DOMPurify.sanitize() before unsafeHTML()."

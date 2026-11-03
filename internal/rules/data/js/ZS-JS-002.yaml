@@ -31,4 +31,7 @@ match:
   lhs_identifier: "innerHTML"
   filters:
     - tainted_rhs: true
+    - not:
+        kind: assignment
+        rhs_literal: "^\\s*(?:(?:DOMPurify|purify)\\.sanitize|sanitizeHtml|filterXSS)\\((?:[^()]|\\([^()]*\\))*\\)\\s*$"
 fix_suggestion: "Use textContent for text, or a sanitization library (DOMPurify) before assigning to innerHTML."

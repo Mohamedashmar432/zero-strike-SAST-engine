@@ -1,0 +1,35 @@
+id: ZS-HTML-024
+lifecycle: released
+name: Unsafe HTML-binding directive (ng-bind-html-unsafe, x-html, Knockout html binding)
+version: "1.0.0"
+language: html
+category: xss
+severity: medium
+confidence: medium
+cwe:
+  - CWE-79
+owasp:
+  - "A05:2025"
+rationale: |
+  ng-bind-html-unsafe (legacy AngularJS), Alpine's x-html and Knockout's
+  data-bind="html: ..." render a bound expression as raw HTML with no
+  sanitization. If the bound value is influenced by an attacker, the markup and
+  any scripts or event handlers in it execute in the page.
+description: |
+  Flags an element carrying an ng-bind-html-unsafe attribute, an x-html
+  attribute whose value is an expression (not a quoted string literal), or a
+  Knockout data-bind containing an html: binding. ng-bind-html (the sanitizing
+  variant) is covered separately by ZS-CFG-020.
+message: "HTML-binding directive renders its value as unsanitized HTML — bind text instead or sanitize the value"
+references:
+  - https://alpinejs.dev/directives/html
+  - https://knockoutjs.com/documentation/html-binding.html
+tags: [xss, angularjs, alpine, knockout, html]
+match:
+  kind: call
+  filters:
+    - any_of:
+        - kwarg: {name_pattern: "^(data-)?ng-bind-html-unsafe$", value_pattern: ""}
+        - kwarg: {name: "x-html", value_pattern: "^\\s*[^'\"`\\s]"}
+        - kwarg: {name: "data-bind", value_pattern: "(^|[,{]\\s*)html\\s*:"}
+fix_suggestion: "Bind plain text (x-text, ng-bind, text:) or sanitize the value with DOMPurify before using an HTML-binding directive."

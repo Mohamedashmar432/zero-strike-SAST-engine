@@ -1,0 +1,32 @@
+id: ZS-TS-160
+lifecycle: released
+name: Lit unsafeHTML/unsafeSVG with dynamic value
+version: "1.0.0"
+language: typescript
+category: xss
+severity: medium
+confidence: medium
+cwe:
+  - CWE-79
+owasp:
+  - "A05:2025"
+rationale: |
+  Lit's unsafeHTML() and unsafeSVG() directives render a string as raw markup,
+  disabling Lit's default escaping. A dynamic argument that is not sanitized is
+  an XSS sink. Ported verbatim from ZS-JS-159, same match shape.
+description: |
+  Detects calls to unsafeHTML() or unsafeSVG() that resolve to an import
+  (so a locally defined function with the same name is ignored) and take a
+  non-constant argument.
+message: "Lit unsafeHTML/unsafeSVG called with a dynamic value — sanitize the markup first or render it as text"
+references:
+  - https://lit.dev/docs/templates/directives/#unsafehtml
+  - https://owasp.org/www-community/attacks/xss/
+tags: [xss, lit, unsafehtml]
+match:
+  kind: call
+  filters:
+    - callee_pattern: "^unsafe(HTML|SVG)$"
+    - callee_resolved: true
+    - argument_not_constant: 0
+fix_suggestion: "Render values as text in the template, or sanitize with DOMPurify before passing the string to unsafeHTML()/unsafeSVG()."

@@ -1,0 +1,41 @@
+id: ZS-JS-153
+lifecycle: released
+name: setAttribute on* Handler or Tainted Attribute Name
+version: "1.0.0"
+language: javascript
+category: xss
+severity: high
+confidence: medium
+cwe:
+  - CWE-79
+owasp:
+  - "A05:2025"
+rationale: |
+  Setting an on* attribute (onclick, onerror, onload, ...) with
+  setAttribute() compiles the value as JavaScript in the page's origin. If
+  the value is attacker-influenced this is direct script injection. Likewise
+  a tainted attribute NAME lets an attacker choose an event-handler
+  attribute and supply its code.
+description: |
+  Detects setAttribute() calls where the attribute name is a literal on*
+  handler and the value is tainted, or where the attribute name itself is
+  tainted by a real untrusted source.
+message: "setAttribute() sets an event-handler attribute from tainted data, or uses a tainted attribute name - this executes attacker-controlled script"
+references:
+  - https://owasp.org/www-community/attacks/xss/
+  - https://developer.mozilla.org/en-US/docs/Web/API/Element/setAttribute
+tags: [xss, dom-injection, setattribute, event-handler]
+match:
+  kind: call
+  callee: setAttribute
+  callee_suffix: true
+  filters:
+    - any_of:
+        - argument_literal_matches: "(?i)^on[a-z]+$"
+          argument_literal_index: 0
+          tainted_argument: true
+          tainted_argument_index: 1
+        - tainted_argument: true
+          tainted_argument_index: 0
+          require_real_source: true
+fix_suggestion: "Never build event handlers from strings: attach a function with addEventListener, and use an allowlist for any dynamic attribute name."

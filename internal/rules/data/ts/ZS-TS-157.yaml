@@ -1,0 +1,40 @@
+id: ZS-TS-157
+lifecycle: released
+name: message listener without origin check
+version: "1.0.0"
+language: typescript
+category: security-misconfiguration
+severity: medium
+confidence: medium
+cwe:
+  - CWE-346
+  - CWE-79
+owasp:
+  - "A05:2025"
+rationale: |
+  A window 'message' listener receives data from any frame or window that can
+  call postMessage on this page. Without checking event.origin, any origin can
+  drive the handler, which commonly feeds the data into DOM sinks or
+  privileged actions. Ported verbatim from ZS-JS-156, same match shape.
+description: |
+  Detects window.addEventListener('message', handler) registrations whose
+  inline handler never mentions an origin check. Handlers passed by name and
+  listeners on other targets (WebSocket, Worker, EventSource) are not
+  reported.
+message: "message event listener does not verify event.origin — any origin can send data to this handler"
+references:
+  - https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage#security_concerns
+  - https://cwe.mitre.org/data/definitions/346.html
+tags: [postmessage, origin-validation, dom]
+match:
+  kind: call
+  filters:
+    - callee_pattern: "^((window|globalThis)\\.)?addEventListener$"
+    - argument_literal_matches: "^message$"
+      argument_literal_index: 0
+    - argument_kind_not_at: {index: 1, kinds: [identifier, attribute, call]}
+    - not:
+        kind: call
+        filters:
+          - enclosing_function_mentions: "^origin$"
+fix_suggestion: "Compare event.origin against an explicit allowlist of trusted origins at the top of the handler and return early on mismatch."

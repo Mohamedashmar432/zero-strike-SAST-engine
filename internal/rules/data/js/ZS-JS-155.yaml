@@ -1,0 +1,40 @@
+id: ZS-JS-155
+lifecycle: released
+name: href/action/formAction Property Assigned a Tainted URL
+version: "1.0.0"
+language: javascript
+category: xss
+severity: medium
+confidence: medium
+cwe:
+  - CWE-79
+owasp:
+  - "A05:2025"
+rationale: |
+  Assigning an untrusted value to an anchor's href, a form's action or a
+  button's formAction lets an attacker supply a javascript: URL (script
+  runs when the user clicks or submits) or redirect form data to another
+  origin. This rule covers element properties; assignments to
+  location.href and javascript: literals are owned by ZS-JS-046 and
+  ZS-JS-054.
+description: |
+  Detects assignments to a .href, .action or .formAction property whose
+  right-hand side derives from a real untrusted source.
+message: "URL property assigned from tainted data - allow only http/https schemes or same-origin paths"
+references:
+  - https://owasp.org/www-community/attacks/xss/
+  - https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html
+tags: [xss, dom-injection, href, form-action]
+match:
+  kind: assignment
+  lhs_identifier: "\\.(href|action|formAction)$"
+  filters:
+    - tainted_rhs: true
+      require_real_source: true
+    - not:
+        kind: assignment
+        lhs_identifier: "(^|\\.)location\\.href$"
+    - not:
+        kind: assignment
+        rhs_literal: "^[\"'`]\\s*javascript:"
+fix_suggestion: "Parse the value with new URL() and permit only http: and https: schemes (or a same-origin relative path) before assigning it."

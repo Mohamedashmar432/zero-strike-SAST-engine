@@ -1,0 +1,44 @@
+id: ZS-JS-154
+lifecycle: released
+name: URL-Bearing Attribute Set from Tainted Data
+version: "1.0.0"
+language: javascript
+category: xss
+severity: medium
+confidence: medium
+cwe:
+  - CWE-79
+owasp:
+  - "A05:2025"
+rationale: |
+  Attributes such as href, src, action, formaction, xlink:href, srcdoc and
+  data are interpreted as URLs or documents by the browser. Setting them
+  from untrusted input permits javascript: and data: URLs (script
+  execution on activation or load), attacker-controlled form targets, and
+  srcdoc HTML injection.
+description: |
+  Detects setAttribute(name, value) and setAttributeNS(ns, name, value)
+  where name is a literal URL-bearing attribute and the value comes from a
+  real untrusted source.
+message: "URL-bearing attribute set from tainted data - validate the scheme against an allowlist (http/https) before assigning"
+references:
+  - https://owasp.org/www-community/attacks/xss/
+  - https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html
+tags: [xss, dom-injection, setattribute, url-attribute]
+match:
+  kind: call
+  filters:
+    - any_of:
+        - callee_pattern: "(^|\\.)setAttribute$"
+          argument_literal_matches: "(?i)^(href|src|action|formaction|xlink:href|srcdoc|data)$"
+          argument_literal_index: 0
+          tainted_argument: true
+          tainted_argument_index: 1
+          require_real_source: true
+        - callee_pattern: "(^|\\.)setAttributeNS$"
+          argument_literal_matches: "(?i)^(xlink:)?href$"
+          argument_literal_index: 1
+          tainted_argument: true
+          tainted_argument_index: 2
+          require_real_source: true
+fix_suggestion: "Parse the value with new URL() and allow only http: and https: schemes (or a same-origin relative path) before setting the attribute."

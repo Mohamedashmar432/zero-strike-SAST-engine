@@ -1,0 +1,35 @@
+id: ZS-TS-163
+lifecycle: released
+name: JSON.stringify inside inline script without escaping
+version: "1.0.0"
+language: typescript
+category: xss
+severity: medium
+confidence: medium
+cwe:
+  - CWE-79
+owasp:
+  - "A05:2025"
+rationale: |
+  Embedding JSON.stringify(data) in an inline <script> block does not escape
+  the "<" character, so a value containing </script><script>... breaks out of
+  the script element and runs attacker markup. Ported verbatim from ZS-JS-162,
+  same match shape.
+description: |
+  Detects string/template literals containing an inline <script> element with a
+  ${JSON.stringify(...)} interpolation, unless the literal also escapes "<"
+  (replace(/</...), <) or uses a serializer such as serialize-javascript,
+  jsesc, escapeJson or htmlEscapeJson.
+message: "JSON.stringify output embedded in an inline <script> without escaping '<' — </script> breakout (XSS)"
+references:
+  - https://owasp.org/www-community/attacks/xss/
+  - https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html
+tags: [xss, ssr, json, inline-script]
+match:
+  kind: literal
+  literal: "(?is)<script\\b[^>]*>[^`]*\\$\\{\\s*JSON\\.stringify\\("
+  filters:
+    - not:
+        kind: literal
+        literal: "(?i)(\\.replace\\(\\s*/<|\\\\u003c|serialize\\(|jsesc|escapeJson|htmlEscapeJson)"
+fix_suggestion: "Escape '<' as \\u003c in the serialized JSON (or use serialize-javascript), or ship the state in a data attribute / type=application/json script."

@@ -31,4 +31,7 @@ match:
   lhs_identifier: "\\.srcdoc$"
   filters:
     - tainted_rhs: true
+    - not:
+        kind: assignment
+        rhs_literal: "^\\s*(?:(?:DOMPurify|purify)\\.sanitize|sanitizeHtml|filterXSS)\\((?:[^()]|\\([^()]*\\))*\\)\\s*$"
 fix_suggestion: "Never build srcdoc content from user input; if unavoidable, sanitize with DOMPurify and add a restrictive sandbox attribute."

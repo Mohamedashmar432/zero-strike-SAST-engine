@@ -338,3 +338,90 @@ cases:
   - file: cases/vuln_g3_140.js
     language: javascript
     expect: [{rule_id: ZS-JS-150, min_count: 1}]
+  - file: cases/vuln_xss_receiver_insert_adjacent.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-047, min_count: 1}]
+  - file: cases/vuln_xss_receiver_post_message.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-055, min_count: 1}]
+  - file: cases/vuln_xss_receiver_location_assign.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-046, min_count: 2}, {rule_id: ZS-JS-050, min_count: 1}, {rule_id: ZS-JS-051, min_count: 1}]
+  - file: cases/vuln_xss_receiver_partial_sanitize.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-002, min_count: 1}, {rule_id: ZS-JS-005, min_count: 1}, {rule_id: ZS-JS-053, min_count: 1}]
+  - file: cases/clean_xss_inline_sanitizer.js
+    language: javascript
+    expect: []
+  - file: cases/vuln_xss_unsafe_parse.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-151, min_count: 1}]
+  - file: cases/clean_xss_unsafe_parse.js
+    language: javascript
+    expect: []
+  - file: cases/vuln_xss_jquery_html.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-152, min_count: 1}]
+  - file: cases/clean_xss_jquery_html.js
+    language: javascript
+    expect: []
+  - file: cases/vuln_xss_setattr_handler.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-153, min_count: 1}]
+  - file: cases/clean_xss_setattr_handler.js
+    language: javascript
+    expect: []
+  - file: cases/vuln_xss_url_attr.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-154, min_count: 1}]
+  - file: cases/clean_xss_url_attr.js
+    language: javascript
+    expect: []
+  - file: cases/vuln_xss_url_prop.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-155, min_count: 1}]
+  - file: cases/clean_xss_url_prop.js
+    language: javascript
+    expect: []
+  - file: cases/vuln_xss_message_origin.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-156, min_count: 1}]
+  - file: cases/clean_xss_message_origin.js
+    language: javascript
+    expect: []
+  - file: cases/vuln_xss_host_check.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-157, min_count: 1}]
+  - file: cases/clean_xss_host_check.js
+    language: javascript
+    expect: []
+  - file: cases/vuln_xss_react_html.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-158, min_count: 1}]
+  - file: cases/clean_xss_react_html.js
+    language: javascript
+    expect: []
+  - file: cases/vuln_xss_lit_unsafe.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-159, min_count: 1}]
+  - file: cases/clean_xss_lit_unsafe.js
+    language: javascript
+    expect: []
+  - file: cases/vuln_xss_sce_trust.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-160, min_count: 1}]
+  - file: cases/clean_xss_sce_trust.js
+    language: javascript
+    expect: []
+  - file: cases/vuln_xss_safestring.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-161, min_count: 1}]
+  - file: cases/clean_xss_safestring.js
+    language: javascript
+    expect: []
+  - file: cases/vuln_xss_json_script.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-162, min_count: 1}]
+  - file: cases/clean_xss_json_script.js
+    language: javascript
+    expect: []

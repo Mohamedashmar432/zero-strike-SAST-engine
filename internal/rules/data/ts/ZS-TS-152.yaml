@@ -1,0 +1,35 @@
+id: ZS-TS-152
+lifecycle: released
+name: Unsafe HTML parsing API with tainted markup
+version: "1.0.0"
+language: typescript
+category: xss
+severity: high
+confidence: medium
+cwe:
+  - CWE-79
+owasp:
+  - "A05:2025"
+rationale: |
+  setHTMLUnsafe(), parseHTMLUnsafe() and createContextualFragment() parse a
+  string as HTML with no sanitization at all (the safe setHTML() variant is
+  the sanitizing one). When the markup is derived from untrusted input,
+  embedded event handlers, <img onerror=...> payloads and javascript: URIs run
+  in the victim's session. Ported verbatim from ZS-JS-151, same match shape.
+description: |
+  Detects setHTMLUnsafe(), Document.parseHTMLUnsafe() and
+  Range.createContextualFragment() calls whose first argument traces back to
+  an untrusted source (intra-procedural taint tracking). Constant markup does
+  not fire.
+message: "Unsafe HTML parsing API called with tainted markup — sanitize with DOMPurify or use setHTML()/textContent"
+references:
+  - https://owasp.org/www-community/attacks/xss/
+  - https://developer.mozilla.org/en-US/docs/Web/API/Element/setHTMLUnsafe
+tags: [xss, dom-injection, sethtmlunsafe]
+match:
+  kind: call
+  filters:
+    - callee_pattern: "(^|\\.)(setHTMLUnsafe|parseHTMLUnsafe|createContextualFragment)$"
+    - tainted_argument: true
+      tainted_argument_index: 0
+fix_suggestion: "Sanitize the markup with DOMPurify before parsing it, or use setHTML()/textContent so no unsanitized HTML reaches the parser."

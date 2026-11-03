@@ -1,0 +1,30 @@
+id: ZS-HTML-023
+lifecycle: released
+name: Handlebars triple-stash unescaped output
+version: "1.0.0"
+language: html
+category: xss
+severity: medium
+confidence: medium
+cwe:
+  - CWE-79
+owasp:
+  - "A05:2025"
+rationale: |
+  In Handlebars and Mustache, {{{ value }}} renders the value without HTML
+  escaping. Any attacker-influenced value rendered this way is injected into
+  the page as raw markup.
+description: |
+  Flags a triple-stash {{{ expression }}} template expression. The regular
+  double-stash {{ expression }} escapes its output and is not reported.
+message: "Triple-stash {{{ }}} renders unescaped HTML — use {{ }} or sanitize the value before rendering"
+references:
+  - https://handlebarsjs.com/guide/expressions.html#html-escaping
+  - https://owasp.org/www-community/attacks/xss/
+tags: [xss, handlebars, mustache, template, html]
+match:
+  kind: call
+  callee: template.expr
+  filters:
+    - argument_literal_matches: "^\\{\\s*[^{}\\s][^{}]*$"
+fix_suggestion: "Use the escaping {{ value }} form; if markup is required, sanitize it server-side with an allowlist sanitizer before rendering."

@@ -30,7 +30,7 @@ references:
 tags: [open-redirect, dom, navigation]
 match:
   kind: assignment
-  lhs_identifier: "location\\.href$"
+  lhs_identifier: "(^|\\.)location(\\.href)?$"
   filters:
     - tainted_rhs: true
 fix_suggestion: "Only navigate to same-origin relative paths taken from an allowlist; never assign a raw user-supplied value to location.href."

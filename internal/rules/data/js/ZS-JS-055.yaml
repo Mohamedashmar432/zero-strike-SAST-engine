@@ -29,6 +29,8 @@ tags: [postmessage, origin-validation, browser-security]
 match:
   kind: call
   callee: postMessage
+  callee_suffix: true
   filters:
     - argument_literal_matches: "^\\*$"
+      argument_literal_index: 1
 fix_suggestion: "Pass the exact expected origin (e.g. 'https://app.example.com') as targetOrigin instead of \"*\"."

@@ -63,3 +63,15 @@ cases:
   - file: cases/clean_template_escaped.html
     language: html
     expect: []
+  - file: cases/vuln_xss_triple_stash.html
+    language: html
+    expect: [{rule_id: ZS-HTML-023, min_count: 1}]
+  - file: cases/clean_xss_triple_stash.html
+    language: html
+    expect: []
+  - file: cases/vuln_xss_html_binding.html
+    language: html
+    expect: [{rule_id: ZS-HTML-024, min_count: 1}]
+  - file: cases/clean_xss_html_binding.html
+    language: html
+    expect: []

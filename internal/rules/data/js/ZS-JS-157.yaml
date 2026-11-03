@@ -1,0 +1,45 @@
+id: ZS-JS-157
+lifecycle: released
+name: Incomplete URL Host or Origin Check
+version: "1.0.0"
+language: javascript
+category: open-redirect
+severity: medium
+confidence: medium
+cwe:
+  - CWE-20
+owasp:
+  - "A05:2025"
+rationale: |
+  Validating a URL with hostname.endsWith('example.com') also accepts
+  evil-example.com, and url.startsWith('https://example.com') also accepts
+  https://example.com.evil.net. Such checks are used to gate redirects,
+  postMessage targets and resource loading, so a bypass leads to open
+  redirect or cross-origin trust failures that feed XSS.
+description: |
+  Detects hostname/host .endsWith() with a bare domain (no leading dot),
+  .startsWith() with a bare scheme+host (no trailing slash) on a URL-like
+  variable, and .includes()/.indexOf() with a bare domain on a URL-like
+  variable.
+message: "Incomplete host/origin check - match the full host exactly, or require a leading dot / trailing slash"
+references:
+  - https://cwe.mitre.org/data/definitions/20.html
+  - https://codeql.github.com/codeql-query-help/javascript/js-incomplete-url-substring-sanitization/
+tags: [open-redirect, url-validation, incomplete-check]
+match:
+  kind: call
+  filters:
+    - any_of:
+        - callee_pattern: "\\.(hostname|host)\\.endsWith$"
+          literal_argument:
+            index: 0
+            pattern: "^[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)+$"
+        - callee_pattern: "(?i)(^|\\.)[\\w$]*(url|uri|href|origin|referr?er|redirect|returnto|target|link)[\\w$]*\\.startsWith$"
+          literal_argument:
+            index: 0
+            pattern: "^https?://[^/?#]+$"
+        - callee_pattern: "(?i)(^|\\.)[\\w$]*(url|uri|href|origin|referr?er|redirect|returnto|target|link)[\\w$]*\\.(includes|indexOf)$"
+          literal_argument:
+            index: 0
+            pattern: "^(https?://)?([A-Za-z0-9-]+\\.)+[A-Za-z]{2,}/?$"
+fix_suggestion: "Parse with new URL() and compare url.origin or url.hostname for exact equality against an allowlist; for subdomains use endsWith('.example.com') plus an equality check on the bare domain."

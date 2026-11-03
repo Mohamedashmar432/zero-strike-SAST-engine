@@ -1,0 +1,35 @@
+id: ZS-TS-153
+lifecycle: released
+name: jQuery .html() with tainted markup
+version: "1.0.0"
+language: typescript
+category: xss
+severity: high
+confidence: medium
+cwe:
+  - CWE-79
+owasp:
+  - "A05:2025"
+rationale: |
+  jQuery's .html(value) sets innerHTML and, unlike .text(), executes inline
+  scripts and event-handler attributes in the supplied markup. Feeding it a
+  value from the URL, storage or another untrusted source is DOM XSS. Ported
+  verbatim from ZS-JS-152, same match shape.
+description: |
+  Detects single-argument .html(x) calls whose argument traces back to a real
+  untrusted source (location, URL parameters, and so on). The zero-argument
+  getter form and constant markup do not fire.
+message: "jQuery .html() called with a tainted value — use .text() or sanitize with DOMPurify first"
+references:
+  - https://owasp.org/www-community/attacks/xss/
+  - https://api.jquery.com/html/
+tags: [xss, dom-injection, jquery]
+match:
+  kind: call
+  filters:
+    - callee_pattern: "\\.html$"
+    - argument_count: 1
+    - tainted_argument: true
+      tainted_argument_index: 0
+      require_real_source: true
+fix_suggestion: "Use .text() for plain text, or sanitize the markup with DOMPurify before passing it to .html()."

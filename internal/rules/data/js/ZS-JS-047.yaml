@@ -30,7 +30,8 @@ references:
 tags: [xss, dom-injection, insertadjacenthtml]
 match:
   kind: call
-  callee: el.insertAdjacentHTML
+  callee: insertAdjacentHTML
+  callee_suffix: true
   filters:
     - tainted_argument: true
       # insertAdjacentHTML(position, text): only argument 1 is parsed as HTML

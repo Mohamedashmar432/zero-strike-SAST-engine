@@ -30,6 +30,7 @@ tags: [open-redirect, dom, navigation]
 match:
   kind: call
   callee: location.assign
+  callee_suffix: true
   filters:
     - tainted_argument: true
 fix_suggestion: "Only navigate to same-origin relative paths from an allowlist; never pass raw user input to location.assign()."

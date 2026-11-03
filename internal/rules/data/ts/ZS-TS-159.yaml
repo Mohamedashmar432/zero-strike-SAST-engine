@@ -1,0 +1,40 @@
+id: ZS-TS-159
+lifecycle: released
+name: dangerouslySetInnerHTML with non-constant unsanitized value
+version: "1.0.0"
+language: typescript
+category: xss
+severity: medium
+confidence: low
+cwe:
+  - CWE-79
+owasp:
+  - "A05:2025"
+rationale: |
+  React's dangerouslySetInnerHTML bypasses output escaping and inserts raw
+  markup. A non-constant __html value that is not passed through a sanitizer
+  is an XSS sink whenever any part of it is attacker-influenced. Ported
+  verbatim from ZS-JS-158, same match shape. In TypeScript this fires on the
+  createElement()/props-object form; JSX in .tsx files is not parsed by the
+  engine.
+description: |
+  Detects an __html property whose value is neither a plain string literal nor
+  an expression mentioning a recognised sanitizer (DOMPurify, purify,
+  sanitize, filterXSS). Confidence is low because the value is not
+  taint-checked.
+message: "dangerouslySetInnerHTML receives a non-constant value without a sanitizer — XSS if the value is attacker-influenced"
+references:
+  - https://react.dev/reference/react-dom/components/common#dangerously-setting-the-inner-html
+  - https://owasp.org/www-community/attacks/xss/
+tags: [xss, react, dangerouslysetinnerhtml]
+match:
+  kind: keyword_argument
+  lhs_identifier: "^__html$"
+  filters:
+    - not:
+        kind: keyword_argument
+        rhs_literal: "^([\"'][^\"']*[\"']|`[^`$]*`)$"
+    - not:
+        kind: keyword_argument
+        rhs_literal: "(?i)(DOMPurify|purify|sanitize|filterXSS)"
+fix_suggestion: "Render text normally so React escapes it, or sanitize the markup with DOMPurify.sanitize() before passing it as __html."

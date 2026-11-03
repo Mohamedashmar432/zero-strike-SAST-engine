@@ -1,0 +1,43 @@
+id: ZS-JS-156
+lifecycle: released
+name: message Event Listener Without Origin Check
+version: "1.0.0"
+language: javascript
+category: security-misconfiguration
+severity: medium
+confidence: medium
+cwe:
+  - CWE-346
+  - CWE-79
+owasp:
+  - "A05:2025"
+rationale: |
+  A window "message" listener receives postMessage data from any origin,
+  including a page an attacker controls that frames or opens yours. Without
+  verifying event.origin against an allowlist, the handler trusts
+  attacker-supplied data, which commonly flows into DOM sinks (XSS) or
+  privileged actions.
+description: |
+  Detects window.addEventListener('message', handler) calls with an inline
+  handler function when no identifier named "origin" appears anywhere in
+  the enclosing scope. Handlers passed by name and non-window event
+  targets (WebSocket, Worker, BroadcastChannel) are not flagged.
+message: "message listener never checks event.origin - verify the sender's origin against an allowlist before using event.data"
+references:
+  - https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage#security_concerns
+  - https://cwe.mitre.org/data/definitions/346.html
+tags: [xss, postmessage, origin-validation]
+match:
+  kind: call
+  filters:
+    - callee_pattern: "^((window|globalThis|self)\\.)?addEventListener$"
+    - argument_literal_matches: "^message$"
+      argument_literal_index: 0
+    - argument_kind_not_at:
+        index: 1
+        kinds: [identifier, attribute, call]
+    - not:
+        kind: call
+        filters:
+          - enclosing_function_mentions: "^origin$"
+fix_suggestion: "At the top of the handler, compare event.origin to an explicit allowlist of trusted origins and return early on mismatch."

@@ -1,0 +1,38 @@
+id: ZS-JS-158
+lifecycle: released
+name: dangerouslySetInnerHTML with Non-Constant Unsanitized Value
+version: "1.0.0"
+language: javascript
+category: xss
+severity: medium
+confidence: low
+cwe:
+  - CWE-79
+owasp:
+  - "A05:2025"
+rationale: |
+  React's dangerouslySetInnerHTML bypasses its automatic output escaping and
+  writes a raw HTML string into the DOM. When the __html value is a
+  variable or expression that is not visibly sanitized, any markup it
+  carries (including event handlers) executes in the user's session.
+description: |
+  Detects an __html property inside a dangerouslySetInnerHTML object whose
+  value is not a string literal and does not pass through a recognized
+  sanitizer (DOMPurify, sanitize*, filterXSS). Confidence is low because
+  the value may be sanitized elsewhere.
+message: "dangerouslySetInnerHTML receives a non-constant value that is not visibly sanitized - sanitize with DOMPurify"
+references:
+  - https://react.dev/reference/react-dom/components/common#dangerously-setting-the-inner-html
+  - https://owasp.org/www-community/attacks/xss/
+tags: [xss, react, dangerouslysetinnerhtml]
+match:
+  kind: keyword_argument
+  lhs_identifier: "^__html$"
+  filters:
+    - not:
+        kind: keyword_argument
+        rhs_literal: "^([\"'][^\"']*[\"']|`[^`$]*`)$"
+    - not:
+        kind: keyword_argument
+        rhs_literal: "(?i)(DOMPurify|purify|sanitize|filterXSS)"
+fix_suggestion: "Render text normally so React escapes it, or wrap the value in DOMPurify.sanitize() before assigning it to __html."

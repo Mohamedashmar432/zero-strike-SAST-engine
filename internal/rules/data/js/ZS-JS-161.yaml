@@ -1,0 +1,36 @@
+id: ZS-JS-161
+lifecycle: released
+name: Handlebars SafeString / htmlSafe with Dynamic Value
+version: "1.0.0"
+language: javascript
+category: xss
+severity: medium
+confidence: low
+cwe:
+  - CWE-79
+owasp:
+  - "A05:2025"
+rationale: |
+  Handlebars.SafeString and Ember's htmlSafe() mark a string as
+  already-escaped so templates emit it verbatim. Building that string by
+  concatenating unescaped values into markup produces stored or reflected
+  XSS because the template engine will not escape it again.
+description: |
+  Detects SafeString()/htmlSafe() whose argument is not a constant and
+  contains no identifier recognized as an escaping helper
+  (escapeExpression, escapeHTML, sanitize).
+message: "SafeString/htmlSafe wraps dynamically built markup without escaping - escape each value with Handlebars.Utils.escapeExpression"
+references:
+  - https://handlebarsjs.com/api-reference/utilities.html#handlebars-safestring-string
+  - https://owasp.org/www-community/attacks/xss/
+tags: [xss, handlebars, ember, safestring]
+match:
+  kind: call
+  filters:
+    - callee_pattern: "(^|\\.)(SafeString|htmlSafe)$"
+    - argument_not_constant: 0
+    - not:
+        kind: call
+        filters:
+          - argument_identifier_matches: "^(escapeExpression|escapeHTML|escapeHtml|sanitize)$"
+fix_suggestion: "Escape every interpolated value with Handlebars.Utils.escapeExpression() before wrapping the result, or return a plain string and let the template escape it."

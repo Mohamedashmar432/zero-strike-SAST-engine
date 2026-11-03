@@ -1,0 +1,34 @@
+id: ZS-JS-162
+lifecycle: released
+name: JSON.stringify Inside Inline Script Without Escaping
+version: "1.0.0"
+language: javascript
+category: xss
+severity: medium
+confidence: medium
+cwe:
+  - CWE-79
+owasp:
+  - "A05:2025"
+rationale: |
+  JSON.stringify does not escape "<". Embedding its output inside an inline
+  <script> block lets a value containing "</script><script>alert(1)" close
+  the block early and inject arbitrary script. Server-rendered initial
+  state (window.__INITIAL_STATE__ = ...) is the classic case.
+description: |
+  Detects string/template literals that contain an inline <script> element
+  with a ${JSON.stringify(...)} interpolation and no recognizable escaping
+  (replace of "<", <, serialize-javascript, jsesc).
+message: "JSON.stringify output embedded in an inline <script> without escaping '<' - use serialize-javascript or replace(/</g, '\\u003c')"
+references:
+  - https://owasp.org/www-community/attacks/xss/
+  - https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html
+tags: [xss, ssr, json-injection, inline-script]
+match:
+  kind: literal
+  literal: "(?is)<script\\b[^>]*>[^`]*\\$\\{\\s*JSON\\.stringify\\("
+  filters:
+    - not:
+        kind: literal
+        literal: "(?i)(\\.replace\\(\\s*/<|\\\\u003c|serialize\\(|jsesc|escapeJson|htmlEscapeJson)"
+fix_suggestion: "Serialize with serialize-javascript (or JSON.stringify(x).replace(/</g, '\\u003c')) before embedding in a <script> block, or ship state in a data attribute / application/json script tag."

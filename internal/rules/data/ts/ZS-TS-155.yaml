@@ -1,0 +1,44 @@
+id: ZS-TS-155
+lifecycle: released
+name: URL-bearing attribute set from tainted data
+version: "1.0.0"
+language: typescript
+category: xss
+severity: medium
+confidence: medium
+cwe:
+  - CWE-79
+owasp:
+  - "A05:2025"
+rationale: |
+  Attributes such as href, src, action, formaction, xlink:href, srcdoc and data
+  are navigation or code-loading sinks. Setting one from an untrusted source
+  allows javascript: URIs, attacker-controlled frames and script injection.
+  Ported verbatim from ZS-JS-154, same match shape.
+description: |
+  Detects setAttribute(name, value) and setAttributeNS(ns, name, value) where
+  the attribute name is a literal URL-bearing attribute and the value traces
+  back to a real untrusted source. Constant values and values that never
+  originate from a recognised source do not fire.
+message: "URL-bearing attribute set from tainted data — validate the scheme/host against an allowlist"
+references:
+  - https://owasp.org/www-community/attacks/xss/
+  - https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html
+tags: [xss, dom-injection, url-attribute]
+match:
+  kind: call
+  filters:
+    - any_of:
+        - callee_pattern: "(^|\\.)setAttribute$"
+          argument_literal_matches: "(?i)^(href|src|action|formaction|xlink:href|srcdoc|data)$"
+          argument_literal_index: 0
+          tainted_argument: true
+          tainted_argument_index: 1
+          require_real_source: true
+        - callee_pattern: "(^|\\.)setAttributeNS$"
+          argument_literal_matches: "(?i)^(xlink:)?href$"
+          argument_literal_index: 1
+          tainted_argument: true
+          tainted_argument_index: 2
+          require_real_source: true
+fix_suggestion: "Parse the value with new URL() and allowlist the protocol (http/https) and host before assigning it to a URL-bearing attribute."

@@ -230,6 +230,71 @@ func TestBuild_SanitizerClearsTaint(t *testing.T) {
 	}
 }
 
+// TestBuild_JSSourcePatterns covers every DOM/browser source added for the
+// XSS expansion: each rhs must taint the variable, and the paired negative
+// rhs (a look-alike that is not attacker-controlled) must not.
+func TestBuild_JSSourcePatterns(t *testing.T) {
+	cases := []struct {
+		name    string
+		rhs     string
+		tainted bool
+	}{
+		{"document.location", "document.location", true},
+		{"document.URL", "document.URL", true},
+		{"document.documentURI", "document.documentURI", true},
+		{"document.baseURI", "document.baseURI", true},
+		{"document.referrer", "document.referrer", true},
+		{"document.cookie", "document.cookie", true},
+		{"bare location.href", "location.href", true},
+		{"member location.href is not bare", "config.location.href", false},
+		{"window.name", "window.name", true},
+		{"localStorage.getItem", "localStorage.getItem('k')", true},
+		{"sessionStorage.getItem", "sessionStorage.getItem('k')", true},
+		{"searchParams.get", "url.searchParams.get('q')", true},
+		{"useSearchParams", "useSearchParams()", true},
+		{"useParams", "useParams()", true},
+		{"router.query", "router.query.id", true},
+		{"clipboardData.getData", "evt.clipboardData.getData('text')", true},
+		{"dataTransfer.getData", "ev.dataTransfer.getData('text')", true},
+		{"e.data", "e.data", true},
+		{"event.data", "event.data", true},
+		{"evt.data", "evt.data", true},
+		{"ev.data", "ev.data", true},
+		{"member e.data is not bare", "state.e.data", false},
+		{"unrelated receiver data", "response.data", false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			root := &ir.IRNode{
+				Kind:     ir.NodeKindModule,
+				Children: []*ir.IRNode{assignment("v", tc.rhs, ident("_"))},
+			}
+			tainted := build(&ir.IRFile{Root: root, Language: core.LangJavaScript})
+			if tainted["v"] != tc.tainted {
+				t.Errorf("rhs %q: tainted = %v, want %v", tc.rhs, tainted["v"], tc.tainted)
+			}
+		})
+	}
+}
+
+// TestBuild_JSSanitizerPatterns checks the sanitizeHtml / filterXSS wrappers
+// added alongside DOMPurify: a source wrapped by one must not taint.
+func TestBuild_JSSanitizerPatterns(t *testing.T) {
+	for _, rhs := range []string{
+		"sanitizeHtml(location.hash)",
+		"filterXSS(location.hash)",
+	} {
+		root := &ir.IRNode{
+			Kind:     ir.NodeKindModule,
+			Children: []*ir.IRNode{assignment("v", rhs, ident("_"))},
+		}
+		tainted := build(&ir.IRFile{Root: root, Language: core.LangJavaScript})
+		if tainted["v"] {
+			t.Errorf("rhs %q: expected v to NOT be tainted after sanitizer", rhs)
+		}
+	}
+}
+
 // TestBuild_ReassignmentToCleanLiteralClearsTaint is the regression test for
 // the never-clears bug: previously the tainted map was only ever set true,
 // so x stayed tainted after an unrelated clean reassignment.

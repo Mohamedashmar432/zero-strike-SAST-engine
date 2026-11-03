@@ -1,0 +1,35 @@
+id: ZS-JS-152
+lifecycle: released
+name: jQuery .html() with Tainted Markup
+version: "1.0.0"
+language: javascript
+category: xss
+severity: high
+confidence: medium
+cwe:
+  - CWE-79
+owasp:
+  - "A05:2025"
+rationale: |
+  jQuery's .html(string) setter parses the string as HTML and inserts it
+  into the document, executing inline event handlers and scripts. Passing
+  untrusted input is equivalent to assigning innerHTML and is one of the
+  most common DOM XSS sinks in legacy front-end code.
+description: |
+  Detects single-argument .html(x) calls (the setter form) where the
+  argument traces back to a real untrusted source such as location.search
+  or location.hash. The getter form .html() is not flagged.
+message: "jQuery .html() called with tainted markup - use .text() or sanitize with DOMPurify first"
+references:
+  - https://owasp.org/www-community/attacks/xss/
+  - https://api.jquery.com/html/
+tags: [xss, dom-injection, jquery]
+match:
+  kind: call
+  filters:
+    - callee_pattern: "\\.html$"
+    - argument_count: 1
+    - tainted_argument: true
+      tainted_argument_index: 0
+      require_real_source: true
+fix_suggestion: "Use .text() for text content, or pass the markup through DOMPurify.sanitize() before calling .html()."

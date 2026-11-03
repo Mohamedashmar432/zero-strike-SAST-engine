@@ -1,0 +1,30 @@
+id: ZS-JS-160
+lifecycle: released
+name: AngularJS $sce.trustAs* with Dynamic Value
+version: "1.0.0"
+language: javascript
+category: xss
+severity: medium
+confidence: medium
+cwe:
+  - CWE-79
+owasp:
+  - "A05:2025"
+rationale: |
+  $sce.trustAsHtml, trustAsJs, trustAsUrl, trustAsResourceUrl and
+  trustAsCss tell AngularJS Strict Contextual Escaping to stop protecting
+  the value. Marking a non-constant value as trusted disables the built-in
+  sanitizer for it, so attacker-supplied markup or script is rendered.
+description: |
+  Detects $sce.trustAs*() calls whose argument is not a constant.
+message: "$sce.trustAs* applied to a dynamic value disables AngularJS escaping - sanitize first or avoid trusting user content"
+references:
+  - https://docs.angularjs.org/api/ng/service/$sce
+  - https://owasp.org/www-community/attacks/xss/
+tags: [xss, angularjs, sce]
+match:
+  kind: call
+  filters:
+    - callee_pattern: "^\\$sce\\.trustAs(Html|Js|Url|ResourceUrl|Css)?$"
+    - argument_not_constant: -1
+fix_suggestion: "Do not trust user-supplied values; bind through ng-bind or ngSanitize, or sanitize with a strict allowlist before calling $sce.trustAs*."

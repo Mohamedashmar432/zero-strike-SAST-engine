@@ -1,0 +1,38 @@
+id: ZS-TS-158
+lifecycle: released
+name: Incomplete URL host or origin check
+version: "1.0.0"
+language: typescript
+category: open-redirect
+severity: medium
+confidence: medium
+cwe:
+  - CWE-20
+owasp:
+  - "A05:2025"
+rationale: |
+  hostname.endsWith('example.com') also accepts evil-example.com, and
+  url.startsWith('https://example.com') also accepts https://example.com.evil.net.
+  These partial checks are commonly used as redirect or origin allowlists and
+  are trivially bypassed. Ported verbatim from ZS-JS-157, same match shape.
+description: |
+  Detects host/origin validation that compares against a bare domain without a
+  leading dot (endsWith), a bare scheme-and-host prefix without a trailing
+  slash (startsWith), or a bare domain substring (includes/indexOf) on a
+  URL-like variable.
+message: "Incomplete URL host/origin check — attacker-controlled lookalike hosts can pass this validation"
+references:
+  - https://cwe.mitre.org/data/definitions/20.html
+  - https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
+tags: [open-redirect, url-validation, allowlist]
+match:
+  kind: call
+  filters:
+    - any_of:
+        - callee_pattern: "\\.(hostname|host)\\.endsWith$"
+          literal_argument: {index: 0, pattern: "^[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)+$"}
+        - callee_pattern: "(?i)(^|\\.)[\\w$]*(url|uri|href|origin|referr?er|redirect|returnto|target|link)[\\w$]*\\.startsWith$"
+          literal_argument: {index: 0, pattern: "^https?://[^/?#]+$"}
+        - callee_pattern: "(?i)(^|\\.)[\\w$]*(url|uri|href|origin|referr?er|redirect|returnto|target|link)[\\w$]*\\.(includes|indexOf)$"
+          literal_argument: {index: 0, pattern: "^(https?://)?([A-Za-z0-9-]+\\.)+[A-Za-z]{2,}/?$"}
+fix_suggestion: "Parse with new URL() and compare hostname for equality against an allowlist, or require a leading dot ('.example.com') and a trailing slash in prefix checks."
