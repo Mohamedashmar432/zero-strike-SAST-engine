@@ -467,3 +467,9 @@ cases:
   - file: cases/clean_jquery_html_ajax.js
     language: javascript
     expect: []
+  - file: cases/vuln_regexp_dynamic.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-180, min_count: 1}]
+  - file: cases/clean_regexp_dynamic.js
+    language: javascript
+    expect: []

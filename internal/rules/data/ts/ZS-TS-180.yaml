@@ -1,0 +1,31 @@
+id: ZS-TS-180
+lifecycle: released
+name: RegExp Built from a Non-Constant String
+version: "1.0.0"
+language: typescript
+category: injection
+severity: medium
+confidence: low
+cwe:
+  - CWE-943
+owasp:
+  - "A05:2025"
+rationale: |
+  A pattern assembled from a variable lets whoever controls it add alternations, wildcards and
+  nested quantifiers: it changes which records or log lines a search returns (query injection) and
+  a crafted pattern backtracks catastrophically (ReDoS).
+description: |
+  Flags new RegExp(x) / RegExp(x) where the pattern is a template literal with a substitution or a
+  + concatenation. Constant patterns are not reported. Low confidence: many dynamic patterns are
+  escaped first, which this rule cannot see.
+message: "RegExp built from a non-constant string; unescaped input changes the pattern (query injection, ReDoS)"
+references:
+  - https://owasp.org/www-community/attacks/Regular_expression_Denial_of_Service_-_ReDoS
+  - https://cwe.mitre.org/data/definitions/943.html
+tags: [regex, injection, redos]
+match:
+  kind: call
+  callee: RegExp
+  filters:
+    - dynamic_string_argument_index: 0
+fix_suggestion: "Escape the value (escape-string-regexp) before embedding it, or search with indexOf/includes instead of a pattern."
