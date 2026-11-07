@@ -23,6 +23,14 @@ import (
 // value is guessable; an entropy gate would keep only the strong secrets and
 // drop the weak ones, which are the worse finding.
 
+// composeSecretRetired switches ZS-SEC-032 off while the compose lines are still
+// judged, so the generic key=value detectors do not pick the same lines up.
+// Retired 2026-11-08 on measured precision: across 32 RealVuln repos it produced
+// 3 true positives and 10 false positives (development databases and mock keys
+// in compose files; no value or key shape separates them from the true ones).
+// Reversible: set it to the empty string.
+const composeSecretRetired = "3 TP / 10 FP across 32 RealVuln repos"
+
 const (
 	ruleDotenvSecret  = "ZS-SEC-031"
 	ruleComposeSecret = "ZS-SEC-032"
@@ -140,7 +148,7 @@ func scanCompose(path string, data []byte) ([]core.Finding, map[int]bool) {
 			return
 		}
 		judged[line] = true
-		if !credentialValueOK(value) || suppress.Suppressed(data, line, line, ruleComposeSecret) {
+		if composeSecretRetired != "" || !credentialValueOK(value) || suppress.Suppressed(data, line, line, ruleComposeSecret) {
 			return
 		}
 		out = append(out, newFinding("compose-env-secret", ruleComposeSecret, cwe, path, line, []byte(value), core.SeverityMedium))

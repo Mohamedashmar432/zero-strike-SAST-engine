@@ -183,6 +183,14 @@ func TestSecretsScanner_JSONYAMLSecretFalsePositiveShapes(t *testing.T) {
 			t.Errorf("unexpected ZS-SEC-016 for %q", line)
 		}
 	}
+	for _, c := range []struct{ path, line string }{
+		{"docs/jwt.adoc", `"refresh_token":"4a9a0b1eac1a34201b3c5659944e8b7"`},
+		{"Jwt.java", `private static final byte[] SECRET = "synthetic-demo-hs256-secret-do-not-reuse".getBytes();`},
+	} {
+		if f := findRule(scanContent(c.path, []byte(c.line)), "ZS-SEC-016"); f != nil {
+			t.Errorf("unexpected ZS-SEC-016 for %q in %s", c.line, c.path)
+		}
+	}
 	real := `    cookieSecret: "synthetic-cookie-secret-value",`
 	if f := findRule(scanContent("config/all.js", []byte(real)), "ZS-SEC-016"); f == nil {
 		t.Errorf("ZS-SEC-016 must still fire on %q", real)

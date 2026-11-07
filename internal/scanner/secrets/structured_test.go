@@ -84,10 +84,11 @@ func TestSecrets_PasswordComparison(t *testing.T) {
 	}
 }
 
-func TestSecrets_XMLCredential(t *testing.T) {
+// ZS-SEC-028 is retired for measured precision (2 TP / 7 FP), see the note on the detector.
+func TestSecrets_XMLCredentialRetiredDoesNotFire(t *testing.T) {
 	fs := scanContent("config.xml", []byte("\t\t\t<password>mysecret"+"password</password>"))
-	if f := findRule(fs, "ZS-SEC-028"); f == nil || cweOf(f) != "CWE-798" {
-		t.Fatalf("expected ZS-SEC-028, got %+v", fs)
+	if f := findRule(fs, "ZS-SEC-028"); f != nil {
+		t.Fatalf("ZS-SEC-028 is retired and must not fire, got %+v", f)
 	}
 	// An XXE payload in a lesson is exploit input, not a config file.
 	payload := `<?xml version="1.0"?><!DOCTYPE user [<!ENTITY root SYSTEM "file:///"> ]><user><password>test1234</password></user>`
@@ -140,20 +141,15 @@ func TestSecrets_Dotenv(t *testing.T) {
 	}
 }
 
-func TestSecrets_ComposeEnvironment(t *testing.T) {
+// ZS-SEC-032 is retired for measured precision (3 TP / 10 FP), see composeSecretRetired.
+func TestSecrets_ComposeEnvironmentRetiredDoesNotFire(t *testing.T) {
 	compose := "version: '3'\nservices:\n  db:\n    image: mysql:8\n    environment:\n" +
 		"      MYSQL_ROOT_PASSWORD: mysecret" + "password\n      MYSQL_DATABASE: app\n" +
 		"  web:\n    environment:\n      - API_TOKEN=tok" + "en1234value\n      - DB_PASSWORD=${DB_PASSWORD}\n" +
 		"      - SECRET_KEY=${SECRET_KEY:-dev}\n"
 	fs := scanContent("docker-compose.yml", []byte(compose))
-	if len(fs) != 2 {
-		t.Fatalf("expected 2 findings, got %d: %+v", len(fs), fs)
-	}
-	if fs[0].RuleID != "ZS-SEC-032" || fs[0].Location.StartLine != 6 || cweOf(&fs[0]) != "CWE-798" {
-		t.Errorf("first finding: %+v", fs[0])
-	}
-	if fs[1].Location.StartLine != 10 {
-		t.Errorf("second finding at line %d, want 10", fs[1].Location.StartLine)
+	if f := findRule(fs, "ZS-SEC-032"); f != nil {
+		t.Errorf("ZS-SEC-032 is retired and must not fire, got %+v", f)
 	}
 }
 
