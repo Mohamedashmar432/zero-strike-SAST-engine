@@ -1,5 +1,8 @@
 id: ZS-HTML-004
-lifecycle: released
+lifecycle: retired
+# Retired 2026-11-08 on measured precision: across 32 RealVuln repos this rule produced 0 true positive(s) and 2 false positive(s)
+# (no true positive and at least two false positives, no critical-severity or proven-injection exemption applies).
+# Reversible: set lifecycle back to released. Findings of this shape are no longer reported.
 name: iframe Without sandbox Attribute
 version: "1.0.0"
 language: html

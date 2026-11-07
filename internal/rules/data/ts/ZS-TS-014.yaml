@@ -1,5 +1,8 @@
 id: ZS-TS-014
-lifecycle: released
+lifecycle: retired
+# Retired 2026-11-08 on measured precision: across 32 RealVuln repos this rule produced 0 true positive(s) and 3 false positive(s)
+# (precision under 30 percent with at least three false positives, no critical-severity or proven-injection exemption applies).
+# Reversible: set lifecycle back to released. Findings of this shape are no longer reported.
 name: Sensitive Value Logged
 version: "1.0.0"
 language: typescript

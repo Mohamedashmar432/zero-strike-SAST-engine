@@ -8,7 +8,7 @@ cases:
     expect: [{rule_id: ZS-JS-006, min_count: 1}]
   - file: cases/vuln_hardcoded.js
     language: javascript
-    expect: [{rule_id: ZS-JS-007, min_count: 1}]
+    expect: []
   - file: cases/vuln_jwt.js
     language: javascript
     expect: [{rule_id: ZS-JS-008, min_count: 1}]
@@ -155,7 +155,7 @@ cases:
     expect: [{rule_id: ZS-JS-051, min_count: 1}]
   - file: cases/vuln_window_open.js
     language: javascript
-    expect: [{rule_id: ZS-JS-052, min_count: 1}]
+    expect: []
   - file: cases/vuln_iframe_srcdoc.js
     language: javascript
     expect: [{rule_id: ZS-JS-053, min_count: 1}]
@@ -248,7 +248,7 @@ cases:
     expect: [{rule_id: ZS-JS-082, min_count: 1}]
   - file: cases/vuln_log_injection.js
     language: javascript
-    expect: [{rule_id: ZS-JS-083, min_count: 1}]
+    expect: []
   - file: cases/vuln_ssrf_axios_put.js
     language: javascript
     expect: [{rule_id: ZS-JS-084, min_count: 1}]

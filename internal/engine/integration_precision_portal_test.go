@@ -183,15 +183,15 @@ func TestPrecision_LoggedSecretStillFiresPY022(t *testing.T) {
 
 // --- ZS-PY-057 / ZS-PY-147 Popen severity split ---
 
-func TestPrecision_PopenParameterArgvRegradedToPY147(t *testing.T) {
+func TestPrecision_PopenParameterArgvRetiredPY147DoesNotFire(t *testing.T) {
 	_, idx := loadPythonRules(t)
 	src := "import subprocess\n\ndef run_git(cmd):\n    return subprocess.Popen(cmd, stdout=subprocess.PIPE)\n"
 	res := matchSource(t, idx, src)
 	if hasRule(res, "ZS-PY-057") {
 		t.Error("ZS-PY-057 must not fire on a parameter-only argv with shell unset")
 	}
-	if !hasRule(res, "ZS-PY-147") {
-		t.Error("expected ZS-PY-147 to report the parameter argv")
+	if hasRule(res, "ZS-PY-147") {
+		t.Error("ZS-PY-147 is retired and must not report the parameter argv")
 	}
 }
 

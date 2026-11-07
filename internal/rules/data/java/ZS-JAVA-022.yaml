@@ -1,5 +1,8 @@
 id: ZS-JAVA-022
-lifecycle: released
+lifecycle: retired
+# Retired 2026-11-08 on measured precision: across 32 RealVuln repos this rule produced 0 true positive(s) and 5 false positive(s)
+# (precision under 30 percent with at least three false positives, no critical-severity or proven-injection exemption applies).
+# Reversible: set lifecycle back to released. Findings of this shape are no longer reported.
 name: Weak Cryptographic Hash Algorithm (MessageDigest)
 version: "1.0.0"
 language: java

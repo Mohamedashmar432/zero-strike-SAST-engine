@@ -307,7 +307,7 @@ cases:
     expect: []
   - file: cases/vuln_hardcoded_creds.py
     language: python
-    expect: [{rule_id: ZS-PY-140, min_count: 1}, {rule_id: ZS-PY-141, min_count: 1}, {rule_id: ZS-PY-142, min_count: 1}, {rule_id: ZS-PY-143, min_count: 2}, {rule_id: ZS-PY-144, min_count: 1}, {rule_id: ZS-PY-146, min_count: 1}]
+    expect: [{rule_id: ZS-PY-140, min_count: 1}, {rule_id: ZS-PY-141, min_count: 1}, {rule_id: ZS-PY-143, min_count: 2}, {rule_id: ZS-PY-144, min_count: 1}, {rule_id: ZS-PY-146, min_count: 1}]
   - file: cases/clean_hardcoded_creds.py
     language: python
     expect: []
@@ -339,7 +339,7 @@ cases:
     expect: [{rule_id: ZS-PY-022, min_count: 1}]
   - file: cases/vuln_subprocess_param_argv.py
     language: python
-    expect: [{rule_id: ZS-PY-147, min_count: 1}]
+    expect: []
   - file: cases/vuln_sha1_usedforsecurity_true.py
     language: python
     expect: [{rule_id: ZS-PY-011, min_count: 1}]

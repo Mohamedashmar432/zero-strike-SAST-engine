@@ -116,12 +116,12 @@ func TestIntegration_RejectUnauthorizedFiresZSJS006(t *testing.T) {
 	}
 }
 
-// TestIntegration_HardcodedCredentialFiresZSJS007 verifies the new A07 rule.
-func TestIntegration_HardcodedCredentialFiresZSJS007(t *testing.T) {
+// TestIntegration_HardcodedCredentialZSJS007 verifies the new A07 rule.
+func TestIntegration_HardcodedCredentialRetiredDoesNotFireZSJS007(t *testing.T) {
 	idx := loadJSRules(t)
 	results := matchJSSource(t, idx, "const password = \"hunter2\";\n")
-	if !hasRule(results, "ZS-JS-007") {
-		t.Error("expected ZS-JS-007 to fire on password = \"hunter2\"")
+	if hasRule(results, "ZS-JS-007") {
+		t.Error("ZS-JS-007 is retired and must not fire on password = \"hunter2\"")
 	}
 }
 
