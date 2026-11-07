@@ -609,6 +609,14 @@ func evalFilter(f rules.Filter, n *ir.IRNode, fc *fileCtx) bool {
 			return false
 		}
 	}
+	if f.DecoratedDefinitionMentions != "" {
+		re := cachedRegexp(f.DecoratedDefinitionMentions)
+		if re == nil || !decoratedDefinitionContains(n, func(d *ir.IRNode) bool {
+			return (d.Kind == ir.NodeKindIdentifier || d.Kind == ir.NodeKindLiteral) && re.MatchString(d.Text)
+		}) {
+			return false
+		}
+	}
 	if f.AnyOf != nil {
 		passed := false
 		for _, sub := range f.AnyOf {

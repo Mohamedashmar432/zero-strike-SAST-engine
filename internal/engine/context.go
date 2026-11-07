@@ -806,6 +806,26 @@ func scopeContains(n *ir.IRNode, pred func(*ir.IRNode) bool) bool {
 	return false
 }
 
+// decoratedDefinitionContains reports whether any node under the function or
+// class that decorator n decorates satisfies pred. A decorator's siblings are
+// the other decorators and the definition itself.
+func decoratedDefinitionContains(n *ir.IRNode, pred func(*ir.IRNode) bool) bool {
+	if n.Kind != ir.NodeKindDecorator || n.Parent == nil {
+		return false
+	}
+	for _, sib := range n.Parent.Children {
+		if sib.Kind != ir.NodeKindFunction && sib.Kind != ir.NodeKindClass {
+			continue
+		}
+		for _, d := range ir.Descendants(sib) {
+			if pred(d) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // functionName returns a named function's own name, or "" for an anonymous
 // function or arrow function. An arrow function's single bare parameter is
 // also an Identifier child, so arrows (recognised by their "=>" token) are

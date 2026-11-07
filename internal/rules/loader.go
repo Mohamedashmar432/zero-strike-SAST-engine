@@ -106,6 +106,7 @@ type filterYAML struct {
 	ContextIdentifierMatches       string                `yaml:"context_identifier_matches"`
 	EnclosingFunctionCalls         string                `yaml:"enclosing_function_calls"`
 	EnclosingFunctionMentions      string                `yaml:"enclosing_function_mentions"`
+	DecoratedDefinitionMentions    string                `yaml:"decorated_definition_mentions"`
 	ArgumentLiteralIndex           *int                  `yaml:"argument_literal_index"`
 	AnyOf                          []filterYAML          `yaml:"any_of"`
 	CalleePattern                  string                `yaml:"callee_pattern"`
@@ -282,6 +283,7 @@ func convertFilters(fyamls []filterYAML) []Filter {
 			ContextIdentifierMatches:       f.ContextIdentifierMatches,
 			EnclosingFunctionCalls:         f.EnclosingFunctionCalls,
 			EnclosingFunctionMentions:      f.EnclosingFunctionMentions,
+			DecoratedDefinitionMentions:    f.DecoratedDefinitionMentions,
 			ArgumentLiteralIndex:           f.ArgumentLiteralIndex,
 			CalleePattern:                  f.CalleePattern,
 			CalleeCanonical:                f.CalleeCanonical,

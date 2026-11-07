@@ -40,4 +40,10 @@ match:
       - not:
           kind: keyword_argument
           rhs_literal: "(?i)^[bru]?[\"'`](null|none|nil|undefined|true|false|empty|bearer|basic|string|text|hidden|required|not-needed|(secrets?|passwords?|passwds?|tokens?|credentials?|api[ _-]?keys?))[\"'`]$"
+      - not:
+          kind: keyword_argument
+          # A Title-case key holding one capitalised word is a UI label or a
+          # translation table ("Password": "Contraseña"), not a credential.
+          lhs_identifier: "^[A-Z][a-z]+$"
+          rhs_literal: "^[\"'`]\\p{Lu}\\p{L}+[\"'`]$"
 fix_suggestion: "Read the credential from the environment or a secrets manager; for seed users, generate a random password at seed time and print it once."

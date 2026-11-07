@@ -288,6 +288,14 @@ type Filter struct {
 	// "checksum" task is an integrity label, not a security control.
 	EnclosingFunctionMentions string
 
+	// DecoratedDefinitionMentions is EnclosingFunctionMentions for a decorator
+	// node: a decorator sits beside the function or class it decorates, not
+	// inside it, so the enclosing-function scope is the whole module. This
+	// requires the decorated definition to contain an identifier or literal
+	// matching the regex, e.g. a csrf_exempt view that never reads POST data
+	// or the request body has no state change for a forged form to trigger.
+	DecoratedDefinitionMentions string
+
 	// ArgumentLiteralIndex narrows ArgumentLiteralMatches to one positional
 	// argument (negative counts from the end), e.g. "the program spawned is a
 	// shell" rather than "some literal somewhere in the argv is 'sh'".

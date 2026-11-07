@@ -115,8 +115,15 @@ var phpPatterns = languagePatterns{
 
 var javaPatterns = languagePatterns{
 	Sources: []*regexp.Regexp{
-		regexp.MustCompile(`request\.getParameter\(`),
-		regexp.MustCompile(`request\.getHeader\(`),
+		// Any receiver name: servlets call the request req, httpRequest,
+		// httpServletRequest as often as request, and keying on the literal
+		// "request" left a plain req.getParameter(..) flow with no source at
+		// all, so it was only ever tainted as an unvalidated parameter.
+		regexp.MustCompile(`\w\.getParameter(Values)?\(`),
+		regexp.MustCompile(`\w\.getHeader\(`),
+		regexp.MustCompile(`\w\.getQueryString\(`),
+		regexp.MustCompile(`\w\.getPathInfo\(`),
+		regexp.MustCompile(`\w\.getOriginalFilename\(`),
 		regexp.MustCompile(`System\.getenv\(`),
 	},
 	Sanitizers: []*regexp.Regexp{
