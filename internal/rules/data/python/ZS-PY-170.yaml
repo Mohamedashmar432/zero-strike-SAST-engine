@@ -1,0 +1,28 @@
+id: ZS-PY-170
+lifecycle: released
+name: PyCryptodome Weak Hash (MD5/SHA-1 via new())
+version: "1.0.0"
+language: python
+category: cryptography
+severity: medium
+confidence: high
+cwe:
+  - CWE-328
+owasp:
+  - "A04:2025"
+rationale: |
+  PyCryptodome exposes its digests through Crypto.Hash modules (MD5.new(), SHA.new()), which the
+  hashlib.md5 rule never sees. MD5 and SHA-1 are collision-broken and, for password or token
+  material, far too fast to resist brute force.
+description: |
+  Flags MD5.new(), MD4.new(), MD2.new(), SHA.new() and SHA1.new() calls from Crypto.Hash.
+message: "Weak hash (MD5/SHA-1) via PyCryptodome; use SHA-256 or a password KDF"
+references:
+  - https://pycryptodome.readthedocs.io/en/latest/src/hash/hash.html
+  - https://cwe.mitre.org/data/definitions/328.html
+tags: [weak-crypto, hashing, pycryptodome]
+match:
+  kind: call
+  filters:
+    - callee_pattern: "^(MD5|MD4|MD2|SHA|SHA1)\\.new$"
+fix_suggestion: "Use SHA256.new() for integrity, or argon2-cffi/bcrypt/hashlib.scrypt for passwords."

@@ -78,3 +78,27 @@ cases:
   - file: cases/clean_xss_html_binding.html
     language: html
     expect: []
+  - file: cases/vuln_xss_ejs_raw.ejs
+    language: html
+    expect: [{rule_id: ZS-HTML-025, min_count: 1}]
+  - file: cases/clean_xss_ejs_raw.ejs
+    language: html
+    expect: []
+  - file: cases/vuln_xss_script_expr.html
+    language: html
+    expect: [{rule_id: ZS-HTML-026, min_count: 1}]
+  - file: cases/clean_xss_script_expr.html
+    language: html
+    expect: []
+  - file: cases/vuln_xss_form_bad_csrf.html
+    language: html
+    expect: [{rule_id: ZS-HTML-028, min_count: 1}]
+  - file: cases/clean_xss_form_bad_csrf.html
+    language: html
+    expect: []
+  - file: cases/vuln_form_no_csrf.html
+    language: html
+    expect: [{rule_id: ZS-HTML-027, min_count: 1}]
+  - file: cases/clean_form_no_csrf.html
+    language: html
+    expect: []

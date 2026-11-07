@@ -72,8 +72,15 @@ func (w *fsWalker) walk(
 		if isSkippedExt(de.Name(), w.opts.ExcludeExts) {
 			continue
 		}
+		// Inside an asset directory only data files are emitted, plus
+		// first-party browser code (vendored and minified files are dropped
+		// once their content is read below).
+		assetCode := false
 		if assetData && !isAssetDataFile(de.Name()) {
-			continue
+			if !isAssetCodeFile(de.Name()) {
+				continue
+			}
+			assetCode = true
 		}
 
 		info, err := de.Info()
@@ -95,6 +102,13 @@ func (w *fsWalker) walk(
 			continue
 		}
 
+		if assetCode {
+			rel2, _ := filepath.Rel(rootPath, fullPath)
+			if b, err := os.ReadFile(fullPath); err != nil || isVendoredAsset(rel2, b) {
+				continue
+			}
+		}
+
 		entry := FileEntry{
 			Path:     fullPath,
 			Language: core.LangUnknown,
@@ -103,7 +117,7 @@ func (w *fsWalker) walk(
 			// checkout sitting under some directory named "test" doesn't make
 			// the whole project test material.
 			Role:      ClassifyRole(rel),
-			AssetData: assetData,
+			AssetData: assetData && !assetCode,
 		}
 		if f, err := os.Open(fullPath); err == nil {
 			buf := make([]byte, 512)

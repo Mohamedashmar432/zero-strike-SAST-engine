@@ -1,0 +1,27 @@
+id: ZS-TS-176
+lifecycle: released
+name: XML Parse Script with External Entity Expansion Enabled (noent)
+version: "1.0.0"
+language: typescript
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-611
+owasp:
+  - "A02:2025"
+rationale: |
+  The same XXE weakness as the direct parseXml call, written inside a script string that is
+  later evaluated (vm.runInContext('libxml.parseXml(data, { noent: true })')). The string hides
+  the call from call-based rules.
+description: |
+  Flags a string literal that contains a parseXml / parseXmlString call with noent: true.
+message: "Script string parses XML with noent: true; external entities are expanded (XXE)"
+references:
+  - https://owasp.org/www-community/vulnerabilities/XML_External_Entity_(XXE)_Processing
+  - https://cwe.mitre.org/data/definitions/611.html
+tags: [xxe, xml, libxmljs]
+match:
+  kind: literal
+  literal: "parseXml(String)?\\([^)]*noent\\s*:\\s*true"
+fix_suggestion: "Remove noent: true and parse documents with entity substitution off."

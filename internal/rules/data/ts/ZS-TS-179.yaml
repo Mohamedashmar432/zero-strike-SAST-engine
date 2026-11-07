@@ -1,0 +1,29 @@
+id: ZS-TS-179
+lifecycle: released
+name: Error Message Exposed to the Error View
+version: "1.0.0"
+language: typescript
+category: error-handling
+severity: low
+confidence: medium
+cwe:
+  - CWE-209
+owasp:
+  - "A10:2025"
+rationale: |
+  Express's generated error handler copies err.message into res.locals.message unconditionally,
+  and the error view prints it. Internal messages (SQL fragments, file paths, library errors)
+  then reach the browser in production, where only the status line should be shown.
+description: |
+  Flags an assignment of err.message, err.stack or the error object to res.locals.message,
+  res.locals.error or res.locals.stack.
+message: "Error text assigned to res.locals is rendered by the error view; show a generic message outside development"
+references:
+  - https://expressjs.com/en/guide/error-handling.html
+  - https://cwe.mitre.org/data/definitions/209.html
+tags: [error-handling, information-disclosure, express]
+match:
+  kind: assignment
+  lhs_identifier: "^res\\.locals\\.(message|error|stack)$"
+  rhs_literal: "^(err|error|e|ex)(\\.(message|stack))?$"
+fix_suggestion: "Expose the message only when the environment is development; otherwise set a generic text and log the error server-side."

@@ -1,0 +1,29 @@
+id: ZS-HTML-028
+lifecycle: released
+name: Form CSRF Tag Is Malformed and Renders as Text
+version: "1.0.0"
+language: html
+category: csrf
+severity: medium
+confidence: high
+cwe:
+  - CWE-352
+owasp:
+  - "A01:2025"
+rationale: |
+  A form carrying a mistyped csrf tag, such as { % csrf_token % } with spaces inside the braces,
+  looks protected in review but is not: Django prints it as plain text, no token is sent, and
+  the form either breaks or, where CSRF checks are disabled for the view, can be submitted by
+  any third-party page.
+description: |
+  Flags a state-changing <form> in a server-rendered template that has no valid {% csrf_token %}
+  tag but does contain text shaped like a malformed one.
+message: "Form CSRF tag is malformed and renders as literal text; the form carries no token (CSRF)"
+references:
+  - https://docs.djangoproject.com/en/stable/howto/csrf/
+  - https://cwe.mitre.org/data/definitions/352.html
+tags: [csrf, template, django]
+match:
+  kind: call
+  callee: template.form_bad_csrf
+fix_suggestion: "Write the tag exactly as {% csrf_token %}."

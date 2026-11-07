@@ -1,0 +1,38 @@
+id: ZS-JS-170
+lifecycle: released
+name: postMessage Sends a Credential to Any Origin
+version: "1.0.0"
+language: javascript
+category: sensitive-data-exposure
+severity: high
+confidence: medium
+cwe:
+  - CWE-200
+owasp:
+  - "A02:2025"
+rationale: |
+  window.postMessage(data, '*') delivers the message to whatever document currently occupies the
+  target window, regardless of its origin. When the payload is a session token, JWT, cookie or
+  password read from storage, any page that can navigate or embed the target (an attacker's
+  iframe opener, a redirected tab) receives the credential.
+description: |
+  Flags a postMessage call whose targetOrigin is the wildcard '*' and whose message expression
+  reads browser storage or is named like a credential (token, jwt, cookie, session, password,
+  secret, credential). The wildcard on its own is reported separately as a low-severity
+  misconfiguration; this rule is the credential-leak case.
+message: "Credential posted with targetOrigin '*'; any origin that controls the target window receives it"
+references:
+  - https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage#security_concerns
+  - https://cwe.mitre.org/data/definitions/200.html
+tags: [postmessage, token-exposure, xss]
+match:
+  kind: call
+  callee: postMessage
+  callee_suffix: true
+  filters:
+    - argument_literal_matches: "^\\*$"
+      argument_literal_index: 1
+    - argument_matches_at:
+        index: 0
+        pattern: "(?i)(localStorage|sessionStorage|token|jwt|cookie|session|passw|secret|credential)"
+fix_suggestion: "Pass the exact expected origin as targetOrigin and never post a credential to a window you do not control."

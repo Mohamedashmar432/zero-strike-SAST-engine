@@ -2,8 +2,10 @@ package walker
 
 import (
 	"bufio"
+	"bytes"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -97,6 +99,79 @@ func isAssetDataFile(name string) bool {
 		return true
 	}
 	return assetDataExts[filepath.Ext(lower)]
+}
+
+// assetCodeExts are the code extensions that are scanned from inside an asset
+// directory when the file is first-party (see isVendoredAsset). Browser code
+// served from public/ or static/ is authored by the project and carries real
+// DOM XSS, postMessage and inline-script findings.
+var assetCodeExts = map[string]bool{
+	".js": true, ".mjs": true, ".cjs": true,
+	".html": true, ".htm": true,
+}
+
+// isAssetCodeFile reports whether a file inside an asset directory is
+// browser code worth scanning, subject to vendored-file detection.
+func isAssetCodeFile(name string) bool {
+	return assetCodeExts[strings.ToLower(filepath.Ext(name))]
+}
+
+var (
+	// vendoredDirs are directory names that hold third-party code wherever
+	// they appear under an asset directory.
+	vendoredDirs = map[string]bool{
+		"vendor": true, "vendors": true, "lib": true, "libs": true, "plugins": true,
+		"third_party": true, "third-party": true, "thirdparty": true, "external": true,
+		"bower_components": true, "node_modules": true, "min": true,
+		// Collected framework assets (Django admin and DRF, API docs UIs).
+		"admin": true, "rest_framework": true, "swagger-ui": true, "swagger": true,
+	}
+	// vendoredNameRe matches a file named after a well-known library, or
+	// carrying a version in its name (jquery-3.2.1.js, chart.2.9.js).
+	vendoredNameRe = regexp.MustCompile(`(?i)^(jquery|bootstrap|popper|angular|react|vue|lodash|underscore|backbone|moment|d3|chart|highcharts|socket\.io|fontawesome|font-awesome|select2|datatables|tinymce|ckeditor|codemirror|prism|highlight|swiper|owl\.carousel|slick|modernizr|require|axios|handlebars|mustache|ember|knockout|three|leaflet|fullcalendar|flot|morris|raphael|bootbox|sweetalert|toastr|easing|waypoints|wow|animate|aos|isotope|masonry|imagesloaded|magnific|lightbox|fancybox|workbox|polyfills?|runtime|webpack|chunk)[.\-_0-9]|^[\w.]+[-.]v?\d+\.\d+(\.\d+)?([-.]\w+)?\.(js|css)$|\.(min|bundle|chunk|packed)\.`)
+	// vendoredBannerRe matches the license or version banner that libraries
+	// ship in the first lines of a build.
+	vendoredBannerRe = regexp.MustCompile(`(?i)/\*!|@license|licensed under|released under the|\bMIT license\b|^\s*(/\*+|//)\s*\w[\w.\- ]*\bv?\d+\.\d+\.\d+\b`)
+)
+
+// maxFirstPartyLine is the longest line a hand-written source file has;
+// minified and bundled output exceeds it.
+const maxFirstPartyLine = 1000
+
+// isVendoredAsset reports whether a browser-code file found under an asset
+// directory is third-party or generated: a vendored directory, a library or
+// versioned file name, a license banner, or a very long line. rel is the
+// path from the scan root; only directories below the first asset
+// directory and the base name are read.
+func isVendoredAsset(rel string, content []byte) bool {
+	parts := strings.Split(filepath.ToSlash(rel), "/")
+	inAsset := false
+	for _, d := range parts[:len(parts)-1] {
+		// Only directories below the asset directory count: a "lib" folder
+		// above public/ says nothing about the files served from it.
+		if inAsset && vendoredDirs[strings.ToLower(d)] {
+			return true
+		}
+		if assetDataDirs[d] {
+			inAsset = true
+		}
+	}
+	if vendoredNameRe.MatchString(parts[len(parts)-1]) {
+		return true
+	}
+	head := content
+	if len(head) > 2048 {
+		head = head[:2048]
+	}
+	if vendoredBannerRe.Match(head) {
+		return true
+	}
+	for _, line := range bytes.Split(content, []byte("\n")) {
+		if len(line) > maxFirstPartyLine {
+			return true
+		}
+	}
+	return false
 }
 
 // isSkippedExt reports whether the file identified by name should be excluded

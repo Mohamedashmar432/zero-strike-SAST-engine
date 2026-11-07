@@ -1,0 +1,37 @@
+id: ZS-TS-173
+lifecycle: released
+name: vm.runInContext in a Request Handler
+version: "1.0.0"
+language: typescript
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-94
+owasp:
+  - "A05:2025"
+rationale: |
+  The node:vm module is not a security boundary: code and data in the sandbox object reach the
+  host, and a crafted script escapes through the sandbox's own prototypes. A handler that puts
+  request data into the context (or into the script) gives the caller code execution on the
+  server.
+description: |
+  Flags vm.runInContext, vm.runInNewContext and vm.runInThisContext inside a function that also
+  reads the request (req, request or body). The script argument is often a constant that
+  evaluates a sandbox variable, so the request link is the enclosing handler, not the argument.
+  A call whose script is already tainted is reported by the tainted vm rules instead.
+message: "vm.run*Context in a request handler; the vm module is not a sandbox, request data can run as code"
+references:
+  - https://nodejs.org/api/vm.html#vm-executing-javascript
+  - https://cwe.mitre.org/data/definitions/94.html
+tags: [code-injection, vm, sandbox]
+match:
+  kind: call
+  filters:
+    - callee_pattern: "(^|\\.)vm\\.(runInContext|runInNewContext|runInThisContext)$"
+    - enclosing_function_mentions: "^(req|request|body)$"
+    - not:
+        kind: call
+        filters:
+          - tainted_argument: true
+fix_suggestion: "Do not evaluate request data. Parse it as JSON or a purpose-built grammar; if scripting is required run it in an isolated process or isolated-vm with no host objects."

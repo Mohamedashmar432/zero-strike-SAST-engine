@@ -1,0 +1,36 @@
+id: ZS-JS-172
+lifecycle: released
+name: new Function Compiles a Dynamic Template String
+version: "1.0.0"
+language: javascript
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-1336
+owasp:
+  - "A05:2025"
+rationale: |
+  Building a function body from a string that interpolates a value (new Function(`return
+  \`${letter}\``)) is a hand-rolled template engine with the full JavaScript language as its
+  expression syntax. Anyone who controls the interpolated text controls the code that runs in
+  the server process: template injection that ends in remote code execution.
+description: |
+  Flags new Function(...) / Function(...) whose last argument (the function body) is a template
+  literal with a ${} substitution or a + concatenation, and the body is a return of a backtick template, which is how a
+  hand-rolled template engine is written. It reports the template-injection view of a call the
+  Function() constructor rule may also report as code injection.
+message: "new Function() body is assembled from a dynamic string; user-controlled text becomes code (template injection)"
+references:
+  - https://owasp.org/www-community/attacks/Server-Side_Template_Injection
+  - https://cwe.mitre.org/data/definitions/1336.html
+tags: [template-injection, code-injection, function-constructor]
+match:
+  kind: call
+  callee: Function
+  filters:
+    - dynamic_string_argument_index: -1
+    - argument_matches_at:
+        index: -1
+        pattern: "return\\s*\\\\?`"
+fix_suggestion: "Use a real template engine in its sandboxed/escaping mode, or substitute fields with a fixed-key replace; never compile user text."

@@ -1,0 +1,43 @@
+id: ZS-JS-178
+lifecycle: released
+name: jQuery .html() with a Dynamic Value (DOM XSS)
+version: "1.0.0"
+language: javascript
+category: xss
+severity: medium
+confidence: medium
+cwe:
+  - CWE-79
+owasp:
+  - "A05:2025"
+rationale: |
+  jQuery's .html(value) parses the string as markup and runs inline scripts and event handlers
+  in it. A value from an AJAX response, a URL fragment or a message that is passed straight in
+  is DOM XSS.
+description: |
+  Flags a one-argument .html(value) call whose argument is a variable named like a server or AJAX
+  reply (response, data, result, html, msg, content, ...), not a concatenation or call result. Calls with no
+  argument (getter) and literal markup are not reported, and neither are calls whose value comes from
+  a real untrusted source (the tainted .html() rule reports those).
+message: ".html() renders a non-constant value as markup (DOM XSS); use .text() or sanitize the value"
+references:
+  - https://api.jquery.com/html/
+  - https://cwe.mitre.org/data/definitions/79.html
+tags: [xss, dom, jquery]
+match:
+  kind: call
+  filters:
+    - callee_pattern: "\\.html$"
+    - argument_count: 1
+    - argument_not_constant: 0
+    - argument_kind_not_at:
+        index: 0
+        kinds: [binary_op, call]
+    - argument_identifier_matches: "^(response|resp|res|data|result|results|html|markup|msg|message|content|responseText|body|output|ret)$"
+    - not:
+        kind: call
+        filters:
+          - tainted_argument: true
+            tainted_argument_index: 0
+            require_real_source: true
+fix_suggestion: "Use .text() for plain text, or sanitize the markup with DOMPurify before calling .html()."
