@@ -46,4 +46,9 @@ match:
     - not:
         kind: assignment
         lhs_identifier: "(?i)^[$@]?(INSECURE|PLACEHOLDER|CHANGEME|CHANGE_ME|DEV_ONLY|EXAMPLE|DUMMY|FAKE|SAMPLE|DEFAULT)_"
+    # A 32-128 digit hex string is the digest of a secret (md5 through
+    # sha512), not the secret itself; the hex-digest twin of ZS-PY-141.
+    - not:
+        kind: assignment
+        rhs_literal: "^\"[0-9a-fA-F]{32,128}\"$"
 fix_suggestion: "Replace the literal with System.getenv(), a config loader, or a secrets manager lookup."

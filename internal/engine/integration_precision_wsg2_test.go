@@ -104,3 +104,15 @@ func TestPrecisionG2_TranslationLabelIsNotACredential(t *testing.T) {
 		t.Error("ZS-JS-141 must still fire on a literal password")
 	}
 }
+
+func TestPrecisionG2_HexDigestIsNotAJavaHardcodedCredential(t *testing.T) {
+	idx := loadJavaRules(t)
+	digest := "class C { static final String ADMIN_PASSWORD_LINK = \"" + "0123456789abcdef0123456789abcdef" + "\"; }"
+	if hasRule(matchJavaSource(t, idx, digest), "ZS-JAVA-005") {
+		t.Error("ZS-JAVA-005 must not fire on a 32-digit hex digest")
+	}
+	lit := "class C { static final String AUTHOR_PASSWORD = \"Tr0ub4dor-horse\"; }"
+	if !hasRule(matchJavaSource(t, idx, lit), "ZS-JAVA-005") {
+		t.Error("ZS-JAVA-005 must still fire on a literal password")
+	}
+}
