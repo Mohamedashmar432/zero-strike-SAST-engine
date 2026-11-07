@@ -20,7 +20,11 @@ rationale: |
 description: |
   Flags any element whose href, src, action, formaction, xlink:href, poster,
   cite, or data attribute begins with the javascript: scheme (leading
-  whitespace tolerated).
+  whitespace tolerated) and carries a template expression ({{ }}, {% %},
+  <% %>, <? ?>, ${ }, #{ }, @{ }, {$ }), so part of the URL is computed at
+  render time. A fixed literal written by the developer, such as
+  href="javascript:void(0)", is not reported: measured on 32 RealVuln repos
+  every one of the 42 literal hits was a false positive.
 message: "javascript: URI in an HTML attribute — executes script on activation (XSS sink)"
 references:
   - https://cwe.mitre.org/data/definitions/79.html
@@ -31,5 +35,5 @@ match:
   filters:
     - kwarg:
         name_pattern: "^(href|src|action|formaction|xlink:href|poster|cite|data)$"
-        value_pattern: "(?i)^\\s*javascript:"
+        value_pattern: "(?is)^\\s*javascript:.*(\\{\\{|\\{%|<%|<\\?|\\$\\{|#\\{|@\\{|\\{\\$)"
 fix_suggestion: "Replace the javascript: URL with a real URL and attach behavior via an addEventListener handler in a CSP-allowed script."

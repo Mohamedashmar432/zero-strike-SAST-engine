@@ -17,6 +17,7 @@
     <img src="http://localhost:8080/logo.png" alt="local logo">
     <!-- Password field with the browser default (not ZS-HTML-008). -->
     <form action="/login" method="post">
+      {% csrf_token %}
       <input type="password" name="pw" required>
     </form>
     <!-- console output in a browser is the user's own devtools (not ZS-JS-083). -->

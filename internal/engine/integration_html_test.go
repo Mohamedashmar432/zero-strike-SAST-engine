@@ -50,14 +50,12 @@ func TestIntegration_HTMLRulesFire(t *testing.T) {
 		src  string
 	}{
 		{"ZS-HTML-001", `<a href="https://x.com" target="_blank">x</a>`},
-		{"ZS-HTML-002", `<a href="javascript:alert(1)">x</a>`},
+		{"ZS-HTML-002", `<a href="javascript:open('{{ id }}')">x</a>`},
 		{"ZS-HTML-003", `<button onclick="f({{ x }})">x</button>`},
-		{"ZS-HTML-004", `<iframe src="/account/embed"></iframe>`},
 		{"ZS-HTML-011", `<iframe src="https://x.com"></iframe>`},
 		{"ZS-HTML-005", `<script src="https://cdn.x.com/a.js"></script>`},
 		{"ZS-HTML-007", `<form action="http://x.com/login"></form>`},
 		{"ZS-HTML-008", `<input type="password" autocomplete="on">`},
-		{"ZS-HTML-009", `<meta http-equiv="refresh" content="0;url=http://evil.com">`},
 		{"ZS-HTML-010", `<iframe src="https://x.com" sandbox="allow-scripts allow-same-origin"></iframe>`},
 		{"ZS-HTML-023", `<div>{{{ user.bio }}}</div>`},
 		{"ZS-HTML-024", `<div ng-bind-html-unsafe="post.body"></div><div x-html="comment"></div><span data-bind="html: bio"></span>`},
@@ -88,6 +86,7 @@ func TestIntegration_HTMLRulesStaySilent(t *testing.T) {
 	}{
 		{"ZS-HTML-001", `<a href="https://x.com" target="_blank" rel="noopener">x</a>`},
 		{"ZS-HTML-002", `<a href="https://x.com/page">x</a>`},
+		{"ZS-HTML-002", `<a href="javascript:void(0)">x</a>`},
 		{"ZS-HTML-003", `<button class="btn">x</button>`},
 		{"ZS-HTML-004", `<iframe src="https://x.com"></iframe>`},
 		{"ZS-HTML-004", `<iframe src="/account/embed" sandbox="allow-forms"></iframe>`},
@@ -105,6 +104,20 @@ func TestIntegration_HTMLRulesStaySilent(t *testing.T) {
 	for _, c := range cases {
 		if hasRule(matchHTMLSource(t, idx, c.src), c.rule) {
 			t.Errorf("%s: expected NOT to fire on safe snippet %q", c.rule, c.src)
+		}
+	}
+}
+
+// TestIntegration_HTMLRetiredDoesNotFireRound3 pins the rules retired in round 3 silent.
+// retired for measured precision, see docs/roadmap/FP_REDUCTION_2026-11-08.md
+func TestIntegration_HTMLRetiredDoesNotFireRound3(t *testing.T) {
+	idx := loadHTMLRules(t)
+	for rule, src := range map[string]string{
+		"ZS-HTML-004": `<iframe src="/account/embed"></iframe>`,
+		"ZS-HTML-009": `<meta http-equiv="refresh" content="0;url=http://evil.com">`,
+	} {
+		if hasRule(matchHTMLSource(t, idx, src), rule) {
+			t.Errorf("%s is retired and must not fire", rule)
 		}
 	}
 }

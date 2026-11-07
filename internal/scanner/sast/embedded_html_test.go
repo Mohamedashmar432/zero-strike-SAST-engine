@@ -39,7 +39,7 @@ func TestEmbeddedScript_FiresJSRuleWithRebasedLine(t *testing.T) {
 	// 1 <!DOCTYPE html>
 	// 2 <html>
 	// 3 <body>
-	// 4 <a href="javascript:x()">l</a>
+	// 4 <a href="javascript:x({{ id }})">l</a>
 	// 5 <script>
 	// 6 var d = location.hash;
 	// 7 eval(d);
@@ -47,7 +47,7 @@ func TestEmbeddedScript_FiresJSRuleWithRebasedLine(t *testing.T) {
 	// 9 </body>
 	// 10 </html>
 	src := "<!DOCTYPE html>\n<html>\n<body>\n" +
-		"<a href=\"javascript:x()\">l</a>\n" +
+		"<a href=\"javascript:x({{ id }})\">l</a>\n" +
 		"<script>\nvar d = location.hash;\neval(d);\n</script>\n" +
 		"</body>\n</html>\n"
 

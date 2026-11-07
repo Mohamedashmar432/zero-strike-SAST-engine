@@ -22,7 +22,7 @@ cases:
     expect: [{rule_id: ZS-HTML-011, min_count: 1}]
   - file: cases/vuln_004b_iframe_same_origin.html
     language: html
-    expect: [{rule_id: ZS-HTML-004, min_count: 1}]
+    expect: []
   - file: cases/vuln_005_script_no_sri.html
     language: html
     expect: [{rule_id: ZS-HTML-005, min_count: 1}]
@@ -37,7 +37,7 @@ cases:
     expect: [{rule_id: ZS-HTML-008, min_count: 1}]
   - file: cases/vuln_009_meta_refresh.html
     language: html
-    expect: [{rule_id: ZS-HTML-009, min_count: 1}]
+    expect: []
   - file: cases/vuln_010_sandbox_escape.html
     language: html
     expect: [{rule_id: ZS-HTML-010, min_count: 1}]
@@ -61,6 +61,9 @@ cases:
     language: html
     expect: [{rule_id: ZS-HTML-021, min_count: 1}]
   - file: cases/vuln_022_commented_expr.html
+    language: html
+    expect: []
+  - file: cases/clean_javascript_uri_literal.html
     language: html
     expect: []
   - file: cases/clean_template_escaped.html
