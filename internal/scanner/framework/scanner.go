@@ -35,6 +35,7 @@ var checks = []check{
 	phpIniCookieInsecureCheck,
 	githubActionsUnpinnedCheck,
 	dockerComposePrivilegedCheck,
+	rawHTMLBindingCheck,
 }
 
 // FrameworkScanner detects framework-level security misconfigurations by
