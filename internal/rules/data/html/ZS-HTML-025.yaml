@@ -1,0 +1,36 @@
+id: ZS-HTML-025
+lifecycle: released
+name: EJS raw output (<%- %> unescaped)
+version: "1.0.0"
+language: html
+category: xss
+severity: medium
+confidence: medium
+cwe:
+  - CWE-79
+owasp:
+  - "A05:2025"
+rationale: |
+  In EJS, <%= value %> HTML-escapes its output while <%- value %> writes it
+  verbatim. A value that carries anything a user supplied (a query parameter,
+  a stored profile field, an error message) reaches the page as raw markup:
+  reflected or stored XSS.
+description: |
+  Flags an EJS <%- expression %> output tag in a .ejs template. Template
+  composition (include, partial, layout body, contentFor) renders trusted
+  markup the application built and is skipped, as is an expression that
+  passes through an escaping function first.
+message: "EJS <%- %> writes this value without HTML escaping — use <%= %> or sanitize the value (XSS)"
+references:
+  - https://ejs.co/#docs
+  - https://cwe.mitre.org/data/definitions/79.html
+tags: [xss, template, ejs]
+match:
+  kind: call
+  callee: template.raw_expr
+  filters:
+    - not:
+        kind: call
+        filters:
+          - argument_literal_matches: "^(include|partial|contentFor|layout)\\b|^(body|content|yield)$|(?i)\\b(escape|escapeHTML|encodeURIComponent|sanitize|DOMPurify)\\s*\\("
+fix_suggestion: "Use the escaping <%= value %> form; if markup is required, sanitize it server-side with an allowlist sanitizer before rendering."

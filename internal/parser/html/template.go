@@ -30,6 +30,11 @@ const (
 	// (Angular, Vue) never evaluate interpolations inside comments, so there
 	// a commented {{ }} is inert text.
 	TemplateCommentExprCallee = "template.comment_expr"
+	// TemplateRawExprCallee is one EJS <%- expr %> raw (unescaped) output
+	// tag; its literal argument is the expression text. <%= expr %> escapes
+	// and is not emitted. Only .ejs files are scanned for it, because in a
+	// JSP or ERB file <%- is a comment or trim marker, not an output tag.
+	TemplateRawExprCallee = "template.raw_expr"
 )
 
 var (
@@ -43,6 +48,8 @@ var (
 		regexp.MustCompile(`(?s)\{%-?\s*(?:verbatim|raw)\b.*?%\}.*?\{%-?\s*end(?:verbatim|raw)\s*-?%\}`),
 	}
 	serverTagRe = regexp.MustCompile(`\{%-?\s*[A-Za-z_]`)
+	// EJS raw output; a trailing -%> trim marker is excluded from the body.
+	ejsRawExprRe = regexp.MustCompile(`(?s)<%-(.{0,400}?)-?%>`)
 )
 
 type byteRange struct{ start, end int }
@@ -63,7 +70,8 @@ func inRanges(rs []byteRange, off int) bool {
 // same expressions also appear inside attribute values and <script> bodies,
 // where they are just as dangerous.
 func collectTemplateNodes(rootNode *sitter.Node, source []byte, path string, parent *ir.IRNode) []*ir.IRNode {
-	if !strings.Contains(string(source), "{{") && !strings.Contains(string(source), "{%") {
+	ejs := strings.HasSuffix(strings.ToLower(path), ".ejs") && strings.Contains(string(source), "<%-")
+	if !ejs && !strings.Contains(string(source), "{{") && !strings.Contains(string(source), "{%") {
 		return nil
 	}
 	var comments []byteRange
@@ -118,6 +126,17 @@ func collectTemplateNodes(rootNode *sitter.Node, source []byte, path string, par
 			continue
 		}
 		emit(TemplateTagCallee, body, m[0], m[1], inRanges(comments, m[0]))
+	}
+	if ejs {
+		for _, m := range ejsRawExprRe.FindAllSubmatchIndex(source, -1) {
+			body := trimTemplateBody(string(source[m[2]:m[3]]))
+			// <%-- is a comment form, never output (the check is on the raw
+			// byte because trimTemplateBody strips a leading "-").
+			if body == "" || source[m[2]] == '-' {
+				continue
+			}
+			emit(TemplateRawExprCallee, body, m[0], m[1], inRanges(comments, m[0]))
+		}
 	}
 	sort.SliceStable(out, func(i, j int) bool {
 		a, b := out[i].Location, out[j].Location

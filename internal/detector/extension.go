@@ -27,6 +27,11 @@ var extMap = map[string]core.Language{
 	".java": core.LangJava,
 	".html": core.LangHTML,
 	".htm":  core.LangHTML,
+	// Server-side template languages whose output is HTML. They go through the
+	// HTML builder, which also emits their template-layer call nodes.
+	".ejs":        core.LangHTML,
+	".hbs":        core.LangHTML,
+	".handlebars": core.LangHTML,
 }
 
 // shebangMap maps known shebang interpreter strings to their language.

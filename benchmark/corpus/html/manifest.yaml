@@ -75,3 +75,9 @@ cases:
   - file: cases/clean_xss_html_binding.html
     language: html
     expect: []
+  - file: cases/vuln_xss_ejs_raw.ejs
+    language: html
+    expect: [{rule_id: ZS-HTML-025, min_count: 1}]
+  - file: cases/clean_xss_ejs_raw.ejs
+    language: html
+    expect: []
