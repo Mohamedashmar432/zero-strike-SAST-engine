@@ -18,7 +18,7 @@ for slug, gt in SET.items():
     g = json.load(open(f"{GT}/{gt}/ground-truth.json", encoding="utf-8")); d = f"{WORK}/repos/{slug}"
     if not os.path.isdir(d):
         subprocess.run(["git", "-c", "core.longpaths=true", "clone", "-q", g["repo_url"], d])
-        subprocess.run(["git", "-C", d, "checkout", "-q", g["commit_sha"]])
+        subprocess.run(["git", "-c", "core.longpaths=true", "-C", d, "checkout", "-q", g["commit_sha"]])
     out = f"{WORK}/out/{slug}.json"
     subprocess.run([BIN, "scan", d, "--format", "json", "--enable-secrets", "--enable-framework-checks", "--no-cache", "-o", out], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     ents = g["findings"]
