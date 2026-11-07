@@ -64,3 +64,9 @@ cases:
     expect: [{rule_id: ZS-CFG-012, min_count: 1}]
   - file: cases/gha/.github/workflows/first_party.yml
     expect: []
+  - file: cases/express/vuln_helmet_in_comments.js
+    expect: [{rule_id: ZS-CFG-002, min_count: 1}]
+  - file: cases/frontend/vuln_bypass.component.html
+    expect: [{rule_id: ZS-CFG-020, min_count: 1}]
+  - file: cases/frontend/clean_default.component.html
+    expect: []

@@ -34,7 +34,9 @@ func detectExpressMissingHelmet(path string, data []byte) []core.Finding {
 	if !expressCallRe.Match(data) {
 		return nil
 	}
-	if strings.Contains(strings.ToLower(string(data)), "helmet") {
+	// Comments are blanked first: a commented-out require("helmet") or a
+	// "Fix: use helmet" note is not a registration.
+	if strings.Contains(strings.ToLower(string(stripJSComments(data))), "helmet") {
 		return nil
 	}
 
@@ -68,4 +70,47 @@ func detectExpressMissingHelmet(path string, data []byte) []core.Finding {
 	// and counted instead (see core.Tier).
 	f.Tier = core.TierHardening
 	return []core.Finding{f}
+}
+
+// stripJSComments blanks // and /* */ comments in JS/TS source, keeping
+// newlines so line numbers survive. String and template literals are left
+// alone so "http://x" is not read as a comment. A regex literal containing a
+// quote can confuse it; the effect is a missed or extra comment span, which
+// only matters to the substring tests that call it.
+func stripJSComments(src []byte) []byte {
+	out := make([]byte, len(src))
+	copy(out, src)
+	var quote byte
+	for i := 0; i < len(src); i++ {
+		c := src[i]
+		if quote != 0 {
+			if c == '\\' {
+				i++
+			} else if c == quote || (c == '\n' && quote != '`') {
+				quote = 0
+			}
+			continue
+		}
+		switch {
+		case c == '"' || c == '\'' || c == '`':
+			quote = c
+		case c == '/' && i+1 < len(src) && src[i+1] == '/':
+			for ; i < len(src) && src[i] != '\n'; i++ {
+				out[i] = ' '
+			}
+			i--
+		case c == '/' && i+1 < len(src) && src[i+1] == '*':
+			j := i + 2
+			for j < len(src) && !(src[j-1] == '*' && src[j] == '/') {
+				j++
+			}
+			for k := i; k <= j && k < len(src); k++ {
+				if src[k] != '\n' {
+					out[k] = ' '
+				}
+			}
+			i = j
+		}
+	}
+	return out
 }

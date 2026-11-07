@@ -280,3 +280,16 @@ func TestFrameworkScanner_RejectsAssetData(t *testing.T) {
 		t.Error("framework scanner must accept a root docker-compose.yml")
 	}
 }
+
+func TestExpressHelmetCheckIgnoresComments(t *testing.T) {
+	path := "express/vuln_helmet_in_comments.js"
+	vuln := detectExpressMissingHelmet(path, readFixture(t, path))
+	if len(vuln) != 1 || vuln[0].RuleID != "ZS-CFG-002" {
+		t.Fatalf("helmet named only in comments must not suppress ZS-CFG-002, got %+v", vuln)
+	}
+
+	live := []byte("const app = require('express')();\nconst helmet = require('helmet'); // headers\napp.use(helmet());\napp.listen(1);\n")
+	if got := detectExpressMissingHelmet("app.js", live); len(got) != 0 {
+		t.Errorf("a live helmet registration must still suppress the finding, got %+v", got)
+	}
+}
