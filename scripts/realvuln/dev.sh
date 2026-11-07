@@ -5,7 +5,7 @@ BIN="$1"; OUT="$2"; BENCH="$3"; GT="${GT:-$BENCH/../rv/Real-Vuln-Benchmark/groun
 HERE="$(cd "$(dirname "$0")" && pwd)"
 mkdir -p "$OUT"; cd "$BENCH" || exit 1
 for r in pygoat vulpy juice-shop dvws-node healthcare-clinic-nextjs djangoat nodegoat vampi vulnnodeapp; do
-  "$BIN" scan "repos/$r" --format json --enable-secrets --enable-framework-checks -o "$OUT/$r.json" >/dev/null 2>&1
+  "$BIN" scan "repos/$r" --format json --enable-secrets --enable-framework-checks --no-cache -o "$OUT/$r.json" >/dev/null 2>&1
 done
 python -I "$HERE/score.py" "$GT" "$OUT" pygoat=realvuln-pygoat vulpy=realvuln-vulpy juice-shop=realvuln-juice-shop \
  dvws-node=realvuln-dvws-node healthcare-clinic-nextjs=vc-claude-code-seeded-v3-healthcare-clinic-nextjs \
