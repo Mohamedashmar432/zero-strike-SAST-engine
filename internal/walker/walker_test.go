@@ -1,6 +1,7 @@
 package walker_test
 
 import (
+	"strings"
 	"os"
 	"path/filepath"
 	"sort"
@@ -329,13 +330,20 @@ func TestWalk_SubdirectoryRecursion(t *testing.T) {
 	}
 }
 
-// TestWalk_AssetDirEmitsOnlyDataFiles covers the data-only descent into
-// static/public/assets/media: code there stays skipped, but committed data
-// files are emitted flagged AssetData so only the secrets scanner reads them.
+// TestWalk_AssetDirEmitsOnlyDataFiles covers the descent into
+// static/public/assets/media: committed data files are emitted flagged
+// AssetData so only the secrets scanner reads them, first-party browser code
+// is emitted as ordinary source, and vendored or minified code stays skipped.
 func TestWalk_AssetDirEmitsOnlyDataFiles(t *testing.T) {
 	root := makeTempDir(t)
 	writeFile(t, filepath.Join(root, "static", "jquery.min.js"), "eval('bad')")
 	writeFile(t, filepath.Join(root, "static", "app.js"), "eval('bad')")
+	writeFile(t, filepath.Join(root, "static", "jquery-3.2.1.js"), "eval('bad')")
+	writeFile(t, filepath.Join(root, "static", "lib", "util.js"), "eval('bad')")
+	writeFile(t, filepath.Join(root, "static", "banner.js"), "/*! Lib v1.2.3 | MIT */\neval('bad')")
+	writeFile(t, filepath.Join(root, "static", "bundle.js"), "var a=1;"+strings.Repeat("x", 1200))
+	writeFile(t, filepath.Join(root, "public", "page.html"), "<p>ok</p>")
+	writeFile(t, filepath.Join(root, "static", "logo.png.bak"), "x")
 	writeFile(t, filepath.Join(root, "data", "static", "users.yml"), "- email: a")
 	writeFile(t, filepath.Join(root, "public", "conf", "settings.json"), "{}")
 	writeFile(t, filepath.Join(root, "public", ".env.production"), "A=b")
@@ -352,6 +360,8 @@ func TestWalk_AssetDirEmitsOnlyDataFiles(t *testing.T) {
 	}
 	want := map[string]bool{
 		"app.py":                    false,
+		"static/app.js":             false,
+		"public/page.html":          false,
 		"data/static/users.yml":     true,
 		"public/conf/settings.json": true,
 		"public/.env.production":    true,
