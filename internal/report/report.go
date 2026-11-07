@@ -28,6 +28,11 @@ type ScanStats struct {
 	// ID. Both are zero/empty when the scan ran with --include-hardening.
 	TierExcluded       int
 	TierExcludedByRule map[string]int `json:",omitempty"`
+	// ByFramework counts framework-misconfiguration findings (Kind "config")
+	// by the framework they concern: "express", "docker", "spring", ... It
+	// is a view over findings already in Findings, so a customer gate keyed on
+	// Kind or Severity is unaffected. Omitted when there are none.
+	ByFramework map[string]int `json:",omitempty"`
 }
 
 // Report is the full output of a completed scan.
