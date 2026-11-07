@@ -1,5 +1,8 @@
 id: ZS-PY-007
-lifecycle: released
+lifecycle: retired
+# Retired 2026-11-07 on measured precision: across 19 RealVuln repos this rule produced 3 true positive(s) and 6 false positive(s)
+# (precision under 35 percent, no critical-severity or proven-injection exemption applies).
+# Reversible: set lifecycle back to released. Findings of this shape are no longer reported.
 name: Weak Cryptographic Hash (MD5/SHA1)
 version: "1.0.0"
 language: python

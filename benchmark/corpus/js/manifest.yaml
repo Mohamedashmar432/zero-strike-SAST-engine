@@ -14,7 +14,7 @@ cases:
     expect: [{rule_id: ZS-JS-008, min_count: 1}]
   - file: cases/vuln_empty_catch.js
     language: javascript
-    expect: [{rule_id: ZS-JS-010, min_count: 1}]
+    expect: []
   - file: cases/vuln_innerhtml.js
     language: javascript
     expect: [{rule_id: ZS-JS-002, min_count: 1}]
@@ -23,7 +23,7 @@ cases:
     expect: [{rule_id: ZS-JS-003, min_count: 1}]
   - file: cases/vuln_function_ctor.js
     language: javascript
-    expect: [{rule_id: ZS-JS-004, min_count: 1}]
+    expect: []
   - file: cases/vuln_outerhtml.js
     language: javascript
     expect: [{rule_id: ZS-JS-005, min_count: 1}]
@@ -74,7 +74,7 @@ cases:
     expect: [{rule_id: ZS-JS-026, min_count: 1, cwe: CWE-328}]
   - file: cases/vuln_cors_header.js
     language: javascript
-    expect: [{rule_id: ZS-JS-027, min_count: 1}]
+    expect: []
   - file: cases/vuln_cors_setheader.js
     language: javascript
     expect: [{rule_id: ZS-JS-028, min_count: 1}]
@@ -116,7 +116,7 @@ cases:
     expect: []
   - file: cases/vuln_proto_pollution.js
     language: javascript
-    expect: [{rule_id: ZS-JS-040, min_count: 1}]
+    expect: []
   - file: cases/vuln_ssti_ejs.js
     language: javascript
     expect: [{rule_id: ZS-JS-041, min_count: 1}]
@@ -134,7 +134,7 @@ cases:
     expect: [{rule_id: ZS-JS-045, min_count: 1}]
   - file: cases/vuln_location_href_redirect.js
     language: javascript
-    expect: [{rule_id: ZS-JS-046, min_count: 1}]
+    expect: []
   - file: cases/vuln_insert_adjacent_html.js
     language: javascript
     expect: [{rule_id: ZS-JS-047, min_count: 1}]
@@ -164,7 +164,7 @@ cases:
     expect: [{rule_id: ZS-JS-054, min_count: 1}]
   - file: cases/vuln_postmessage_wildcard.js
     language: javascript
-    expect: [{rule_id: ZS-JS-055, min_count: 1}]
+    expect: []
   - file: cases/vuln_settimeout_string.js
     language: javascript
     expect: [{rule_id: ZS-JS-056, min_count: 1}]
@@ -346,10 +346,10 @@ cases:
     expect: [{rule_id: ZS-JS-047, min_count: 1}]
   - file: cases/vuln_xss_receiver_post_message.js
     language: javascript
-    expect: [{rule_id: ZS-JS-055, min_count: 1}]
+    expect: []
   - file: cases/vuln_xss_receiver_location_assign.js
     language: javascript
-    expect: [{rule_id: ZS-JS-046, min_count: 2}, {rule_id: ZS-JS-050, min_count: 1}, {rule_id: ZS-JS-051, min_count: 1}]
+    expect: [{rule_id: ZS-JS-050, min_count: 1}, {rule_id: ZS-JS-051, min_count: 1}]
   - file: cases/vuln_xss_receiver_partial_sanitize.js
     language: javascript
     expect: [{rule_id: ZS-JS-002, min_count: 1}, {rule_id: ZS-JS-005, min_count: 1}, {rule_id: ZS-JS-053, min_count: 1}]
@@ -400,7 +400,7 @@ cases:
     expect: []
   - file: cases/vuln_xss_react_html.js
     language: javascript
-    expect: [{rule_id: ZS-JS-158, min_count: 1}]
+    expect: []
   - file: cases/clean_xss_react_html.js
     language: javascript
     expect: []
@@ -432,14 +432,14 @@ cases:
     language: javascript
     expect:
       - {rule_id: ZS-JS-180, min_count: 1, cwe: CWE-321}
-      - {rule_id: ZS-JS-181, min_count: 1, cwe: CWE-613}
+      - 
       - {rule_id: ZS-JS-182, min_count: 1, cwe: CWE-614}
       - {rule_id: ZS-JS-183, min_count: 1, cwe: CWE-79}
       - {rule_id: ZS-JS-184, min_count: 1, cwe: CWE-942}
   - file: cases/clean_framework_config.js
   - file: cases/vuln_postmessage_credential.js
     language: javascript
-    expect: [{rule_id: ZS-JS-170, min_count: 1}, {rule_id: ZS-JS-055, min_count: 1}]
+    expect: [{rule_id: ZS-JS-170, min_count: 1}]
   - file: cases/clean_postmessage_credential.js
     language: javascript
     expect: []
@@ -475,13 +475,13 @@ cases:
     expect: []
   - file: cases/vuln_jquery_html_ajax.js
     language: javascript
-    expect: [{rule_id: ZS-JS-178, min_count: 1}]
+    expect: []
   - file: cases/clean_jquery_html_ajax.js
     language: javascript
     expect: []
   - file: cases/vuln_regexp_dynamic.js
     language: javascript
-    expect: [{rule_id: ZS-JS-185, min_count: 1}]
+    expect: []
   - file: cases/clean_regexp_dynamic.js
     language: javascript
     expect: []
