@@ -280,3 +280,84 @@ func TestFrameworkScanner_RejectsAssetData(t *testing.T) {
 		t.Error("framework scanner must accept a root docker-compose.yml")
 	}
 }
+
+func TestExpressHelmetCheckIgnoresComments(t *testing.T) {
+	path := "express/vuln_helmet_in_comments.js"
+	vuln := detectExpressMissingHelmet(path, readFixture(t, path))
+	if len(vuln) != 1 || vuln[0].RuleID != "ZS-CFG-002" {
+		t.Fatalf("helmet named only in comments must not suppress ZS-CFG-002, got %+v", vuln)
+	}
+
+	live := []byte("const app = require('express')();\nconst helmet = require('helmet'); // headers\napp.use(helmet());\napp.listen(1);\n")
+	if got := detectExpressMissingHelmet("app.js", live); len(got) != 0 {
+		t.Errorf("a live helmet registration must still suppress the finding, got %+v", got)
+	}
+}
+
+func TestDockerfileCheck(t *testing.T) {
+	vuln := detectDockerfile("docker/Dockerfile.vuln", readFixture(t, "docker/Dockerfile.vuln"))
+	byRule := map[string]core.Finding{}
+	for _, f := range vuln {
+		byRule[f.RuleID] = f
+	}
+	for _, id := range []string{"ZS-CFG-021", "ZS-CFG-022", "ZS-CFG-023"} {
+		f, ok := byRule[id]
+		if !ok {
+			t.Fatalf("expected a %s finding, got %+v", id, vuln)
+		}
+		if f.Tier != core.TierHardening {
+			t.Errorf("%s must be hardening tier, got %q", id, f.Tier)
+		}
+	}
+	secrets := 0
+	for _, f := range vuln {
+		if f.RuleID == "ZS-CFG-024" {
+			secrets++
+			if f.Tier == core.TierHardening {
+				t.Errorf("a literal credential in ENV/ARG is a security finding, got tier %q", f.Tier)
+			}
+		}
+	}
+	if secrets != 2 {
+		t.Errorf("expected 2 ZS-CFG-024 findings (ENV DB_PASSWORD, ARG API_TOKEN), got %d", secrets)
+	}
+	unpinned := 0
+	for _, f := range vuln {
+		if f.RuleID == "ZS-CFG-022" {
+			unpinned++
+		}
+	}
+	if unpinned != 2 {
+		t.Errorf("expected 2 ZS-CFG-022 findings (ubuntu:latest, untagged node), got %d", unpinned)
+	}
+
+	clean := detectDockerfile("docker/Dockerfile.clean", readFixture(t, "docker/Dockerfile.clean"))
+	if len(clean) != 0 {
+		t.Errorf("expected no finding on a pinned, non-root Dockerfile, got %+v", clean)
+	}
+}
+
+func TestSpringErrorAndH2Checks(t *testing.T) {
+	vulnPath := "spring/application-vuln-errors.properties"
+	vulnData := readFixture(t, vulnPath)
+	if got := detectSpringStacktrace(vulnPath, vulnData); len(got) != 1 || got[0].RuleID != "ZS-CFG-025" {
+		t.Fatalf("expected 1 ZS-CFG-025 finding, got %+v", got)
+	}
+	if got := detectSpringH2Console(vulnPath, vulnData); len(got) != 1 || got[0].RuleID != "ZS-CFG-026" {
+		t.Fatalf("expected 1 ZS-CFG-026 finding, got %+v", got)
+	}
+
+	cleanPath := "spring/application-clean-errors.properties"
+	cleanData := readFixture(t, cleanPath)
+	if got := detectSpringStacktrace(cleanPath, cleanData); len(got) != 0 {
+		t.Errorf("expected no ZS-CFG-025 finding for include-stacktrace=never, got %+v", got)
+	}
+	if got := detectSpringH2Console(cleanPath, cleanData); len(got) != 0 {
+		t.Errorf("expected no ZS-CFG-026 finding for h2 console disabled, got %+v", got)
+	}
+
+	yml := []byte("server:\n  error:\n    include-stacktrace: always\nspring:\n  h2:\n    console:\n      enabled: true\n")
+	if len(detectSpringStacktrace("application.yml", yml)) != 1 || len(detectSpringH2Console("application.yml", yml)) != 1 {
+		t.Errorf("both checks must read the YAML form too")
+	}
+}

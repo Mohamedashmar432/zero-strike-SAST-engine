@@ -60,6 +60,13 @@ var credentialRuleIDs = map[string]bool{
 	"ZS-TS-141":  true,
 	"ZS-TS-143":  true,
 	"ZS-TS-146":  true,
+	// A Django DATABASES password is a ZS-PY-141 hit on the same line when
+	// the value is not a placeholder; one literal is one finding. ZS-JS/TS-180
+	// is key material (CWE-321) but shares a line with ZS-SEC-016, which now
+	// reports the same weakness for signing-secret keys.
+	"ZS-PY-180": true,
+	"ZS-JS-180": true,
+	"ZS-TS-180": true,
 }
 
 // normalizedClass returns the cross-engine finding class for f, or "" when f

@@ -17,15 +17,23 @@ rationale: |
   briefly, or from an internal network an attacker has pivoted into — anyone
   who can trigger an exception gains full remote code execution.
 description: |
-  Detects app.run() called with debug=True.
-message: "app.run(debug=True) detected — never enable the debugger in production"
+  Detects run() called with debug=True on a plain variable receiver: app.run,
+  vuln_app.run, application.run, server.run. The receiver name is not
+  pinned to "app" because Flask apps are bound to any name (and connexion
+  wraps one). A dotted receiver (self.app.run), a bare run(), and the
+  standard-library runners (subprocess.run, asyncio.run) are not matched.
+message: "run(debug=True) detected — never enable the debugger in production"
 references:
   - https://owasp.org/Top10/2025/A02_2025-Security_Misconfiguration/
 tags: [misconfiguration, flask, debug-mode]
 match:
   kind: call
-  callee: app.run
   filters:
+    - callee_pattern: "^[A-Za-z_][A-Za-z0-9_]*\\.run$"
+    - not:
+        kind: call
+        filters:
+          - callee_pattern: "^(subprocess|asyncio|os|pytest|unittest|trio|anyio|loop)\\.run$"
     - kwarg:
         name: debug
         value_pattern: "^True$"

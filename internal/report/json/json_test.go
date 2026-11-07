@@ -185,3 +185,30 @@ func TestJSONReporter_Render_Grouped(t *testing.T) {
 		t.Errorf("Groups[1] findings len = %d, want 1", len(out.Groups[1].Findings))
 	}
 }
+
+func TestJSONReporter_ByFrameworkIsAdditive(t *testing.T) {
+	render := func(by map[string]int) map[string]json.RawMessage {
+		rep := &report.Report{Stats: report.ScanStats{FilesScanned: 1, ByFramework: by}}
+		var buf bytes.Buffer
+		if err := jsonreport.New().Render(rep, &buf); err != nil {
+			t.Fatalf("Render: %v", err)
+		}
+		var out struct {
+			Stats map[string]json.RawMessage `json:"Stats"`
+		}
+		if err := json.Unmarshal(buf.Bytes(), &out); err != nil {
+			t.Fatalf("unmarshal: %v", err)
+		}
+		return out.Stats
+	}
+	if _, ok := render(nil)["ByFramework"]; ok {
+		t.Error("ByFramework must be omitted when no framework finding exists, so existing reports are byte-identical")
+	}
+	var compact bytes.Buffer
+	if err := json.Compact(&compact, render(map[string]int{"docker": 2})["ByFramework"]); err != nil {
+		t.Fatalf("compact: %v", err)
+	}
+	if got := compact.String(); got != `{"docker":2}` {
+		t.Errorf("ByFramework = %s, want {\"docker\":2}", got)
+	}
+}

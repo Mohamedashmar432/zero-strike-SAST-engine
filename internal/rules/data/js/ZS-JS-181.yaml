@@ -1,0 +1,31 @@
+id: ZS-JS-181
+lifecycle: released
+name: JWT Verification Ignores Expiration
+version: "1.0.0"
+language: javascript
+category: authentication
+severity: medium
+confidence: high
+cwe:
+  - CWE-613
+owasp:
+  - "A07:2025"
+rationale: |
+  jsonwebtoken checks the exp claim in verify() unless ignoreExpiration is
+  true. With it set, a token that was valid once is valid forever: a leaked,
+  logged or stolen token never ages out, and the expiry the issuer put in
+  it (expiresIn) is decoration. Logout and rotation stop meaning anything.
+description: |
+  Detects an ignoreExpiration: true entry in an options object. The finding
+  sits on the setting itself, so one shared options object reused by many
+  verify() calls is one finding, at the line that needs to change.
+message: "verify({ ignoreExpiration: true }) detected — expired tokens are accepted"
+references:
+  - https://github.com/auth0/node-jsonwebtoken#jwtverifytoken-secretorpublickey-options-callback
+  - https://cwe.mitre.org/data/definitions/613.html
+tags: [jwt, session, misconfiguration]
+match:
+  kind: keyword_argument
+  lhs_identifier: "^ignoreExpiration$"
+  rhs_literal: "^true$"
+fix_suggestion: "Remove ignoreExpiration; handle TokenExpiredError by refreshing or re-authenticating."

@@ -296,6 +296,12 @@ func scanCmd() *cobra.Command {
 			for _, f := range result.Findings {
 				stats.ByScanner[string(f.Kind)]++
 				stats.ByKind[f.Kind]++
+				if f.Config != nil && f.Config.Framework != "" {
+					if stats.ByFramework == nil {
+						stats.ByFramework = make(map[string]int)
+					}
+					stats.ByFramework[f.Config.Framework]++
+				}
 				stats.BySeverity[f.Severity]++
 				if f.Language != "" && f.Language != core.LangUnknown {
 					stats.ByLanguage[f.Language]++

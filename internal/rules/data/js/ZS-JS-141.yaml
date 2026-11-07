@@ -19,7 +19,7 @@ rationale: |
   when they run against a deployed database.
 description: |
   A dict/object entry or keyword argument whose key is exactly a credential
-  name (password, passwd, pwd, secret, client_secret, api_key, access_token,
+  name (password, passwd, pwd, client_secret, api_key, access_token,
   private_key) has a string literal of 4 or more non-space characters as its
   value. In JS/TS an environment fallback (process.env.X || 'literal') counts
   too: the literal is what runs whenever the variable is unset.
@@ -31,7 +31,7 @@ references:
 tags: [hardcoded-credential, authentication]
 match:
   kind: keyword_argument
-  lhs_identifier: "(?i)^(password|passwd|pwd|passphrase|pass_?word|secret|secret_?key|client_?secret|api_?key|apikey|access_?token|auth_?token|private_?key)$"
+  lhs_identifier: "(?i)^(password|passwd|pwd|passphrase|pass_?word|client_?secret|api_?key|apikey|access_?token|auth_?token|private_?key)$"
   rhs_literal: "(?i)^(process\\.env\\.[A-Za-z0-9_]+\\s*(\\|\\||\\?\\?)\\s*)?[\"'`][^\"'`\\s$]{4,}[\"'`]$"
   filters:
       - not:
