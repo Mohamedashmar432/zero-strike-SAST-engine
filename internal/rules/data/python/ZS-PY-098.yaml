@@ -20,6 +20,9 @@ description: |
   true value. A non-literal httponly= value is treated as set. Calls that
   clear a cookie (an empty-string value, max_age=0, expires=0 or a 1970
   date) are skipped, as is delete_cookie, which is a different method.
+  One finding per call: a call that is also missing Secure is reported once,
+  by ZS-PY-099 (CWE-614), so this rule fires only when Secure is set and
+  HttpOnly is not.
 message: "Cookie set without HttpOnly; readable by any script on the page"
 references:
   - https://owasp.org/www-community/HttpOnly
@@ -30,6 +33,9 @@ match:
   callee: set_cookie
   callee_suffix: true
   filters:
+    - kwarg:
+        name: secure
+        value_pattern: "^(True|1|[^FN0].*|F[^a].*|N[^o].*)$"
     - not:
         kind: call
         filters:

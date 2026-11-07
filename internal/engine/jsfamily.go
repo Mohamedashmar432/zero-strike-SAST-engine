@@ -189,6 +189,13 @@ func exprText(n *ir.IRNode, lang core.Language) string {
 		return attributeText(n)
 	case ir.NodeKindCall:
 		return calleeText(n) + "()"
+	case ir.NodeKindBinaryOp:
+		// A Python binary operator node has no Text of its own; render its
+		// operands joined by "+" as the JS family does, so a pattern can read
+		// the literal prefix of "/users/" + x or "/users/%s" % x.
+		if lang == core.LangPython {
+			return jsExprText(n, nil)
+		}
 	}
 	return n.Text
 }

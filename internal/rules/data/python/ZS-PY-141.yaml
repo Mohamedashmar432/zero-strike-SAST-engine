@@ -40,4 +40,14 @@ match:
       - not:
           kind: keyword_argument
           rhs_literal: "(?i)^[bru]?[\"'`](null|none|nil|undefined|true|false|empty|bearer|basic|string|text|hidden|required|not-needed|(secrets?|passwords?|passwds?|tokens?|credentials?|api[ _-]?keys?))[\"'`]$"
+      - not:
+          kind: keyword_argument
+          # A 32-128 digit hex string is a digest of a password (md5 through
+          # sha512), not the password itself.
+          rhs_literal: "^[bru]?[\"'][0-9a-fA-F]{32,128}[\"']$"
+      - not:
+          kind: keyword_argument
+          # A capitalised word with a closing period is a status message
+          # ('Updated.'), not a credential.
+          rhs_literal: "^[bru]?[\"'][A-Z][a-z]+\\.[\"']$"
 fix_suggestion: "Read the credential from the environment or a secrets manager; for seed users, generate a random password at seed time and print it once."

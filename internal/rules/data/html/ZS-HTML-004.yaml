@@ -18,9 +18,13 @@ rationale: |
   for clickjacking, drive-by navigation, and script execution against the host
   page. sandbox re-grants only the capabilities the frame actually needs.
 description: |
-  Flags <iframe> elements that have no sandbox attribute at all. Iframes that
-  declare sandbox (with any token set) are not flagged by this rule — see
-  ZS-HTML-010 for a dangerous sandbox token combination.
+  Flags <iframe> elements that have no sandbox attribute and whose src is a
+  template expression, a same-origin path or absent. An iframe with a constant
+  external src (a video or map embed) is reported by ZS-HTML-011 in the
+  hardening tier instead, because the framed origin is fixed in the markup
+  rather than attacker-influenced. Iframes that declare sandbox (with any
+  token set) are not flagged by this rule; see ZS-HTML-010 for a dangerous
+  sandbox token combination.
 message: "<iframe> without a sandbox attribute — embedded content runs unrestricted (clickjacking / script-execution risk)"
 references:
   - https://cwe.mitre.org/data/definitions/1021.html
@@ -35,4 +39,10 @@ match:
         filters:
           - kwarg:
               name: sandbox
+    - not:
+        kind: call
+        filters:
+          - kwarg:
+              name: src
+              value_pattern: "(?i)^(https?:)?//[^{<$]*$"
 fix_suggestion: "Add a sandbox attribute granting only the tokens the frame needs (e.g. sandbox=\"allow-scripts\"), and never combine allow-scripts with allow-same-origin for untrusted content."

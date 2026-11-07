@@ -32,4 +32,14 @@ match:
   callee: redirect
   filters:
     - tainted_argument: true
+    # A destination that starts with a literal "/" and a word character stays
+    # on this origin; only the tail is dynamic, so the redirect cannot leave
+    # the site. "//host", "/\host" and "/" followed by an expression (which
+    # can supply a second slash) do not match and still fire.
+    - not:
+        kind: call
+        filters:
+          - argument_matches_at:
+              index: 0
+              pattern: '^(/|\s*[bruf]?["'']/)[A-Za-z0-9_.~-]'
 fix_suggestion: "Validate the destination against an allowlist of known-safe paths/domains before passing it to redirect()."

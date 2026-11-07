@@ -272,7 +272,30 @@ cases:
     expect: [{rule_id: ZS-PY-097, min_count: 2}, {rule_id: ZS-PY-008, min_count: 1}]
   - file: cases/vuln_set_cookie_flags.py
     language: python
-    expect: [{rule_id: ZS-PY-098, min_count: 1}, {rule_id: ZS-PY-099, min_count: 1}]
+    expect: [{rule_id: ZS-PY-099, min_count: 1}]
+  # PY-098/099 merge: one finding per set_cookie call (CWE-614 when Secure is
+  # missing, else CWE-1004), plus local-path redirects and digest/message kwargs.
+  - file: cases/vuln_cookie_no_secure.py
+    language: python
+    expect: [{rule_id: ZS-PY-099, min_count: 1, cwe: CWE-614}]
+  - file: cases/vuln_cookie_no_httponly.py
+    language: python
+    expect: [{rule_id: ZS-PY-098, min_count: 1, cwe: CWE-1004}]
+  - file: cases/clean_cookie_flags.py
+    language: python
+    expect: []
+  - file: cases/clean_redirect_local_path.py
+    language: python
+    expect: []
+  - file: cases/vuln_redirect_double_slash.py
+    language: python
+    expect: [{rule_id: ZS-PY-028, min_count: 1}]
+  - file: cases/clean_credential_message.py
+    language: python
+    expect: []
+  - file: cases/vuln_credential_literal.py
+    language: python
+    expect: [{rule_id: ZS-PY-141, min_count: 1}]
   - file: cases/clean_context_rules.py
     language: python
     expect: []

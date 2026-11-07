@@ -19,9 +19,11 @@ description: |
   Flags response.set_cookie(...) (any receiver) without secure set to a
   true value. A non-literal secure= value (e.g. settings.SESSION_COOKIE_SECURE)
   is treated as set. Cookie-clearing calls are skipped as in ZS-PY-098.
-  Reported separately from the HttpOnly rule because they are different
-  weaknesses with different fixes.
-message: "Cookie set without the Secure flag; sent over plain HTTP"
+  One finding per call: this rule is the primary report for a cookie that
+  lacks Secure, and its message covers HttpOnly as well. ZS-PY-098 fires only
+  for a call that already sets Secure and still lacks HttpOnly, so no call is
+  reported twice.
+message: "Cookie set without the Secure flag (sent over plain HTTP); also pass httponly=True and a samesite value"
 references:
   - https://owasp.org/www-community/controls/SecureCookieAttribute
 tags: [cookie, misconfiguration, django, flask]
