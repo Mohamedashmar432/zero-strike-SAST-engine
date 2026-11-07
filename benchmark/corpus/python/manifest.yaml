@@ -314,3 +314,15 @@ cases:
   - file: cases/vuln_sha1_usedforsecurity_true.py
     language: python
     expect: [{rule_id: ZS-PY-011, min_count: 1}]
+  - file: cases/vuln_flask_debug_any_receiver.py
+    language: python
+    expect: [{rule_id: ZS-PY-016, min_count: 1, cwe: CWE-489}]
+  - file: cases/clean_flask_run.py
+    language: python
+    expect: []
+  - file: cases/vuln_django_db_password.py
+    language: python
+    expect: [{rule_id: ZS-PY-180, min_count: 1, cwe: CWE-798}]
+  - file: cases/clean_django_db_password.py
+    language: python
+    expect: []

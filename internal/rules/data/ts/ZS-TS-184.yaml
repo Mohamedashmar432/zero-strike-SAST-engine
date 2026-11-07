@@ -1,0 +1,38 @@
+id: ZS-TS-184
+lifecycle: released
+name: CORS Reflects Any Origin With Credentials
+version: "1.0.0"
+language: typescript
+category: security-misconfiguration
+severity: high
+confidence: high
+cwe:
+  - CWE-942
+owasp:
+  - "A02:2025"
+rationale: |
+  cors({ origin: true, credentials: true }) reflects whatever Origin the
+  request carries and also tells the browser to attach cookies. Any website a
+  logged-in user visits can then call the API with that user's session and
+  read the responses, which is the same-origin policy switched off for
+  authenticated data. Unlike a bare cors(), this combination is directly
+  exploitable.
+description: |
+  Detects cors() calls whose options set origin: true together with
+  credentials: true, inline or through a same-file options object.
+message: "cors({ origin: true, credentials: true }) — any origin can make credentialed cross-origin requests"
+references:
+  - https://portswigger.net/web-security/cors
+  - https://cwe.mitre.org/data/definitions/942.html
+tags: [cors, misconfiguration, express]
+match:
+  kind: call
+  callee: cors
+  filters:
+    - kwarg:
+        name: origin
+        value_pattern: "^true$"
+    - kwarg:
+        name: credentials
+        value_pattern: "^true$"
+fix_suggestion: "Pass an explicit allowlist: cors({ origin: ['https://app.example.com'], credentials: true })."

@@ -425,3 +425,14 @@ cases:
   - file: cases/clean_xss_json_script.js
     language: javascript
     expect: []
+  - file: cases/vuln_framework_config.js
+    language: javascript
+    expect:
+      - {rule_id: ZS-JS-180, min_count: 1, cwe: CWE-321}
+      - {rule_id: ZS-JS-181, min_count: 1, cwe: CWE-613}
+      - {rule_id: ZS-JS-182, min_count: 1, cwe: CWE-614}
+      - {rule_id: ZS-JS-183, min_count: 1, cwe: CWE-79}
+      - {rule_id: ZS-JS-184, min_count: 1, cwe: CWE-942}
+  - file: cases/clean_framework_config.js
+    language: javascript
+    expect: []

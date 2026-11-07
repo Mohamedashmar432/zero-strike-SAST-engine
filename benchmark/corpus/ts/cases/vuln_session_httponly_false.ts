@@ -4,5 +4,5 @@ const app = express();
 
 app.use(session({
   secret: 'keyboard cat',
-  cookie: { httpOnly: false }
+  cookie: { httpOnly: false, secure: true }
 }));

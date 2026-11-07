@@ -1,0 +1,43 @@
+id: ZS-TS-183
+lifecycle: released
+name: Template Engine Autoescape Disabled
+version: "1.0.0"
+language: typescript
+category: xss
+severity: high
+confidence: medium
+# Autoescape is one app-wide switch. Every {{ value }} the engine renders
+# becomes an injection point at once, so it is reported once at the setting
+# rather than once per template expression.
+once_per_file: true
+cwe:
+  - CWE-79
+owasp:
+  - "A05:2025"
+rationale: |
+  Template engines such as Swig, Nunjucks, Handlebars and EJS escape HTML in
+  every interpolated value by default. Turning autoescape off (or setting
+  noEscape) removes that protection globally: any variable that reaches a
+  template with user-influenced data becomes stored or reflected XSS, and
+  the safe-by-default review of each template no longer applies.
+description: |
+  Detects engine configuration calls (setDefaults, configure, compile,
+  create) that pass autoescape: false or noEscape: true. Reported once per
+  file, at the setting.
+message: "Template autoescape disabled — every interpolated value is rendered as raw HTML"
+references:
+  - https://cwe.mitre.org/data/definitions/79.html
+  - https://owasp.org/www-community/attacks/xss/
+tags: [xss, template, misconfiguration]
+match:
+  kind: call
+  filters:
+    - callee_pattern: "\\.(setDefaults|configure|compile|create|engine)$"
+    - any_of:
+        - kwarg:
+            name: autoescape
+            value_pattern: "^false$"
+        - kwarg:
+            name: noEscape
+            value_pattern: "^true$"
+fix_suggestion: "Leave autoescape on (the default) and mark individual trusted values with the engine's safe filter."

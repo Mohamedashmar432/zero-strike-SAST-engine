@@ -1,0 +1,41 @@
+id: ZS-JS-182
+lifecycle: released
+name: express-session Cookie secure Flag Not Set
+version: "1.0.0"
+language: javascript
+category: security-misconfiguration
+severity: medium
+confidence: medium
+cwe:
+  - CWE-614
+owasp:
+  - "A02:2025"
+rationale: |
+  express-session defaults cookie.secure to false, so a session({ secret })
+  call that never mentions secure sends the session cookie over plain HTTP
+  as well as HTTPS. Anyone on the network path can capture it and hijack the
+  session. The library default is the insecure one, so omitting the option
+  is the misconfiguration. ZS-JS-018 reports the explicit secure: false.
+description: |
+  Detects session() calls (express-session) with a secret option and no
+  secure option anywhere in their arguments. A call that sets secure to any
+  value, including secure: 'auto' or a variable, is left to ZS-JS-018 or
+  treated as a deliberate choice.
+message: "session({ secret }) without cookie.secure — the cookie is sent over plain HTTP by default"
+references:
+  - https://www.npmjs.com/package/express-session#cookiesecure
+tags: [misconfiguration, express, cookie, session]
+match:
+  kind: call
+  callee: session
+  filters:
+    - kwarg:
+        name: secret
+        value_pattern: ""
+    - not:
+        kind: call
+        filters:
+          - kwarg:
+              name: secure
+              value_pattern: ""
+fix_suggestion: "Set cookie: { secure: true } (behind app.set('trust proxy', 1) if running behind a reverse proxy)."

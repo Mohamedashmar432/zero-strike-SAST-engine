@@ -1,0 +1,33 @@
+id: ZS-PY-180
+lifecycle: released
+name: Django DATABASES Password Hardcoded
+version: "1.0.0"
+language: python
+category: authentication
+severity: high
+confidence: medium
+cwe:
+  - CWE-798
+owasp:
+  - "A07:2025"
+rationale: |
+  A literal PASSWORD in a Django DATABASES entry ships the database login
+  with the source: it is in every clone, every image layer and the git
+  history, and it is the same in every environment the settings module
+  loads in. Weak or default-looking values ('password', 'root', 'postgres')
+  are the worst case, because they are also what an attacker tries first,
+  so this rule deliberately does not skip them the way ZS-PY-141 does.
+description: |
+  A dict entry named exactly PASSWORD (the Django DATABASES key, upper case)
+  has a non-empty string literal value. Empty strings and run-time lookups
+  (os.environ, env(), config()) are not literals and are not reported.
+message: "Hardcoded database password in a Django DATABASES entry - read it from the environment or a secrets manager"
+references:
+  - https://docs.djangoproject.com/en/stable/ref/settings/#databases
+  - https://cwe.mitre.org/data/definitions/798.html
+tags: [hardcoded-credential, django, database]
+match:
+  kind: keyword_argument
+  lhs_identifier: "^PASSWORD$"
+  rhs_literal: "^[bru]?[\"'][^\"'\\s]{1,}[\"']$"
+fix_suggestion: "Use 'PASSWORD': os.environ['DB_PASSWORD'] (or django-environ) and keep the value out of the repository."
