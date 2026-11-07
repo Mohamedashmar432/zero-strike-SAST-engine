@@ -75,3 +75,32 @@ func TestPrecisionG2_InnerHTMLTernaryOfLiterals(t *testing.T) {
 		t.Error("ZS-JS-002 must still fire when a branch is the tainted value")
 	}
 }
+
+func TestPrecisionG2_CsrfExemptOnlyMattersWhenTheViewReadsABody(t *testing.T) {
+	_, idx := loadPythonRules(t)
+	render := "@csrf_exempt\ndef landing(request):\n    if not request.user.is_authenticated:\n        return redirect('login')\n    return render(request, 'a.html')\n"
+	if hasRule(matchSource(t, idx, render), "ZS-PY-090") {
+		t.Error("ZS-PY-090 must not fire on an exempt view that never reads a body")
+	}
+	for _, src := range []string{
+		"@csrf_exempt\ndef pay(request):\n    amount = request.POST.get('amount')\n    return render(request, 'a.html')\n",
+		"@csrf_exempt\ndef pay(request):\n    if request.method == 'POST':\n        return render(request, 'a.html')\n",
+		"@csrf_exempt\ndef pay(request):\n    body = json.loads(request.body)\n    return JsonResponse(body)\n",
+	} {
+		if !hasRule(matchSource(t, idx, src), "ZS-PY-090") {
+			t.Errorf("ZS-PY-090 must still fire on an exempt view that reads a body: %s", src)
+		}
+	}
+}
+
+func TestPrecisionG2_TranslationLabelIsNotACredential(t *testing.T) {
+	idx := loadJSRules(t)
+	label := "var lang = {\n  \"Password\": \"Contraseña\"\n};\n"
+	if hasRule(matchJSSource(t, idx, label), "ZS-JS-141") {
+		t.Error("ZS-JS-141 must not fire on a Title-case translation label")
+	}
+	cred := "var cfg = {\n  password: \"Tr0ub4dor-horse\"\n};\n"
+	if !hasRule(matchJSSource(t, idx, cred), "ZS-JS-141") {
+		t.Error("ZS-JS-141 must still fire on a literal password")
+	}
+}

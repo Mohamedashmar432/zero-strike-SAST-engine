@@ -38,4 +38,8 @@ match:
         kind: decorator
         filters:
           - decorator_stack_matches: "(^|\\.)(require_GET|require_safe)$"
+    # The exemption only matters when the view acts on a submitted body: one
+    # that never reads POST, FILES, the raw body, JSON or a write method only
+    # renders or redirects, so a forged cross-site form has nothing to trigger.
+    - decorated_definition_mentions: "(?i)^[\"']?(POST|PUT|PATCH|DELETE|FILES|body|data|json|get_json|form|files|values)[\"']?$"
 fix_suggestion: "Remove @csrf_exempt and send the CSRF token with the request (form field or X-CSRFToken header); for a token-authenticated API, authenticate with a header instead of a cookie."

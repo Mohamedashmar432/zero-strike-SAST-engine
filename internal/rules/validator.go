@@ -160,6 +160,7 @@ func validateFilters(where string, fs []Filter) []string {
 			"context_identifier_matches":  f.ContextIdentifierMatches,
 			"enclosing_function_calls":    f.EnclosingFunctionCalls,
 			"enclosing_function_mentions": f.EnclosingFunctionMentions,
+			"decorated_definition_mentions": f.DecoratedDefinitionMentions,
 			"argument_literal_matches":    f.ArgumentLiteralMatches,
 		} {
 			if re == "" {
