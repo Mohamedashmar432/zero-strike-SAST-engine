@@ -293,3 +293,46 @@ func TestExpressHelmetCheckIgnoresComments(t *testing.T) {
 		t.Errorf("a live helmet registration must still suppress the finding, got %+v", got)
 	}
 }
+
+func TestDockerfileCheck(t *testing.T) {
+	vuln := detectDockerfile("docker/Dockerfile.vuln", readFixture(t, "docker/Dockerfile.vuln"))
+	byRule := map[string]core.Finding{}
+	for _, f := range vuln {
+		byRule[f.RuleID] = f
+	}
+	for _, id := range []string{"ZS-CFG-021", "ZS-CFG-022", "ZS-CFG-023"} {
+		f, ok := byRule[id]
+		if !ok {
+			t.Fatalf("expected a %s finding, got %+v", id, vuln)
+		}
+		if f.Tier != core.TierHardening {
+			t.Errorf("%s must be hardening tier, got %q", id, f.Tier)
+		}
+	}
+	secrets := 0
+	for _, f := range vuln {
+		if f.RuleID == "ZS-CFG-024" {
+			secrets++
+			if f.Tier == core.TierHardening {
+				t.Errorf("a literal credential in ENV/ARG is a security finding, got tier %q", f.Tier)
+			}
+		}
+	}
+	if secrets != 2 {
+		t.Errorf("expected 2 ZS-CFG-024 findings (ENV DB_PASSWORD, ARG API_TOKEN), got %d", secrets)
+	}
+	unpinned := 0
+	for _, f := range vuln {
+		if f.RuleID == "ZS-CFG-022" {
+			unpinned++
+		}
+	}
+	if unpinned != 2 {
+		t.Errorf("expected 2 ZS-CFG-022 findings (ubuntu:latest, untagged node), got %d", unpinned)
+	}
+
+	clean := detectDockerfile("docker/Dockerfile.clean", readFixture(t, "docker/Dockerfile.clean"))
+	if len(clean) != 0 {
+		t.Errorf("expected no finding on a pinned, non-root Dockerfile, got %+v", clean)
+	}
+}

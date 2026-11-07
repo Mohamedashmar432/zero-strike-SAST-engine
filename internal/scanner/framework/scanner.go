@@ -35,6 +35,7 @@ var checks = []check{
 	phpIniCookieInsecureCheck,
 	githubActionsUnpinnedCheck,
 	dockerComposePrivilegedCheck,
+	dockerfileCheck,
 	rawHTMLBindingCheck,
 }
 
