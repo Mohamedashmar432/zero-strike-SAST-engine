@@ -33,6 +33,10 @@ type ruleYAML struct {
 	Lifecycle     string    `yaml:"lifecycle"`
 	Tier          string    `yaml:"tier"`
 	OncePerFile   bool      `yaml:"once_per_file"`
+	// AggregateIdenticalCalls: see rules.Rule.
+	AggregateIdenticalCalls bool `yaml:"aggregate_identical_calls"`
+	// ReportAtDeclaration: see rules.Rule.
+	ReportAtDeclaration bool `yaml:"report_at_declaration"`
 	SkipContexts  []string  `yaml:"skip_contexts"`
 }
 
@@ -211,6 +215,8 @@ func (l *defaultLoader) parseYAML(source string, data []byte) ([]*Rule, error) {
 		Lifecycle:     ry.Lifecycle,
 		Tier:          core.Tier(ry.Tier),
 		OncePerFile:   ry.OncePerFile,
+		AggregateIdenticalCalls: ry.AggregateIdenticalCalls,
+		ReportAtDeclaration:     ry.ReportAtDeclaration,
 		SkipContexts:  ry.SkipContexts,
 		Match:         convertMatch(ry.Match),
 	}

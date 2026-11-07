@@ -141,6 +141,9 @@ cases:
   - file: cases/vuln_jwt_alg_none.js
     language: javascript
     expect: [{rule_id: ZS-JS-048, min_count: 1}]
+  - file: cases/vuln_jwt_shared_options.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-048, min_count: 1}]
   - file: cases/vuln_document_writeln.js
     language: javascript
     expect: [{rule_id: ZS-JS-049, min_count: 1}]

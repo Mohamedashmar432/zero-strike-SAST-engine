@@ -337,6 +337,18 @@ type Rule struct {
 	// per-call defect (an app-wide cors() default registered on several
 	// routes is one policy, not one finding per route).
 	OncePerFile bool
+	// AggregateIdenticalCalls folds repeated, textually identical calls of
+	// this rule in one file (same callee, same arguments) into the first
+	// finding, which carries the occurrence count. It is opt-in per rule: it
+	// is for a rule whose identical repeats describe one decision (a trace
+	// callback installed the same way in every function), never a global
+	// dedupe, because distinct calls in one file are distinct defects.
+	AggregateIdenticalCalls bool
+	// ReportAtDeclaration (JS/TS) moves a finding whose weak option comes
+	// from a same-file options object passed by name (const opts = {...};
+	// fn(x, opts)) to that declaration, and reports it once however many calls
+	// read the object. Inline option literals keep the call as the location.
+	ReportAtDeclaration bool
 	// SkipContexts lists execution contexts the rule does not apply to.
 	// "browser" covers inline <script> blocks in HTML, Angular modules
 	// (importing @angular/core), "use client" React modules and files under

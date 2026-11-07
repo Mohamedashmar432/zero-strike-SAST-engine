@@ -4,6 +4,8 @@ package engine_test
 
 import (
 	"testing"
+
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/engine"
 )
 
 // Precision tests for the Precision-75 workstream B fixes (see
@@ -62,5 +64,72 @@ func TestPrecisionB_LocalPathRedirect(t *testing.T) {
 		if !hasRule(matchSource(t, idx, src), "ZS-PY-028") {
 			t.Errorf("ZS-PY-028 must still fire on %q", src)
 		}
+	}
+}
+
+func countRule(results []engine.MatchResult, id string) (n, occ int) {
+	for _, r := range results {
+		if r.Rule.ID == id {
+			n++
+			occ += r.Occurrences
+		}
+	}
+	return n, occ
+}
+
+func TestPrecisionB_IdenticalTraceCallsAggregate(t *testing.T) {
+	_, idx := loadPythonRules(t)
+	same := "import sqlite3\n" +
+		"def a():\n    c = sqlite3.connect('a.db')\n    c.set_trace_callback(print)\n" +
+		"def b():\n    c = sqlite3.connect('a.db')\n    c.set_trace_callback(print)\n" +
+		"def c():\n    c = sqlite3.connect('a.db')\n    c.set_trace_callback(print)\n"
+	if n, occ := countRule(matchSource(t, idx, same), "ZS-PY-078"); n != 1 || occ != 3 {
+		t.Errorf("three identical trace calls: got %d findings, %d occurrences; want 1 and 3", n, occ)
+	}
+	// Different callbacks are different decisions and are not folded.
+	diff := "import sqlite3, logging\n" +
+		"def a():\n    c = sqlite3.connect('a.db')\n    c.set_trace_callback(print)\n" +
+		"def b():\n    c = sqlite3.connect('a.db')\n    c.set_trace_callback(logging.debug)\n"
+	if n, _ := countRule(matchSource(t, idx, diff), "ZS-PY-078"); n != 2 {
+		t.Errorf("distinct trace callbacks: got %d findings, want 2", n)
+	}
+}
+
+func linesOf(results []engine.MatchResult, id string) []int {
+	var out []int
+	for _, r := range results {
+		if r.Rule.ID == id {
+			out = append(out, r.Node.Location.StartLine)
+		}
+	}
+	return out
+}
+
+func TestPrecisionB_JWTNoneReportedAtOptionsDeclaration(t *testing.T) {
+	shared := "const jwt = require('jsonwebtoken');\n" + // 1
+		"const options = {\n" + // 2
+		"  algorithms: ['HS256', 'none'],\n" + // 3
+		"};\n" + // 4
+		"function a(token) { return jwt.verify(token, 'k', options); }\n" + // 5
+		"function b(token) { return jwt.verify(token, 'k', options); }\n" // 6
+	got := linesOf(matchJSSource(t, loadJSRules(t), shared), "ZS-JS-048")
+	if len(got) != 1 || got[0] != 3 {
+		t.Errorf("JS: shared options object: got findings at lines %v, want one at line 3", got)
+	}
+	got = linesOf(matchTSSource(t, loadTSRules(t), shared), "ZS-TS-046")
+	if len(got) != 1 || got[0] != 3 {
+		t.Errorf("TS: shared options object: got findings at lines %v, want one at line 3", got)
+	}
+	// An inline options literal has no declaration to move to: one finding per call.
+	inline := "const jwt = require('jsonwebtoken');\n" +
+		"function a(t) { return jwt.verify(t, 'k', { algorithms: ['none'] }); }\n" +
+		"function b(t) { return jwt.verify(t, 'k', { algorithms: ['none'] }); }\n"
+	if got := linesOf(matchJSSource(t, loadJSRules(t), inline), "ZS-JS-048"); len(got) != 2 {
+		t.Errorf("JS: inline options: got %v, want a finding per call", got)
+	}
+	// A pinned algorithm list still does not fire.
+	pinned := "const jwt = require('jsonwebtoken');\nconst options = { algorithms: ['HS256'] };\njwt.verify(t, 'k', options);\n"
+	if hasRule(matchJSSource(t, loadJSRules(t), pinned), "ZS-JS-048") {
+		t.Error("JS: pinned algorithms must not fire")
 	}
 }

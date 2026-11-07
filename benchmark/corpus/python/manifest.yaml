@@ -322,6 +322,9 @@ cases:
   - file: cases/vuln_sqlite_trace.py
     language: python
     expect: [{rule_id: ZS-PY-078, min_count: 2, cwe: CWE-532}]
+  - file: cases/vuln_sqlite_trace_repeated.py
+    language: python
+    expect: [{rule_id: ZS-PY-078, min_count: 1}]
   - file: cases/clean_sqlite_trace.py
     language: python
     expect: []
