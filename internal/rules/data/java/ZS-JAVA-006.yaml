@@ -39,5 +39,9 @@ match:
     # traverses just as well as a tainted child. Pinning index 0 would drop
     # new File(BASE_DIR, userFilename); pinning -1 would drop
     # new File(userDir, "config.xml"). Broad is correct here.
+    # A bare helper parameter is only "tainted" because every parameter is
+    # seeded; webgoat and easybuggy path helpers took a base directory or a
+    # lesson-internal name that way. A request source must be behind it.
     - tainted_argument: true
+      require_real_source: true
 fix_suggestion: "Resolve the path with File.getCanonicalPath() and confirm it stays within the allowed base directory before use, or reject paths containing '..'."
