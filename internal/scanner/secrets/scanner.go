@@ -378,10 +378,41 @@ func scanContent(path string, data []byte) []core.Finding {
 			if d.generic && !plausibleSecret(captured, line, d.comparison) {
 				continue
 			}
-			out = append(out, newFinding(d.detectorID, d.ruleID, d.weakness(), path, lineNum+1, captured, d.severity))
+			cwe := d.weakness()
+			if d.detectorID == "json-yaml-secret" {
+				if loc := d.pattern.FindIndex(line); loc != nil && signingSecretKey(line, loc[0]) {
+					cwe = cweHardcodedKey
+				}
+			}
+			out = append(out, newFinding(d.detectorID, d.ruleID, cwe, path, lineNum+1, captured, d.severity))
 		}
 	}
 	return out
+}
+
+// signingSecretKey reports whether the key whose "secret" keyword starts at
+// line[start] names something that signs or encrypts (cookieSecret,
+// jwt_secret, a bare "secret" as in session({secret: ...})) rather than
+// authenticates a caller (client_secret). The text before the keyword is part
+// of the key: cookieSecret matches at "Secret", with "cookie" in front of it.
+func signingSecretKey(line []byte, start int) bool {
+	begin := start
+	for begin > 0 && isKeyChar(line[begin-1]) {
+		begin--
+	}
+	end := start
+	for end < len(line) && (isKeyChar(line[end]) || line[end] == '"') {
+		end++
+	}
+	key := strings.Trim(string(line[begin:end]), `"`)
+	if strings.EqualFold(key, "secret") {
+		return true
+	}
+	return keyMaterialKeyRe.MatchString(key) && !nonValueKeyRe.MatchString(key)
+}
+
+func isKeyChar(c byte) bool {
+	return c == '_' || c == '-' || (c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
 }
 
 // snakeIdentifier is the shape of a plain lowercase snake_case identifier

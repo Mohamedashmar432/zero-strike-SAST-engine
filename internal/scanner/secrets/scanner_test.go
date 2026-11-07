@@ -241,3 +241,27 @@ func TestSecretsScanner_APIKey_UnquotedYAMLStillFlagged(t *testing.T) {
 		}
 	}
 }
+
+func TestJSONYAMLSecretCWEFollowsKeyRole(t *testing.T) {
+	cases := []struct {
+		line string
+		cwe  string
+	}{
+		{`    cookieSecret: "synthetic-cookie-secret-value",`, "CWE-321"},
+		{`    "jwt_secret": "synthetic-jwt-secret-value"`, "CWE-321"},
+		{`    secret: "synthetic-session-secret-value"`, "CWE-321"},
+		{`    client_secret: "synthetic-oauth-secret-value"`, "CWE-798"},
+		{`    access_token: "synthetic-access-token-value"`, "CWE-798"},
+	}
+	for _, c := range cases {
+		var got string
+		for _, f := range scanContent("config/all.js", []byte(c.line)) {
+			if f.RuleID == "ZS-SEC-016" && len(f.CWE) == 1 {
+				got = f.CWE[0]
+			}
+		}
+		if got != c.cwe {
+			t.Errorf("%q: ZS-SEC-016 CWE = %q, want %q", c.line, got, c.cwe)
+		}
+	}
+}

@@ -1,0 +1,42 @@
+id: ZS-TS-180
+lifecycle: released
+name: Hardcoded Signing Secret in Options
+version: "1.0.0"
+language: typescript
+category: authentication
+severity: high
+confidence: medium
+cwe:
+  - CWE-321
+owasp:
+  - "A04:2025"
+rationale: |
+  The secret passed to express-session, cookie-parser, jsonwebtoken or an
+  HMAC helper signs the session cookie or token. Written as a literal it is
+  known to everyone who can read the source or its history; with it an
+  attacker forges a valid session or JWT for any user and cannot be locked
+  out without a code change. This is key material (CWE-321), the same
+  weakness ZS-PY-146 reports for Python, not a login credential.
+description: |
+  An object or keyword-argument entry named exactly secret or secret_key
+  has a string literal of 4 or more non-space characters as its value. An
+  environment fallback (process.env.X || 'literal') counts: the literal is
+  what runs whenever the variable is unset. Placeholders and field-name
+  values are excluded. Other credential names (password, api_key, token,
+  client_secret) stay with ZS-TS-141.
+message: "Hardcoded signing secret - load it from the environment or a secrets manager"
+references:
+  - https://cwe.mitre.org/data/definitions/321.html
+tags: [hardcoded-key, cryptography, session, jwt]
+match:
+  kind: keyword_argument
+  lhs_identifier: "(?i)^(secret|secret_?key)$"
+  rhs_literal: "(?i)^(process\\.env\\.[A-Za-z0-9_]+\\s*(\\|\\||\\?\\?)\\s*)?[\"'`][^\"'`\\s$]{4,}[\"'`]$"
+  filters:
+      - not:
+          kind: keyword_argument
+          rhs_literal: "(?i)(changeme|change_me|change-me|xxx|example|placeholder|dummy|sample|your[_-]|redacted|replace[_-]?me|<[^>]*>|\\$\\{|\\{\\{|%s|^[bru]?[\"'`]\\*+[\"'`]$)"
+      - not:
+          kind: keyword_argument
+          rhs_literal: "(?i)^[bru]?[\"'`](null|none|nil|undefined|true|false|empty|bearer|basic|string|text|hidden|required|not-needed|(secrets?|passwords?|passwds?|tokens?|credentials?|api[ _-]?keys?))[\"'`]$"
+fix_suggestion: "Read the secret from the environment (process.env.SESSION_SECRET) or a secrets manager and fail at start-up if it is unset."
