@@ -98,11 +98,12 @@ func TestIntegration_ConstantCollectionFindDoesNotFireZSJS039(t *testing.T) {
 
 // --- ZS-JS-040: prototype pollution via __proto__ assignment ---
 
-func TestIntegration_TaintedProtoAssignmentFiresZSJS040(t *testing.T) {
+// retired for measured precision, see commit 37cf7e3
+func TestIntegration_TaintedProtoAssignmentRetiredDoesNotFireZSJS040(t *testing.T) {
 	idx := loadJSRules(t)
 	src := "const payload = req.body.data;\nsettings.__proto__ = payload;\n"
-	if !hasRule(matchJSSource(t, idx, src), "ZS-JS-040") {
-		t.Error("expected ZS-JS-040 to fire when __proto__ RHS is tainted")
+	if hasRule(matchJSSource(t, idx, src), "ZS-JS-040") {
+		t.Error("expected retired ZS-JS-040 to NOT fire when __proto__ RHS is tainted")
 	}
 }
 
@@ -198,11 +199,12 @@ func TestIntegration_ConstantExecSyncDoesNotFireZSJS045(t *testing.T) {
 
 // --- ZS-JS-046: DOM open redirect via location.href ---
 
-func TestIntegration_TaintedLocationHrefFiresZSJS046(t *testing.T) {
+// retired for measured precision, see commit 37cf7e3
+func TestIntegration_TaintedLocationHrefRetiredDoesNotFireZSJS046(t *testing.T) {
 	idx := loadJSRules(t)
 	src := "const target = location.search;\nlocation.href = target;\n"
-	if !hasRule(matchJSSource(t, idx, src), "ZS-JS-046") {
-		t.Error("expected ZS-JS-046 to fire when location.href RHS is tainted")
+	if hasRule(matchJSSource(t, idx, src), "ZS-JS-046") {
+		t.Error("expected retired ZS-JS-046 to NOT fire when location.href RHS is tainted")
 	}
 }
 

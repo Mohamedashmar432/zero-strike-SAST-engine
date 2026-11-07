@@ -134,12 +134,12 @@ func TestIntegration_JwtDecodeFiresZSJS008(t *testing.T) {
 	}
 }
 
-// TestIntegration_EmptyCatchFiresZSJS010 verifies the new A10 rule.
-func TestIntegration_EmptyCatchFiresZSJS010(t *testing.T) {
+// retired for measured precision, see commit 37cf7e3
+func TestIntegration_EmptyCatchRetiredDoesNotFireZSJS010(t *testing.T) {
 	idx := loadJSRules(t)
 	results := matchJSSource(t, idx, "try {\n  doThing();\n} catch (e) {\n}\n")
-	if !hasRule(results, "ZS-JS-010") {
-		t.Error("expected ZS-JS-010 to fire on an empty catch block")
+	if hasRule(results, "ZS-JS-010") {
+		t.Error("expected retired ZS-JS-010 to NOT fire on an empty catch block")
 	}
 }
 

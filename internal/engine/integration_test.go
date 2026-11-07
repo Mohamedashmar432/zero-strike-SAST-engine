@@ -100,11 +100,12 @@ func TestIntegration_OpenVariablePathFiresZSPY008(t *testing.T) {
 	}
 }
 
-func TestIntegration_HashlibFiresZSPY007(t *testing.T) {
+// retired for measured precision, see commit 37cf7e3
+func TestIntegration_HashlibRetiredDoesNotFireZSPY007(t *testing.T) {
 	_, idx := loadPythonRules(t)
 	results := matchSource(t, idx, "import hashlib\nhashlib.md5(password.encode())\n")
-	if !hasRule(results, "ZS-PY-007") {
-		t.Error("expected ZS-PY-007 to fire on hashlib.md5() call")
+	if hasRule(results, "ZS-PY-007") {
+		t.Error("expected retired ZS-PY-007 to NOT fire on hashlib.md5() call")
 	}
 }
 

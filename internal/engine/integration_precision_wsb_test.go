@@ -33,8 +33,9 @@ func TestPrecisionB_HexDigestIsNotAHardcodedCredential(t *testing.T) {
 func TestPrecisionB_CookieReportedOncePerCall(t *testing.T) {
 	_, idx := loadPythonRules(t)
 	none := matchSource(t, idx, "def f(r, t):\n    r.set_cookie('auth', t)\n")
-	if !hasRule(none, "ZS-PY-099") || hasRule(none, "ZS-PY-098") {
-		t.Error("a cookie with neither flag must be reported once, by ZS-PY-099")
+	// retired for measured precision, see commit 37cf7e3
+	if hasRule(none, "ZS-PY-099") || hasRule(none, "ZS-PY-098") {
+		t.Error("a cookie with neither flag is not reported: ZS-PY-099 is retired and ZS-PY-098 must not double-report")
 	}
 	secure := matchSource(t, idx, "def f(r, t):\n    r.set_cookie('auth', t, secure=True)\n")
 	if !hasRule(secure, "ZS-PY-098") || hasRule(secure, "ZS-PY-099") {
@@ -160,13 +161,16 @@ func TestPrecisionB_PathSanitizersAreSinkAware(t *testing.T) {
 		t.Error("a random generated name must clear path taint")
 	}
 	// The real cases still fire.
+	if !hasRule(matchTSSource(t, idx, "function f(req: any) { return path.join(DIR, req.query.f); }\n"), "ZS-TS-089") {
+		t.Error("ZS-TS-089 must still fire on unsanitized request input")
+	}
+	// retired for measured precision, see commit 37cf7e3
 	for rule, src := range map[string]string{
-		"ZS-TS-089": "function f(req: any) { return path.join(DIR, req.query.f); }\n",
 		"ZS-TS-023": "function f(req: any) { return fs.readFileSync(req.query.f); }\n",
 		"ZS-TS-062": "function f(req: any) { return fs.createWriteStream(req.body.dest); }\n",
 	} {
-		if !hasRule(matchTSSource(t, idx, src), rule) {
-			t.Errorf("%s must still fire on unsanitized request input", rule)
+		if hasRule(matchTSSource(t, idx, src), rule) {
+			t.Errorf("%s is retired and must not fire", rule)
 		}
 	}
 	// A variable path-sanitized in one statement is tainted again by reassignment.
@@ -176,7 +180,7 @@ func TestPrecisionB_PathSanitizersAreSinkAware(t *testing.T) {
 	}
 }
 
-func TestPrecisionB_RouteParamsCannotCarryOperators(t *testing.T) {
+func TestPrecisionB_RouteParamsCannotCarryOperatorsRetiredDoesNotFire(t *testing.T) {
 	idx := loadTSRules(t)
 	params := "function f(req: any) {\n  const id = req.params.id;\n  return db.collection('u').updateOne({ _id: id }, { $set: { a: 1 } });\n}\n"
 	if hasRule(matchTSSource(t, idx, params), "ZS-TS-128") {
@@ -191,8 +195,9 @@ func TestPrecisionB_RouteParamsCannotCarryOperators(t *testing.T) {
 		"req.query": "function f(req: any) {\n  return db.collection('u').deleteMany(req.query.filter);\n}\n",
 		"mixed":     "function f(req: any) {\n  const f = { a: req.params.id, b: req.body.b };\n  return db.collection('u').updateOne(f, { $set: { a: 1 } });\n}\n",
 	} {
-		if !hasRule(matchTSSource(t, idx, src), "ZS-TS-128") {
-			t.Errorf("ZS-TS-128 must still fire on %s input", name)
+		// retired for measured precision, see commit 37cf7e3
+		if hasRule(matchTSSource(t, idx, src), "ZS-TS-128") {
+			t.Errorf("retired ZS-TS-128 must not fire on %s input", name)
 		}
 	}
 }

@@ -14,14 +14,20 @@ type xssExtCase struct {
 	want bool
 }
 
+// xssExtRetiredJS lists JS rules retired for measured precision, see commit
+// 37cf7e3. Their "fires" expectations flip to "does not fire"; the TS mirrors
+// are still active and keep the original expectation.
+var xssExtRetiredJS = map[string]bool{"ZS-JS-055": true, "ZS-JS-046": true}
+
 func runXSSExtCases(t *testing.T, cases []xssExtCase) {
 	t.Helper()
 	jsIdx := loadJSRules(t)
 	tsIdx := loadTSRules(t)
 	for _, tc := range cases {
+		jsWant := tc.want && !xssExtRetiredJS[tc.jsID]
 		t.Run("js/"+tc.name, func(t *testing.T) {
-			if got := hasRule(matchJSSource(t, jsIdx, tc.src), tc.jsID); got != tc.want {
-				t.Errorf("%s fired = %v, want %v\nsource: %s", tc.jsID, got, tc.want, tc.src)
+			if got := hasRule(matchJSSource(t, jsIdx, tc.src), tc.jsID); got != jsWant {
+				t.Errorf("%s fired = %v, want %v\nsource: %s", tc.jsID, got, jsWant, tc.src)
 			}
 		})
 		t.Run("ts/"+tc.name, func(t *testing.T) {
@@ -47,7 +53,7 @@ func TestIntegration_XSSExt_C1_InsertAdjacentHTMLAnyReceiver(t *testing.T) {
 }
 
 // C2: postMessage with a wildcard targetOrigin, on any receiver, argument 1 only.
-func TestIntegration_XSSExt_C2_PostMessageWildcardOrigin(t *testing.T) {
+func TestIntegration_XSSExt_C2_PostMessageWildcardOriginRetiredJSDoesNotFire(t *testing.T) {
 	runXSSExtCases(t, []xssExtCase{
 		{"fires_on_chained_receiver", "ZS-JS-055", "ZS-TS-053",
 			"frame.contentWindow.postMessage(token, '*');\n", true},
@@ -63,7 +69,7 @@ func TestIntegration_XSSExt_C2_PostMessageWildcardOrigin(t *testing.T) {
 }
 
 // C3: bare / window. / document. location assignment, not only location.href.
-func TestIntegration_XSSExt_C3_LocationAssignment(t *testing.T) {
+func TestIntegration_XSSExt_C3_LocationAssignmentRetiredJSDoesNotFire(t *testing.T) {
 	runXSSExtCases(t, []xssExtCase{
 		{"fires_on_bare_location", "ZS-JS-046", "ZS-TS-044",
 			"location = location.hash.slice(1);\n", true},

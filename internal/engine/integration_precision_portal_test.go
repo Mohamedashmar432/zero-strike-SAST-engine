@@ -222,7 +222,7 @@ func TestPrecision_UsedForSecurityFalseNotWeakHash(t *testing.T) {
 	}
 }
 
-func TestPrecision_WeakHashStillFires(t *testing.T) {
+func TestPrecision_WeakHashStillFiresExceptRetiredMD5(t *testing.T) {
 	_, idx := loadPythonRules(t)
 	for _, src := range []string{
 		"import hashlib\nh = hashlib.sha1(data)\n",
@@ -232,7 +232,8 @@ func TestPrecision_WeakHashStillFires(t *testing.T) {
 			t.Errorf("expected ZS-PY-011 on %q", src)
 		}
 	}
-	if !hasRule(matchSource(t, idx, "import hashlib\nh = hashlib.md5(data)\n"), "ZS-PY-007") {
-		t.Error("expected ZS-PY-007 on plain md5")
+	// retired for measured precision, see commit 37cf7e3
+	if hasRule(matchSource(t, idx, "import hashlib\nh = hashlib.md5(data)\n"), "ZS-PY-007") {
+		t.Error("retired ZS-PY-007 must not fire on plain md5")
 	}
 }

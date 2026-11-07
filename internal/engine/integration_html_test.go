@@ -55,7 +55,6 @@ func TestIntegration_HTMLRulesFire(t *testing.T) {
 		{"ZS-HTML-004", `<iframe src="/account/embed"></iframe>`},
 		{"ZS-HTML-011", `<iframe src="https://x.com"></iframe>`},
 		{"ZS-HTML-005", `<script src="https://cdn.x.com/a.js"></script>`},
-		{"ZS-HTML-006", `<img src="http://x.com/a.png">`},
 		{"ZS-HTML-007", `<form action="http://x.com/login"></form>`},
 		{"ZS-HTML-008", `<input type="password" autocomplete="on">`},
 		{"ZS-HTML-009", `<meta http-equiv="refresh" content="0;url=http://evil.com">`},
@@ -67,6 +66,15 @@ func TestIntegration_HTMLRulesFire(t *testing.T) {
 		if !hasRule(matchHTMLSource(t, idx, c.src), c.rule) {
 			t.Errorf("%s: expected to fire on %q", c.rule, c.src)
 		}
+	}
+}
+
+// TestIntegration_HTMLRetiredDoesNotFireZSHTML006 pins the retired rule silent.
+// retired for measured precision, see commit 37cf7e3
+func TestIntegration_HTMLRetiredDoesNotFireZSHTML006(t *testing.T) {
+	idx := loadHTMLRules(t)
+	if hasRule(matchHTMLSource(t, idx, `<img src="http://x.com/a.png">`), "ZS-HTML-006") {
+		t.Error("ZS-HTML-006 is retired and must not fire")
 	}
 }
 
