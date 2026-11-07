@@ -377,3 +377,10 @@ cases:
   - file: cases/clean_exception_text_response.py
     language: python
     expect: []
+  # Workstream F.
+  - file: cases/clean_wrappers_pass_parameter.py
+    language: python
+    expect: []
+  - file: cases/vuln_execute_param_format.py
+    language: python
+    expect: [{rule_id: ZS-PY-004, min_count: 1}]

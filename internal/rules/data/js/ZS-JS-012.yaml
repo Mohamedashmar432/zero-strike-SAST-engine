@@ -51,4 +51,12 @@ match:
   filters:
     - callee_canonical: '^(child_process\.)?exec$'
     - tainted_argument: true
+      # The command is argument 0. The callback that follows takes (error,
+      # stdout, stderr) parameters, which parameter seeding marks tainted, so
+      # scanning every argument flagged exec('ls', (error) => ...) outright.
+      tainted_argument_index: 0
+      # A wrapper that passes its own parameter straight to the sink
+      # (run(cmd) { exec(cmd) }) has built nothing here; its callers decide. A string built from
+      # the parameter, or any real source, still fires.
+      exclude_bare_parameter: true
 fix_suggestion: "Use execFile()/spawn() with an argument array instead of a shell string, or strictly allowlist/validate the input before building the command."

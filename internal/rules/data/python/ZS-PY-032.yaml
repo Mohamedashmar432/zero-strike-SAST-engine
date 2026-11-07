@@ -32,4 +32,10 @@ match:
   callee: ET.fromstring
   filters:
     - tainted_argument: true
+      # The document is argument 0; fromstring(text, parser) takes a parser second.
+      tainted_argument_index: 0
+      # A wrapper that passes its own parameter straight to the sink
+      # (def parse(xml): ET.fromstring(xml)) has built nothing here; its callers decide. A string built from
+      # the parameter, or any real source, still fires.
+      exclude_bare_parameter: true
 fix_suggestion: "Replace xml.etree.ElementTree with defusedxml.ElementTree, which disables external entity resolution by default."

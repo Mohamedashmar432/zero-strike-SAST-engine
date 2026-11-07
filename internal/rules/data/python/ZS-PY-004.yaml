@@ -45,4 +45,8 @@ match:
       # not be flagged. Matching any argument flagged it, which is the worst
       # possible false positive: it trains people away from parameterisation.
       tainted_argument_index: 0
+      # A wrapper that passes its own parameter straight to the sink
+      # (def run(sql): cursor.execute(sql)) has built nothing here; its callers decide. A string built from
+      # the parameter, or any real source, still fires.
+      exclude_bare_parameter: true
 fix_suggestion: "Use parameterized queries: cursor.execute(query, params) where params is a tuple."

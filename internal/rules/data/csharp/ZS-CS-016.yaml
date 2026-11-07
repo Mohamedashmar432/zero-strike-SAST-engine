@@ -45,4 +45,12 @@ match:
       # HttpCompletionOption decides nothing about where the request goes, so
       # a tainted value there is not SSRF.
       tainted_argument_index: 0
+      # See ZS-JS-035: a helper's URL parameter is not a source on its own.
+      require_real_source: true
+    # The destination is decided by scheme://host, so a URL that opens with a
+    # fixed host, a same-origin path, or a configuration value
+    # (process.env.X, this.baseUrl, a module constant) and only varies an id
+    # or query tail is a request to a fixed service, not SSRF. A tainted
+    # first operand, or a bare tainted variable, still fires.
+    - argument_host_fixed: 0
 fix_suggestion: "Validate the URL against an allowlist. Reject internal/private IPs and non-http(s) schemes before fetching."

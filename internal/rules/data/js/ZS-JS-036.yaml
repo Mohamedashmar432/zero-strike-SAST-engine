@@ -39,4 +39,10 @@ match:
       # forward-user-data case and was the headline false positive of this
       # rule. A tainted body is not SSRF; only a tainted URL is.
       tainted_argument_index: 0
+    # The destination is decided by scheme://host, so a URL that opens with a
+    # fixed host, a same-origin path, or a configuration value
+    # (process.env.X, this.baseUrl, a module constant) and only varies an id
+    # or query tail is a request to a fixed service, not SSRF. A tainted
+    # first operand, or a bare tainted variable, still fires.
+    - argument_host_fixed: 0
 fix_suggestion: "Validate the target URL against an allowlist of hosts and schemes before passing it to axios.post(); never post to a raw user-supplied URL."

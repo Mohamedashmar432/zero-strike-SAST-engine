@@ -64,4 +64,8 @@ match:
       # safe logger.info("User: %s", name) idiom — the substituted value
       # being attacker-controlled is the normal case, not the bug.
       tainted_argument_index: 0
+      # A wrapper that passes its own parameter straight to the sink
+      # (Log(string format, ...) { string.Format(format, ...) }) has built nothing here; its callers decide. A string built from
+      # the parameter, or any real source, still fires.
+      exclude_bare_parameter: true
 fix_suggestion: "Never build the format-string template from untrusted input; use a fixed literal template and pass tainted data only as substitution arguments."

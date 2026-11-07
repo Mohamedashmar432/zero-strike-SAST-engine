@@ -497,3 +497,6 @@ cases:
   - file: cases/clean_regexp_dynamic.ts
     language: typescript
     expect: []
+  - file: cases/clean_ssrf_fixed_host.ts
+    language: typescript
+    expect: []

@@ -39,4 +39,14 @@ match:
       # a tainted query param or header sent to a fixed, trusted endpoint is
       # not SSRF.
       tainted_argument_index: 0
+      # A request helper that takes the URL as a plain parameter
+      # (get(url) { return axios.get(url) }) is not a source on its own; a
+      # real source (req.query.url, a destructured body field) still fires.
+      require_real_source: true
+    # The destination is decided by scheme://host, so a URL that opens with a
+    # fixed host, a same-origin path, or a configuration value
+    # (process.env.X, this.baseUrl, a module constant) and only varies an id
+    # or query tail is a request to a fixed service, not SSRF. A tainted
+    # first operand, or a bare tainted variable, still fires.
+    - argument_host_fixed: 0
 fix_suggestion: "Validate the target URL against an allowlist of hosts and schemes before passing it to axios.get(); never fetch a raw user-supplied URL."

@@ -36,4 +36,12 @@ match:
       # callback): the destination is argument 0 in both shapes. Same
       # reasoning as ZS-TS-036 (http.get). Mirrors ZS-JS-082.
       tainted_argument_index: 0
+      # See ZS-JS-035: a helper's URL parameter is not a source on its own.
+      require_real_source: true
+    # The destination is decided by scheme://host, so a URL that opens with a
+    # fixed host, a same-origin path, or a configuration value
+    # (process.env.X, this.baseUrl, a module constant) and only varies an id
+    # or query tail is a request to a fixed service, not SSRF. A tainted
+    # first operand, or a bare tainted variable, still fires.
+    - argument_host_fixed: 0
 fix_suggestion: "Validate the URL's host against an allowlist before requesting; never pass raw user input as the URL."

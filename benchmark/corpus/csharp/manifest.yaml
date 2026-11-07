@@ -102,3 +102,10 @@ cases:
   - file: cases/clean.cs
     language: csharp
     expect: []
+  # Workstream F.
+  - file: cases/clean_ssrf_fixed_host_and_names.cs
+    language: csharp
+    expect: []
+  - file: cases/vuln_ssrf_httpclient_tainted_host.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-016, min_count: 1}]

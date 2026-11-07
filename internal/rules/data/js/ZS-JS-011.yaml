@@ -42,4 +42,8 @@ match:
       # parameters afterwards, so a tainted value in a later argument is
       # the CORRECT, parameterised form and must not be flagged.
       tainted_argument_index: 0
+      # A wrapper that passes its own parameter straight to the sink
+      # (run(sql) { return sequelize.query(sql) }) has built nothing here; its callers decide. A string built from
+      # the parameter, or any real source, still fires.
+      exclude_bare_parameter: true
 fix_suggestion: "Use Sequelize's replacements/bind parameter binding instead of concatenating values into the query string."
