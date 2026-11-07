@@ -31,7 +31,10 @@ match:
   lhs_identifier: "innerHTML"
   filters:
     - tainted_rhs: true
+    # Either a sanitizer wrapping the whole value, or a ternary whose two
+    # branches are both literals: the tainted condition picks a constant, it
+    # never reaches the markup (el.innerHTML = dark ? '<b>a</b>' : '<i>b</i>').
     - not:
         kind: assignment
-        rhs_literal: "^\\s*(?:(?:DOMPurify|purify)\\.sanitize|sanitizeHtml|filterXSS)\\((?:[^()]|\\([^()]*\\))*\\)\\s*$"
+        rhs_literal: "^\\s*(?:(?:DOMPurify|purify)\\.sanitize|sanitizeHtml|filterXSS)\\((?:[^()]|\\([^()]*\\))*\\)\\s*$|^[^?]*\\?\\s*(?:'[^']*'|\"[^\"]*\")\\s*:\\s*(?:'[^']*'|\"[^\"]*\")\\s*$"
 fix_suggestion: "Use textContent for text, or a sanitization library (DOMPurify) before assigning to innerHTML."

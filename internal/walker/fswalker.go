@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
 )
@@ -105,6 +106,13 @@ func (w *fsWalker) walk(
 		if assetCode {
 			rel2, _ := filepath.Rel(rootPath, fullPath)
 			if b, err := os.ReadFile(fullPath); err != nil || isVendoredAsset(rel2, b) {
+				continue
+			}
+		} else if !assetData && strings.EqualFold(filepath.Ext(de.Name()), ".js") {
+			// A minified or packed bundle outside any asset directory (altoroj
+			// WebContent/swagger-ui.js, highlight.7.3.pack.js) is third-party
+			// output nobody authored; the one-line file is what gives it away.
+			if b, err := os.ReadFile(fullPath); err == nil && hasMinifiedLine(b) {
 				continue
 			}
 		}

@@ -63,3 +63,15 @@ func TestPrecisionG2_NumericParameterIsNotInjectable(t *testing.T) {
 		t.Error("ZS-JAVA-001 must still fire when the concatenated parameter is a String")
 	}
 }
+
+func TestPrecisionG2_InnerHTMLTernaryOfLiterals(t *testing.T) {
+	idx := loadJSRules(t)
+	lit := "function f(saved) { var el = document.getElementById('t'); el.innerHTML = saved === 'dark' ? '<b>sun</b>' : '<i>moon</i>'; }"
+	if hasRule(matchJSSource(t, idx, lit), "ZS-JS-002") {
+		t.Error("ZS-JS-002 must not fire when both ternary branches are literals")
+	}
+	vuln := "function f(req) { var v = req.query.q; var el = document.getElementById('t'); el.innerHTML = v ? v : 'none'; }"
+	if !hasRule(matchJSSource(t, idx, vuln), "ZS-JS-002") {
+		t.Error("ZS-JS-002 must still fire when a branch is the tainted value")
+	}
+}

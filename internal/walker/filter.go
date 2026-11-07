@@ -258,3 +258,14 @@ func matchesIgnorePattern(pattern, relPath string) bool {
 
 	return false
 }
+
+// hasMinifiedLine reports whether content has a line longer than any
+// hand-written source file has.
+func hasMinifiedLine(content []byte) bool {
+	for _, line := range bytes.Split(content, []byte("\n")) {
+		if len(line) > maxFirstPartyLine {
+			return true
+		}
+	}
+	return false
+}
