@@ -159,11 +159,33 @@ func TestSecretsScanner_GoogleCloudKey(t *testing.T) {
 	}
 }
 
-func TestSecretsScanner_JWTToken(t *testing.T) {
+// ZS-SEC-011 is retired for measured precision (0 TP / 8 FP), see commit
+// 37cf7e3 and the note on the detector.
+func TestSecretsScanner_JWTTokenRetiredDoesNotFire(t *testing.T) {
 	jwt := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIn0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
 	fs := scanContent("auth.py", []byte(`token = "`+jwt+`"`))
-	if len(fs) == 0 || fs[0].RuleID != "ZS-SEC-011" {
-		t.Errorf("expected ZS-SEC-011, got %+v", fs)
+	if f := findRule(fs, "ZS-SEC-011"); f != nil {
+		t.Errorf("ZS-SEC-011 is retired and must not fire, got %+v", f)
+	}
+}
+
+// The JSON/YAML secret detector keeps firing on a real signing secret and drops
+// the measured false-positive shapes: a JWT value, a call expression and a
+// hashed_secret key.
+func TestSecretsScanner_JSONYAMLSecretFalsePositiveShapes(t *testing.T) {
+	jwt := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV"
+	for _, line := range []string{
+		`var token = "` + jwt + `";`,
+		`debug.append("Token: ").append(escape(token)).append("x");`,
+		`"hashed_secret": "a56a7608de9047f2afb496a055eca253399f55af",`,
+	} {
+		if f := findRule(scanContent("x.js", []byte(line)), "ZS-SEC-016"); f != nil {
+			t.Errorf("unexpected ZS-SEC-016 for %q", line)
+		}
+	}
+	real := `    cookieSecret: "synthetic-cookie-secret-value",`
+	if f := findRule(scanContent("config/all.js", []byte(real)), "ZS-SEC-016"); f == nil {
+		t.Errorf("ZS-SEC-016 must still fire on %q", real)
 	}
 }
 

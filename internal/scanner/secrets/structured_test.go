@@ -89,6 +89,11 @@ func TestSecrets_XMLCredential(t *testing.T) {
 	if f := findRule(fs, "ZS-SEC-028"); f == nil || cweOf(f) != "CWE-798" {
 		t.Fatalf("expected ZS-SEC-028, got %+v", fs)
 	}
+	// An XXE payload in a lesson is exploit input, not a config file.
+	payload := `<?xml version="1.0"?><!DOCTYPE user [<!ENTITY root SYSTEM "file:///"> ]><user><password>test1234</password></user>`
+	if f := findRule(scanContent("sol.md", []byte(payload)), "ZS-SEC-028"); f != nil {
+		t.Errorf("unexpected ZS-SEC-028 on an XXE payload line")
+	}
 	for _, line := range []string{"<password></password>", "<password>${DB_PASSWORD}</password>", "<password>changeme</password>"} {
 		if f := findRule(scanContent("c.xml", []byte(line)), "ZS-SEC-028"); f != nil {
 			t.Errorf("unexpected ZS-SEC-028 for %q", line)

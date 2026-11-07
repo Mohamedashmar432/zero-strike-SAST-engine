@@ -64,6 +64,16 @@ type detector struct {
 	// for this detector the comparison IS the hardcoded credential, so only
 	// the assertion-call words still apply.
 	comparison bool
+
+	// retired, when set, switches the detector off: scanContent skips it, so it
+	// never reports. The text is the measured reason. Restoring a detector is
+	// deleting this field, nothing else.
+	retired string
+
+	// reject, when set, drops a hit that is a known false-positive shape. It
+	// receives the file path, the whole line, the match span within the line
+	// and the captured value, and runs after the value filters above.
+	reject func(path string, line []byte, span []int, captured []byte) bool
 }
 
 const (
@@ -144,6 +154,12 @@ var detectors = []detector{
 	{
 		ruleID:     "ZS-SEC-011",
 		detectorID: "jwt-token",
+		// Retired 2026-11-07 on measured precision: across 19 RealVuln repos this
+		// detector produced 0 true positives and 8 false positives (documentation
+		// samples, jwt.io demo tokens, URLs and cookies in example requests).
+		// Reversible: delete the retired field. Tokens are still caught where they
+		// are assigned to a credential-named key by ZS-SEC-016.
+		retired: "0 TP / 8 FP across 19 RealVuln repos",
 		pattern:    regexp.MustCompile(`(eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,})`),
 		severity:   core.SeverityMedium,
 	},
@@ -190,6 +206,7 @@ var detectors = []detector{
 		severity:   core.SeverityMedium,
 		minEntropy: 3.0,
 		generic:    true,
+		reject:     rejectJSONYAMLSecret,
 	},
 	{
 		ruleID:     "ZS-SEC-017",
@@ -274,6 +291,7 @@ var detectors = []detector{
 		pattern:    regexp.MustCompile(`(?i)<(?:password|passwd|pwd|secret|api[_-]?key|access[_-]?token|client[_-]?secret)>\s*([^<\s][^<]{3,}?)\s*</`),
 		severity:   core.SeverityHigh,
 		generic:    true,
+		reject:     rejectXMLPayload,
 	},
 	{
 		// Node-provider API keys embedded in the RPC URL path rather than in
@@ -359,6 +377,9 @@ func scanContent(path string, data []byte) []core.Finding {
 	lines := bytes.Split(data, []byte("\n"))
 	for lineNum, line := range lines {
 		for _, d := range detectors {
+			if d.retired != "" {
+				continue
+			}
 			if d.generic && handled[lineNum+1] {
 				continue
 			}
@@ -391,6 +412,11 @@ func scanContent(path string, data []byte) []core.Finding {
 			if d.uri && placeholderURICredentials(string(captured)) {
 				continue
 			}
+			if d.reject != nil {
+				if loc := d.pattern.FindSubmatchIndex(line); loc != nil && d.reject(path, line, loc, captured) {
+					continue
+				}
+			}
 			cwe := d.weakness()
 			if d.detectorID == "json-yaml-secret" {
 				if loc := d.pattern.FindIndex(line); loc != nil && signingSecretKey(line, loc[0]) {
@@ -422,6 +448,33 @@ func signingSecretKey(line []byte, start int) bool {
 		return true
 	}
 	return keyMaterialKeyRe.MatchString(key) && !nonValueKeyRe.MatchString(key)
+}
+
+// rejectJSONYAMLSecret drops the three shapes that made ZS-SEC-016 report 7
+// false positives for 1 true positive across 19 RealVuln repos: a JWT value
+// (a sample or demo token, not a signing secret), a value containing a call
+// parenthesis (code such as append(escape(token)) read as a literal), and a
+// key that merely names a hash of a secret (hashed_secret in a
+// detect-secrets baseline).
+func rejectJSONYAMLSecret(_ string, line []byte, span []int, captured []byte) bool {
+	v := strings.TrimSpace(string(captured))
+	if strings.HasPrefix(v, "eyJ") || strings.ContainsAny(v, "()") {
+		return true
+	}
+	begin := span[0]
+	for begin > 0 && isKeyChar(line[begin-1]) {
+		begin--
+	}
+	return strings.Contains(strings.ToLower(string(line[begin:span[0]])), "hash")
+}
+
+// rejectXMLPayload drops a credential element on a line that is an XML
+// external-entity (XXE) attack payload, such as a lesson's
+// <!DOCTYPE ...><user><password>test</password></user>: the markup is the
+// exploit input, not a configuration file.
+func rejectXMLPayload(_ string, line []byte, _ []int, _ []byte) bool {
+	l := bytes.ToUpper(line)
+	return bytes.Contains(l, []byte("<!ENTITY")) || bytes.Contains(l, []byte("<!DOCTYPE"))
 }
 
 func isKeyChar(c byte) bool {
