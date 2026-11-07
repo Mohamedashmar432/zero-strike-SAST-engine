@@ -35,6 +35,24 @@ const (
 	// and is not emitted. Only .ejs files are scanned for it, because in a
 	// JSP or ERB file <%- is a comment or trim marker, not an output tag.
 	TemplateRawExprCallee = "template.raw_expr"
+	// TemplateScriptExprCallee is the first {{ ... }} expression inside a
+	// <script> element of a server-rendered template (one that also holds a
+	// {% ... %} tag). The server substitutes the value into JavaScript
+	// source, where HTML escaping does not make a bare value safe. An
+	// expression that is the whole content of a quoted JS string is skipped
+	// (auto-escaping entity-encodes the quote). One node per script element:
+	// the first expression in code position stands for the block.
+	TemplateScriptExprCallee = "template.script_expr"
+	// TemplateFormNoCSRFCallee is a <form> that submits with a state-changing
+	// method (POST, PUT, PATCH, DELETE) inside a server-rendered template,
+	// with no {% csrf_token %} tag before its closing </form>. Its literal
+	// argument is the form's opening tag.
+	TemplateFormNoCSRFCallee = "template.form_no_csrf"
+	// TemplateFormBadCSRFCallee is the same form when it carries something
+	// shaped like a csrf tag but malformed so it never renders as one
+	// ("{ % csrf_token % }" with stray spaces inside the braces). Django
+	// prints it as literal text and the form goes out unprotected.
+	TemplateFormBadCSRFCallee = "template.form_bad_csrf"
 )
 
 var (
@@ -47,6 +65,12 @@ var (
 		regexp.MustCompile(`(?s)\{%-?\s*comment\b.*?%\}.*?\{%-?\s*endcomment\s*-?%\}`),
 		regexp.MustCompile(`(?s)\{%-?\s*(?:verbatim|raw)\b.*?%\}.*?\{%-?\s*end(?:verbatim|raw)\s*-?%\}`),
 	}
+	// A <form> whose method attribute is not GET, and a Django csrf_token tag
+	// (the tag name may be followed by args and a "-" whitespace marker).
+	formOpenRe   = regexp.MustCompile(`(?is)<form\b[^>]*>`)
+	formMethodRe = regexp.MustCompile(`(?is)\bmethod\s*=\s*["']?\s*(post|put|patch|delete)\b`)
+	badCSRFRe    = regexp.MustCompile(`(?i)\{\s+%[^}\n]{0,40}cs?r?s?f[^}\n]{0,40}%\s*\}|\{\s*%[^}\n]{0,40}cs?r?s?f[^}\n]{0,40}%\s+\}`)
+	csrfTagRe    = regexp.MustCompile(`\{%-?\s*csrf_token\b`)
 	serverTagRe = regexp.MustCompile(`\{%-?\s*[A-Za-z_]`)
 	// EJS raw output; a trailing -%> trim marker is excluded from the body.
 	ejsRawExprRe = regexp.MustCompile(`(?s)<%-(.{0,400}?)-?%>`)
@@ -138,6 +162,39 @@ func collectTemplateNodes(rootNode *sitter.Node, source []byte, path string, par
 			emit(TemplateRawExprCallee, body, m[0], m[1], inRanges(comments, m[0]))
 		}
 	}
+	if serverRendered {
+		var scripts []byteRange
+		collectScriptBodies(rootNode, &scripts)
+		for _, sr := range scripts {
+			for _, m := range templateExprRe.FindAllSubmatchIndex(source[sr.start:sr.end], -1) {
+				start, end := sr.start+m[0], sr.start+m[1]
+				body := trimTemplateBody(string(source[sr.start+m[2] : sr.start+m[3]]))
+				if body == "" || inRanges(ignore, start) || inJSString(source, start) {
+					continue
+				}
+				emit(TemplateScriptExprCallee, body, start, end, false)
+				break
+			}
+		}
+		for _, m := range formOpenRe.FindAllIndex(source, -1) {
+			tag := string(source[m[0]:m[1]])
+			if !formMethodRe.MatchString(tag) || inRanges(comments, m[0]) {
+				continue
+			}
+			rest := source[m[1]:]
+			if i := strings.Index(strings.ToLower(string(rest)), "</form"); i >= 0 {
+				rest = rest[:i]
+			}
+			if csrfTagRe.Match(rest) {
+				continue
+			}
+			callee := TemplateFormNoCSRFCallee
+			if badCSRFRe.Match(rest) {
+				callee = TemplateFormBadCSRFCallee
+			}
+			emit(callee, tag, m[0], m[1], false)
+		}
+	}
 	sort.SliceStable(out, func(i, j int) bool {
 		a, b := out[i].Location, out[j].Location
 		if a.StartLine != b.StartLine {
@@ -167,6 +224,50 @@ func collectComments(n *sitter.Node, out *[]byteRange) {
 	}
 	for i := 0; i < int(n.ChildCount()); i++ {
 		collectComments(n.Child(i), out)
+	}
+}
+
+// inJSString reports whether the expression starting at start sits inside a
+// quoted JavaScript string on its own line. Django and Jinja auto-escaping
+// turns quotes into entities, so such a value cannot break out of the string;
+// only an expression in code position (a bare identifier, array element or
+// statement) is injectable. Quote state is tracked from the start of the line
+// (a string that spans lines is rare in inline scripts).
+func inJSString(src []byte, start int) bool {
+	ls := start
+	for ls > 0 && src[ls-1] != '\n' {
+		ls--
+	}
+	var open byte
+	for i := ls; i < start; i++ {
+		c := src[i]
+		switch {
+		case open != 0 && c == '\\':
+			i++
+		case open != 0 && c == open:
+			open = 0
+		case open == 0 && (c == '\'' || c == '"' || c == '`'):
+			open = c
+		}
+	}
+	return open != 0
+}
+
+// collectScriptBodies records the byte range of every <script> element's body.
+func collectScriptBodies(n *sitter.Node, out *[]byteRange) {
+	if n == nil {
+		return
+	}
+	if n.Type() == "script_element" {
+		for i := 0; i < int(n.ChildCount()); i++ {
+			if c := n.Child(i); c.Type() == "raw_text" {
+				*out = append(*out, byteRange{int(c.StartByte()), int(c.EndByte())})
+			}
+		}
+		return
+	}
+	for i := 0; i < int(n.ChildCount()); i++ {
+		collectScriptBodies(n.Child(i), out)
 	}
 }
 

@@ -425,3 +425,45 @@ cases:
   - file: cases/clean_xss_json_script.js
     language: javascript
     expect: []
+  - file: cases/vuln_postmessage_credential.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-170, min_count: 1}, {rule_id: ZS-JS-055, min_count: 1}]
+  - file: cases/clean_postmessage_credential.js
+    language: javascript
+    expect: []
+  - file: cases/vuln_document_write_handle.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-171, min_count: 1}]
+  - file: cases/clean_document_write_handle.js
+    language: javascript
+    expect: []
+  - file: cases/vuln_new_function_template.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-172, min_count: 1}]
+  - file: cases/clean_new_function_template.js
+    language: javascript
+    expect: []
+  - file: cases/vuln_vm_in_handler.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-173, min_count: 1}]
+  - file: cases/clean_vm_in_handler.js
+    language: javascript
+    expect: []
+  - file: cases/vuln_xxe_script_string.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-176, min_count: 1}]
+  - file: cases/clean_xxe_script_string.js
+    language: javascript
+    expect: []
+  - file: cases/vuln_res_locals_error.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-179, min_count: 1}]
+  - file: cases/clean_res_locals_error.js
+    language: javascript
+    expect: []
+  - file: cases/vuln_jquery_html_ajax.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-178, min_count: 1}]
+  - file: cases/clean_jquery_html_ajax.js
+    language: javascript
+    expect: []

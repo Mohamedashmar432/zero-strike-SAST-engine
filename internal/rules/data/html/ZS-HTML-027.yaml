@@ -1,0 +1,30 @@
+id: ZS-HTML-027
+lifecycle: released
+name: State-Changing <form> Without a CSRF Token
+version: "1.0.0"
+language: html
+category: csrf
+severity: medium
+confidence: medium
+tier: hardening
+cwe:
+  - CWE-352
+owasp:
+  - "A01:2025"
+rationale: |
+  A Django or Jinja form that submits with POST, PUT, PATCH or DELETE needs the framework's CSRF
+  token in the form body. Without it (or with a mistyped tag such as { % crsf_token % }, which
+  renders as literal text) the CSRF middleware either rejects the request or, where it is
+  disabled for the view, lets a third-party page submit the form as the logged-in user.
+description: |
+  Flags a <form> with a non-GET method in a server-rendered template when no {% csrf_token %} tag
+  appears before the form's closing tag.
+message: "State-changing form has no {% csrf_token %}; cross-site requests can submit it (CSRF)"
+references:
+  - https://docs.djangoproject.com/en/stable/howto/csrf/
+  - https://cwe.mitre.org/data/definitions/352.html
+tags: [csrf, template, django]
+match:
+  kind: call
+  callee: template.form_no_csrf
+fix_suggestion: "Add {% csrf_token %} inside the form (check the tag spelling), or send the token in the X-CSRFToken header from script."

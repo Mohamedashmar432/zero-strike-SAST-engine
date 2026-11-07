@@ -1,0 +1,30 @@
+id: ZS-PY-173
+lifecycle: released
+name: Exception Text Returned in an HTTP Response
+version: "1.0.0"
+language: python
+category: error-handling
+severity: low
+confidence: medium
+cwe:
+  - CWE-209
+owasp:
+  - "A10:2025"
+rationale: |
+  Returning an exception's message or str(e) to the client discloses internals: validation
+  schemas, SQL fragments, file paths, library versions. Attackers use them to map the
+  application and tune injection payloads.
+description: |
+  Flags Response / jsonify / make_response / JsonResponse / HttpResponse calls whose argument
+  refers to a caught exception variable (e, ex, exc, exception) inside an except block.
+message: "Exception text is returned to the client; log it server-side and return a generic message"
+references:
+  - https://owasp.org/www-community/Improper_Error_Handling
+  - https://cwe.mitre.org/data/definitions/209.html
+tags: [error-handling, information-disclosure, flask]
+match:
+  kind: call
+  filters:
+    - callee_pattern: "^(Response|jsonify|make_response|JsonResponse|HttpResponse|flask\\.jsonify)$"
+    - argument_identifier_matches: "^(e|ex|exc|exception)$"
+fix_suggestion: "Log the exception and return a fixed message plus a correlation id."

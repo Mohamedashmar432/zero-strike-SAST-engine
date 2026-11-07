@@ -1,0 +1,32 @@
+id: ZS-PY-172
+lifecycle: released
+name: Nested-Quantifier Regex Applied to Request Data (ReDoS)
+version: "1.0.0"
+language: python
+category: denial-of-service
+severity: medium
+confidence: medium
+cwe:
+  - CWE-1333
+owasp:
+  - "A06:2025"
+rationale: |
+  A group that contains a quantifier and is itself repeated ((a+)+, ([\w.]*x)*) backtracks
+  exponentially on a near-match. One crafted request value can pin a worker for seconds to
+  minutes, so a handful of requests take the service down.
+description: |
+  Flags re.match/search/fullmatch/findall/sub/compile with a literal pattern that repeats a group
+  containing a quantifier, in a function that reads the request.
+message: "Regex repeats a quantified group and is applied to request data; crafted input causes catastrophic backtracking (ReDoS)"
+references:
+  - https://owasp.org/www-community/attacks/Regular_expression_Denial_of_Service_-_ReDoS
+  - https://cwe.mitre.org/data/definitions/1333.html
+tags: [redos, regex, denial-of-service]
+match:
+  kind: call
+  filters:
+    - callee_pattern: "^re\\.(match|search|fullmatch|findall|sub|compile)$"
+    - argument_literal_matches: "\\([^()]*[*+][^()]*\\)[*+{]"
+      argument_literal_index: 0
+    - enclosing_function_mentions: "^(request|request_data)$"
+fix_suggestion: "Remove the nested quantifier, validate length first, or use a linear-time engine (re2) for untrusted input."

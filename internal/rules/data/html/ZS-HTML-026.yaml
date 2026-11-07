@@ -1,0 +1,35 @@
+id: ZS-HTML-026
+lifecycle: released
+name: Server Value Interpolated into a <script> Block
+version: "1.0.0"
+language: html
+category: xss
+severity: medium
+confidence: medium
+cwe:
+  - CWE-79
+owasp:
+  - "A05:2025"
+rationale: |
+  Template auto-escaping encodes HTML metacharacters, not JavaScript string context. A {{ value }}
+  inside a <script> element is written into JavaScript source: a quote ends the string, a newline
+  ends the statement, and </script> ends the block. User data there is XSS even with auto-escaping
+  on.
+description: |
+  Flags the first {{ expression }} inside a <script> element of a server-rendered template (one that
+  also contains {% %} tags), once per script element. An expression that is the whole content of a quoted JS string is skipped (auto-escaping encodes the quote). Expressions passed through escapejs, tojson,
+  json_script, json or int/float filters are skipped.
+message: "Template value written into a <script> block; HTML escaping does not make it safe in JavaScript (XSS)"
+references:
+  - https://docs.djangoproject.com/en/stable/ref/templates/builtins/#json-script
+  - https://cwe.mitre.org/data/definitions/79.html
+tags: [xss, template, django, jinja]
+match:
+  kind: call
+  callee: template.script_expr
+  filters:
+    - not:
+        kind: call
+        filters:
+          - argument_literal_matches: "\\|\\s*(escapejs|tojson|json_script|json|int|float|length|floatformat)\\b"
+fix_suggestion: "Pass data through json_script (Django) or |tojson (Jinja) and read it from the DOM, or apply escapejs inside a quoted string."

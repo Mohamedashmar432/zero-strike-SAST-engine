@@ -1,0 +1,36 @@
+id: ZS-PY-171
+lifecycle: released
+name: PyCryptodome AES in an Unauthenticated Mode
+version: "1.0.0"
+language: python
+category: cryptography
+severity: medium
+confidence: medium
+cwe:
+  - CWE-327
+owasp:
+  - "A04:2025"
+rationale: |
+  AES in CBC, CFB or OFB mode encrypts but does not authenticate. Without a MAC (or an AEAD mode
+  such as GCM) an attacker can flip ciphertext bits to change the plaintext predictably and, with
+  a decryption oracle, recover it (padding oracle).
+description: |
+  Flags AES.new(key, AES.MODE_CBC|CFB|OFB, ...) in a function that does not also compute or verify
+  a MAC (hmac, HMAC, digest, verify).
+message: "AES used in an unauthenticated mode (CBC/CFB/OFB) with no MAC in scope; use AES-GCM or add an HMAC"
+references:
+  - https://pycryptodome.readthedocs.io/en/latest/src/cipher/modern.html
+  - https://cwe.mitre.org/data/definitions/327.html
+tags: [weak-crypto, aes, pycryptodome]
+match:
+  kind: call
+  filters:
+    - callee_pattern: "^AES\\.new$"
+    - argument_matches_at:
+        index: 1
+        pattern: "MODE_(CBC|CFB|OFB)"
+    - not:
+        kind: call
+        filters:
+          - enclosing_function_calls: "(?i)(hmac|digest|verify|compare_digest)"
+fix_suggestion: "Use AES.MODE_GCM (or EAX) and verify the tag on decrypt, or add an HMAC over the ciphertext and check it before decrypting."

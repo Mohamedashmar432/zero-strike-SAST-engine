@@ -1,0 +1,32 @@
+id: ZS-JS-171
+lifecycle: released
+name: document.write on a Window Handle with a Dynamic Value (DOM XSS)
+version: "1.0.0"
+language: javascript
+category: xss
+severity: high
+confidence: medium
+cwe:
+  - CWE-79
+owasp:
+  - "A05:2025"
+rationale: |
+  document.write parses its argument as HTML in the target document. Reached through a window
+  handle (window.open(...).document.write(x), frame.contentWindow.document.write(x)) it is the
+  same sink as a bare document.write, but call chains hide it from rules that only look for the
+  bare name. A value that carries server or user data runs as markup and script.
+description: |
+  Flags .document.write()/.document.writeln() reached through any receiver (an optional-chained
+  window.open() result, a frame, an iframe contentWindow) whose argument is not a constant. The
+  bare document.write form is covered by the dedicated document.write rule.
+message: "document.write on a window handle with a non-constant value renders it as HTML (DOM XSS)"
+references:
+  - https://developer.mozilla.org/en-US/docs/Web/API/Document/write
+  - https://cwe.mitre.org/data/definitions/79.html
+tags: [xss, dom, document-write]
+match:
+  kind: call
+  filters:
+    - callee_pattern: "\\.document\\.write(ln)?$"
+    - argument_not_constant: 0
+fix_suggestion: "Build the content with DOM APIs (textContent, createElement) or sanitize it with DOMPurify before writing."

@@ -96,7 +96,14 @@ func jsCalleeNode(n *ir.IRNode) *ir.IRNode {
 		}
 		return n.Children[1]
 	}
-	return n.Children[0]
+	fn := n.Children[0]
+	// tree-sitter-typescript parses `await x.y<T>(a)` as a call whose function
+	// is `await x.y`, so a generic call under await would otherwise render as
+	// an unknown callee and no callee-based rule could match it.
+	if fn.Kind == ir.NodeKindUnknown && len(fn.Children) == 2 && fn.Children[0].Text == "await" {
+		return fn.Children[1]
+	}
+	return fn
 }
 
 func isNewExpression(n *ir.IRNode) bool {

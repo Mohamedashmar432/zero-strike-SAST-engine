@@ -28,6 +28,6 @@ tags: [sqli, injection, prisma]
 match:
   kind: call
   filters:
-    - callee_pattern: "(^|\\.)\\$(queryRawUnsafe|executeRawUnsafe)$"
+    - callee_pattern: "(^|\\.)\\$(queryRawUnsafe|executeRawUnsafe)(<.*>)?$"
     - dynamic_string_argument_index: 0
 fix_suggestion: "Use the tagged-template prisma.$queryRaw`... ${value}` form (parameterized), or pass values as $queryRawUnsafe(sql, ...params) with $1 placeholders."

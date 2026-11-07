@@ -314,3 +314,27 @@ cases:
   - file: cases/vuln_sha1_usedforsecurity_true.py
     language: python
     expect: [{rule_id: ZS-PY-011, min_count: 1}]
+  - file: cases/vuln_pycryptodome_md5.py
+    language: python
+    expect: [{rule_id: ZS-PY-170, min_count: 1}]
+  - file: cases/clean_pycryptodome_md5.py
+    language: python
+    expect: []
+  - file: cases/vuln_pycryptodome_aes_cbc.py
+    language: python
+    expect: [{rule_id: ZS-PY-171, min_count: 1}]
+  - file: cases/clean_pycryptodome_aes_cbc.py
+    language: python
+    expect: []
+  - file: cases/vuln_redos_nested_quantifier.py
+    language: python
+    expect: [{rule_id: ZS-PY-172, min_count: 1}]
+  - file: cases/clean_redos_nested_quantifier.py
+    language: python
+    expect: []
+  - file: cases/vuln_exception_text_response.py
+    language: python
+    expect: [{rule_id: ZS-PY-173, min_count: 1}]
+  - file: cases/clean_exception_text_response.py
+    language: python
+    expect: []
