@@ -45,4 +45,19 @@ match:
     - not:
         kind: assignment
         lhs_identifier: "(?i)^[$@]?(INSECURE|PLACEHOLDER|CHANGEME|CHANGE_ME|DEV_ONLY|EXAMPLE|DUMMY|FAKE|SAMPLE|DEFAULT)_"
+    # The name only contains a credential word; the variable holds a name,
+    # route, scheme or message about it, not the credential. const string
+    # PasswordFieldName = "Password", TokenEndpoint = "/connect/token",
+    # ApiKeyHeader = "X-Api-Key", PasswordLabel = "Password". Keyed on the
+    # name's last word, so ApiKey, SecretKey and Password itself still match.
+    - not:
+        kind: assignment
+        lhs_identifier: '(?i)(Name|Type|Claim|Header|Label|Url|Uri|Endpoint|Path|Scheme|Message|Title|Placeholder|Prefix|Cookie|Field)$'
+    # A value that is a sentence, a route or a format slot is text shown to a
+    # person or sent to a router, not a secret: "Invalid password", "/login",
+    # "Password for {0}". Generated secrets and real passwords seldom contain
+    # whitespace, and the secrets scanner applies the same rule.
+    - not:
+        kind: assignment
+        rhs_literal: '^@?"(?:[^"]*\s[^"]*|/[^"]*|[^"]*\{[0-9]+\}[^"]*)"$'
 fix_suggestion: "Replace the literal with Environment.GetEnvironmentVariable, IConfiguration, or a secrets manager lookup."

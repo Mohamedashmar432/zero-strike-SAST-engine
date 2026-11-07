@@ -265,3 +265,35 @@ func TestJSONYAMLSecretCWEFollowsKeyRole(t *testing.T) {
 		}
 	}
 }
+
+// Connection strings whose credentials are a slot or a documentation stand-in
+// are not committed secrets; the same URIs with a literal password still are.
+func TestSecretsScanner_URIPlaceholderCredentials(t *testing.T) {
+	clean := []string{
+		`uri = "mongodb://user:password@localhost:27017/app"`,
+		`uri = "mongodb+srv://username:password@cluster0.mongodb.net/db"`,
+		`uri = "mongodb://<username>:<password>@cluster0.mongodb.net/db"`,
+		`uri = "postgresql://user:pass@localhost:5432/app"`,
+		`uri = "postgres://[user]:[password]@db.host.com/app"`,
+		`uri = "postgresql://%s:%s@db.host.com:5432/app"`,
+		`uri = "postgresql://{user}:{password}@db.host.com:5432/app"`,
+		`uri = "postgresql://app:$DB_PASSWORD@db.host.com:5432/app"`,
+		`uri = "mysql://root:********@db.host.com:3306/app"`,
+		`uri = "redis://:password@redis.internal:6379"`,
+	}
+	for _, line := range clean {
+		if fs := scanContent("config.env", []byte(line)); len(fs) != 0 {
+			t.Errorf("placeholder URI reported: %s -> %+v", line, fs)
+		}
+	}
+	real := []string{
+		`uri = "mongodb://admin:secretpass123@localhost:27017/app"`,
+		`uri = "postgresql://app:password123@db.host.com:5432/app"`,
+		`uri = "postgresql://postgres:postgres@db.host.com:5432/app"`,
+	}
+	for _, line := range real {
+		if fs := scanContent("config.env", []byte(line)); len(fs) == 0 {
+			t.Errorf("literal credential URI not reported: %s", line)
+		}
+	}
+}

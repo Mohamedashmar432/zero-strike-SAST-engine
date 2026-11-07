@@ -36,6 +36,12 @@ type detector struct {
 	// fixture.
 	generic bool
 
+	// uri marks a connection-string detector (scheme://user:pass@host). It
+	// additionally drops a URI whose credentials are a template or a
+	// documentation stand-in, which plausibleValue cannot see because the
+	// captured value is the whole URI, not the password.
+	uri bool
+
 	// rejectCodeRefs makes the detector read its pattern as (quote)(value) and
 	// drop an unquoted value that is a code reference rather than a literal:
 	// followed by '.', '(' or '[' (a call or member access), or shaped like a
@@ -147,6 +153,7 @@ var detectors = []detector{
 		pattern:    regexp.MustCompile(`(mongodb(?:\+srv)?:\/\/[^:\s"']+:[^@\s"']+@[^\s"']+)`),
 		severity:   core.SeverityHigh,
 		generic:    true,
+		uri:        true,
 	},
 	{
 		ruleID:     "ZS-SEC-013",
@@ -154,6 +161,7 @@ var detectors = []detector{
 		pattern:    regexp.MustCompile(`(postgres(?:ql)?:\/\/[^:\s"']+:[^@\s"']+@[^\s"']+)`),
 		severity:   core.SeverityHigh,
 		generic:    true,
+		uri:        true,
 	},
 	{
 		ruleID:     "ZS-SEC-014",
@@ -161,6 +169,7 @@ var detectors = []detector{
 		pattern:    regexp.MustCompile(`(mysql:\/\/[^:\s"']+:[^@\s"']+@[^\s"']+)`),
 		severity:   core.SeverityHigh,
 		generic:    true,
+		uri:        true,
 	},
 	{
 		ruleID:     "ZS-SEC-015",
@@ -168,6 +177,7 @@ var detectors = []detector{
 		pattern:    regexp.MustCompile(`(redis:\/\/(?:[^:\s"']*:[^@\s"']+@)[^\s"']+)`),
 		severity:   core.SeverityHigh,
 		generic:    true,
+		uri:        true,
 	},
 	{
 		ruleID:     "ZS-SEC-016",
@@ -378,6 +388,9 @@ func scanContent(path string, data []byte) []core.Finding {
 			if d.generic && !plausibleSecret(captured, line, d.comparison) {
 				continue
 			}
+			if d.uri && placeholderURICredentials(string(captured)) {
+				continue
+			}
 			cwe := d.weakness()
 			if d.detectorID == "json-yaml-secret" {
 				if loc := d.pattern.FindIndex(line); loc != nil && signingSecretKey(line, loc[0]) {
@@ -527,6 +540,56 @@ var interpolationMarkers = []string{"${", "$(", "{{", "<%", "#{", "%("}
 // match the password='...' shape, but markup inside the value marks it as
 // rendered prose rather than a credential.
 var htmlTagRe = regexp.MustCompile(`<[a-zA-Z/!][^>]*>`)
+
+// placeholderWords are the passwords and user names a connection-string
+// example uses when it means "put yours here": mongodb://user:password@host.
+// Matched whole and case-insensitively, so a real credential that merely
+// contains one of them (password123, mypassword9) is still reported.
+var placeholderWords = map[string]bool{
+	"password": true, "passwd": true, "pass": true, "pwd": true, "pw": true,
+	"secret": true, "mypassword": true, "yourpassword": true,
+	"user": true, "username": true, "myuser": true, "yourusername": true,
+}
+
+// placeholderURICredentials reports whether a captured connection URI carries
+// template or stand-in credentials rather than a literal secret: a bracketed
+// <user>:<password>, a format or shell slot (%s, {0}, $DB_PASS, :password in
+// a driver URL template), a masked run of asterisks, or the bare word
+// "password". user:password@localhost in a README is documentation; the same
+// URI with any other password is still a committed credential.
+func placeholderURICredentials(uri string) bool {
+	i := strings.Index(uri, "://")
+	if i < 0 {
+		return false
+	}
+	rest := uri[i+3:]
+	at := strings.Index(rest, "@")
+	if at < 0 {
+		return false
+	}
+	user, pass, ok := strings.Cut(rest[:at], ":")
+	if !ok {
+		return false
+	}
+	return placeholderURIPart(pass) || (placeholderURIPart(user) && placeholderURIPart(pass))
+}
+
+// placeholderURIPart reports whether one half of a URI's userinfo is a slot
+// or stand-in rather than a literal value.
+func placeholderURIPart(p string) bool {
+	p = strings.TrimSpace(p)
+	if p == "" {
+		return false
+	}
+	switch p[0] {
+	case '<', '[', '{', '$', '%':
+		return true
+	}
+	if strings.Contains(p, "{") || strings.Contains(p, "%s") || strings.Trim(p, "*") == "" {
+		return true
+	}
+	return placeholderWords[strings.ToLower(p)]
+}
 
 // plausibleValue reports whether a captured generic value looks like a live
 // credential rather than a placeholder, an example endpoint, a run-time
