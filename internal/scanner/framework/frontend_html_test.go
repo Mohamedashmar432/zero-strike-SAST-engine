@@ -7,15 +7,13 @@ import (
 
 )
 
-func TestRawHTMLBindingCheckRegistered(t *testing.T) {
-	found := false
+// ZS-CFG-020 is retired for measured precision, see commit 37cf7e3 and the note
+// in scanner.go: it must stay out of the checks list so it never runs.
+func TestRawHTMLBindingCheckRetiredNotRegistered(t *testing.T) {
 	for _, c := range checks {
 		if c.ruleID == "ZS-CFG-020" {
-			found = true
+			t.Fatal("ZS-CFG-020 is retired and must not be in the checks list")
 		}
-	}
-	if !found {
-		t.Fatal("ZS-CFG-020 must be in the checks list or it never runs")
 	}
 }
 

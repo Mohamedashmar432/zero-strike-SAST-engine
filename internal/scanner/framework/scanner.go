@@ -38,7 +38,11 @@ var checks = []check{
 	dockerfileCheck,
 	springStacktraceCheck,
 	springH2ConsoleCheck,
-	rawHTMLBindingCheck,
+	// rawHTMLBindingCheck (ZS-CFG-020) is retired 2026-11-07 on measured
+	// precision: 3 true positives and 13 false positives across 19 RealVuln
+	// repos, and the false positives are the same sanitizer-bypass shape as the
+	// true ones, so no narrower predicate separates them. Reversible: add it back
+	// to this list. The detector, its tests and its corpus case are kept.
 }
 
 // FrameworkScanner detects framework-level security misconfigurations by
