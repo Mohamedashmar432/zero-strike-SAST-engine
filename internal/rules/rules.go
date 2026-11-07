@@ -132,6 +132,20 @@ type Filter struct {
 	// is the whole point, such as SQL and command injection, or recall drops.
 	RequireRealSource bool
 
+	// HonorPathSanitizers makes the TaintedArgument check treat a variable
+	// cleaned for file paths (path.basename, a random-name generator) as not
+	// tainted, and skip an argument wrapped inline in such a call. It applies
+	// to file-path sinks only: those sanitizers do not clear HTML or SQL
+	// taint, which is why this is a filter option and not part of the global
+	// sanitizer list (see internal/analyzer/taint.Result.PathSafe).
+	HonorPathSanitizers bool
+
+	// ExcludeParamsSource makes the TaintedArgument check ignore taint whose
+	// only source is Express req.params, which is always a string and so
+	// cannot carry a NoSQL operator object. For operator-injection rules;
+	// req.body and req.query (the qs parser builds objects) still count.
+	ExcludeParamsSource bool
+
 	// CalleeMatches requires a call's callee text to match this regex. It is
 	// tested against both the callee as written and, for Python, its
 	// import-canonicalized form (md5 -> hashlib.md5), so one rule can cover a
@@ -337,6 +351,18 @@ type Rule struct {
 	// per-call defect (an app-wide cors() default registered on several
 	// routes is one policy, not one finding per route).
 	OncePerFile bool
+	// AggregateIdenticalCalls folds repeated, textually identical calls of
+	// this rule in one file (same callee, same arguments) into the first
+	// finding, which carries the occurrence count. It is opt-in per rule: it
+	// is for a rule whose identical repeats describe one decision (a trace
+	// callback installed the same way in every function), never a global
+	// dedupe, because distinct calls in one file are distinct defects.
+	AggregateIdenticalCalls bool
+	// ReportAtDeclaration (JS/TS) moves a finding whose weak option comes
+	// from a same-file options object passed by name (const opts = {...};
+	// fn(x, opts)) to that declaration, and reports it once however many calls
+	// read the object. Inline option literals keep the call as the location.
+	ReportAtDeclaration bool
 	// SkipContexts lists execution contexts the rule does not apply to.
 	// "browser" covers inline <script> blocks in HTML, Angular modules
 	// (importing @angular/core), "use client" React modules and files under

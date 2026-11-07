@@ -14,6 +14,16 @@ import (
 type languagePatterns struct {
 	Sources    []*regexp.Regexp
 	Sanitizers []*regexp.Regexp
+	// PathSanitizers neutralize taint for file-path sinks only: a value that
+	// went through path.basename, or that is a freshly generated random name,
+	// cannot traverse directories, but is still an arbitrary string for an
+	// HTML or SQL sink. They are deliberately NOT in Sanitizers, which clears
+	// taint for every sink class. A rule opts in with the
+	// honor_path_sanitizers filter (see Result.PathSafe).
+	PathSanitizers []*regexp.Regexp
+	// ParamsSources are the Sources whose value is always a string, never an
+	// operator object (Express req.params). See Result.ParamsOnly.
+	ParamsSources []*regexp.Regexp
 }
 
 var pythonPatterns = languagePatterns{
@@ -49,6 +59,13 @@ var jsPatterns = languagePatterns{
 		regexp.MustCompile(`encodeURIComponent\(`),
 		regexp.MustCompile(`sanitizeHtml\(`),
 		regexp.MustCompile(`filterXSS\(`),
+	},
+	ParamsSources: []*regexp.Regexp{
+		regexp.MustCompile(`req\.params\b`),
+	},
+	PathSanitizers: []*regexp.Regexp{
+		regexp.MustCompile(`path\.basename\(`),
+		regexp.MustCompile(`\b(randomBytes|randomUUID|uuidv[1-7]|uuid|nanoid)\(`),
 	},
 }
 

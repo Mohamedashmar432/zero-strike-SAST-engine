@@ -27,5 +27,6 @@ match:
   filters:
     - callee_canonical: "^fs(\\.promises)?\\.(readdir|readdirSync|opendir|opendirSync)$"
     - tainted_argument: true
+      honor_path_sanitizers: true
       tainted_argument_index: 0
 fix_suggestion: "Resolve the directory against a fixed base and confirm it stays inside it before listing; never list a raw user-supplied path."

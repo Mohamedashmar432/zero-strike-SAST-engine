@@ -21,6 +21,9 @@ type MatchResult struct {
 	// TaintedRHS filter on the matched rule, or "" if the rule matched
 	// without any taint-gated filter (the common case).
 	TaintedVar string
+	// Occurrences is the number of identical calls folded into this match by
+	// a rule with AggregateIdenticalCalls (0 or 1 means a single call).
+	Occurrences int
 }
 
 // Project provides cross-file context for multi-file analysis (nil in Sprint 1–2).
@@ -138,10 +141,14 @@ func (e *defaultEngine) Match(_ context.Context, mc *MatchContext) ([]MatchResul
 	}
 	taintedVars := mc.File.TaintedVars
 	fileLang := mc.File.IR.Language
-	fc := newFileCtx(mc.File.IR, taintedVars, mc.File.WeakTaintVars)
+	fc := newFileCtx(mc.File.IR, taintedVars, mc.File.WeakTaintVars, mc.File.PathSafeVars, mc.File.ParamsOnlyVars)
 	var out []MatchResult
 	// reported tracks rules with OncePerFile that have already matched here.
 	reported := map[*rules.Rule]bool{}
+	// firstIdentical maps a rule with AggregateIdenticalCalls and a call key
+	// (callee plus argument text) to the index in out of its first match.
+	declared := map[*ir.IRNode]bool{}
+	firstIdentical := map[*rules.Rule]map[string]int{}
 	// consider evaluates one candidate rule against n.
 	//
 	// The three index buckets are iterated separately rather than gathered
@@ -174,7 +181,33 @@ func (e *defaultEngine) Match(_ context.Context, mc *MatchContext) ([]MatchResul
 			if r.OncePerFile {
 				reported[r] = true
 			}
-			out = append(out, MatchResult{Rule: r, Node: n, TaintedVar: taintedIdentifierFor(r.Match, n, taintedVars, fileLang)})
+			node := n
+			if r.ReportAtDeclaration && isJSLike(fileLang) {
+				// The weak option lives in a shared options object: report
+				// the declaration once, not once per call that reads it.
+				if pair := fc.declaredKwargPair(r.Match, n); pair != nil {
+					if declared[pair] {
+						return
+					}
+					declared[pair] = true
+					node = pair
+				}
+			}
+			if r.AggregateIdenticalCalls && n.Kind == ir.NodeKindCall {
+				key := identicalCallKey(n, fc)
+				if i, ok := firstIdentical[r][key]; ok {
+					if out[i].Occurrences == 0 {
+						out[i].Occurrences = 1
+					}
+					out[i].Occurrences++
+					return
+				}
+				if firstIdentical[r] == nil {
+					firstIdentical[r] = map[string]int{}
+				}
+				firstIdentical[r][key] = len(out)
+			}
+			out = append(out, MatchResult{Rule: r, Node: node, TaintedVar: taintedIdentifierFor(r.Match, n, taintedVars, fileLang)})
 		}
 	}
 
@@ -217,6 +250,72 @@ func (e *defaultEngine) Match(_ context.Context, mc *MatchContext) ([]MatchResul
 		return true
 	})
 	return out, nil
+}
+
+// identicalCallKey renders a call as its callee plus each argument's text, the
+// identity AggregateIdenticalCalls folds on.
+func identicalCallKey(n *ir.IRNode, fc *fileCtx) string {
+	var b strings.Builder
+	b.WriteString(fc.callee(n))
+	for _, a := range argumentNodes(n) {
+		b.WriteByte(0)
+		b.WriteString(exprText(a, fc.lang))
+	}
+	return b.String()
+}
+
+// kwargPred returns the predicate a Kwarg filter applies to one argument node;
+// realOnly (the filter's require_real_source) ignores parameter-only taint in a
+// value_tainted check.
+func (fc *fileCtx) kwargPred(k *rules.KwargPattern, realOnly bool) func(*ir.IRNode) bool {
+	return func(a *ir.IRNode) bool {
+		if a.Kind != ir.NodeKindKeywordArg {
+			return false
+		}
+		name, _ := a.Attrs["kwarg_name"].(string)
+		if k.Name != "" && name != k.Name {
+			return false
+		}
+		if k.NamePattern != "" {
+			if m, err := regexp.MatchString(k.NamePattern, name); err != nil || !m {
+				return false
+			}
+		}
+		value, _ := a.Attrs["kwarg_value"].(string)
+		matched, err := regexp.MatchString(k.ValuePattern, value)
+		if err != nil || !matched {
+			return false
+		}
+		return !k.ValueTainted || fc.kwargValueTainted(a, realOnly)
+	}
+}
+
+// declaredKwargPair returns the pair, inside the same-file object literal an
+// identifier argument of n was initialized with, that satisfies one of the
+// pattern's Kwarg filters; nil when the match came from an inline literal or
+// not from a Kwarg filter at all.
+func (fc *fileCtx) declaredKwargPair(p rules.MatchPattern, n *ir.IRNode) *ir.IRNode {
+	for _, f := range p.Filters {
+		if f.Kwarg == nil || f.Not != nil {
+			continue
+		}
+		pred := fc.kwargPred(f.Kwarg, f.RequireRealSource)
+		if anyArgument(n, pred) {
+			return nil // an inline options object: the call is the location
+		}
+		var found *ir.IRNode
+		fc.anyResolvedObjectArgument(n, func(d *ir.IRNode) bool {
+			if pred(d) {
+				found = d
+				return true
+			}
+			return false
+		})
+		if found != nil {
+			return found
+		}
+	}
+	return nil
 }
 
 // calleeTextFor extracts the callee text of a call node in lang's rendering.
@@ -351,6 +450,12 @@ func evalFilter(f rules.Filter, n *ir.IRNode, fc *fileCtx) bool {
 	}
 	if f.TaintedArgument {
 		isTainted := func(a *ir.IRNode) bool {
+			if f.HonorPathSanitizers && ((a.Kind == ir.NodeKindIdentifier && fc.pathSafe[a.Text]) || underPathSanitizer(a, n, fc.lang)) {
+				return false
+			}
+			if f.ExcludeParamsSource && ((a.Kind == ir.NodeKindIdentifier && fc.paramsOnly[a.Text]) || paramsExpression(a, fc.lang)) {
+				return false
+			}
 			if a.Kind == ir.NodeKindIdentifier && taintedVars[a.Text] {
 				// require_real_source rejects taint that exists only because
 				// every function parameter is seeded untrusted. See
@@ -381,26 +486,7 @@ func evalFilter(f rules.Filter, n *ir.IRNode, fc *fileCtx) bool {
 		}
 	}
 	if f.Kwarg != nil {
-		pred := func(a *ir.IRNode) bool {
-			if a.Kind != ir.NodeKindKeywordArg {
-				return false
-			}
-			name, _ := a.Attrs["kwarg_name"].(string)
-			if f.Kwarg.Name != "" && name != f.Kwarg.Name {
-				return false
-			}
-			if f.Kwarg.NamePattern != "" {
-				if m, err := regexp.MatchString(f.Kwarg.NamePattern, name); err != nil || !m {
-					return false
-				}
-			}
-			value, _ := a.Attrs["kwarg_value"].(string)
-			matched, err := regexp.MatchString(f.Kwarg.ValuePattern, value)
-			if err != nil || !matched {
-				return false
-			}
-			return !f.Kwarg.ValueTainted || fc.kwargValueTainted(a)
-		}
+		pred := fc.kwargPred(f.Kwarg, f.RequireRealSource)
 		// JS/TS: an options object is as often a named local as an inline
 		// literal (const opts = {noent: true}; parseXml(data, opts)). Look
 		// through an identifier argument to its same-file object initializer.
@@ -908,6 +994,31 @@ func anyArgument(n *ir.IRNode, pred func(*ir.IRNode) bool) bool {
 	}
 	return false
 }
+
+// paramsExpression reports whether n is an inline req.params access
+// (req.params.id, req.params["id"]), a string-valued source.
+func paramsExpression(n *ir.IRNode, lang core.Language) bool {
+	if n.Kind != ir.NodeKindAttribute && n.Kind != ir.NodeKindCall {
+		return false
+	}
+	return paramsAccess.MatchString(exprText(n, lang))
+}
+
+var paramsAccess = regexp.MustCompile(`^req\.params(\.|\[|$)`)
+
+// underPathSanitizer reports whether identifier id, an argument of sink, sits
+// inside a call that neutralizes file-path taint (path.basename(x), a
+// random-name generator) before reaching the sink.
+func underPathSanitizer(id, sink *ir.IRNode, lang core.Language) bool {
+	for p := id.Parent; p != nil && p != sink; p = p.Parent {
+		if p.Kind == ir.NodeKindCall && pathSanitizerCallee.MatchString(calleeTextFor(p, lang)) {
+			return true
+		}
+	}
+	return false
+}
+
+var pathSanitizerCallee = regexp.MustCompile(`^(path\.basename|randomBytes|randomUUID|uuidv[1-7]|uuid|nanoid)$`)
 
 // loggedIdentifierMatches implements Filter.LoggedIdentifier: it reports
 // whether any argument subtree of the call n carries a sensitive-looking

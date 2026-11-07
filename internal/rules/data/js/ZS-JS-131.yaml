@@ -29,5 +29,6 @@ match:
   filters:
     - callee_pattern: "^(res|response)\\.download$"
     - tainted_argument: true
+      honor_path_sanitizers: true
       tainted_argument_index: 0
 fix_suggestion: "Resolve the path and confirm it stays inside the download directory (or pass the { root } option with a basename) before calling res.download()."

@@ -30,5 +30,6 @@ match:
   filters:
     - callee_pattern: "\\.mv$"
     - tainted_argument: true
+      honor_path_sanitizers: true
       tainted_argument_index: 0
 fix_suggestion: "Generate the stored file name server-side (a random id plus an allowlisted extension) or reduce the client name to path.basename() and confirm the resolved path stays inside the upload directory."

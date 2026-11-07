@@ -39,5 +39,6 @@ match:
     # meant the callback's subtree alone made every readFile fire.
     # Mirrors ZS-JS-024.
     - tainted_argument: true
+      honor_path_sanitizers: true
       tainted_argument_index: 0
 fix_suggestion: "Resolve the path with path.resolve/path.normalize and confirm it stays within the allowed base directory before reading it."

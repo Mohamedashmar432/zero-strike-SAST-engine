@@ -42,6 +42,8 @@ func (a *defaultAnalyzer) Analyze(_ context.Context, file *ir.IRFile) (*Analysis
 		DFG:           dfg,
 		TaintedVars:   tc.Tainted,
 		WeakTaintVars: tc.Weak,
+		PathSafeVars:  tc.PathSafe,
+		ParamsOnlyVars: tc.ParamsOnly,
 		TaintReasons:  tc.Reasons,
 		TaintPaths:    tc.Paths,
 	}, nil
@@ -88,6 +90,15 @@ type AnalysisResult struct {
 	// internal/analyzer/taint.Result.Weak). Rules opt out of it with the
 	// require_real_source filter.
 	WeakTaintVars map[string]bool
+	// PathSafeVars is the subset of TaintedVars cleaned for file-path sinks
+	// only (see internal/analyzer/taint.Result.PathSafe). Rules opt in with
+	// the honor_path_sanitizers filter.
+	PathSafeVars map[string]bool
+	// ParamsOnlyVars is the subset of TaintedVars whose only source is a
+	// string-valued one such as req.params (see
+	// internal/analyzer/taint.Result.ParamsOnly). Rules opt out of it with the
+	// exclude_params_source filter.
+	ParamsOnlyVars map[string]bool
 	// TaintPaths holds the source-to-sink location chain for each tainted
 	// variable (see internal/analyzer/taint.Result.Paths). Nil unless
 	// --enable-graphs was set and the file's language has graph support

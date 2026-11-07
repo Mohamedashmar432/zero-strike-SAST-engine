@@ -41,5 +41,6 @@ match:
     # fs.readFileSync(path, options): only argument 0 is the path; index 1
     # is an encoding string or options object. Mirrors ZS-JS-025.
     - tainted_argument: true
+      honor_path_sanitizers: true
       tainted_argument_index: 0
 fix_suggestion: "Resolve the path with path.resolve/path.normalize and confirm it stays within the allowed base directory before reading it."

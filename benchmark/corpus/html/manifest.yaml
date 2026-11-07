@@ -19,6 +19,9 @@ cases:
     expect: [{rule_id: ZS-HTML-003, min_count: 1}]
   - file: cases/vuln_004_iframe_no_sandbox.html
     language: html
+    expect: [{rule_id: ZS-HTML-011, min_count: 1}]
+  - file: cases/vuln_004b_iframe_same_origin.html
+    language: html
     expect: [{rule_id: ZS-HTML-004, min_count: 1}]
   - file: cases/vuln_005_script_no_sri.html
     language: html

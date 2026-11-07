@@ -3,6 +3,7 @@ package findings
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"strings"
 
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
@@ -79,6 +80,11 @@ func BuildFinding(result engine.MatchResult, mc *engine.MatchContext, source []b
 		}
 	}
 
+	message := result.Rule.Message
+	if result.Occurrences > 1 {
+		message += fmt.Sprintf(" (%d identical calls in this file)", result.Occurrences)
+	}
+
 	return core.Finding{
 		ID:           uuid.New().String(),
 		RuleID:       result.Rule.ID,
@@ -86,7 +92,7 @@ func BuildFinding(result engine.MatchResult, mc *engine.MatchContext, source []b
 		Category:     result.Rule.Category,
 		Severity:     result.Rule.Severity,
 		Confidence:   result.Rule.Confidence,
-		Message:      result.Rule.Message,
+		Message:      message,
 		Location:     loc,
 		Language:     lang,
 		Fingerprint:  fp,

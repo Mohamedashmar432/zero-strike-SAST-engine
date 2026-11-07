@@ -33,6 +33,10 @@ type ruleYAML struct {
 	Lifecycle     string    `yaml:"lifecycle"`
 	Tier          string    `yaml:"tier"`
 	OncePerFile   bool      `yaml:"once_per_file"`
+	// AggregateIdenticalCalls: see rules.Rule.
+	AggregateIdenticalCalls bool `yaml:"aggregate_identical_calls"`
+	// ReportAtDeclaration: see rules.Rule.
+	ReportAtDeclaration bool `yaml:"report_at_declaration"`
 	SkipContexts  []string  `yaml:"skip_contexts"`
 }
 
@@ -83,6 +87,8 @@ type filterYAML struct {
 	ArgumentLiteralMatches         string                `yaml:"argument_literal_matches"`
 	LoggedIdentifier               *loggedIdentifierYAML `yaml:"logged_identifier"`
 	RequireRealSource              bool                  `yaml:"require_real_source"`
+	HonorPathSanitizers            bool                  `yaml:"honor_path_sanitizers"`
+	ExcludeParamsSource            bool                  `yaml:"exclude_params_source"`
 	ArgumentKindNotAt              *argKindYAML          `yaml:"argument_kind_not_at"`
 	HasBareExcept                  bool                  `yaml:"has_bare_except"`
 	CalleeMatches                  string                `yaml:"callee_matches"`
@@ -211,6 +217,8 @@ func (l *defaultLoader) parseYAML(source string, data []byte) ([]*Rule, error) {
 		Lifecycle:     ry.Lifecycle,
 		Tier:          core.Tier(ry.Tier),
 		OncePerFile:   ry.OncePerFile,
+		AggregateIdenticalCalls: ry.AggregateIdenticalCalls,
+		ReportAtDeclaration:     ry.ReportAtDeclaration,
 		SkipContexts:  ry.SkipContexts,
 		Match:         convertMatch(ry.Match),
 	}
@@ -255,6 +263,8 @@ func convertFilters(fyamls []filterYAML) []Filter {
 			ArgumentIdentifierMatches:      f.ArgumentIdentifierMatches,
 			ArgumentLiteralMatches:         f.ArgumentLiteralMatches,
 			RequireRealSource:              f.RequireRealSource,
+			HonorPathSanitizers:            f.HonorPathSanitizers,
+			ExcludeParamsSource:            f.ExcludeParamsSource,
 			ArgumentKindNotAt:              convertArgKind(f.ArgumentKindNotAt),
 			HasBareExcept:                  f.HasBareExcept,
 			HasEmptyExceptHandler:          f.HasEmptyExceptHandler,

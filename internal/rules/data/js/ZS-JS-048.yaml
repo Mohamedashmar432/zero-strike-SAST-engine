@@ -27,6 +27,9 @@ references:
   - https://cwe.mitre.org/data/definitions/347.html
   - https://auth0.com/blog/critical-vulnerabilities-in-json-web-token-libraries/
 tags: [jwt, authentication, signature-bypass]
+# When the algorithms list sits in an options object passed by name, report the
+# declaration once instead of every jwt.verify call that reads it.
+report_at_declaration: true
 match:
   kind: call
   callee: jwt.verify

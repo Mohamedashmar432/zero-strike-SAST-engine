@@ -51,6 +51,21 @@ type Result struct {
 	// NOT weak. Rules where parameter taint is the point (SQL, command
 	// injection, path traversal) ignore Weak entirely and keep their recall.
 	Weak map[string]bool
+
+	// PathSafe marks tainted variables whose value went through a path-class
+	// sanitizer (path.basename, a random-name generator; see
+	// languagePatterns.PathSanitizers), directly or by propagation from other
+	// path-safe variables. It is a subset of Tainted: such a variable is still
+	// tainted for every other sink, and only rules carrying the
+	// honor_path_sanitizers filter treat it as clean.
+	PathSafe map[string]bool
+
+	// ParamsOnly marks tainted variables whose only source is a
+	// string-valued one (Express req.params), directly or by propagation. A
+	// route parameter cannot carry a NoSQL operator object, so operator
+	// injection rules opt out of it with the exclude_params_source filter;
+	// every other rule still sees the variable as tainted.
+	ParamsOnly map[string]bool
 }
 
 // Build walks file in source order and returns the set of variable names
@@ -95,8 +110,10 @@ func BuildContext(file *ir.IRFile, symbols symboltable.SymbolTable, dfg *graph.D
 	reasons := make(map[string]string)
 	paths := make(map[string][]core.Location)
 	weak := make(map[string]bool)
+	pathSafe := make(map[string]bool)
+	paramsOnly := make(map[string]bool)
 	if file == nil || file.Root == nil {
-		return Result{Tainted: tainted, Reasons: reasons, Paths: paths, Weak: weak}
+		return Result{Tainted: tainted, Reasons: reasons, Paths: paths, Weak: weak, PathSafe: pathSafe, ParamsOnly: paramsOnly}
 	}
 	pats := patternsFor(file.Language)
 	summaries := buildSummaries(file, pats)
@@ -172,6 +189,16 @@ func BuildContext(file *ir.IRFile, symbols symboltable.SymbolTable, dfg *graph.D
 					delete(weak, name)
 				}
 				reasons[name] = rs
+				if pathSanitized(n, pats, tainted, pathSafe) {
+					pathSafe[name] = true
+				} else {
+					delete(pathSafe, name)
+				}
+				if paramsOnlySource(n, pats, tainted, paramsOnly) {
+					paramsOnly[name] = true
+				} else {
+					delete(paramsOnly, name)
+				}
 				if dfg != nil {
 					if p := extendPath(n, rf, dfg, paths); p != nil {
 						paths[name] = p
@@ -183,11 +210,73 @@ func BuildContext(file *ir.IRFile, symbols symboltable.SymbolTable, dfg *graph.D
 				delete(reasons, name)
 				delete(paths, name)
 				delete(weak, name)
+				delete(pathSafe, name)
+				delete(paramsOnly, name)
 			}
 		}
 		return true
 	})
-	return Result{Tainted: tainted, Reasons: reasons, Paths: paths, Weak: weak}
+	return Result{Tainted: tainted, Reasons: reasons, Paths: paths, Weak: weak, PathSafe: pathSafe, ParamsOnly: paramsOnly}
+}
+
+// paramsOnlySource reports whether the assignment's taint comes only from a
+// string-valued source: its RHS matches a ParamsSources pattern and no other
+// source, or it references tainted identifiers that are all params-only.
+func paramsOnlySource(n *ir.IRNode, pats languagePatterns, tainted, paramsOnly map[string]bool) bool {
+	if len(pats.ParamsSources) == 0 {
+		return false
+	}
+	rhs, _ := n.Attrs["rhs"].(string)
+	if matchesAny(pats.ParamsSources, rhs) {
+		// Any other source in the same expression keeps it fully tainted.
+		rest := rhs
+		for _, ps := range pats.ParamsSources {
+			rest = ps.ReplaceAllString(rest, "")
+		}
+		return !matchesAny(pats.Sources, rest)
+	}
+	if matchesAny(pats.Sources, rhs) || len(n.Children) == 0 {
+		return false
+	}
+	rhsNode := n.Children[len(n.Children)-1]
+	seen := false
+	for _, d := range append([]*ir.IRNode{rhsNode}, ir.Descendants(rhsNode)...) {
+		if d.Kind == ir.NodeKindIdentifier && tainted[d.Text] {
+			if !paramsOnly[d.Text] {
+				return false
+			}
+			seen = true
+		}
+	}
+	return seen
+}
+
+// pathSanitized reports whether the assignment's value is clean for file-path
+// sinks: its RHS text runs a path-class sanitizer, or it has no source match
+// and every tainted identifier it references is itself path-safe (so
+// path.join(DIR, safeName) stays safe when safeName is).
+func pathSanitized(n *ir.IRNode, pats languagePatterns, tainted, pathSafe map[string]bool) bool {
+	if len(pats.PathSanitizers) == 0 {
+		return false
+	}
+	rhs, _ := n.Attrs["rhs"].(string)
+	if matchesAny(pats.PathSanitizers, rhs) {
+		return true
+	}
+	if matchesAny(pats.Sources, rhs) || len(n.Children) == 0 {
+		return false
+	}
+	rhsNode := n.Children[len(n.Children)-1]
+	seen := false
+	for _, d := range append([]*ir.IRNode{rhsNode}, ir.Descendants(rhsNode)...) {
+		if d.Kind == ir.NodeKindIdentifier && tainted[d.Text] {
+			if !pathSafe[d.Text] {
+				return false
+			}
+			seen = true
+		}
+	}
+	return seen
 }
 
 // lhsNames splits an assignment's LHS text into the individual variable names

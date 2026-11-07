@@ -13,6 +13,10 @@ owasp:
   # what rendered "Server-Side Request Forgery - FAIL, 3 findings" on a report
   # whose three findings were all swallowed exceptions and none was SSRF.
   - "A09:2025"
+# Quality tier: a swallowed exception is a code-quality weakness with no
+# exploit path of its own (the same reasoning as ZS-PY-023), so it is left
+# out of default output; --include-hardening shows it.
+tier: quality
 rationale: |
   Silently discarding an exception with a bare pass hides the fact that an
   operation failed — including security-relevant failures such as a rejected

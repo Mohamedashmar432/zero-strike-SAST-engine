@@ -32,5 +32,6 @@ match:
   filters:
     - callee_canonical: "^fs\\.promises\\.(writeFile|appendFile)$"
     - tainted_argument: true
+      honor_path_sanitizers: true
       tainted_argument_index: 0
 fix_suggestion: "Build the path from a fixed base directory plus path.basename() of the input, resolve it, and confirm it stays inside the base before writing."

@@ -30,6 +30,9 @@ references:
   - https://cwe.mitre.org/data/definitions/532.html
   - https://docs.python.org/3/library/sqlite3.html#sqlite3.Connection.set_trace_callback
 tags: [logging, sqlite, sensitive-data]
+# Identical set_trace_callback(print) calls repeated per function in one file
+# are one decision, reported once with an occurrence count.
+aggregate_identical_calls: true
 match:
   kind: call
   callee: set_trace_callback

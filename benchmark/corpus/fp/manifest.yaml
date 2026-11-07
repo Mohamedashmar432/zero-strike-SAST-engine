@@ -169,3 +169,6 @@ cases:
   - file: cases/sha1_not_for_security.py
     language: python
     expect: []
+  - file: cases/iframe_constant_embed.html
+    language: html
+    expect: []
