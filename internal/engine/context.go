@@ -18,6 +18,11 @@ import (
 type fileCtx struct {
 	tainted map[string]bool
 	weak    map[string]bool
+	// pathSafe is the subset of tainted cleaned for file-path sinks only.
+	pathSafe map[string]bool
+	// paramsOnly is the subset of tainted whose only source is string-valued
+	// (req.params); see taint.Result.ParamsOnly.
+	paramsOnly map[string]bool
 	lang    core.Language
 	root    *ir.IRNode
 	aliases map[string]string // Python import table
@@ -43,8 +48,8 @@ type fileCtx struct {
 	lastText string
 }
 
-func newFileCtx(f *ir.IRFile, tainted, weak map[string]bool) *fileCtx {
-	fc := &fileCtx{tainted: tainted, weak: weak, lang: f.Language, root: f.Root, consts: moduleConstants(f.Root)}
+func newFileCtx(f *ir.IRFile, tainted, weak, pathSafe, paramsOnly map[string]bool) *fileCtx {
+	fc := &fileCtx{tainted: tainted, weak: weak, pathSafe: pathSafe, paramsOnly: paramsOnly, lang: f.Language, root: f.Root, consts: moduleConstants(f.Root)}
 	if f.Language == core.LangPython && f.Root != nil {
 		fc.aliases, _ = f.Root.Attrs["import_aliases"].(map[string]string)
 	}

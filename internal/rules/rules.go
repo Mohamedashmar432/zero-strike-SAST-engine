@@ -132,6 +132,20 @@ type Filter struct {
 	// is the whole point, such as SQL and command injection, or recall drops.
 	RequireRealSource bool
 
+	// HonorPathSanitizers makes the TaintedArgument check treat a variable
+	// cleaned for file paths (path.basename, a random-name generator) as not
+	// tainted, and skip an argument wrapped inline in such a call. It applies
+	// to file-path sinks only: those sanitizers do not clear HTML or SQL
+	// taint, which is why this is a filter option and not part of the global
+	// sanitizer list (see internal/analyzer/taint.Result.PathSafe).
+	HonorPathSanitizers bool
+
+	// ExcludeParamsSource makes the TaintedArgument check ignore taint whose
+	// only source is Express req.params, which is always a string and so
+	// cannot carry a NoSQL operator object. For operator-injection rules;
+	// req.body and req.query (the qs parser builds objects) still count.
+	ExcludeParamsSource bool
+
 	// CalleeMatches requires a call's callee text to match this regex. It is
 	// tested against both the callee as written and, for Python, its
 	// import-canonicalized form (md5 -> hashlib.md5), so one rule can cover a

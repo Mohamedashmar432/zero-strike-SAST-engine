@@ -44,5 +44,6 @@ match:
     # options object ({ root }, headers) and index 2 a completion callback —
     # neither can traverse.
     - tainted_argument: true
+      honor_path_sanitizers: true
       tainted_argument_index: 0
 fix_suggestion: "Resolve the path with path.resolve/path.normalize and confirm it stays within the allowed base directory (or pass the { root } option) before calling sendFile()."

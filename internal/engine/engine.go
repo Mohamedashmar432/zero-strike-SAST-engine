@@ -141,7 +141,7 @@ func (e *defaultEngine) Match(_ context.Context, mc *MatchContext) ([]MatchResul
 	}
 	taintedVars := mc.File.TaintedVars
 	fileLang := mc.File.IR.Language
-	fc := newFileCtx(mc.File.IR, taintedVars, mc.File.WeakTaintVars)
+	fc := newFileCtx(mc.File.IR, taintedVars, mc.File.WeakTaintVars, mc.File.PathSafeVars, mc.File.ParamsOnlyVars)
 	var out []MatchResult
 	// reported tracks rules with OncePerFile that have already matched here.
 	reported := map[*rules.Rule]bool{}
@@ -264,8 +264,10 @@ func identicalCallKey(n *ir.IRNode, fc *fileCtx) string {
 	return b.String()
 }
 
-// kwargPred returns the predicate a Kwarg filter applies to one argument node.
-func (fc *fileCtx) kwargPred(k *rules.KwargPattern) func(*ir.IRNode) bool {
+// kwargPred returns the predicate a Kwarg filter applies to one argument node;
+// realOnly (the filter's require_real_source) ignores parameter-only taint in a
+// value_tainted check.
+func (fc *fileCtx) kwargPred(k *rules.KwargPattern, realOnly bool) func(*ir.IRNode) bool {
 	return func(a *ir.IRNode) bool {
 		if a.Kind != ir.NodeKindKeywordArg {
 			return false
@@ -284,7 +286,7 @@ func (fc *fileCtx) kwargPred(k *rules.KwargPattern) func(*ir.IRNode) bool {
 		if err != nil || !matched {
 			return false
 		}
-		return !k.ValueTainted || fc.kwargValueTainted(a)
+		return !k.ValueTainted || fc.kwargValueTainted(a, realOnly)
 	}
 }
 
@@ -297,7 +299,7 @@ func (fc *fileCtx) declaredKwargPair(p rules.MatchPattern, n *ir.IRNode) *ir.IRN
 		if f.Kwarg == nil || f.Not != nil {
 			continue
 		}
-		pred := fc.kwargPred(f.Kwarg)
+		pred := fc.kwargPred(f.Kwarg, f.RequireRealSource)
 		if anyArgument(n, pred) {
 			return nil // an inline options object: the call is the location
 		}
@@ -448,6 +450,12 @@ func evalFilter(f rules.Filter, n *ir.IRNode, fc *fileCtx) bool {
 	}
 	if f.TaintedArgument {
 		isTainted := func(a *ir.IRNode) bool {
+			if f.HonorPathSanitizers && ((a.Kind == ir.NodeKindIdentifier && fc.pathSafe[a.Text]) || underPathSanitizer(a, n, fc.lang)) {
+				return false
+			}
+			if f.ExcludeParamsSource && ((a.Kind == ir.NodeKindIdentifier && fc.paramsOnly[a.Text]) || paramsExpression(a, fc.lang)) {
+				return false
+			}
 			if a.Kind == ir.NodeKindIdentifier && taintedVars[a.Text] {
 				// require_real_source rejects taint that exists only because
 				// every function parameter is seeded untrusted. See
@@ -478,7 +486,7 @@ func evalFilter(f rules.Filter, n *ir.IRNode, fc *fileCtx) bool {
 		}
 	}
 	if f.Kwarg != nil {
-		pred := fc.kwargPred(f.Kwarg)
+		pred := fc.kwargPred(f.Kwarg, f.RequireRealSource)
 		// JS/TS: an options object is as often a named local as an inline
 		// literal (const opts = {noent: true}; parseXml(data, opts)). Look
 		// through an identifier argument to its same-file object initializer.
@@ -986,6 +994,31 @@ func anyArgument(n *ir.IRNode, pred func(*ir.IRNode) bool) bool {
 	}
 	return false
 }
+
+// paramsExpression reports whether n is an inline req.params access
+// (req.params.id, req.params["id"]), a string-valued source.
+func paramsExpression(n *ir.IRNode, lang core.Language) bool {
+	if n.Kind != ir.NodeKindAttribute && n.Kind != ir.NodeKindCall {
+		return false
+	}
+	return paramsAccess.MatchString(exprText(n, lang))
+}
+
+var paramsAccess = regexp.MustCompile(`^req\.params(\.|\[|$)`)
+
+// underPathSanitizer reports whether identifier id, an argument of sink, sits
+// inside a call that neutralizes file-path taint (path.basename(x), a
+// random-name generator) before reaching the sink.
+func underPathSanitizer(id, sink *ir.IRNode, lang core.Language) bool {
+	for p := id.Parent; p != nil && p != sink; p = p.Parent {
+		if p.Kind == ir.NodeKindCall && pathSanitizerCallee.MatchString(calleeTextFor(p, lang)) {
+			return true
+		}
+	}
+	return false
+}
+
+var pathSanitizerCallee = regexp.MustCompile(`^(path\.basename|randomBytes|randomUUID|uuidv[1-7]|uuid|nanoid)$`)
 
 // loggedIdentifierMatches implements Filter.LoggedIdentifier: it reports
 // whether any argument subtree of the call n carries a sensitive-looking

@@ -31,4 +31,6 @@ match:
         name: data
         value_pattern: ""
         value_tainted: true
+      # A bare helper parameter (data: input) is not request input.
+      require_real_source: true
 fix_suggestion: "Pick the permitted fields explicitly (data: { name: input.name }) or parse the input with a schema (zod, yup) that strips unknown keys."

@@ -479,19 +479,21 @@ func (fc *fileCtx) anyResolvedObjectArgument(n *ir.IRNode, pred func(*ir.IRNode)
 }
 
 // kwargValueTainted implements KwargPattern.ValueTainted for a pair node.
-func (fc *fileCtx) kwargValueTainted(pair *ir.IRNode) bool {
+func (fc *fileCtx) kwargValueTainted(pair *ir.IRNode, realOnly bool) bool {
 	if len(pair.Children) == 0 {
 		return false
 	}
 	v := pair.Children[len(pair.Children)-1]
 	switch {
 	case v.Kind == ir.NodeKindIdentifier, v.Kind == ir.NodeKindAttribute, v.Kind == ir.NodeKindCall:
-		return fc.subtreeTainted(v)
+		return fc.subtreeTainted(v, realOnly)
 	case isObjectLiteral(v):
 		for _, c := range v.Children {
 			// spread_element: '...' expr
 			if c.Kind == ir.NodeKindUnknown && len(c.Children) >= 2 && c.Children[0].Text == "..." {
-				if fc.subtreeTainted(c.Children[len(c.Children)-1]) {
+				// A spread of a parameter (data: { ...updates }) is the mass-assignment
+				// shape itself, so it counts even when the taint is parameter-only.
+				if fc.subtreeTainted(c.Children[len(c.Children)-1], false) {
 					return true
 				}
 			}
@@ -500,9 +502,9 @@ func (fc *fileCtx) kwargValueTainted(pair *ir.IRNode) bool {
 	return false
 }
 
-func (fc *fileCtx) subtreeTainted(n *ir.IRNode) bool {
+func (fc *fileCtx) subtreeTainted(n *ir.IRNode, realOnly bool) bool {
 	check := func(x *ir.IRNode) bool {
-		if x.Kind == ir.NodeKindIdentifier && fc.tainted[x.Text] {
+		if x.Kind == ir.NodeKindIdentifier && fc.tainted[x.Text] && (!realOnly || !fc.weak[x.Text]) {
 			if p, _ := x.Attrs["prop"].(bool); !p {
 				return true
 			}

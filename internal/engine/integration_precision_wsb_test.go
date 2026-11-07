@@ -133,3 +133,82 @@ func TestPrecisionB_JWTNoneReportedAtOptionsDeclaration(t *testing.T) {
 		t.Error("JS: pinned algorithms must not fire")
 	}
 }
+
+func TestPrecisionB_PathSanitizersAreSinkAware(t *testing.T) {
+	idx := loadTSRules(t)
+	safe := "import path from 'path';\nimport fs from 'fs';\n" +
+		"function load(req: any) {\n" +
+		"  const name = path.basename(req.query.f);\n" +
+		"  const full = path.join(DIR, name);\n" +
+		"  document.write(name);\n" +
+		"  return fs.readFileSync(full);\n}\n"
+	res := matchTSSource(t, idx, safe)
+	if hasRule(res, "ZS-TS-089") || hasRule(res, "ZS-TS-023") {
+		t.Error("path.basename must clear taint for path.join and fs.readFileSync")
+	}
+	if !hasRule(res, "ZS-TS-003") {
+		t.Error("path.basename must NOT clear taint for a document.write sink")
+	}
+	inline := "function load(req: any) {\n  return path.join(DIR, path.basename(req.query.f));\n}\n"
+	if hasRule(matchTSSource(t, idx, inline), "ZS-TS-089") {
+		t.Error("an inline path.basename wrapper must clear path.join taint")
+	}
+	random := "function save(req: any, data: Buffer) {\n" +
+		"  const stored = `${randomUUID()}.${req.query.ext}`;\n" +
+		"  const out = fs.createWriteStream(path.join(DIR, stored));\n}\n"
+	if hasRule(matchTSSource(t, idx, random), "ZS-TS-062") || hasRule(matchTSSource(t, idx, random), "ZS-TS-089") {
+		t.Error("a random generated name must clear path taint")
+	}
+	// The real cases still fire.
+	for rule, src := range map[string]string{
+		"ZS-TS-089": "function f(req: any) { return path.join(DIR, req.query.f); }\n",
+		"ZS-TS-023": "function f(req: any) { return fs.readFileSync(req.query.f); }\n",
+		"ZS-TS-062": "function f(req: any) { return fs.createWriteStream(req.body.dest); }\n",
+	} {
+		if !hasRule(matchTSSource(t, idx, src), rule) {
+			t.Errorf("%s must still fire on unsanitized request input", rule)
+		}
+	}
+	// A variable path-sanitized in one statement is tainted again by reassignment.
+	reassigned := "function f(req: any) {\n  let n = path.basename(req.query.f);\n  n = req.query.g;\n  return path.join(DIR, n);\n}\n"
+	if !hasRule(matchTSSource(t, idx, reassigned), "ZS-TS-089") {
+		t.Error("reassignment from a source must drop the path-safe mark")
+	}
+}
+
+func TestPrecisionB_RouteParamsCannotCarryOperators(t *testing.T) {
+	idx := loadTSRules(t)
+	params := "function f(req: any) {\n  const id = req.params.id;\n  return db.collection('u').updateOne({ _id: id }, { $set: { a: 1 } });\n}\n"
+	if hasRule(matchTSSource(t, idx, params), "ZS-TS-128") {
+		t.Error("ZS-TS-128 must not fire when the only source is req.params")
+	}
+	inline := "function f(req: any) {\n  return db.collection('u').updateOne({ _id: req.params.id }, { $set: { a: 1 } });\n}\n"
+	if hasRule(matchTSSource(t, idx, inline), "ZS-TS-128") {
+		t.Error("ZS-TS-128 must not fire on an inline req.params value")
+	}
+	for name, src := range map[string]string{
+		"req.body":  "function f(req: any) {\n  const f = req.body.filter;\n  return db.collection('u').updateOne(f, { $set: { a: 1 } });\n}\n",
+		"req.query": "function f(req: any) {\n  return db.collection('u').deleteMany(req.query.filter);\n}\n",
+		"mixed":     "function f(req: any) {\n  const f = { a: req.params.id, b: req.body.b };\n  return db.collection('u').updateOne(f, { $set: { a: 1 } });\n}\n",
+	} {
+		if !hasRule(matchTSSource(t, idx, src), "ZS-TS-128") {
+			t.Errorf("ZS-TS-128 must still fire on %s input", name)
+		}
+	}
+}
+
+func TestPrecisionB_PrismaSpreadOfParameterStillFires(t *testing.T) {
+	idx := loadTSRules(t)
+	plain := "export async function notify(input: { title: string }) {\n  await prisma.notification.create({ data: input });\n}\n"
+	if hasRule(matchTSSource(t, idx, plain), "ZS-TS-138") {
+		t.Error("ZS-TS-138 must not fire on data: <helper parameter>")
+	}
+	spread := "export async function update(id: string, updates: Record<string, unknown>) {\n  return prisma.patient.update({ where: { id }, data: { ...updates } });\n}\n"
+	if !hasRule(matchTSSource(t, idx, spread), "ZS-TS-138") {
+		t.Error("ZS-TS-138 must still fire on data: { ...parameter }")
+	}
+	real := "async function h(req: any) {\n  return prisma.user.create({ data: req.body });\n}\n"
+	if !hasRule(matchTSSource(t, idx, real), "ZS-TS-138") {
+		t.Error("ZS-TS-138 must still fire on data: req.body")
+	}
+}

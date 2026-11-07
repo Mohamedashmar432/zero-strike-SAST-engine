@@ -39,5 +39,6 @@ match:
     # fired on fs.writeFile(CONSTANT_PATH, userControlledData, cb).
     # Mirrors ZS-JS-062.
     - tainted_argument: true
+      honor_path_sanitizers: true
       tainted_argument_index: 0
 fix_suggestion: "Resolve the path with path.resolve and confirm it stays within the allowed base directory before writing."

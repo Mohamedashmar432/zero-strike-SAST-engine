@@ -30,4 +30,5 @@ match:
     # where the tainted segment is index 1, not 0. Pinning any single index
     # would silently drop real traversals. Mirrors ZS-JS-091.
     - tainted_argument: true
+      honor_path_sanitizers: true
 fix_suggestion: "Validate that the resolved absolute path starts with the trusted root directory (e.g. using path.resolve and startsWith check)."
