@@ -35,6 +35,11 @@ match:
   callee: execute
   callee_suffix: true
   filters:
+    # A receiver that looks like a JDBC handle. execute is also the name of
+    # every service/command/upload helper (commandExecutionService.execute,
+    # super.execute, a bare execute(dir, cmd)), which is where the false
+    # positives came from; none of those takes SQL.
+    - callee_matches: '(?i)(statement|stmt|jdbc|template|sql|query|conn|db)\w*\.execute$|(^|\.)st\.execute$'
     - tainted_argument: true
       # The query string only. These APIs take the SQL first and bind
       # parameters afterwards, so a tainted value in a later argument is

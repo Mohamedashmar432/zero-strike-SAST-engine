@@ -320,8 +320,19 @@ func extractAttrs(n *ir.IRNode, node *sitter.Node, source []byte) {
 	}
 }
 
+// nonStringTypes are the declared parameter types that cannot carry an
+// injection payload: a number or flag has no quote, "../" or markup to smuggle.
+var nonStringTypes = map[string]bool{
+	"int": true, "long": true, "short": true, "byte": true, "float": true, "double": true,
+	"boolean": true, "char": true, "Integer": true, "Long": true, "Short": true, "Byte": true,
+	"Float": true, "Double": true, "Boolean": true,
+}
+
 // extractParameters collects the declared parameter names of a
-// method/constructor declaration into a string slice.
+// method/constructor declaration into a string slice. Parameters of a
+// primitive or boxed numeric/boolean type are left out: the taint pass seeds
+// every listed name as untrusted, and a long feedbackId concatenated into a
+// query is not an injection.
 func extractParameters(node *sitter.Node, source []byte) []string {
 	params := node.ChildByFieldName("parameters")
 	if params == nil {
@@ -331,6 +342,9 @@ func extractParameters(node *sitter.Node, source []byte) []string {
 	for i := 0; i < int(params.ChildCount()); i++ {
 		p := params.Child(i)
 		if p.Type() != "formal_parameter" && p.Type() != "spread_parameter" {
+			continue
+		}
+		if t := p.ChildByFieldName("type"); t != nil && nonStringTypes[t.Content(source)] {
 			continue
 		}
 		if name := p.ChildByFieldName("name"); name != nil {
