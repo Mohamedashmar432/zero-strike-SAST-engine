@@ -89,6 +89,8 @@ type filterYAML struct {
 	RequireRealSource              bool                  `yaml:"require_real_source"`
 	HonorPathSanitizers            bool                  `yaml:"honor_path_sanitizers"`
 	ExcludeParamsSource            bool                  `yaml:"exclude_params_source"`
+	ExcludeBareParameter           bool                  `yaml:"exclude_bare_parameter"`
+	ArgumentHostFixed              *int                  `yaml:"argument_host_fixed"`
 	ArgumentKindNotAt              *argKindYAML          `yaml:"argument_kind_not_at"`
 	HasBareExcept                  bool                  `yaml:"has_bare_except"`
 	CalleeMatches                  string                `yaml:"callee_matches"`
@@ -265,6 +267,8 @@ func convertFilters(fyamls []filterYAML) []Filter {
 			RequireRealSource:              f.RequireRealSource,
 			HonorPathSanitizers:            f.HonorPathSanitizers,
 			ExcludeParamsSource:            f.ExcludeParamsSource,
+			ExcludeBareParameter:           f.ExcludeBareParameter,
+			ArgumentHostFixed:              f.ArgumentHostFixed,
 			ArgumentKindNotAt:              convertArgKind(f.ArgumentKindNotAt),
 			HasBareExcept:                  f.HasBareExcept,
 			HasEmptyExceptHandler:          f.HasEmptyExceptHandler,

@@ -132,6 +132,16 @@ func evalContextFilters(f rules.Filter, n *ir.IRNode, fc *fileCtx) bool {
 			}
 		}
 	}
+	if f.ArgumentHostFixed != nil {
+		args := argumentNodes(n)
+		i := *f.ArgumentHostFixed
+		if i < 0 {
+			i += len(args)
+		}
+		if i >= 0 && i < len(args) && fc.urlHostFixed(args[i], 0) {
+			return false
+		}
+	}
 	if f.WrittenFileMatches != "" {
 		if fc.lang != core.LangPython || n.Kind != ir.NodeKindCall {
 			return false

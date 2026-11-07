@@ -146,6 +146,17 @@ type Filter struct {
 	// req.body and req.query (the qs parser builds objects) still count.
 	ExcludeParamsSource bool
 
+	// ExcludeBareParameter makes the TaintedArgument check ignore an argument
+	// that is, by itself, a parameter of the enclosing function which that
+	// function never reassigns. Parameter seeding (see taint.Result.Weak)
+	// marks it tainted, but with nothing built from it inside the function
+	// there is no injected string to point at: `def run(sql): cur.execute(sql)`
+	// is a wrapper whose callers decide, while `q = "..." % name; execute(q)`
+	// and `exec("ping " + host)` still fire. Set it on injection sinks that
+	// are routinely wrapped, where RequireRealSource would also drop the
+	// handler-extracts, helper-builds split that parameter seeding exists for.
+	ExcludeBareParameter bool
+
 	// CalleeMatches requires a call's callee text to match this regex. It is
 	// tested against both the callee as written and, for Python, its
 	// import-canonicalized form (md5 -> hashlib.md5), so one rule can cover a
@@ -168,6 +179,14 @@ type Filter struct {
 	// from constants, followed through local variables whose every
 	// assignment is itself constant.
 	ArgumentNotConstant *int
+	// ArgumentHostFixed suppresses the match when the argument at this index
+	// is a URL whose scheme and host cannot be influenced: a literal that
+	// opens with scheme://host/, a same-origin path starting with a single
+	// "/", or a leading operand that is configuration (process.env, this.x,
+	// a module constant, a same-file variable built from one of those). Only
+	// the tail varies, which is a path or query on a fixed service, not a
+	// request to an attacker-chosen host. For SSRF sinks.
+	ArgumentHostFixed *int
 	// WrittenFileMatches requires a file-write call (f.write(x),
 	// Path(p).write_text(x)) to write to a handle whose path matches this
 	// regex. The path is resolved from the receiver: an open(path, mode) /

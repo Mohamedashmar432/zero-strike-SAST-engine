@@ -456,6 +456,9 @@ func evalFilter(f rules.Filter, n *ir.IRNode, fc *fileCtx) bool {
 			if f.ExcludeParamsSource && ((a.Kind == ir.NodeKindIdentifier && fc.paramsOnly[a.Text]) || paramsExpression(a, fc.lang)) {
 				return false
 			}
+			if f.ExcludeBareParameter && a.Kind == ir.NodeKindIdentifier && fc.isBareParameterArg(n, a) {
+				return false
+			}
 			if a.Kind == ir.NodeKindIdentifier && taintedVars[a.Text] {
 				// require_real_source rejects taint that exists only because
 				// every function parameter is seeded untrusted. See
