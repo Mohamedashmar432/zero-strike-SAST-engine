@@ -113,7 +113,7 @@ cases:
     expect: [{rule_id: ZS-TS-036, min_count: 1}]
   - file: cases/vuln_nosqli_collection_find.ts
     language: typescript
-    expect: [{rule_id: ZS-TS-037, min_count: 1}]
+    expect: []
   - file: cases/vuln_proto_pollution.ts
     language: typescript
     expect: [{rule_id: ZS-TS-038, min_count: 1}]

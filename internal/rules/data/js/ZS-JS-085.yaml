@@ -1,5 +1,9 @@
 id: ZS-JS-085
-lifecycle: released
+lifecycle: retired
+# Retired 2026-11-07 on production false-positive evidence (portal Scan Engine tags):
+# axios.delete() SSRF: 6 of 6 findings tagged false positive across 2 production projects; zero true positives on the RealVuln dev set.
+# Reversible: set lifecycle back to released. A retired rule's findings stop appearing; no detection
+# is replaced, so a genuine instance of this pattern is no longer reported.
 name: SSRF via axios.delete()
 version: "1.0.0"
 language: javascript

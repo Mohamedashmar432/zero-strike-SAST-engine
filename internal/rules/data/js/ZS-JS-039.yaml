@@ -1,5 +1,9 @@
 id: ZS-JS-039
-lifecycle: released
+lifecycle: retired
+# Retired 2026-11-07 on production false-positive evidence (portal Scan Engine tags):
+# MongoDB find() NoSQL injection (JS twin of ZS-TS-037): 2 of 2 findings tagged false positive in production; never fired on the RealVuln dev set.
+# Reversible: set lifecycle back to released. A retired rule's findings stop appearing; no detection
+# is replaced, so a genuine instance of this pattern is no longer reported.
 name: NoSQL Injection via MongoDB find()
 version: "1.0.0"
 language: javascript

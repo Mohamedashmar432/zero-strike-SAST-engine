@@ -80,11 +80,12 @@ func TestIntegration_ConstantHTTPGetDoesNotFireZSJS038(t *testing.T) {
 
 // --- ZS-JS-039: NoSQL injection via collection.find ---
 
-func TestIntegration_TaintedCollectionFindFiresZSJS039(t *testing.T) {
+func TestIntegration_TaintedCollectionFindRetiredDoesNotFireZSJS039(t *testing.T) {
 	idx := loadJSRules(t)
 	src := "const term = req.query.q;\ncollection.find(term);\n"
-	if !hasRule(matchJSSource(t, idx, src), "ZS-JS-039") {
-		t.Error("expected ZS-JS-039 to fire when collection.find argument is tainted")
+	// ZS-JS-039 is retired (production false-positive rate 100 percent): it must stay silent.
+	if hasRule(matchJSSource(t, idx, src), "ZS-JS-039") {
+		t.Error("ZS-JS-039 is retired and must not fire")
 	}
 }
 
