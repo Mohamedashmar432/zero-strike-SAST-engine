@@ -212,3 +212,17 @@ func TestPrecisionB_PrismaSpreadOfParameterStillFires(t *testing.T) {
 		t.Error("ZS-TS-138 must still fire on data: req.body")
 	}
 }
+
+func TestPrecisionB_PathOpenReceiverConstant(t *testing.T) {
+	_, idx := loadPythonRules(t)
+	constant := "from pathlib import Path\nHERE = Path(__file__).parent\n\n" +
+		"def leaked():\n    with (HERE / 'words.txt').open() as f:\n        return f.read()\n"
+	if hasRule(matchSource(t, idx, constant), "ZS-PY-008") {
+		t.Error("ZS-PY-008 must not fire on Path.open() of a constant pathlib join")
+	}
+	dynamic := "from pathlib import Path\nHERE = Path(__file__).parent\n\n" +
+		"def read(name):\n    with (HERE / name).open() as f:\n        return f.read()\n"
+	if !hasRule(matchSource(t, idx, dynamic), "ZS-PY-008") {
+		t.Error("ZS-PY-008 must still fire on Path.open() of a parameter-derived path")
+	}
+}

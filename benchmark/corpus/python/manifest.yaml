@@ -290,6 +290,9 @@ cases:
   - file: cases/vuln_redirect_double_slash.py
     language: python
     expect: [{rule_id: ZS-PY-028, min_count: 1}]
+  - file: cases/clean_path_open_constant.py
+    language: python
+    expect: []
   - file: cases/clean_credential_message.py
     language: python
     expect: []

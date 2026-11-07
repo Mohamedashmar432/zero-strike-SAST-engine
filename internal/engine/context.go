@@ -124,6 +124,13 @@ func evalContextFilters(f rules.Filter, n *ir.IRNode, fc *fileCtx) bool {
 		if i >= 0 && i < len(args) && fc.isConstant(args[i]) {
 			return false
 		}
+		// Path.open() takes no path argument: the receiver is the path, so
+		// (HERE / "words.txt").open() is as constant as open("words.txt").
+		if i == 0 && len(args) == 0 && fc.lang == core.LangPython && n.Kind == ir.NodeKindCall && len(n.Children) > 0 {
+			if callee := n.Children[0]; callee.Kind == ir.NodeKindAttribute && len(callee.Children) >= 2 && fc.isConstPath(callee.Children[0], 0) {
+				return false
+			}
+		}
 	}
 	if f.WrittenFileMatches != "" {
 		if fc.lang != core.LangPython || n.Kind != ir.NodeKindCall {
