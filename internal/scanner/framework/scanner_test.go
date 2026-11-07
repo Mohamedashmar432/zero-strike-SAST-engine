@@ -336,3 +336,28 @@ func TestDockerfileCheck(t *testing.T) {
 		t.Errorf("expected no finding on a pinned, non-root Dockerfile, got %+v", clean)
 	}
 }
+
+func TestSpringErrorAndH2Checks(t *testing.T) {
+	vulnPath := "spring/application-vuln-errors.properties"
+	vulnData := readFixture(t, vulnPath)
+	if got := detectSpringStacktrace(vulnPath, vulnData); len(got) != 1 || got[0].RuleID != "ZS-CFG-025" {
+		t.Fatalf("expected 1 ZS-CFG-025 finding, got %+v", got)
+	}
+	if got := detectSpringH2Console(vulnPath, vulnData); len(got) != 1 || got[0].RuleID != "ZS-CFG-026" {
+		t.Fatalf("expected 1 ZS-CFG-026 finding, got %+v", got)
+	}
+
+	cleanPath := "spring/application-clean-errors.properties"
+	cleanData := readFixture(t, cleanPath)
+	if got := detectSpringStacktrace(cleanPath, cleanData); len(got) != 0 {
+		t.Errorf("expected no ZS-CFG-025 finding for include-stacktrace=never, got %+v", got)
+	}
+	if got := detectSpringH2Console(cleanPath, cleanData); len(got) != 0 {
+		t.Errorf("expected no ZS-CFG-026 finding for h2 console disabled, got %+v", got)
+	}
+
+	yml := []byte("server:\n  error:\n    include-stacktrace: always\nspring:\n  h2:\n    console:\n      enabled: true\n")
+	if len(detectSpringStacktrace("application.yml", yml)) != 1 || len(detectSpringH2Console("application.yml", yml)) != 1 {
+		t.Errorf("both checks must read the YAML form too")
+	}
+}

@@ -74,3 +74,7 @@ cases:
     expect: [{rule_id: ZS-CFG-021, min_count: 1}, {rule_id: ZS-CFG-022, min_count: 2}, {rule_id: ZS-CFG-023, min_count: 1}, {rule_id: ZS-CFG-024, min_count: 2}]
   - file: cases/docker_clean.Dockerfile
     expect: []
+  - file: cases/spring/application-vuln-errors.properties
+    expect: [{rule_id: ZS-CFG-025, min_count: 1}, {rule_id: ZS-CFG-026, min_count: 1}]
+  - file: cases/spring/application-clean-errors.properties
+    expect: []

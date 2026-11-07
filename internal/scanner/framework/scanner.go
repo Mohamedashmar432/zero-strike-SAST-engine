@@ -36,6 +36,8 @@ var checks = []check{
 	githubActionsUnpinnedCheck,
 	dockerComposePrivilegedCheck,
 	dockerfileCheck,
+	springStacktraceCheck,
+	springH2ConsoleCheck,
 	rawHTMLBindingCheck,
 }
 

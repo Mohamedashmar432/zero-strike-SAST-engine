@@ -102,3 +102,61 @@ func findSpringKey(path string, data []byte, key string) (value string, line int
 	}
 	return entry.Value, entry.Line, true
 }
+
+// springStacktraceCheck flags server.error.include-stacktrace=always, which
+// returns the Java stack trace (class names, library versions, file paths) in
+// every error response body.
+var springStacktraceCheck = check{
+	ruleID:  "ZS-CFG-025",
+	accepts: isSpringConfigFile,
+	detect:  detectSpringStacktrace,
+}
+
+// springH2ConsoleCheck flags spring.h2.console.enabled=true: the H2 web console
+// is a SQL shell, and with a reachable path or weak credentials it is remote
+// code execution via CREATE ALIAS.
+var springH2ConsoleCheck = check{
+	ruleID:  "ZS-CFG-026",
+	accepts: isSpringConfigFile,
+	detect:  detectSpringH2Console,
+}
+
+func detectSpringStacktrace(path string, data []byte) []core.Finding {
+	value, line, ok := findSpringKey(path, data, "server.error.include-stacktrace")
+	if !ok || strings.ToLower(strings.TrimSpace(value)) != "always" {
+		return nil
+	}
+	loc := core.Location{File: path, StartLine: line, EndLine: line}
+	return []core.Finding{findings.BuildConfigFinding(
+		"ZS-CFG-025",
+		"Spring Boot Stack Traces In Error Responses",
+		"server.error.include-stacktrace=always detected in "+path+" — every error response discloses the stack trace to the client",
+		"security-misconfiguration",
+		findings.ConfigInput{Framework: "spring", ConfigFile: path, Key: "server.error.include-stacktrace", Value: value},
+		loc,
+		core.SeverityMedium,
+		core.ConfidenceMedium,
+		[]string{"CWE-209"},
+		[]string{"A02:2025"},
+	)}
+}
+
+func detectSpringH2Console(path string, data []byte) []core.Finding {
+	value, line, ok := findSpringKey(path, data, "spring.h2.console.enabled")
+	if !ok || strings.ToLower(strings.TrimSpace(value)) != "true" {
+		return nil
+	}
+	loc := core.Location{File: path, StartLine: line, EndLine: line}
+	return []core.Finding{findings.BuildConfigFinding(
+		"ZS-CFG-026",
+		"Spring Boot H2 Console Enabled",
+		"spring.h2.console.enabled=true detected in "+path+" — the H2 web console is a SQL shell and must not be reachable outside local development",
+		"security-misconfiguration",
+		findings.ConfigInput{Framework: "spring", ConfigFile: path, Key: "spring.h2.console.enabled", Value: value},
+		loc,
+		core.SeverityHigh,
+		core.ConfidenceMedium,
+		[]string{"CWE-489"},
+		[]string{"A02:2025"},
+	)}
+}
