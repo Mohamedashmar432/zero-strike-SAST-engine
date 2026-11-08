@@ -24,6 +24,13 @@ type languagePatterns struct {
 	// ParamsSources are the Sources whose value is always a string, never an
 	// operator object (Express req.params). See Result.ParamsOnly.
 	ParamsSources []*regexp.Regexp
+	// SQLQuote, SQLAny and SQLCast neutralize taint for SQL sinks only (see
+	// sqlsafe.go and the honor_sql_sanitizers filter). SQLQuote entries are
+	// escape calls that protect a value only inside quotes; SQLAny entries are
+	// calls whose result is inert in any SQL position; SQLCast are numeric casts.
+	SQLQuote []*regexp.Regexp
+	SQLAny   []*regexp.Regexp
+	SQLCast  []*regexp.Regexp
 }
 
 var pythonPatterns = languagePatterns{
@@ -108,17 +115,34 @@ var goPatterns = languagePatterns{
 
 var phpPatterns = languagePatterns{
 	Sources: []*regexp.Regexp{
-		regexp.MustCompile(`\$_(GET|POST|REQUEST|COOKIE|SERVER|SESSION)\b`),
+		regexp.MustCompile(`\$_(GET|POST|REQUEST|COOKIE|FILES|SESSION)\b`),
+		// $_SERVER holds server-set values (SERVER_PROTOCOL, REQUEST_METHOD, SCRIPT_NAME,
+		// REMOTE_ADDR, DOCUMENT_ROOT) next to request-derived ones. Only the latter,
+		// or a key computed at run time, is a source. $_SESSION stays a source: a value
+		// stored from a request (second-order) comes back out of it.
+		regexp.MustCompile(`\$_SERVER\s*\[\s*['"](HTTP_\w*|REQUEST_URI|QUERY_STRING|PATH_INFO|ORIG_PATH_INFO|PATH_TRANSLATED|PHP_SELF|PHP_AUTH_\w+|AUTH_TYPE|argv)['"]`),
+		regexp.MustCompile(`\$_SERVER\s*\[\s*[$\w(]`),
 	},
 	Sanitizers: []*regexp.Regexp{
 		regexp.MustCompile(`htmlspecialchars\(`),
 		regexp.MustCompile(`htmlentities\(`),
 		regexp.MustCompile(`escapeshellarg\(`),
 	},
+	SQLQuote: []*regexp.Regexp{
+		regexp.MustCompile(`\b(?:mysqli_real_escape_string|mysqli_escape_string|mysql_real_escape_string|pg_escape_string)\s*\(|->real_escape_string\s*\(`),
+	},
+	SQLAny: []*regexp.Regexp{
+		regexp.MustCompile(`\b(?:intval|floatval|doubleval|md5|sha1|crc32|hash|bin2hex)\s*\(`),
+	},
+	SQLCast: []*regexp.Regexp{
+		regexp.MustCompile(`\(\s*(?:int|integer|float|double)\s*\)\s*\$\w+(?:\s*\[[^\]]*\])*`),
+	},
 	// File-path neutralizers (honor_path_sanitizers): ZS-PHP-013 URL-fetch and ZS-PHP-033 file sinks;
 	// the result is a local path, so it cannot steer a request to another host.
 	PathSanitizers: []*regexp.Regexp{
 		regexp.MustCompile(`\b(basename|realpath)\(`),
+		// A generated name (uniqid, random_bytes) cannot steer a path to a chosen file.
+		regexp.MustCompile(`\b(uniqid|random_bytes|openssl_random_pseudo_bytes|wp_generate_uuid4)\(`),
 	},
 }
 

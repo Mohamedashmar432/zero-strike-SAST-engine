@@ -53,4 +53,10 @@ match:
       # is the last argument in every form; a tainted connection handle is
       # not a SQL injection.
       tainted_argument_index: -1
+      # A variable that went through an integer cast or a hash, or a query whose
+      # tainted parts are all escaped and sit between quotes, cannot change the
+      # statement's structure (taint.Result.SQLSafe). A bare string escape in an
+      # unquoted numeric position stays flagged.
+      honor_sql_sanitizers: true
+      exclude_wrapped_by: '^(intval|floatval|doubleval|md5|sha1|crc32|hash|bin2hex)$'
 fix_suggestion: "Use pg_query_params()/pg_prepare() instead of concatenating user input into the query string."

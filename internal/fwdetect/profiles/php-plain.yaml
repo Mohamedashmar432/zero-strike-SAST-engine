@@ -11,7 +11,11 @@ file_evidence:
     pattern: 'php://input'
 
 sources:
-  - '\$_(GET|POST|REQUEST|COOKIE|FILES|SERVER|SESSION|ENV)\b'
+  - '\$_(GET|POST|REQUEST|COOKIE|FILES|SESSION|ENV)\b'
+  # $_SERVER: only request-derived keys (or a computed key); SERVER_PROTOCOL, REQUEST_METHOD,
+  # REMOTE_ADDR and friends are set by the server. Same set as the PHP taint patterns.
+  - '\$_SERVER\s*\[\s*[''"](HTTP_\w*|REQUEST_URI|QUERY_STRING|PATH_INFO|ORIG_PATH_INFO|PATH_TRANSLATED|PHP_SELF|PHP_AUTH_\w+|AUTH_TYPE|argv)[''"]'
+  - '\$_SERVER\s*\[\s*[$\w(]'
   - '\bgetallheaders\('
 
 params:

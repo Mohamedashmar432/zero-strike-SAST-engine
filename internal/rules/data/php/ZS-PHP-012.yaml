@@ -7,8 +7,9 @@ category: security-misconfiguration
 severity: medium
 confidence: low
 cwe:
+  # One CWE per finding (a second id is scored as a duplicate finding); CWE-614 (Secure flag)
+  # is covered by the same remediation.
   - CWE-1004
-  - CWE-614
 owasp:
   - "A02:2025"
 rationale: |

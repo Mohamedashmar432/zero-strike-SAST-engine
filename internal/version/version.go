@@ -45,7 +45,10 @@ var Version = "dev"
 //	6 - framework-aware taint seeding (internal/fwdetect): in a file with
 //	    high-confidence framework evidence only entry-point parameters are
 //	    seeded, plus the framework's request sources
-const MatchSemanticsRevision = 6
+//	7 - PHP precision: $_SERVER narrowed to request-derived keys as a taint source,
+//	    honor_sql_sanitizers (taint.Result.SQLSafe), PHP generated-name path
+//	    sanitizers
+const MatchSemanticsRevision = 7
 
 // CacheKey returns the identity the finding and IR caches must key on, pairing
 // the release version with the matching-semantics revision so that either one

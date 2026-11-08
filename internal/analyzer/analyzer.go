@@ -44,6 +44,7 @@ func (a *defaultAnalyzer) Analyze(_ context.Context, file *ir.IRFile) (*Analysis
 		TaintedVars:   tc.Tainted,
 		WeakTaintVars: tc.Weak,
 		PathSafeVars:  tc.PathSafe,
+		SQLSafeVars:   tc.SQLSafe,
 		ParamsOnlyVars: tc.ParamsOnly,
 		TaintReasons:  tc.Reasons,
 		FrameworkSources: tc.FrameworkSources,
@@ -96,6 +97,9 @@ type AnalysisResult struct {
 	// only (see internal/analyzer/taint.Result.PathSafe). Rules opt in with
 	// the honor_path_sanitizers filter.
 	PathSafeVars map[string]bool
+	// SQLSafeVars maps tainted variables neutralized for SQL sinks (see
+	// internal/analyzer/taint.Result.SQLSafe). Rules opt in with honor_sql_sanitizers.
+	SQLSafeVars map[string]int8
 	// ParamsOnlyVars is the subset of TaintedVars whose only source is a
 	// string-valued one such as req.params (see
 	// internal/analyzer/taint.Result.ParamsOnly). Rules opt out of it with the

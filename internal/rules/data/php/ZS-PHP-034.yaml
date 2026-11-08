@@ -27,4 +27,10 @@ match:
     - callee_pattern: '^DB::(select|selectOne|statement|unprepared|raw|insert|update|delete|affectingStatement|cursor)$|(^|->|\.|::)(whereRaw|orWhereRaw|selectRaw|havingRaw|orHavingRaw|orderByRaw|groupByRaw|fromRaw|joinRaw)$'
     - tainted_argument: true
       tainted_argument_index: 0
+      # A variable that went through an integer cast or a hash, or a query whose
+      # tainted parts are all escaped and sit between quotes, cannot change the
+      # statement's structure (taint.Result.SQLSafe). A bare string escape in an
+      # unquoted numeric position stays flagged.
+      honor_sql_sanitizers: true
+      exclude_wrapped_by: '^(intval|floatval|doubleval|md5|sha1|crc32|hash|bin2hex)$'
 fix_suggestion: "Use bindings: DB::select('... WHERE email = ?', [$email]) or ->whereRaw('name LIKE ?', [\"%$q%\"])."

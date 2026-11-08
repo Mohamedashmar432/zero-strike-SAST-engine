@@ -1,0 +1,45 @@
+id: ZS-PHP-036
+lifecycle: released
+name: Unrestricted File Upload (move_uploaded_file)
+version: "1.0.0"
+language: php
+category: file-upload
+severity: high
+confidence: medium
+cwe:
+  - CWE-434
+owasp:
+  - "A06:2025"
+rationale: |
+  move_uploaded_file() puts an uploaded file at a destination the script chose.
+  When that destination is built from the client-supplied file name or extension
+  ($_FILES['f']['name'], or a value derived from it), an attacker uploads a .php
+  file into a web-served directory and requests it to run code on the server. A
+  client-reported MIME type ($_FILES['f']['type']) and a size check do not stop
+  that, and basename() only keeps the file in the directory, not the extension
+  harmless. The rule stays quiet when the move sits inside a check that compares
+  the extension against an allow-list (in_array) or inspects the content
+  (finfo_file, mime_content_type, exif_imagetype), and when the destination is
+  wrapped in a generated name (random_bytes, uniqid).
+description: |
+  Detects move_uploaded_file() calls whose destination (second argument) traces
+  back to an untrusted source, such as the uploaded file's own name.
+message: "move_uploaded_file() destination built from client-supplied data - allow-list the extension, store under a generated name outside the web root"
+references:
+  - https://owasp.org/www-community/vulnerabilities/Unrestricted_File_Upload
+  - https://www.php.net/manual/en/features.file-upload.php
+tags: [file-upload, rce, path-traversal]
+match:
+  kind: call
+  callee: move_uploaded_file
+  filters:
+    - tainted_argument: true
+      # (tmp_name, destination): the source is always the server's temp file, so
+      # only the destination decides where the upload lands and what it is called.
+      tainted_argument_index: 1
+      exclude_wrapped_by: '^(random_bytes|uniqid|bin2hex|openssl_random_pseudo_bytes)$'
+    - not:
+        kind: call
+        filters:
+          - inside_condition: '^(in_array|finfo_file|mime_content_type|exif_imagetype|wp_check_filetype)$'
+fix_suggestion: "Compare the extension to an allow-list with in_array(..., true), check the content with finfo_file(), and save under a generated name in a directory the web server will not execute."

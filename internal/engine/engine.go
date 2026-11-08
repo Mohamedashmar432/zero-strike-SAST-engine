@@ -161,6 +161,7 @@ func (e *defaultEngine) Match(_ context.Context, mc *MatchContext) ([]MatchResul
 		markFrameworkSources(mc.File.IR.Root, fileLang, mc.File.FrameworkSources)
 	}
 	fc := newFileCtx(mc.File.IR, taintedVars, mc.File.WeakTaintVars, mc.File.PathSafeVars, mc.File.ParamsOnlyVars)
+	fc.sqlSafe = mc.File.SQLSafeVars
 	var out []MatchResult
 	// reported tracks rules with OncePerFile that have already matched here.
 	reported := map[*rules.Rule]bool{}
@@ -476,6 +477,9 @@ func evalFilter(f rules.Filter, n *ir.IRNode, fc *fileCtx) bool {
 	if f.TaintedArgument {
 		isTainted := func(a *ir.IRNode) bool {
 			if f.HonorPathSanitizers && ((a.Kind == ir.NodeKindIdentifier && fc.pathSafe[a.Text]) || underPathSanitizer(a, n, fc.lang)) {
+				return false
+			}
+			if f.HonorSQLSanitizers && a.Kind == ir.NodeKindIdentifier && fc.sqlSafe[a.Text] == taint.SQLSafeAny {
 				return false
 			}
 			if f.ExcludeParamsSource && ((a.Kind == ir.NodeKindIdentifier && fc.paramsOnly[a.Text]) || paramsExpression(a, fc.lang)) {
@@ -901,7 +905,23 @@ func isDirectSourceExpression(n *ir.IRNode, lang core.Language) bool {
 	case ir.NodeKindAttribute:
 		return taint.IsSource(lang, attributeTextFor(n, lang))
 	case ir.NodeKindIdentifier:
-		return taint.IsSource(lang, n.Text)
+		if taint.IsSource(lang, n.Text) {
+			return true
+		}
+		// $_SERVER['HTTP_HOST']: whether the superglobal is a source depends on the
+		// key, so judge the whole subscript expression, not the bare variable.
+		if lang == core.LangPHP && n.Text == "$_SERVER" && n.Parent != nil &&
+			n.Parent.Kind == ir.NodeKindUnknown && n.Parent.Text == "" {
+			key := "$k" // no literal key: computed at run time, so unknown
+			for _, c := range n.Parent.Children {
+				if c.Kind == ir.NodeKindLiteral {
+					key = "'" + c.Text + "'"
+					break
+				}
+			}
+			return taint.IsSource(lang, "$_SERVER["+key+"]")
+		}
+		return false
 	default:
 		return false
 	}

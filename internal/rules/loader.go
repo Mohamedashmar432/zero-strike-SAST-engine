@@ -90,6 +90,7 @@ type filterYAML struct {
 	LoggedIdentifier               *loggedIdentifierYAML `yaml:"logged_identifier"`
 	RequireRealSource              bool                  `yaml:"require_real_source"`
 	HonorPathSanitizers            bool                  `yaml:"honor_path_sanitizers"`
+	HonorSQLSanitizers             bool                  `yaml:"honor_sql_sanitizers"`
 	ExcludeParamsSource            bool                  `yaml:"exclude_params_source"`
 	ExcludeBareParameter           bool                  `yaml:"exclude_bare_parameter"`
 	ExcludeWrappedBy               string                `yaml:"exclude_wrapped_by"`
@@ -272,6 +273,7 @@ func convertFilters(fyamls []filterYAML) []Filter {
 			ArgumentLiteralMatches:         f.ArgumentLiteralMatches,
 			RequireRealSource:              f.RequireRealSource,
 			HonorPathSanitizers:            f.HonorPathSanitizers,
+			HonorSQLSanitizers:             f.HonorSQLSanitizers,
 			ExcludeParamsSource:            f.ExcludeParamsSource,
 			ExcludeBareParameter:           f.ExcludeBareParameter,
 			ExcludeWrappedBy:               f.ExcludeWrappedBy,
