@@ -1,0 +1,45 @@
+# Django: function views (request first), class-based view methods, DRF views.
+name: django
+languages: [python]
+
+file_evidence:
+  - label: imports django.http
+    pattern: '(?m)^\s*(from\s+django\.http\b|import\s+django\.http\b)'
+  - label: imports django.shortcuts
+    pattern: '(?m)^\s*from\s+django\.shortcuts\s+import'
+  - label: imports django.views
+    pattern: '(?m)^\s*(from\s+django\.views\b|import\s+django\.views\b)'
+  - label: imports django.urls
+    pattern: '(?m)^\s*from\s+django\.(urls|conf\.urls)\b'
+  - label: imports rest_framework views
+    pattern: '(?m)^\s*from\s+rest_framework(\.\w+)*\s+import\s+.*\b(api_view|APIView|viewsets|generics|ViewSet)\b'
+
+manifests:
+  - file: '(^|/)requirements[\w.-]*\.txt$'
+    contains: '(?im)^\s*django([<>=!~\[\s]|$)'
+    label: requirements.txt lists django
+  - file: '(^|/)pyproject\.toml$'
+    contains: '(?i)["'']\s*django\b'
+    label: pyproject.toml depends on django
+  - file: '(^|/)Pipfile$'
+    contains: '(?im)^\s*django\s*='
+    label: Pipfile lists django
+
+sources:
+  - 'request\.(GET|POST|body|COOKIES|META|FILES|headers|data|query_params|path|path_info)\b'
+  - 'request\.get_full_path\('
+
+entry_points:
+  # def view(request, ...): the request, then URL kwargs.
+  - first_param: '^request$'
+  # Class-based views.
+  - class_bases: '(^|\.)(\w*View|\w*ViewSet|APIView)$'
+    method_names: '^(get|post|put|patch|delete|head|options|dispatch|list|create|retrieve|update|partial_update|destroy)$'
+
+params:
+  mode: all
+  # Entry parameters are request data by position only; see Entries.ParamsSplit.
+  weak: true
+  # The request object is not seeded: its accessors are explicit sources, and
+  # seeding it taints everything derived from it (request.user, ORM lookups).
+  exclude_names: '^(self|cls|request)$'

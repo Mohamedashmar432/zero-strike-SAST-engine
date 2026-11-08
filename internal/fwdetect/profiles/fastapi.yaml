@@ -1,0 +1,37 @@
+# FastAPI: functions decorated on the app or a router.
+name: fastapi
+languages: [python]
+
+file_evidence:
+  - label: imports fastapi
+    pattern: '(?m)^\s*(from\s+fastapi(\.\w+)*\s+import|import\s+fastapi\b)'
+
+manifests:
+  - file: '(^|/)requirements[\w.-]*\.txt$'
+    contains: '(?im)^\s*fastapi([<>=!~\[\s]|$)'
+    label: requirements.txt lists fastapi
+  - file: '(^|/)pyproject\.toml$'
+    contains: '(?i)["'']\s*fastapi\b'
+    label: pyproject.toml depends on fastapi
+  - file: '(^|/)Pipfile$'
+    contains: '(?im)^\s*fastapi\s*='
+    label: Pipfile lists fastapi
+
+sources:
+  - 'request\.(query_params|path_params|headers|cookies|json|form|body|stream)\b'
+
+entry_points:
+  - method_attrs: '\.(get|post|put|delete|patch|head|options|api_route|websocket)$'
+
+# Typed path, query and body parameters; dependencies (Depends) and
+# infrastructure objects are not request data.
+params:
+  mode: all
+  # Entry parameters are request data by position only; see Entries.ParamsSplit.
+  weak: true
+  exclude_names: '^(self|cls)$'
+  exclude_types: 'Depends\(|^(Request|HTTPConnection|Session|AsyncSession|Response|BackgroundTasks|WebSocket|HTTPAuthorizationCredentials)$'
+  exclude_attrs: '^(Depends|Security)$'
+
+# Parameters declared with a binding default are request-bound wherever they sit.
+bound_param_attrs: '^(Query|Body|Path|Form|Header|Cookie|File)$'

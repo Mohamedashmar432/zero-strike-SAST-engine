@@ -12,6 +12,10 @@ type IRFile struct {
 	// it is not part of the cached IR. Empty means no framework evidence in
 	// the file, and the taint pass then keeps its default parameter seeding.
 	Frameworks []FrameworkHit
+	// FrameworksMedium lists frameworks vouched for only by a manifest. They
+	// add the framework's request accessors as taint sources but do not change
+	// parameter seeding.
+	FrameworksMedium []FrameworkHit
 }
 
 // FrameworkHit is one high-confidence framework detection: its name and the

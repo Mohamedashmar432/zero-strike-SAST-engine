@@ -1,0 +1,27 @@
+# NestJS: controller methods decorated with the HTTP verb decorators.
+name: nestjs
+languages: [typescript, javascript]
+
+file_evidence:
+  - label: imports @nestjs/common
+    pattern: '''@nestjs/(common|core|platform-express|platform-fastify)''|"@nestjs/(common|core|platform-express|platform-fastify)"'
+
+manifests:
+  - file: '(^|/)package\.json$'
+    contains: '"@nestjs/(core|common)"\s*:'
+    label: package.json depends on @nestjs
+
+sources:
+  - '\b(req|request)\.(query|body|params|headers|cookies|ip|files|file)\b'
+
+entry_points:
+  - method_attrs: '^(Get|Post|Put|Delete|Patch|All|Head|Options|Sse|MessagePattern|EventPattern)$'
+
+params:
+  mode: all
+  # Entry parameters are request data by position only; see Entries.ParamsSplit.
+  weak: true
+  exclude_attrs: '^(Res|Response|Next|Session|Inject|Req|Request)$'
+  exclude_types: '^(Response|Logger|ConfigService)\b'
+
+bound_param_attrs: '^(Body|Query|Param|Headers|UploadedFile|UploadedFiles|Ip|Cookies)$'

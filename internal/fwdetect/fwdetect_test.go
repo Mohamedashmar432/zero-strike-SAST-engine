@@ -20,7 +20,7 @@ func detectOne(t *testing.T, d *Detector, path string, lang core.Language, src s
 }
 
 func TestProfilesLoad(t *testing.T) {
-	want := []string{"aspnet-framework", "aspnetcore", "express", "fastify", "laravel", "php-plain"}
+	want := []string{"aspnet-framework", "aspnetcore", "django", "echo", "express", "fastapi", "fastify", "flask", "gin", "laravel", "nestjs", "nextjs", "php-plain", "spring"}
 	if got := Names(); !reflect.DeepEqual(got, want) {
 		t.Fatalf("Names() = %v, want %v", got, want)
 	}

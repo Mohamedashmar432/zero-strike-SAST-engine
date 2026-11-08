@@ -1,0 +1,24 @@
+# Gin: handlers registered on gin.Engine / RouterGroup.
+name: gin
+languages: [go]
+
+file_evidence:
+  - label: imports gin
+    pattern: '"github\.com/gin-gonic/gin"'
+
+manifests:
+  - file: '(^|/)go\.mod$'
+    contains: 'github\.com/gin-gonic/gin'
+    label: go.mod requires gin
+
+sources:
+  - '\.(Query|DefaultQuery|QueryArray|QueryMap|GetQuery|Param|PostForm|DefaultPostForm|PostFormArray|PostFormMap|GetHeader|Cookie|GetRawData|FormFile)\('
+
+entry_points:
+  - callee: '\.(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS|Any)$'
+    path_arg: true
+
+# The context is not seeded: its accessors are explicit sources, and seeding it
+# would taint everything read back from it (c.MustGet set by middleware).
+params:
+  mode: none

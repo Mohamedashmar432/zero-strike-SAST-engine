@@ -180,6 +180,15 @@ func mapKind(nodeType string) ir.NodeKind {
 func extractAttrs(n *ir.IRNode, node *sitter.Node, source []byte) {
 	switch node.Type() {
 	case "call":
+		// Raw callee text (self.lookup) for framework helper seeding
+		// (internal/fwdetect): the IR keeps no source text on inner nodes.
+		if fn := node.ChildByFieldName("function"); fn != nil {
+			src := compactSpace(fn.Content(source))
+			if len(src) > 120 {
+				src = src[:120]
+			}
+			n.Attrs["callee_src"] = src
+		}
 		// Count arguments from the argument_list child
 		for i := 0; i < int(node.ChildCount()); i++ {
 			child := node.Child(i)
@@ -207,11 +216,18 @@ func extractAttrs(n *ir.IRNode, node *sitter.Node, source []byte) {
 		}
 		if params := extractParameters(node, source); len(params) > 0 {
 			n.Attrs["parameters"] = params
+			setParamFacts(n, node, source)
 		}
 		if decs := decoratorStack(node.Parent(), source); len(decs) > 0 {
 			n.Attrs["decorators"] = decs
 		}
 	case "class_definition":
+		if name := node.ChildByFieldName("name"); name != nil {
+			n.Attrs["class_name"] = name.Content(source)
+		}
+		if bases := baseNames(node, source); len(bases) > 0 {
+			n.Attrs["bases"] = bases
+		}
 		if decs := decoratorStack(node.Parent(), source); len(decs) > 0 {
 			n.Attrs["decorators"] = decs
 		}
@@ -329,27 +345,93 @@ func setComparisonAttrs(n *ir.IRNode, node *sitter.Node, source []byte) {
 // function_definition into a string slice (positional, defaulted, typed,
 // *args and **kwargs names — destructuring/tuple params are skipped).
 func extractParameters(node *sitter.Node, source []byte) []string {
+	var out []string
+	walkParams(node, source, func(name, _, _ string) { out = append(out, name) })
+	return out
+}
+
+// walkParams visits every listed parameter with its name, its annotation text
+// and the callee name of its default value (q: str = Query(None) -> q, str,
+// Query; db = Depends(get_db) -> db, "", Depends). Other defaults give "".
+func walkParams(node *sitter.Node, source []byte, fn func(name, typ, defCall string)) {
 	params := node.ChildByFieldName("parameters")
 	if params == nil {
-		return nil
+		return
 	}
-	var out []string
 	for i := 0; i < int(params.ChildCount()); i++ {
 		p := params.Child(i)
 		switch p.Type() {
 		case "identifier":
-			out = append(out, p.Content(source))
+			fn(p.Content(source), "", "")
 		case "default_parameter", "typed_default_parameter":
-			if name := p.ChildByFieldName("name"); name != nil {
-				out = append(out, name.Content(source))
+			name := p.ChildByFieldName("name")
+			if name == nil {
+				continue
 			}
+			typ := ""
+			if t := p.ChildByFieldName("type"); t != nil {
+				typ = compactSpace(t.Content(source))
+			}
+			fn(name.Content(source), typ, defaultCallee(p.ChildByFieldName("value"), source))
 		case "typed_parameter", "list_splat_pattern", "dictionary_splat_pattern":
 			for j := 0; j < int(p.ChildCount()); j++ {
 				if c := p.Child(j); c.Type() == "identifier" {
-					out = append(out, c.Content(source))
+					typ := ""
+					if t := p.ChildByFieldName("type"); t != nil {
+						typ = compactSpace(t.Content(source))
+					}
+					fn(c.Content(source), typ, "")
 					break
 				}
 			}
+		}
+	}
+}
+
+// defaultCallee is the called name of a parameter default (Depends(get_db) ->
+// Depends), or "" when the default is not a call.
+func defaultCallee(v *sitter.Node, source []byte) string {
+	if v == nil || v.Type() != "call" {
+		return ""
+	}
+	if f := v.ChildByFieldName("function"); f != nil {
+		t := compactSpace(f.Content(source))
+		if i := strings.LastIndexByte(t, '.'); i >= 0 {
+			t = t[i+1:]
+		}
+		return t
+	}
+	return ""
+}
+
+// setParamFacts records parameter types and default-call names as
+// index-aligned slices next to Attrs["parameters"] (param_types, param_attrs),
+// for the framework profiles (FastAPI's Depends(...) is not request data).
+func setParamFacts(n *ir.IRNode, node *sitter.Node, source []byte) {
+	var types, attrs []string
+	walkParams(node, source, func(_, typ, a string) {
+		types = append(types, typ)
+		attrs = append(attrs, a)
+	})
+	if len(types) > 0 {
+		n.Attrs["param_types"] = types
+		n.Attrs["param_attrs"] = attrs
+	}
+}
+
+// baseNames lists the superclass expressions of a class_definition
+// (class V(generic.View, Mixin) -> generic.View, Mixin).
+func baseNames(node *sitter.Node, source []byte) []string {
+	sc := node.ChildByFieldName("superclasses")
+	if sc == nil {
+		return nil
+	}
+	var out []string
+	for i := 0; i < int(sc.ChildCount()); i++ {
+		c := sc.Child(i)
+		switch c.Type() {
+		case "identifier", "attribute":
+			out = append(out, compactSpace(c.Content(source)))
 		}
 	}
 	return out

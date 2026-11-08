@@ -48,7 +48,10 @@ var Version = "dev"
 //	7 - PHP precision: $_SERVER narrowed to request-derived keys as a taint source,
 //	    honor_sql_sanitizers (taint.Result.SQLSafe), PHP generated-name path
 //	    sanitizers
-const MatchSemanticsRevision = 7
+//	8 - Spring, Django, Flask, FastAPI, NestJS, Next.js, Gin and Echo profiles;
+//	    annotation/decorator/parameter-type IR attributes; a framework only a
+//	    manifest vouches for contributes its request accessors as sources
+const MatchSemanticsRevision = 8
 
 // CacheKey returns the identity the finding and IR caches must key on, pairing
 // the release version with the matching-semantics revision so that either one

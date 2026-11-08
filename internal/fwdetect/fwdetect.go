@@ -86,7 +86,11 @@ func New(files []string) *Detector {
 
 func isManifestName(base string) bool {
 	switch {
-	case base == "package.json", base == "composer.json", base == "packages.config":
+	case base == "package.json", base == "composer.json", base == "packages.config",
+		base == "pom.xml", base == "build.gradle", base == "build.gradle.kts",
+		base == "pyproject.toml", base == "Pipfile", base == "go.mod":
+		return true
+	case strings.HasPrefix(base, "requirements") && strings.HasSuffix(base, ".txt"):
 		return true
 	case strings.HasSuffix(base, ".csproj"):
 		return true
@@ -208,6 +212,18 @@ func HighHits(det []Detected) []ir.FrameworkHit {
 	var out []ir.FrameworkHit
 	for _, x := range det {
 		if x.Confidence == High {
+			out = append(out, ir.FrameworkHit{Name: x.Framework, Evidence: x.Evidence})
+		}
+	}
+	return out
+}
+
+// MediumHits returns the medium-confidence detections in the IR's own type,
+// for ir.IRFile.FrameworksMedium.
+func MediumHits(det []Detected) []ir.FrameworkHit {
+	var out []ir.FrameworkHit
+	for _, x := range det {
+		if x.Confidence == Medium {
 			out = append(out, ir.FrameworkHit{Name: x.Framework, Evidence: x.Evidence})
 		}
 	}

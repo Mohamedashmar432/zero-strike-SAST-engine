@@ -1,0 +1,41 @@
+# Spring MVC / Boot: annotated controller methods.
+name: spring
+languages: [java]
+
+file_evidence:
+  - label: imports Spring web annotations
+    pattern: 'import\s+(static\s+)?org\.springframework\.(web|stereotype\.Controller|http)\b'
+  - label: "@RestController / @Controller"
+    pattern: '@(Rest)?Controller\b'
+  - label: request mapping annotation
+    pattern: '@(Get|Post|Put|Delete|Patch|Request)Mapping\b'
+
+manifests:
+  - file: '(^|/)pom\.xml$'
+    contains: 'spring-boot-starter-web|spring-webmvc'
+    label: pom.xml depends on Spring web
+  - file: '(^|/)build\.gradle(\.kts)?$'
+    contains: 'spring-boot-starter-web|spring-webmvc'
+    label: build.gradle depends on Spring web
+
+sources:
+  - '\w\.(getParameter|getParameterValues|getParameterMap|getHeader|getHeaders|getQueryString|getRequestURI|getRequestURL|getPathInfo|getCookies|getReader|getInputStream|getPart|getParts)\('
+
+entry_points:
+  # Methods with a request mapping inside a controller class.
+  - class_attrs: '^(Rest)?Controller$'
+    method_attrs: 'Mapping$'
+  - class_attrs: '^RequestMapping$'
+    method_attrs: 'Mapping$'
+
+# Everything the framework binds except infrastructure objects.
+params:
+  mode: all
+  # Entry parameters are request data by position only; see Entries.ParamsSplit.
+  weak: true
+  # Request/session objects are not seeded: their accessors are explicit sources.
+  exclude_types: '^(HttpServletRequest|ServletRequest|WebRequest|NativeWebRequest|Model|ModelMap|BindingResult|Errors|HttpServletResponse|ServletResponse|HttpSession|Principal|Authentication|Locale|RedirectAttributes|SessionStatus|UriComponentsBuilder|OutputStream|Writer)\b'
+  exclude_attrs: '^(AuthenticationPrincipal|SessionAttribute|Autowired|Value)$'
+
+# Annotated parameters are request-bound wherever the method sits.
+bound_param_attrs: '^(RequestParam|PathVariable|RequestBody|RequestHeader|CookieValue|ModelAttribute|RequestPart|MatrixVariable)$'
