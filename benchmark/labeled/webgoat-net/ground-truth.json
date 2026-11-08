@@ -1,0 +1,1059 @@
+{
+ "repo_url": "https://github.com/jerryhoff/WebGoat.NET",
+ "commit_sha": "1c6cab19f9029673cd98ba8624bf9cc91d04bae9",
+ "findings": [
+  {
+   "id": "webgoat-sqlite-sql_injection-1",
+   "repo_file": "WebGoat/App_Code/DB/SqliteDbProvider.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564",
+    "CWE-943"
+   ],
+   "file": "WebGoat/App_Code/DB/SqliteDbProvider.cs",
+   "location": {
+    "start_line": 79,
+    "end_line": 80
+   },
+   "description": "customer login query concatenates email and encoded password (portal login)"
+  },
+  {
+   "id": "webgoat-sqlite-sql_injection-2",
+   "repo_file": "WebGoat/App_Code/DB/SqliteDbProvider.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564",
+    "CWE-943"
+   ],
+   "file": "WebGoat/App_Code/DB/SqliteDbProvider.cs",
+   "location": {
+    "start_line": 135,
+    "end_line": 135
+   },
+   "description": "CustomCustomerLogin concatenates email"
+  },
+  {
+   "id": "webgoat-sqlite-sql_injection-3",
+   "repo_file": "WebGoat/App_Code/DB/SqliteDbProvider.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564",
+    "CWE-943"
+   ],
+   "file": "WebGoat/App_Code/DB/SqliteDbProvider.cs",
+   "location": {
+    "start_line": 352,
+    "end_line": 352
+   },
+   "description": "GetPasswordByEmail concatenates email (forgot-password lesson)"
+  },
+  {
+   "id": "webgoat-sqlite-sql_injection-4",
+   "repo_file": "WebGoat/App_Code/DB/SqliteDbProvider.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564",
+    "CWE-943"
+   ],
+   "file": "WebGoat/App_Code/DB/SqliteDbProvider.cs",
+   "location": {
+    "start_line": 190,
+    "end_line": 190
+   },
+   "description": "customer number from the customerNumber cookie"
+  },
+  {
+   "id": "webgoat-sqlite-sql_injection-5",
+   "repo_file": "WebGoat/App_Code/DB/SqliteDbProvider.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564",
+    "CWE-943"
+   ],
+   "file": "WebGoat/App_Code/DB/SqliteDbProvider.cs",
+   "location": {
+    "start_line": 207,
+    "end_line": 207
+   },
+   "description": "customer number from the customerNumber cookie (portal main page)"
+  },
+  {
+   "id": "webgoat-sqlite-sql_injection-6",
+   "repo_file": "WebGoat/App_Code/DB/SqliteDbProvider.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564",
+    "CWE-943"
+   ],
+   "file": "WebGoat/App_Code/DB/SqliteDbProvider.cs",
+   "location": {
+    "start_line": 265,
+    "end_line": 265
+   },
+   "description": "comment insert concatenates all three values"
+  },
+  {
+   "id": "webgoat-sqlite-sql_injection-7",
+   "repo_file": "WebGoat/App_Code/DB/SqliteDbProvider.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564",
+    "CWE-943"
+   ],
+   "file": "WebGoat/App_Code/DB/SqliteDbProvider.cs",
+   "location": {
+    "start_line": 419,
+    "end_line": 419
+   },
+   "description": "product lookup by productNumber request value"
+  },
+  {
+   "id": "webgoat-sqlite-sql_injection-8",
+   "repo_file": "WebGoat/App_Code/DB/SqliteDbProvider.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564",
+    "CWE-943"
+   ],
+   "file": "WebGoat/App_Code/DB/SqliteDbProvider.cs",
+   "location": {
+    "start_line": 423,
+    "end_line": 423
+   },
+   "description": "comments lookup by productNumber request value"
+  },
+  {
+   "id": "webgoat-sqlite-sql_injection-9",
+   "repo_file": "WebGoat/App_Code/DB/SqliteDbProvider.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564",
+    "CWE-943"
+   ],
+   "file": "WebGoat/App_Code/DB/SqliteDbProvider.cs",
+   "location": {
+    "start_line": 526,
+    "end_line": 526
+   },
+   "description": "Exploiting SQL Injection lesson"
+  },
+  {
+   "id": "webgoat-sqlite-sql_injection-10",
+   "repo_file": "WebGoat/App_Code/DB/SqliteDbProvider.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564",
+    "CWE-943"
+   ],
+   "file": "WebGoat/App_Code/DB/SqliteDbProvider.cs",
+   "location": {
+    "start_line": 554,
+    "end_line": 554
+   },
+   "description": "SQL Error Messages lesson (num from page input)"
+  },
+  {
+   "id": "webgoat-sqlite-sql_injection-11",
+   "repo_file": "WebGoat/App_Code/DB/SqliteDbProvider.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564",
+    "CWE-943"
+   ],
+   "file": "WebGoat/App_Code/DB/SqliteDbProvider.cs",
+   "location": {
+    "start_line": 571,
+    "end_line": 571
+   },
+   "description": "autocomplete handler query"
+  },
+  {
+   "id": "webgoat-sqlite-sql_injection-12",
+   "repo_file": "WebGoat/App_Code/DB/SqliteDbProvider.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564",
+    "CWE-943"
+   ],
+   "file": "WebGoat/App_Code/DB/SqliteDbProvider.cs",
+   "location": {
+    "start_line": 316,
+    "end_line": 316
+   },
+   "description": "security question lookup concatenates email"
+  },
+  {
+   "id": "webgoat-sqlite-sql_injection-13-safe",
+   "repo_file": "WebGoat/App_Code/DB/SqliteDbProvider.cs",
+   "is_vulnerable": false,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564",
+    "CWE-943"
+   ],
+   "file": "WebGoat/App_Code/DB/SqliteDbProvider.cs",
+   "location": {
+    "start_line": 239,
+    "end_line": 239
+   },
+   "description": "parameterized city query (used by the reflected XSS lesson)"
+  },
+  {
+   "id": "webgoat-sqlite-sql_injection-14-safe",
+   "repo_file": "WebGoat/App_Code/DB/SqliteDbProvider.cs",
+   "is_vulnerable": false,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564",
+    "CWE-943"
+   ],
+   "file": "WebGoat/App_Code/DB/SqliteDbProvider.cs",
+   "location": {
+    "start_line": 254,
+    "end_line": 254
+   },
+   "description": "parameterized comments query"
+  },
+  {
+   "id": "webgoat-sqlite-weak_password_storage-1",
+   "repo_file": "WebGoat/App_Code/DB/SqliteDbProvider.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "weak_password_storage",
+   "primary_cwe": "CWE-261",
+   "acceptable_cwes": [
+    "CWE-261",
+    "CWE-256",
+    "CWE-257",
+    "CWE-327",
+    "CWE-328",
+    "CWE-916",
+    "CWE-759"
+   ],
+   "file": "WebGoat/App_Code/DB/SqliteDbProvider.cs",
+   "location": {
+    "start_line": 76,
+    "end_line": 76
+   },
+   "description": "Base64 'encoding' used as password storage"
+  },
+  {
+   "id": "webgoat-mysql-sql_injection-1",
+   "repo_file": "WebGoat/App_Code/DB/MySqlDbProvider.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564",
+    "CWE-943"
+   ],
+   "file": "WebGoat/App_Code/DB/MySqlDbProvider.cs",
+   "location": {
+    "start_line": 118,
+    "end_line": 119
+   },
+   "description": "customer login query concatenates email and encoded password (portal login)"
+  },
+  {
+   "id": "webgoat-mysql-sql_injection-2",
+   "repo_file": "WebGoat/App_Code/DB/MySqlDbProvider.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564",
+    "CWE-943"
+   ],
+   "file": "WebGoat/App_Code/DB/MySqlDbProvider.cs",
+   "location": {
+    "start_line": 152,
+    "end_line": 152
+   },
+   "description": "CustomCustomerLogin concatenates email"
+  },
+  {
+   "id": "webgoat-mysql-sql_injection-3",
+   "repo_file": "WebGoat/App_Code/DB/MySqlDbProvider.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564",
+    "CWE-943"
+   ],
+   "file": "WebGoat/App_Code/DB/MySqlDbProvider.cs",
+   "location": {
+    "start_line": 354,
+    "end_line": 354
+   },
+   "description": "GetPasswordByEmail concatenates email (forgot-password lesson)"
+  },
+  {
+   "id": "webgoat-mysql-sql_injection-4",
+   "repo_file": "WebGoat/App_Code/DB/MySqlDbProvider.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564",
+    "CWE-943"
+   ],
+   "file": "WebGoat/App_Code/DB/MySqlDbProvider.cs",
+   "location": {
+    "start_line": 203,
+    "end_line": 203
+   },
+   "description": "customer number from the customerNumber cookie"
+  },
+  {
+   "id": "webgoat-mysql-sql_injection-5",
+   "repo_file": "WebGoat/App_Code/DB/MySqlDbProvider.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564",
+    "CWE-943"
+   ],
+   "file": "WebGoat/App_Code/DB/MySqlDbProvider.cs",
+   "location": {
+    "start_line": 220,
+    "end_line": 220
+   },
+   "description": "customer number from the customerNumber cookie (portal main page)"
+  },
+  {
+   "id": "webgoat-mysql-sql_injection-6",
+   "repo_file": "WebGoat/App_Code/DB/MySqlDbProvider.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564",
+    "CWE-943"
+   ],
+   "file": "WebGoat/App_Code/DB/MySqlDbProvider.cs",
+   "location": {
+    "start_line": 273,
+    "end_line": 273
+   },
+   "description": "comment insert concatenates all three values"
+  },
+  {
+   "id": "webgoat-mysql-sql_injection-7",
+   "repo_file": "WebGoat/App_Code/DB/MySqlDbProvider.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564",
+    "CWE-943"
+   ],
+   "file": "WebGoat/App_Code/DB/MySqlDbProvider.cs",
+   "location": {
+    "start_line": 415,
+    "end_line": 415
+   },
+   "description": "product lookup by productNumber request value"
+  },
+  {
+   "id": "webgoat-mysql-sql_injection-8",
+   "repo_file": "WebGoat/App_Code/DB/MySqlDbProvider.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564",
+    "CWE-943"
+   ],
+   "file": "WebGoat/App_Code/DB/MySqlDbProvider.cs",
+   "location": {
+    "start_line": 419,
+    "end_line": 419
+   },
+   "description": "comments lookup by productNumber request value"
+  },
+  {
+   "id": "webgoat-mysql-sql_injection-9",
+   "repo_file": "WebGoat/App_Code/DB/MySqlDbProvider.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564",
+    "CWE-943"
+   ],
+   "file": "WebGoat/App_Code/DB/MySqlDbProvider.cs",
+   "location": {
+    "start_line": 517,
+    "end_line": 517
+   },
+   "description": "Exploiting SQL Injection lesson"
+  },
+  {
+   "id": "webgoat-mysql-sql_injection-10",
+   "repo_file": "WebGoat/App_Code/DB/MySqlDbProvider.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564",
+    "CWE-943"
+   ],
+   "file": "WebGoat/App_Code/DB/MySqlDbProvider.cs",
+   "location": {
+    "start_line": 539,
+    "end_line": 539
+   },
+   "description": "SQL Error Messages lesson (num from page input)"
+  },
+  {
+   "id": "webgoat-mysql-sql_injection-11",
+   "repo_file": "WebGoat/App_Code/DB/MySqlDbProvider.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564",
+    "CWE-943"
+   ],
+   "file": "WebGoat/App_Code/DB/MySqlDbProvider.cs",
+   "location": {
+    "start_line": 559,
+    "end_line": 559
+   },
+   "description": "autocomplete handler query"
+  },
+  {
+   "id": "webgoat-mysql-sql_injection-12",
+   "repo_file": "WebGoat/App_Code/DB/MySqlDbProvider.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564",
+    "CWE-943"
+   ],
+   "file": "WebGoat/App_Code/DB/MySqlDbProvider.cs",
+   "location": {
+    "start_line": 322,
+    "end_line": 322
+   },
+   "description": "security question lookup concatenates email"
+  },
+  {
+   "id": "webgoat-mysql-sql_injection-13-safe",
+   "repo_file": "WebGoat/App_Code/DB/MySqlDbProvider.cs",
+   "is_vulnerable": false,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564",
+    "CWE-943"
+   ],
+   "file": "WebGoat/App_Code/DB/MySqlDbProvider.cs",
+   "location": {
+    "start_line": 248,
+    "end_line": 248
+   },
+   "description": "parameterized city query (used by the reflected XSS lesson)"
+  },
+  {
+   "id": "webgoat-mysql-sql_injection-14-safe",
+   "repo_file": "WebGoat/App_Code/DB/MySqlDbProvider.cs",
+   "is_vulnerable": false,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564",
+    "CWE-943"
+   ],
+   "file": "WebGoat/App_Code/DB/MySqlDbProvider.cs",
+   "location": {
+    "start_line": 262,
+    "end_line": 262
+   },
+   "description": "parameterized comments query"
+  },
+  {
+   "id": "webgoat-mysql-weak_password_storage-1",
+   "repo_file": "WebGoat/App_Code/DB/MySqlDbProvider.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "weak_password_storage",
+   "primary_cwe": "CWE-261",
+   "acceptable_cwes": [
+    "CWE-261",
+    "CWE-256",
+    "CWE-257",
+    "CWE-327",
+    "CWE-328",
+    "CWE-916",
+    "CWE-759"
+   ],
+   "file": "WebGoat/App_Code/DB/MySqlDbProvider.cs",
+   "location": {
+    "start_line": 115,
+    "end_line": 115
+   },
+   "description": "Base64 'encoding' used as password storage"
+  },
+  {
+   "id": "webgoat-pathmanip-path_traversal-1",
+   "repo_file": "WebGoat/Content/PathManipulation.aspx.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "path_traversal",
+   "primary_cwe": "CWE-22",
+   "acceptable_cwes": [
+    "CWE-22",
+    "CWE-23",
+    "CWE-73",
+    "CWE-36"
+   ],
+   "file": "WebGoat/Content/PathManipulation.aspx.cs",
+   "location": {
+    "start_line": 33,
+    "end_line": 53
+   },
+   "description": "filename from query string reaches FileStream via MapPath(~/Downloads/ + filename)"
+  },
+  {
+   "id": "webgoat-uploadpath-file_upload-1",
+   "repo_file": "WebGoat/Content/UploadPathManipulation.aspx.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "file_upload",
+   "primary_cwe": "CWE-434",
+   "acceptable_cwes": [
+    "CWE-434",
+    "CWE-22",
+    "CWE-73"
+   ],
+   "file": "WebGoat/Content/UploadPathManipulation.aspx.cs",
+   "location": {
+    "start_line": 25,
+    "end_line": 25
+   },
+   "description": "no extension or content check, saved under a web-served directory"
+  },
+  {
+   "id": "webgoat-uploadpath-xss-1",
+   "repo_file": "WebGoat/Content/UploadPathManipulation.aspx.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "WebGoat/Content/UploadPathManipulation.aspx.cs",
+   "location": {
+    "start_line": 26,
+    "end_line": 26
+   },
+   "description": "uploaded file name reflected unencoded"
+  },
+  {
+   "id": "webgoat-reflectedxss-xss-1",
+   "repo_file": "WebGoat/Content/ReflectedXSS.aspx.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "WebGoat/Content/ReflectedXSS.aspx.cs",
+   "location": {
+    "start_line": 26,
+    "end_line": 26
+   },
+   "description": "reflectedxss: vulnerable xss sink"
+  },
+  {
+   "id": "webgoat-reflectedxss-xss-2-safe",
+   "repo_file": "WebGoat/Content/ReflectedXSS.aspx.cs",
+   "is_vulnerable": false,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "WebGoat/Content/ReflectedXSS.aspx.cs",
+   "location": {
+    "start_line": 34,
+    "end_line": 34
+   },
+   "description": "FixedLoadCity, the app's own fix"
+  },
+  {
+   "id": "webgoat-storedxss-xss-1",
+   "repo_file": "WebGoat/Content/StoredXSS.aspx.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "WebGoat/Content/StoredXSS.aspx.cs",
+   "location": {
+    "start_line": 48,
+    "end_line": 48
+   },
+   "description": "storedxss: vulnerable xss sink"
+  },
+  {
+   "id": "webgoat-storedxss-xss-2",
+   "repo_file": "WebGoat/Content/StoredXSS.aspx.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "WebGoat/Content/StoredXSS.aspx.cs",
+   "location": {
+    "start_line": 49,
+    "end_line": 49
+   },
+   "description": "storedxss: vulnerable xss sink"
+  },
+  {
+   "id": "webgoat-storedxss-xss-3-safe",
+   "repo_file": "WebGoat/Content/StoredXSS.aspx.cs",
+   "is_vulnerable": false,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "WebGoat/Content/StoredXSS.aspx.cs",
+   "location": {
+    "start_line": 61,
+    "end_line": 61
+   },
+   "description": "FixedLoadComments, the app's own fix"
+  },
+  {
+   "id": "webgoat-storedxss-xss-4-safe",
+   "repo_file": "WebGoat/Content/StoredXSS.aspx.cs",
+   "is_vulnerable": false,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "WebGoat/Content/StoredXSS.aspx.cs",
+   "location": {
+    "start_line": 62,
+    "end_line": 62
+   },
+   "description": "FixedLoadComments, the app's own fix"
+  },
+  {
+   "id": "webgoat-productdetails-xss-1",
+   "repo_file": "WebGoat/WebGoatCoins/ProductDetails.aspx.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "WebGoat/WebGoatCoins/ProductDetails.aspx.cs",
+   "location": {
+    "start_line": 76,
+    "end_line": 76
+   },
+   "description": "stored comment email rendered unencoded"
+  },
+  {
+   "id": "webgoat-productdetails-xss-2",
+   "repo_file": "WebGoat/WebGoatCoins/ProductDetails.aspx.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "WebGoat/WebGoatCoins/ProductDetails.aspx.cs",
+   "location": {
+    "start_line": 77,
+    "end_line": 77
+   },
+   "description": "stored comment rendered unencoded"
+  },
+  {
+   "id": "webgoat-customerlogin-open_redirect-1",
+   "repo_file": "WebGoat/WebGoatCoins/CustomerLogin.aspx.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "open_redirect",
+   "primary_cwe": "CWE-601",
+   "acceptable_cwes": [
+    "CWE-601"
+   ],
+   "file": "WebGoat/WebGoatCoins/CustomerLogin.aspx.cs",
+   "location": {
+    "start_line": 72,
+    "end_line": 72
+   },
+   "description": "ReturnUrl query value, not validated"
+  },
+  {
+   "id": "webgoat-customerlogin-password_logged-1",
+   "repo_file": "WebGoat/WebGoatCoins/CustomerLogin.aspx.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "password_logged",
+   "primary_cwe": "CWE-532",
+   "acceptable_cwes": [
+    "CWE-532",
+    "CWE-117",
+    "CWE-312"
+   ],
+   "file": "WebGoat/WebGoatCoins/CustomerLogin.aspx.cs",
+   "location": {
+    "start_line": 36,
+    "end_line": 36
+   },
+   "description": "customerlogin: vulnerable password_logged sink"
+  },
+  {
+   "id": "webgoat-forgotpassword-sensitive_data_in_cookie-1",
+   "repo_file": "WebGoat/Content/ForgotPassword.aspx.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "sensitive_data_in_cookie",
+   "primary_cwe": "CWE-261",
+   "acceptable_cwes": [
+    "CWE-261",
+    "CWE-311",
+    "CWE-315",
+    "CWE-602",
+    "CWE-327",
+    "CWE-200"
+   ],
+   "file": "WebGoat/Content/ForgotPassword.aspx.cs",
+   "location": {
+    "start_line": 46,
+    "end_line": 46
+   },
+   "description": "security answer in a cookie, double Base64 'for more security'"
+  },
+  {
+   "id": "webgoat-forgotpassword-sensitive_data_in_cookie-2",
+   "repo_file": "WebGoat/WebGoatCoins/ForgotPassword.aspx.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "sensitive_data_in_cookie",
+   "primary_cwe": "CWE-261",
+   "acceptable_cwes": [
+    "CWE-261",
+    "CWE-311",
+    "CWE-315",
+    "CWE-602",
+    "CWE-327",
+    "CWE-200"
+   ],
+   "file": "WebGoat/WebGoatCoins/ForgotPassword.aspx.cs",
+   "location": {
+    "start_line": 47,
+    "end_line": 47
+   },
+   "description": "security answer in a cookie, double Base64"
+  },
+  {
+   "id": "webgoat-sqldiscovery-information_exposure-1",
+   "repo_file": "WebGoat/Content/SQLInjectionDiscovery.aspx.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "information_exposure",
+   "primary_cwe": "CWE-209",
+   "acceptable_cwes": [
+    "CWE-209",
+    "CWE-200",
+    "CWE-215",
+    "CWE-497",
+    "CWE-11"
+   ],
+   "file": "WebGoat/Content/SQLInjectionDiscovery.aspx.cs",
+   "location": {
+    "start_line": 34,
+    "end_line": 34
+   },
+   "description": "raw database exception shown (SQL Error Messages lesson)"
+  },
+  {
+   "id": "webgoat-exploitdebug-information_exposure-1",
+   "repo_file": "WebGoat/Content/ExploitDebug.aspx.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "information_exposure",
+   "primary_cwe": "CWE-209",
+   "acceptable_cwes": [
+    "CWE-209",
+    "CWE-200",
+    "CWE-215",
+    "CWE-497",
+    "CWE-11"
+   ],
+   "file": "WebGoat/Content/ExploitDebug.aspx.cs",
+   "location": {
+    "start_line": 33,
+    "end_line": 33
+   },
+   "description": "environment details thrown into an unhandled exception page"
+  },
+  {
+   "id": "webgoat-encryption-hardcoded_secret-1",
+   "repo_file": "WebGoat/Content/EncryptVSEncode.aspx.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "hardcoded_secret",
+   "primary_cwe": "CWE-798",
+   "acceptable_cwes": [
+    "CWE-798",
+    "CWE-321",
+    "CWE-259",
+    "CWE-547",
+    "CWE-760",
+    "CWE-329"
+   ],
+   "file": "WebGoat/Content/EncryptVSEncode.aspx.cs",
+   "location": {
+    "start_line": 24,
+    "end_line": 24
+   },
+   "description": "encryption: vulnerable hardcoded_secret sink"
+  },
+  {
+   "id": "webgoat-encryption-weak_hash-1",
+   "repo_file": "WebGoat/Content/EncryptVSEncode.aspx.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "weak_hash",
+   "primary_cwe": "CWE-328",
+   "acceptable_cwes": [
+    "CWE-328",
+    "CWE-327",
+    "CWE-916",
+    "CWE-759"
+   ],
+   "file": "WebGoat/Content/EncryptVSEncode.aspx.cs",
+   "location": {
+    "start_line": 102,
+    "end_line": 102
+   },
+   "description": "SHA1 shown as a hashing option in the Encryption vs Encoding lesson"
+  },
+  {
+   "id": "webgoat-encryption-hardcoded_secret-2",
+   "repo_file": "WebGoat/App_Code/Encoder.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "hardcoded_secret",
+   "primary_cwe": "CWE-798",
+   "acceptable_cwes": [
+    "CWE-798",
+    "CWE-321",
+    "CWE-259",
+    "CWE-547",
+    "CWE-760",
+    "CWE-329"
+   ],
+   "file": "WebGoat/App_Code/Encoder.cs",
+   "location": {
+    "start_line": 16,
+    "end_line": 16
+   },
+   "description": "static hardcoded salt for key derivation"
+  },
+  {
+   "id": "webgoat-digest-weak_hash-1",
+   "repo_file": "WebGoat/App_Code/WeakMessageDigest.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "weak_hash",
+   "primary_cwe": "CWE-328",
+   "acceptable_cwes": [
+    "CWE-328",
+    "CWE-327",
+    "CWE-916",
+    "CWE-759"
+   ],
+   "file": "WebGoat/App_Code/WeakMessageDigest.cs",
+   "location": {
+    "start_line": 38,
+    "end_line": 42
+   },
+   "description": "Insecure Message Digest lesson: byte-sum digest"
+  },
+  {
+   "id": "webgoat-random-weak_random-1",
+   "repo_file": "WebGoat/App_Code/WeakRandom.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "weak_random",
+   "primary_cwe": "CWE-338",
+   "acceptable_cwes": [
+    "CWE-338",
+    "CWE-330",
+    "CWE-331",
+    "CWE-335",
+    "CWE-337",
+    "CWE-340"
+   ],
+   "file": "WebGoat/App_Code/WeakRandom.cs",
+   "location": {
+    "start_line": 23,
+    "end_line": 23
+   },
+   "description": "Weak Random Number Generators lesson"
+  },
+  {
+   "id": "webgoat-unsafe-unsafe_memory_write-1",
+   "repo_file": "WebGoat/Content/Unsafe.aspx.cs",
+   "is_vulnerable": true,
+   "vulnerability_class": "unsafe_memory_write",
+   "primary_cwe": "CWE-787",
+   "acceptable_cwes": [
+    "CWE-787",
+    "CWE-119",
+    "CWE-120",
+    "CWE-121",
+    "CWE-122",
+    "CWE-805"
+   ],
+   "file": "WebGoat/Content/Unsafe.aspx.cs",
+   "location": {
+    "start_line": 25,
+    "end_line": 26
+   },
+   "description": "Unsafe blocks lesson: unbounded write into a 256 char fixed buffer"
+  },
+  {
+   "id": "webgoat-config-hardcoded_secret-1",
+   "repo_file": "WebGoat/Web.config",
+   "is_vulnerable": true,
+   "vulnerability_class": "hardcoded_secret",
+   "primary_cwe": "CWE-798",
+   "acceptable_cwes": [
+    "CWE-798",
+    "CWE-321",
+    "CWE-259",
+    "CWE-547",
+    "CWE-760",
+    "CWE-329"
+   ],
+   "file": "WebGoat/Web.config",
+   "location": {
+    "start_line": 58,
+    "end_line": 60
+   },
+   "description": "clear-text forms credentials"
+  },
+  {
+   "id": "webgoat-config-insecure_cookie-1",
+   "repo_file": "WebGoat/Web.config",
+   "is_vulnerable": true,
+   "vulnerability_class": "insecure_cookie",
+   "primary_cwe": "CWE-1004",
+   "acceptable_cwes": [
+    "CWE-1004",
+    "CWE-614",
+    "CWE-732"
+   ],
+   "file": "WebGoat/Web.config",
+   "location": {
+    "start_line": 45,
+    "end_line": 45
+   },
+   "description": "HttpOnly disabled, requireSSL off"
+  },
+  {
+   "id": "webgoat-config-information_exposure-1",
+   "repo_file": "WebGoat/Web.config",
+   "is_vulnerable": true,
+   "vulnerability_class": "information_exposure",
+   "primary_cwe": "CWE-209",
+   "acceptable_cwes": [
+    "CWE-209",
+    "CWE-200",
+    "CWE-215",
+    "CWE-497",
+    "CWE-11"
+   ],
+   "file": "WebGoat/Web.config",
+   "location": {
+    "start_line": 53,
+    "end_line": 53
+   },
+   "description": "detailed errors returned to clients (Exploiting Debug Page lesson)"
+  }
+ ]
+}

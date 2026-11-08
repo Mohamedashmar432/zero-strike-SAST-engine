@@ -1,0 +1,7 @@
+govwa (Go Vulnerable Web Application), third party. Not vendored here (size). Licence: no LICENSE file exists in the repository
+at the pinned commit; check upstream before redistributing.
+repo: https://github.com/0c34/govwa
+commit: 4058f79f31eeb4a36d8f1e64bba1f0c899646e6f
+commit date: 2025-02-20
+Fetch with: benchmark/labeled/fetch.sh govwa <target-dir>
+Regenerate the labels with: python -I benchmark/labeled/govwa/gen_ground_truth.py <target-dir> > benchmark/labeled/govwa/ground-truth.json

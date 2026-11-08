@@ -1,5 +1,7 @@
-"""Score the in-repo labeled applications (benchmark/labeled) without cloning anything but DVWA.
-Usage: python -I evallocal.py <zerostrike-binary> <work-dir> <labeled-root> [--dvwa-src <path>] [--only app1,app2]
+"""Score the in-repo labeled applications (benchmark/labeled) without cloning anything but the third-party apps.
+Usage: python -I evallocal.py <zerostrike-binary> <work-dir> <labeled-root> [--src app=<path>]... [--dvwa-src <path>] [--only app1,app2]
+A labeled folder with a SOURCE.txt is a third-party app (dvwa, xvwa, webgoat-net, govwa): its source is not vendored, so it is
+scored only when --src app=<clone> is given (--dvwa-src is --src dvwa=) and only on files that carry a label.
 Matching rules are exactly those of runset.py: same file relative to the app root, CWE in acceptable_cwes, line within 10 of the
 label, one finding per label, a finding that matches a safe label is a false positive, unmatched findings are false positives.
 Writes <work-dir>/out/<app>.json, <work-dir>/rules.json and <work-dir>/fps.json; prints per-app, per-language and TOTAL lines.
@@ -11,10 +13,11 @@ if len(args) < 3:
     sys.exit(__doc__)
 BIN, WORK, ROOT = args[:3]
 opts = args[3:]
-DVWA = None; ONLY = None
+SRC = {}; ONLY = None
 i = 0
 while i < len(opts):
-    if opts[i] == "--dvwa-src": DVWA = opts[i + 1]; i += 2
+    if opts[i] == "--dvwa-src": SRC["dvwa"] = opts[i + 1]; i += 2
+    elif opts[i] == "--src": k, _, v = opts[i + 1].partition("="); SRC[k] = v; i += 2
     elif opts[i] == "--only": ONLY = opts[i + 1].split(","); i += 2
     else: sys.exit("unknown option " + opts[i])
 os.makedirs(f"{WORK}/out", exist_ok=True)
@@ -62,9 +65,10 @@ apps = sorted(d for d in os.listdir(ROOT) if os.path.isfile(f"{ROOT}/{d}/ground-
 for app in apps:
     if ONLY and app not in ONLY: continue
     split = SPLIT.get(app, "tune")
-    if app == "dvwa":
-        if not DVWA: print(app, "SKIPPED (no --dvwa-src)"); continue
-        d = DVWA
+    external = os.path.isfile(f"{ROOT}/{app}/SOURCE.txt")
+    if external:
+        if not SRC.get(app): print(app, f"SKIPPED (no --src {app}=<clone>)"); continue
+        d = SRC[app]
     else:
         d = f"{ROOT}/{app}"
     d = os.path.abspath(d)  # the scanner reports paths as given, so an absolute root keeps RootPath stripping exact
@@ -78,9 +82,9 @@ for app in apps:
     if not os.path.exists(out): print(app, "NO REPORT"); continue
     rep = json.load(open(out, encoding="utf-8")); root = (rep.get("RootPath") or "").replace("\\", "/").rstrip("/")
     used = set(); tp = fp = 0; unscored = 0
-    # DVWA is labeled only in the modules that have a single-line sink, so a finding in a file with no label at all is
+    # Third-party apps are labeled only where the app documents a sink, so a finding in a file with no label at all is
     # unknown rather than wrong: it is counted as unscored instead of as a false positive. Self-built apps are fully labeled.
-    labeled_files = {e["file"] for e in ents} if app == "dvwa" else None
+    labeled_files = {e["file"] for e in ents} if external else None
     for x in rep.get("Findings") or []:
         fl = x["Location"]["File"].replace("\\", "/")
         p = norm(fl[len(root) + 1:] if root and fl.startswith(root + "/") else fl)

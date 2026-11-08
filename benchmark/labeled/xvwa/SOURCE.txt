@@ -1,0 +1,6 @@
+XVWA (Xtreme Vulnerable Web Application), third party, GPL-3.0. Not vendored here (license and size).
+repo: https://github.com/s4n7h0/xvwa
+commit: fb30fa517d288e618b521d252f61107ef6a24797
+commit date: 2020-09-12
+Fetch with: benchmark/labeled/fetch.sh xvwa <target-dir>
+Regenerate the labels with: python -I benchmark/labeled/xvwa/gen_ground_truth.py <target-dir> > benchmark/labeled/xvwa/ground-truth.json

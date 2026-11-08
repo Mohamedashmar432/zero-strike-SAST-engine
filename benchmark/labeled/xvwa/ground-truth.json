@@ -1,0 +1,693 @@
+{
+ "repo_url": "https://github.com/s4n7h0/xvwa",
+ "commit_sha": "fb30fa517d288e618b521d252f61107ef6a24797",
+ "findings": [
+  {
+   "id": "xvwa-sqli-sql_injection-1",
+   "repo_file": "vulnerabilities/sqli/home.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564",
+    "CWE-943"
+   ],
+   "file": "vulnerabilities/sqli/home.php",
+   "location": {
+    "start_line": 56,
+    "end_line": 57
+   },
+   "description": "item id concatenated into query"
+  },
+  {
+   "id": "xvwa-sqli-sql_injection-2",
+   "repo_file": "vulnerabilities/sqli/home.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564",
+    "CWE-943"
+   ],
+   "file": "vulnerabilities/sqli/home.php",
+   "location": {
+    "start_line": 60,
+    "end_line": 61
+   },
+   "description": "search term concatenated into LIKE query"
+  },
+  {
+   "id": "xvwa-sqli_blind-sql_injection-1",
+   "repo_file": "vulnerabilities/sqli_blind/home.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564",
+    "CWE-943"
+   ],
+   "file": "vulnerabilities/sqli_blind/home.php",
+   "location": {
+    "start_line": 54,
+    "end_line": 55
+   },
+   "description": "sqli_blind: vulnerable sql_injection sink"
+  },
+  {
+   "id": "xvwa-sqli_blind-sql_injection-2",
+   "repo_file": "vulnerabilities/sqli_blind/home.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564",
+    "CWE-943"
+   ],
+   "file": "vulnerabilities/sqli_blind/home.php",
+   "location": {
+    "start_line": 61,
+    "end_line": 62
+   },
+   "description": "sqli_blind: vulnerable sql_injection sink"
+  },
+  {
+   "id": "xvwa-cmdi-command_injection-1",
+   "repo_file": "vulnerabilities/cmdi/home.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "command_injection",
+   "primary_cwe": "CWE-78",
+   "acceptable_cwes": [
+    "CWE-78",
+    "CWE-77",
+    "CWE-88"
+   ],
+   "file": "vulnerabilities/cmdi/home.php",
+   "location": {
+    "start_line": 38,
+    "end_line": 38
+   },
+   "description": "Windows branch"
+  },
+  {
+   "id": "xvwa-cmdi-command_injection-2",
+   "repo_file": "vulnerabilities/cmdi/home.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "command_injection",
+   "primary_cwe": "CWE-78",
+   "acceptable_cwes": [
+    "CWE-78",
+    "CWE-77",
+    "CWE-88"
+   ],
+   "file": "vulnerabilities/cmdi/home.php",
+   "location": {
+    "start_line": 42,
+    "end_line": 42
+   },
+   "description": "non-Windows branch"
+  },
+  {
+   "id": "xvwa-xpath-xpath_injection-1",
+   "repo_file": "vulnerabilities/xpath/home.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "xpath_injection",
+   "primary_cwe": "CWE-643",
+   "acceptable_cwes": [
+    "CWE-643",
+    "CWE-91",
+    "CWE-74",
+    "CWE-943"
+   ],
+   "file": "vulnerabilities/xpath/home.php",
+   "location": {
+    "start_line": 8,
+    "end_line": 10
+   },
+   "description": "xpath: vulnerable xpath_injection sink"
+  },
+  {
+   "id": "xvwa-formula_injection-formula_injection-1",
+   "repo_file": "vulnerabilities/formula_injection/export.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "formula_injection",
+   "primary_cwe": "CWE-1236",
+   "acceptable_cwes": [
+    "CWE-1236",
+    "CWE-74"
+   ],
+   "file": "vulnerabilities/formula_injection/export.php",
+   "location": {
+    "start_line": 13,
+    "end_line": 13
+   },
+   "description": "stored item fields written to CSV without neutralizing = + - @"
+  },
+  {
+   "id": "xvwa-php_object_injection-deserialization-1",
+   "repo_file": "vulnerabilities/php_object_injection/home.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "deserialization",
+   "primary_cwe": "CWE-502",
+   "acceptable_cwes": [
+    "CWE-502",
+    "CWE-915",
+    "CWE-94"
+   ],
+   "file": "vulnerabilities/php_object_injection/home.php",
+   "location": {
+    "start_line": 38,
+    "end_line": 38
+   },
+   "description": "php_object_injection: vulnerable deserialization sink"
+  },
+  {
+   "id": "xvwa-php_object_injection-code_injection-1",
+   "repo_file": "vulnerabilities/php_object_injection/home.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "code_injection",
+   "primary_cwe": "CWE-95",
+   "acceptable_cwes": [
+    "CWE-95",
+    "CWE-94",
+    "CWE-502"
+   ],
+   "file": "vulnerabilities/php_object_injection/home.php",
+   "location": {
+    "start_line": 32,
+    "end_line": 32
+   },
+   "description": "gadget reachable from unserialize via __wakeup"
+  },
+  {
+   "id": "xvwa-fileupload-file_upload-1",
+   "repo_file": "vulnerabilities/fileupload/home.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "file_upload",
+   "primary_cwe": "CWE-434",
+   "acceptable_cwes": [
+    "CWE-434",
+    "CWE-22",
+    "CWE-73"
+   ],
+   "file": "vulnerabilities/fileupload/home.php",
+   "location": {
+    "start_line": 70,
+    "end_line": 70
+   },
+   "description": "client file name, no type check"
+  },
+  {
+   "id": "xvwa-reflected_xss-xss-1",
+   "repo_file": "vulnerabilities/reflected_xss/home.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "vulnerabilities/reflected_xss/home.php",
+   "location": {
+    "start_line": 32,
+    "end_line": 32
+   },
+   "description": "reflected_xss: vulnerable xss sink"
+  },
+  {
+   "id": "xvwa-stored_xss-xss-1",
+   "repo_file": "vulnerabilities/stored_xss/home.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "vulnerabilities/stored_xss/home.php",
+   "location": {
+    "start_line": 61,
+    "end_line": 61
+   },
+   "description": "stored name echoed unescaped"
+  },
+  {
+   "id": "xvwa-stored_xss-xss-2",
+   "repo_file": "vulnerabilities/stored_xss/home.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "vulnerabilities/stored_xss/home.php",
+   "location": {
+    "start_line": 63,
+    "end_line": 63
+   },
+   "description": "stored comment echoed unescaped"
+  },
+  {
+   "id": "xvwa-dom_xss-xss-1",
+   "repo_file": "vulnerabilities/dom_xss/home.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "vulnerabilities/dom_xss/home.php",
+   "location": {
+    "start_line": 30,
+    "end_line": 30
+   },
+   "description": "URL fragment written with document.write"
+  },
+  {
+   "id": "xvwa-ssrf_xspa-ssrf-1",
+   "repo_file": "vulnerabilities/ssrf_xspa/home.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "ssrf",
+   "primary_cwe": "CWE-918",
+   "acceptable_cwes": [
+    "CWE-918"
+   ],
+   "file": "vulnerabilities/ssrf_xspa/home.php",
+   "location": {
+    "start_line": 33,
+    "end_line": 33
+   },
+   "description": "ssrf_xspa: vulnerable ssrf sink"
+  },
+  {
+   "id": "xvwa-fi-file_inclusion-1",
+   "repo_file": "vulnerabilities/fi/home.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "file_inclusion",
+   "primary_cwe": "CWE-98",
+   "acceptable_cwes": [
+    "CWE-98",
+    "CWE-22",
+    "CWE-73",
+    "CWE-829",
+    "CWE-94"
+   ],
+   "file": "vulnerabilities/fi/home.php",
+   "location": {
+    "start_line": 36,
+    "end_line": 36
+   },
+   "description": "fi: vulnerable file_inclusion sink"
+  },
+  {
+   "id": "xvwa-redirect-open_redirect-1",
+   "repo_file": "vulnerabilities/redirect/home.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "open_redirect",
+   "primary_cwe": "CWE-601",
+   "acceptable_cwes": [
+    "CWE-601",
+    "CWE-113"
+   ],
+   "file": "vulnerabilities/redirect/home.php",
+   "location": {
+    "start_line": 31,
+    "end_line": 31
+   },
+   "description": "redirect: vulnerable open_redirect sink"
+  },
+  {
+   "id": "xvwa-redirect-open_redirect-2",
+   "repo_file": "vulnerabilities/redirect/redirect.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "open_redirect",
+   "primary_cwe": "CWE-601",
+   "acceptable_cwes": [
+    "CWE-601",
+    "CWE-113"
+   ],
+   "file": "vulnerabilities/redirect/redirect.php",
+   "location": {
+    "start_line": 5,
+    "end_line": 5
+   },
+   "description": "redirect: vulnerable open_redirect sink"
+  },
+  {
+   "id": "xvwa-ssti-template_injection-1",
+   "repo_file": "vulnerabilities/ssti/home.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "template_injection",
+   "primary_cwe": "CWE-1336",
+   "acceptable_cwes": [
+    "CWE-1336",
+    "CWE-94",
+    "CWE-95",
+    "CWE-74",
+    "CWE-79"
+   ],
+   "file": "vulnerabilities/ssti/home.php",
+   "location": {
+    "start_line": 50,
+    "end_line": 50
+   },
+   "description": "user input is the template (Twig_Loader_String)"
+  },
+  {
+   "id": "xvwa-ssti-template_injection-2",
+   "repo_file": "vulnerabilities/ssti/ssti.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "template_injection",
+   "primary_cwe": "CWE-1336",
+   "acceptable_cwes": [
+    "CWE-1336",
+    "CWE-94",
+    "CWE-95",
+    "CWE-74",
+    "CWE-79"
+   ],
+   "file": "vulnerabilities/ssti/ssti.php",
+   "location": {
+    "start_line": 21,
+    "end_line": 21
+   },
+   "description": "standalone copy of the SSTI sink"
+  },
+  {
+   "id": "xvwa-idor-idor-1",
+   "repo_file": "vulnerabilities/idor/home.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "idor",
+   "primary_cwe": "CWE-639",
+   "acceptable_cwes": [
+    "CWE-639",
+    "CWE-284",
+    "CWE-285",
+    "CWE-862",
+    "CWE-863",
+    "CWE-566"
+   ],
+   "file": "vulnerabilities/idor/home.php",
+   "location": {
+    "start_line": 46,
+    "end_line": 47
+   },
+   "description": "record fetched by client-supplied id with no ownership check"
+  },
+  {
+   "id": "xvwa-missfunc-missing_function_access_control-1",
+   "repo_file": "vulnerabilities/missfunc/home.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "missing_function_access_control",
+   "primary_cwe": "CWE-862",
+   "acceptable_cwes": [
+    "CWE-862",
+    "CWE-285",
+    "CWE-284",
+    "CWE-863",
+    "CWE-306"
+   ],
+   "file": "vulnerabilities/missfunc/home.php",
+   "location": {
+    "start_line": 68,
+    "end_line": 71
+   },
+   "description": "delete action is only hidden in the UI, server does not check the role"
+  },
+  {
+   "id": "xvwa-csrf-csrf-1",
+   "repo_file": "vulnerabilities/csrf/home.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "csrf",
+   "primary_cwe": "CWE-352",
+   "acceptable_cwes": [
+    "CWE-352"
+   ],
+   "file": "vulnerabilities/csrf/home.php",
+   "location": {
+    "start_line": 40,
+    "end_line": 43
+   },
+   "description": "password change over GET with no token"
+  },
+  {
+   "id": "xvwa-sessionflaws-session_fixation-1",
+   "repo_file": "login.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "session_fixation",
+   "primary_cwe": "CWE-384",
+   "acceptable_cwes": [
+    "CWE-384",
+    "CWE-613",
+    "CWE-330",
+    "CWE-1275"
+   ],
+   "file": "login.php",
+   "location": {
+    "start_line": 16,
+    "end_line": 16
+   },
+   "description": "no session_regenerate_id after login"
+  },
+  {
+   "id": "xvwa-crypto-hardcoded_secret-1",
+   "repo_file": "vulnerabilities/crypto/home.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "hardcoded_secret",
+   "primary_cwe": "CWE-798",
+   "acceptable_cwes": [
+    "CWE-798",
+    "CWE-321",
+    "CWE-259",
+    "CWE-547"
+   ],
+   "file": "vulnerabilities/crypto/home.php",
+   "location": {
+    "start_line": 52,
+    "end_line": 52
+   },
+   "description": "hardcoded AES key"
+  },
+  {
+   "id": "xvwa-crypto-weak_random-1",
+   "repo_file": "vulnerabilities/crypto/home.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "weak_random",
+   "primary_cwe": "CWE-338",
+   "acceptable_cwes": [
+    "CWE-338",
+    "CWE-330",
+    "CWE-331",
+    "CWE-329",
+    "CWE-340"
+   ],
+   "file": "vulnerabilities/crypto/home.php",
+   "location": {
+    "start_line": 59,
+    "end_line": 59
+   },
+   "description": "IV from MCRYPT_RAND"
+  },
+  {
+   "id": "xvwa-crypto-weak_hash-1",
+   "repo_file": "vulnerabilities/crypto/home.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "weak_hash",
+   "primary_cwe": "CWE-328",
+   "acceptable_cwes": [
+    "CWE-328",
+    "CWE-327",
+    "CWE-916",
+    "CWE-759"
+   ],
+   "file": "vulnerabilities/crypto/home.php",
+   "location": {
+    "start_line": 77,
+    "end_line": 77
+   },
+   "description": "MD5 without salt"
+  },
+  {
+   "id": "xvwa-login-weak_hash-1",
+   "repo_file": "login.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "weak_hash",
+   "primary_cwe": "CWE-328",
+   "acceptable_cwes": [
+    "CWE-328",
+    "CWE-327",
+    "CWE-916",
+    "CWE-759"
+   ],
+   "file": "login.php",
+   "location": {
+    "start_line": 4,
+    "end_line": 4
+   },
+   "description": "password stored and compared as unsalted MD5"
+  },
+  {
+   "id": "xvwa-csrf-weak_hash-1",
+   "repo_file": "vulnerabilities/csrf/home.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "weak_hash",
+   "primary_cwe": "CWE-328",
+   "acceptable_cwes": [
+    "CWE-328",
+    "CWE-327",
+    "CWE-916",
+    "CWE-759"
+   ],
+   "file": "vulnerabilities/csrf/home.php",
+   "location": {
+    "start_line": 41,
+    "end_line": 41
+   },
+   "description": "password stored as unsalted MD5"
+  },
+  {
+   "id": "xvwa-crypto-weak_hash-2-safe",
+   "repo_file": "vulnerabilities/crypto/home.php",
+   "is_vulnerable": false,
+   "vulnerability_class": "weak_hash",
+   "primary_cwe": "CWE-328",
+   "acceptable_cwes": [
+    "CWE-328",
+    "CWE-327",
+    "CWE-916",
+    "CWE-759"
+   ],
+   "file": "vulnerabilities/crypto/home.php",
+   "location": {
+    "start_line": 82,
+    "end_line": 82
+   },
+   "description": "PBKDF2 with salt, the app's own correct example"
+  },
+  {
+   "id": "xvwa-login-sql_injection-1-safe",
+   "repo_file": "login.php",
+   "is_vulnerable": false,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564",
+    "CWE-943"
+   ],
+   "file": "login.php",
+   "location": {
+    "start_line": 8,
+    "end_line": 11
+   },
+   "description": "parameterized login query"
+  },
+  {
+   "id": "xvwa-stored_xss-sql_injection-1-safe",
+   "repo_file": "vulnerabilities/stored_xss/home.php",
+   "is_vulnerable": false,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564",
+    "CWE-943"
+   ],
+   "file": "vulnerabilities/stored_xss/home.php",
+   "location": {
+    "start_line": 49,
+    "end_line": 49
+   },
+   "description": "parameterized insert"
+  },
+  {
+   "id": "xvwa-idor-xss-1-safe",
+   "repo_file": "vulnerabilities/idor/home.php",
+   "is_vulnerable": false,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "vulnerabilities/idor/home.php",
+   "location": {
+    "start_line": 50,
+    "end_line": 50
+   },
+   "description": "output escaped"
+  },
+  {
+   "id": "xvwa-fileupload-xss-1-safe",
+   "repo_file": "vulnerabilities/fileupload/home.php",
+   "is_vulnerable": false,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "vulnerabilities/fileupload/home.php",
+   "location": {
+    "start_line": 89,
+    "end_line": 89
+   },
+   "description": "output escaped"
+  },
+  {
+   "id": "xvwa-formula_injection-xss-1-safe",
+   "repo_file": "vulnerabilities/formula_injection/home.php",
+   "is_vulnerable": false,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "vulnerabilities/formula_injection/home.php",
+   "location": {
+    "start_line": 45,
+    "end_line": 45
+   },
+   "description": "output escaped"
+  },
+  {
+   "id": "xvwa-sessionflaws-session_fixation-2-safe",
+   "repo_file": "logout.php",
+   "is_vulnerable": false,
+   "vulnerability_class": "session_fixation",
+   "primary_cwe": "CWE-384",
+   "acceptable_cwes": [
+    "CWE-384",
+    "CWE-613",
+    "CWE-330",
+    "CWE-1275"
+   ],
+   "file": "logout.php",
+   "location": {
+    "start_line": 3,
+    "end_line": 3
+   },
+   "description": "logout destroys the session"
+  }
+ ]
+}
