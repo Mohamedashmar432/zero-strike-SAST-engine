@@ -1,0 +1,5 @@
+@model Demo.Models.NoteViewModel
+
+<h2>@Model.Title</h2>
+<div class="body">@Html.Raw(Model.BodyHtml)</div>
+<p>Referrer: @Html.Raw(Request.QueryString["ref"])</p>

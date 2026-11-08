@@ -32,6 +32,14 @@ var extMap = map[string]core.Language{
 	".ejs":        core.LangHTML,
 	".hbs":        core.LangHTML,
 	".handlebars": core.LangHTML,
+	// Razor, Web Forms and Blade views: server-rendered HTML whose unencoded
+	// output tags (@Html.Raw, <%= %>, {!! !!}) the HTML builder emits as
+	// template-layer nodes. Blade is matched by its double extension below.
+	".cshtml": core.LangHTML,
+	".razor":  core.LangHTML,
+	".aspx":   core.LangHTML,
+	".ascx":   core.LangHTML,
+	".master": core.LangHTML,
 }
 
 // shebangMap maps known shebang interpreter strings to their language.
@@ -59,6 +67,9 @@ type detector struct{}
 //  3. core.LangUnknown when neither strategy matches.
 func (d *detector) Detect(path string, content []byte) core.Language {
 	ext := strings.ToLower(filepath.Ext(path))
+	if strings.HasSuffix(strings.ToLower(path), ".blade.php") {
+		return core.LangHTML
+	}
 	if lang, ok := extMap[ext]; ok {
 		return lang
 	}

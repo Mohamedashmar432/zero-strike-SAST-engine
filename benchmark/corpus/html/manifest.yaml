@@ -105,3 +105,27 @@ cases:
   - file: cases/clean_form_no_csrf.html
     language: html
     expect: []
+  - file: cases/vuln_razor_html_raw.cshtml
+    language: html
+    expect: [{rule_id: ZS-HTML-029, min_count: 2}]
+  - file: cases/safe_razor_encoded.cshtml
+    language: html
+    expect: []
+  - file: cases/vuln_blade_raw.blade.php
+    language: html
+    expect: [{rule_id: ZS-HTML-029, min_count: 2}]
+  - file: cases/safe_blade_escaped.blade.php
+    language: html
+    expect: []
+  - file: cases/vuln_aspx_raw.aspx
+    language: html
+    expect: [{rule_id: ZS-HTML-029, min_count: 1}]
+  - file: cases/safe_aspx_encoded.aspx
+    language: html
+    expect: []
+  - file: cases/vuln_handlebars_triple.hbs
+    language: html
+    expect: [{rule_id: ZS-HTML-023, min_count: 1}]
+  - file: cases/safe_handlebars_escaped.hbs
+    language: html
+    expect: []

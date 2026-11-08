@@ -1,0 +1,40 @@
+id: ZS-HTML-029
+lifecycle: released
+name: Unencoded template output (Razor Html.Raw, Blade {!! !!}, Web Forms <%= %>)
+version: "1.0.0"
+language: html
+category: xss
+severity: medium
+confidence: medium
+cwe:
+  - CWE-79
+owasp:
+  - "A05:2025"
+rationale: |
+  Server-rendered view engines HTML-encode their ordinary output tags (@expr,
+  {{ expr }}, <%: expr %>). Their raw forms switch that encoding off:
+  @Html.Raw(expr) in Razor, {!! expr !!} and <?= expr ?> in Blade, <%= expr %>
+  in Web Forms. A value that reaches one of
+  them from a request, a database row a user can edit, or a model property
+  holding user-supplied HTML runs as script in every visitor's browser.
+description: |
+  Flags an unencoded output tag in a .cshtml, .razor, .blade.php, .aspx,
+  .ascx or .master view (Handlebars triple braces are ZS-HTML-023). A constant string, and an
+  expression that passes through an encoder, serializer or sanitizer first
+  (Html.Encode, HtmlEncode, Json.Serialize, htmlspecialchars, e(), Purify),
+  is skipped.
+message: "Unencoded view output (Html.Raw, {!! !!}, <%= %>, {{{ }}}) writes this value without HTML escaping (XSS)"
+references:
+  - https://learn.microsoft.com/aspnet/core/security/cross-site-scripting
+  - https://laravel.com/docs/blade#displaying-unescaped-data
+  - https://cwe.mitre.org/data/definitions/79.html
+tags: [xss, template, razor, blade, aspx, handlebars]
+match:
+  kind: call
+  callee: template.raw_output
+  filters:
+    - not:
+        kind: call
+        filters:
+          - argument_literal_matches: "^\\s*(\"[^\"]*\"|'[^']*')\\s*$|(?i)\\b(HtmlEncode|AttributeEncode|JavaScriptStringEncode|Html\\.Encode|Json\\.Serialize|Json\\.Encode|SerializeObject|htmlspecialchars|htmlentities|e|json_encode|strip_tags|Purify|Sanitize|Sanitizer|escape)\\s*\\("
+fix_suggestion: "Use the encoding form (@expr, {{ expr }}, <%: expr %>, {{ expr }}); if markup is required, sanitize it with an allowlist sanitizer before rendering, and emit data into script with Json.Serialize or json_encode."

@@ -53,6 +53,12 @@ const (
 	// ("{ % csrf_token % }" with stray spaces inside the braces). Django
 	// prints it as literal text and the form goes out unprotected.
 	TemplateFormBadCSRFCallee = "template.form_bad_csrf"
+	// TemplateRawOutputCallee is an unencoded output tag of a server-rendered
+	// view: Razor @Html.Raw(expr), Blade {!! expr !!} and <?= expr ?>, Web
+	// Forms <%= expr %> (Handlebars {{{ expr }}} is ZS-HTML-023, on template.expr). Its literal argument is the
+	// expression text. The encoding forms (@expr, {{ expr }}, <%: expr %>) are
+	// not emitted. Each form is only recognised in its own file type.
+	TemplateRawOutputCallee = "template.raw_output"
 )
 
 var (
@@ -74,7 +80,57 @@ var (
 	serverTagRe = regexp.MustCompile(`\{%-?\s*[A-Za-z_]`)
 	// EJS raw output; a trailing -%> trim marker is excluded from the body.
 	ejsRawExprRe = regexp.MustCompile(`(?s)<%-(.{0,400}?)-?%>`)
+
+	// Unencoded output tags of the other server-side view engines.
+	bladeRawRe   = regexp.MustCompile(`(?s)\{!!(.{0,400}?)!!\}`)
+	phpEchoRe    = regexp.MustCompile(`(?s)<\?=(.{0,400}?)\?>`)
+	aspxRawRe    = regexp.MustCompile(`(?s)<%=(.{0,400}?)%>`)
+	razorRawRe   = regexp.MustCompile(`@Html\.Raw\(`)
+	razorCmtRe   = regexp.MustCompile(`(?s)@\*.*?\*@`)
+	bladeCmtRe   = regexp.MustCompile(`(?s)\{\{--.*?--\}\}`)
+	aspxCmtRe    = regexp.MustCompile(`(?s)<%--.*?--%>`)
 )
+
+// rawOutputKind says which unencoded-output syntaxes apply to a file.
+type rawOutputKind struct{ razor, blade, aspx bool }
+
+func rawOutputKindOf(path string) rawOutputKind {
+	p := strings.ToLower(path)
+	return rawOutputKind{
+		razor: strings.HasSuffix(p, ".cshtml") || strings.HasSuffix(p, ".razor"),
+		blade: strings.HasSuffix(p, ".blade.php"),
+		aspx:  strings.HasSuffix(p, ".aspx") || strings.HasSuffix(p, ".ascx") || strings.HasSuffix(p, ".master"),
+	}
+}
+
+// balancedParen returns the index just past the ")" that closes the "(" at
+// source[open], skipping string literals, or -1 when it does not close on the
+// same expression (bounded, so a stray "(" cannot swallow the file).
+func balancedParen(source []byte, open int) int {
+	depth := 0
+	var quote byte
+	for i := open; i < len(source) && i < open+400; i++ {
+		c := source[i]
+		switch {
+		case quote != 0:
+			if c == '\\' {
+				i++
+			} else if c == quote {
+				quote = 0
+			}
+		case c == '"' || c == '\'':
+			quote = c
+		case c == '(':
+			depth++
+		case c == ')':
+			depth--
+			if depth == 0 {
+				return i + 1
+			}
+		}
+	}
+	return -1
+}
 
 type byteRange struct{ start, end int }
 
@@ -95,7 +151,11 @@ func inRanges(rs []byteRange, off int) bool {
 // where they are just as dangerous.
 func collectTemplateNodes(rootNode *sitter.Node, source []byte, path string, parent *ir.IRNode) []*ir.IRNode {
 	ejs := strings.HasSuffix(strings.ToLower(path), ".ejs") && strings.Contains(string(source), "<%-")
-	if !ejs && !strings.Contains(string(source), "{{") && !strings.Contains(string(source), "{%") {
+	raw := rawOutputKindOf(path)
+	hasRaw := (raw.razor && strings.Contains(string(source), "@Html.Raw(")) ||
+		(raw.blade && (strings.Contains(string(source), "{!!") || strings.Contains(string(source), "<?="))) ||
+		(raw.aspx && strings.Contains(string(source), "<%="))
+	if !ejs && !hasRaw && !strings.Contains(string(source), "{{") && !strings.Contains(string(source), "{%") {
 		return nil
 	}
 	var comments []byteRange
@@ -104,6 +164,13 @@ func collectTemplateNodes(rootNode *sitter.Node, source []byte, path string, par
 	for _, re := range templateIgnoreRes {
 		for _, m := range re.FindAllIndex(source, -1) {
 			ignore = append(ignore, byteRange{m[0], m[1]})
+		}
+	}
+	if raw.razor || raw.blade || raw.aspx {
+		for _, re := range []*regexp.Regexp{razorCmtRe, bladeCmtRe, aspxCmtRe} {
+			for _, m := range re.FindAllIndex(source, -1) {
+				ignore = append(ignore, byteRange{m[0], m[1]})
+			}
 		}
 	}
 	serverRendered := serverTagRe.Match(source)
@@ -160,6 +227,32 @@ func collectTemplateNodes(rootNode *sitter.Node, source []byte, path string, par
 				continue
 			}
 			emit(TemplateRawExprCallee, body, m[0], m[1], inRanges(comments, m[0]))
+		}
+	}
+	rawEmit := func(start, end int, body string) {
+		body = strings.TrimSpace(body)
+		if body == "" || inRanges(ignore, start) {
+			return
+		}
+		emit(TemplateRawOutputCallee, body, start, end, false)
+	}
+	switch {
+	case raw.razor:
+		for _, m := range razorRawRe.FindAllIndex(source, -1) {
+			if end := balancedParen(source, m[1]-1); end > 0 {
+				rawEmit(m[0], end, string(source[m[1]:end-1]))
+			}
+		}
+	case raw.blade:
+		for _, m := range bladeRawRe.FindAllSubmatchIndex(source, -1) {
+			rawEmit(m[0], m[1], string(source[m[2]:m[3]]))
+		}
+		for _, m := range phpEchoRe.FindAllSubmatchIndex(source, -1) {
+			rawEmit(m[0], m[1], string(source[m[2]:m[3]]))
+		}
+	case raw.aspx:
+		for _, m := range aspxRawRe.FindAllSubmatchIndex(source, -1) {
+			rawEmit(m[0], m[1], string(source[m[2]:m[3]]))
 		}
 	}
 	if serverRendered {

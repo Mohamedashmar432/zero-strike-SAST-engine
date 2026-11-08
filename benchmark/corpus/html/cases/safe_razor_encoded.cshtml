@@ -1,0 +1,10 @@
+@model Demo.Models.NoteViewModel
+
+@* ZS-HTML-029 look-alike: default encoding, a constant, an encoder, a serializer. *@
+<h2>@Model.Title</h2>
+<div class="body">@Model.BodyHtml</div>
+<p>@Html.Raw("<b>static</b>")</p>
+<p>@Html.Raw(Html.Encode(Model.Title))</p>
+<script>
+    var term = @Html.Raw(Json.Serialize(ViewBag.Term));
+</script>
