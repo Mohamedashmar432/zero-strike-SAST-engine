@@ -1,0 +1,712 @@
+{
+ "repo_url": "local:benchmark/labeled/php-app",
+ "commit_sha": "local",
+ "findings": [
+  {
+   "id": "php-app-01",
+   "is_vulnerable": true,
+   "vulnerability_class": "redirect",
+   "primary_cwe": "CWE-601",
+   "acceptable_cwes": [
+    "CWE-601",
+    "CWE-113"
+   ],
+   "file": "app/Http/Controllers/AuthController.php",
+   "location": {
+    "start_line": 14,
+    "end_line": 14
+   },
+   "description": "Vulnerable: open redirect"
+  },
+  {
+   "id": "php-app-02",
+   "is_vulnerable": false,
+   "vulnerability_class": "redirect",
+   "primary_cwe": "CWE-601",
+   "acceptable_cwes": [
+    "CWE-601",
+    "CWE-113"
+   ],
+   "file": "app/Http/Controllers/AuthController.php",
+   "location": {
+    "start_line": 23,
+    "end_line": 23
+   },
+   "description": "Safe look-alike: open redirect"
+  },
+  {
+   "id": "php-app-03",
+   "is_vulnerable": true,
+   "vulnerability_class": "cookieflag",
+   "primary_cwe": "CWE-614",
+   "acceptable_cwes": [
+    "CWE-614",
+    "CWE-1004",
+    "CWE-1275",
+    "CWE-319"
+   ],
+   "file": "app/Http/Controllers/AuthController.php",
+   "location": {
+    "start_line": 32,
+    "end_line": 32
+   },
+   "description": "Vulnerable: cookie without security flags"
+  },
+  {
+   "id": "php-app-04",
+   "is_vulnerable": false,
+   "vulnerability_class": "cookieflag",
+   "primary_cwe": "CWE-614",
+   "acceptable_cwes": [
+    "CWE-614",
+    "CWE-1004",
+    "CWE-1275",
+    "CWE-319"
+   ],
+   "file": "app/Http/Controllers/AuthController.php",
+   "location": {
+    "start_line": 39,
+    "end_line": 39
+   },
+   "description": "Safe look-alike: cookie without security flags"
+  },
+  {
+   "id": "php-app-05",
+   "is_vulnerable": true,
+   "vulnerability_class": "path",
+   "primary_cwe": "CWE-22",
+   "acceptable_cwes": [
+    "CWE-22",
+    "CWE-23",
+    "CWE-36",
+    "CWE-73"
+   ],
+   "file": "app/Http/Controllers/FileController.php",
+   "location": {
+    "start_line": 12,
+    "end_line": 12
+   },
+   "description": "Vulnerable: path traversal"
+  },
+  {
+   "id": "php-app-06",
+   "is_vulnerable": true,
+   "vulnerability_class": "path",
+   "primary_cwe": "CWE-22",
+   "acceptable_cwes": [
+    "CWE-22",
+    "CWE-23",
+    "CWE-36",
+    "CWE-73"
+   ],
+   "file": "app/Http/Controllers/FileController.php",
+   "location": {
+    "start_line": 18,
+    "end_line": 18
+   },
+   "description": "Vulnerable: path traversal"
+  },
+  {
+   "id": "php-app-07",
+   "is_vulnerable": false,
+   "vulnerability_class": "path",
+   "primary_cwe": "CWE-22",
+   "acceptable_cwes": [
+    "CWE-22",
+    "CWE-23",
+    "CWE-36",
+    "CWE-73"
+   ],
+   "file": "app/Http/Controllers/FileController.php",
+   "location": {
+    "start_line": 29,
+    "end_line": 29
+   },
+   "description": "Safe look-alike: path traversal"
+  },
+  {
+   "id": "php-app-08",
+   "is_vulnerable": true,
+   "vulnerability_class": "ssrf",
+   "primary_cwe": "CWE-918",
+   "acceptable_cwes": [
+    "CWE-918",
+    "CWE-441"
+   ],
+   "file": "app/Http/Controllers/ProxyController.php",
+   "location": {
+    "start_line": 12,
+    "end_line": 12
+   },
+   "description": "Vulnerable: server-side request forgery"
+  },
+  {
+   "id": "php-app-09",
+   "is_vulnerable": true,
+   "vulnerability_class": "ssrf",
+   "primary_cwe": "CWE-918",
+   "acceptable_cwes": [
+    "CWE-918",
+    "CWE-441"
+   ],
+   "file": "app/Http/Controllers/ProxyController.php",
+   "location": {
+    "start_line": 18,
+    "end_line": 18
+   },
+   "description": "Vulnerable: server-side request forgery"
+  },
+  {
+   "id": "php-app-10",
+   "is_vulnerable": false,
+   "vulnerability_class": "ssrf",
+   "primary_cwe": "CWE-918",
+   "acceptable_cwes": [
+    "CWE-918",
+    "CWE-441"
+   ],
+   "file": "app/Http/Controllers/ProxyController.php",
+   "location": {
+    "start_line": 25,
+    "end_line": 25
+   },
+   "description": "Safe look-alike: server-side request forgery"
+  },
+  {
+   "id": "php-app-11",
+   "is_vulnerable": false,
+   "vulnerability_class": "ssrf",
+   "primary_cwe": "CWE-918",
+   "acceptable_cwes": [
+    "CWE-918",
+    "CWE-441"
+   ],
+   "file": "app/Http/Controllers/ProxyController.php",
+   "location": {
+    "start_line": 31,
+    "end_line": 31
+   },
+   "description": "Safe look-alike: server-side request forgery"
+  },
+  {
+   "id": "php-app-12",
+   "is_vulnerable": true,
+   "vulnerability_class": "cmdi",
+   "primary_cwe": "CWE-78",
+   "acceptable_cwes": [
+    "CWE-78",
+    "CWE-77",
+    "CWE-88"
+   ],
+   "file": "app/Http/Controllers/ToolController.php",
+   "location": {
+    "start_line": 12,
+    "end_line": 12
+   },
+   "description": "Vulnerable: OS command injection"
+  },
+  {
+   "id": "php-app-13",
+   "is_vulnerable": false,
+   "vulnerability_class": "cmdi",
+   "primary_cwe": "CWE-78",
+   "acceptable_cwes": [
+    "CWE-78",
+    "CWE-77",
+    "CWE-88"
+   ],
+   "file": "app/Http/Controllers/ToolController.php",
+   "location": {
+    "start_line": 18,
+    "end_line": 18
+   },
+   "description": "Safe look-alike: OS command injection"
+  },
+  {
+   "id": "php-app-14",
+   "is_vulnerable": true,
+   "vulnerability_class": "cmdi",
+   "primary_cwe": "CWE-78",
+   "acceptable_cwes": [
+    "CWE-78",
+    "CWE-77",
+    "CWE-88"
+   ],
+   "file": "app/Http/Controllers/ToolController.php",
+   "location": {
+    "start_line": 29,
+    "end_line": 29
+   },
+   "description": "Vulnerable: OS command injection"
+  },
+  {
+   "id": "php-app-15",
+   "is_vulnerable": true,
+   "vulnerability_class": "deser",
+   "primary_cwe": "CWE-502",
+   "acceptable_cwes": [
+    "CWE-502",
+    "CWE-915"
+   ],
+   "file": "app/Http/Controllers/ToolController.php",
+   "location": {
+    "start_line": 35,
+    "end_line": 35
+   },
+   "description": "Vulnerable: insecure deserialization"
+  },
+  {
+   "id": "php-app-16",
+   "is_vulnerable": false,
+   "vulnerability_class": "deser",
+   "primary_cwe": "CWE-502",
+   "acceptable_cwes": [
+    "CWE-502",
+    "CWE-915"
+   ],
+   "file": "app/Http/Controllers/ToolController.php",
+   "location": {
+    "start_line": 41,
+    "end_line": 41
+   },
+   "description": "Safe look-alike: insecure deserialization"
+  },
+  {
+   "id": "php-app-17",
+   "is_vulnerable": true,
+   "vulnerability_class": "sqli",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564"
+   ],
+   "file": "app/Http/Controllers/UserController.php",
+   "location": {
+    "start_line": 14,
+    "end_line": 14
+   },
+   "description": "Vulnerable: SQL injection"
+  },
+  {
+   "id": "php-app-18",
+   "is_vulnerable": false,
+   "vulnerability_class": "sqli",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564"
+   ],
+   "file": "app/Http/Controllers/UserController.php",
+   "location": {
+    "start_line": 20,
+    "end_line": 20
+   },
+   "description": "Safe look-alike: SQL injection"
+  },
+  {
+   "id": "php-app-19",
+   "is_vulnerable": true,
+   "vulnerability_class": "sqli",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564"
+   ],
+   "file": "app/Http/Controllers/UserController.php",
+   "location": {
+    "start_line": 26,
+    "end_line": 26
+   },
+   "description": "Vulnerable: SQL injection"
+  },
+  {
+   "id": "php-app-20",
+   "is_vulnerable": false,
+   "vulnerability_class": "sqli",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564"
+   ],
+   "file": "app/Http/Controllers/UserController.php",
+   "location": {
+    "start_line": 32,
+    "end_line": 32
+   },
+   "description": "Safe look-alike: SQL injection"
+  },
+  {
+   "id": "php-app-21",
+   "is_vulnerable": true,
+   "vulnerability_class": "weakhash",
+   "primary_cwe": "CWE-328",
+   "acceptable_cwes": [
+    "CWE-328",
+    "CWE-327",
+    "CWE-916",
+    "CWE-759"
+   ],
+   "file": "app/Http/Controllers/UserController.php",
+   "location": {
+    "start_line": 40,
+    "end_line": 40
+   },
+   "description": "Vulnerable: weak password hashing"
+  },
+  {
+   "id": "php-app-22",
+   "is_vulnerable": false,
+   "vulnerability_class": "weakhash",
+   "primary_cwe": "CWE-328",
+   "acceptable_cwes": [
+    "CWE-328",
+    "CWE-327",
+    "CWE-916",
+    "CWE-759"
+   ],
+   "file": "app/Http/Controllers/UserController.php",
+   "location": {
+    "start_line": 49,
+    "end_line": 49
+   },
+   "description": "Safe look-alike: weak password hashing"
+  },
+  {
+   "id": "php-app-23",
+   "is_vulnerable": false,
+   "vulnerability_class": "cmdi",
+   "primary_cwe": "CWE-78",
+   "acceptable_cwes": [
+    "CWE-78",
+    "CWE-77",
+    "CWE-88"
+   ],
+   "file": "app/Services/Helpers.php",
+   "location": {
+    "start_line": 10,
+    "end_line": 10
+   },
+   "description": "Safe look-alike: OS command injection"
+  },
+  {
+   "id": "php-app-24",
+   "is_vulnerable": true,
+   "vulnerability_class": "debug",
+   "primary_cwe": "CWE-489",
+   "acceptable_cwes": [
+    "CWE-489",
+    "CWE-215",
+    "CWE-11",
+    "CWE-209",
+    "CWE-200"
+   ],
+   "file": "config/app.php",
+   "location": {
+    "start_line": 6,
+    "end_line": 6
+   },
+   "description": "Vulnerable: debug mode enabled"
+  },
+  {
+   "id": "php-app-25",
+   "is_vulnerable": true,
+   "vulnerability_class": "secret",
+   "primary_cwe": "CWE-798",
+   "acceptable_cwes": [
+    "CWE-798",
+    "CWE-259",
+    "CWE-321",
+    "CWE-547"
+   ],
+   "file": "config/app.php",
+   "location": {
+    "start_line": 8,
+    "end_line": 8
+   },
+   "description": "Vulnerable: hardcoded secret"
+  },
+  {
+   "id": "php-app-26",
+   "is_vulnerable": true,
+   "vulnerability_class": "cors",
+   "primary_cwe": "CWE-942",
+   "acceptable_cwes": [
+    "CWE-942",
+    "CWE-346",
+    "CWE-1275"
+   ],
+   "file": "config/cors.php",
+   "location": {
+    "start_line": 6,
+    "end_line": 6
+   },
+   "description": "Vulnerable: permissive CORS"
+  },
+  {
+   "id": "php-app-27",
+   "is_vulnerable": true,
+   "vulnerability_class": "secret",
+   "primary_cwe": "CWE-798",
+   "acceptable_cwes": [
+    "CWE-798",
+    "CWE-259",
+    "CWE-321",
+    "CWE-547"
+   ],
+   "file": "config/services.php",
+   "location": {
+    "start_line": 6,
+    "end_line": 6
+   },
+   "description": "Vulnerable: hardcoded secret"
+  },
+  {
+   "id": "php-app-28",
+   "is_vulnerable": false,
+   "vulnerability_class": "secret",
+   "primary_cwe": "CWE-798",
+   "acceptable_cwes": [
+    "CWE-798",
+    "CWE-259",
+    "CWE-321",
+    "CWE-547"
+   ],
+   "file": "config/services.php",
+   "location": {
+    "start_line": 9,
+    "end_line": 9
+   },
+   "description": "Safe look-alike: hardcoded secret"
+  },
+  {
+   "id": "php-app-29",
+   "is_vulnerable": true,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "public/search.php",
+   "location": {
+    "start_line": 7,
+    "end_line": 7
+   },
+   "description": "Vulnerable: cross-site scripting"
+  },
+  {
+   "id": "php-app-30",
+   "is_vulnerable": false,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "public/search.php",
+   "location": {
+    "start_line": 8,
+    "end_line": 8
+   },
+   "description": "Safe look-alike: cross-site scripting"
+  },
+  {
+   "id": "php-app-31",
+   "is_vulnerable": true,
+   "vulnerability_class": "sqli",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564"
+   ],
+   "file": "public/search.php",
+   "location": {
+    "start_line": 10,
+    "end_line": 10
+   },
+   "description": "Vulnerable: SQL injection"
+  },
+  {
+   "id": "php-app-32",
+   "is_vulnerable": false,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "public/search.php",
+   "location": {
+    "start_line": 12,
+    "end_line": 12
+   },
+   "description": "Safe look-alike: cross-site scripting"
+  },
+  {
+   "id": "php-app-33",
+   "is_vulnerable": false,
+   "vulnerability_class": "sqli",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564"
+   ],
+   "file": "public/search.php",
+   "location": {
+    "start_line": 15,
+    "end_line": 15
+   },
+   "description": "Safe look-alike: SQL injection"
+  },
+  {
+   "id": "php-app-34",
+   "is_vulnerable": true,
+   "vulnerability_class": "lfi",
+   "primary_cwe": "CWE-98",
+   "acceptable_cwes": [
+    "CWE-98",
+    "CWE-22",
+    "CWE-73",
+    "CWE-829"
+   ],
+   "file": "public/search.php",
+   "location": {
+    "start_line": 19,
+    "end_line": 19
+   },
+   "description": "Vulnerable: file inclusion"
+  },
+  {
+   "id": "php-app-35",
+   "is_vulnerable": true,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "public/widget.html",
+   "location": {
+    "start_line": 9,
+    "end_line": 9
+   },
+   "description": "Vulnerable: cross-site scripting"
+  },
+  {
+   "id": "php-app-36",
+   "is_vulnerable": true,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "public/widget.html",
+   "location": {
+    "start_line": 10,
+    "end_line": 10
+   },
+   "description": "Vulnerable: cross-site scripting"
+  },
+  {
+   "id": "php-app-37",
+   "is_vulnerable": false,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "public/widget.html",
+   "location": {
+    "start_line": 11,
+    "end_line": 11
+   },
+   "description": "Safe look-alike: cross-site scripting"
+  },
+  {
+   "id": "php-app-38",
+   "is_vulnerable": false,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "resources/views/comments.blade.php",
+   "location": {
+    "start_line": 7,
+    "end_line": 7
+   },
+   "description": "Safe look-alike: cross-site scripting"
+  },
+  {
+   "id": "php-app-39",
+   "is_vulnerable": true,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "resources/views/comments.blade.php",
+   "location": {
+    "start_line": 8,
+    "end_line": 8
+   },
+   "description": "Vulnerable: cross-site scripting"
+  },
+  {
+   "id": "php-app-40",
+   "is_vulnerable": true,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "resources/views/comments.blade.php",
+   "location": {
+    "start_line": 11,
+    "end_line": 11
+   },
+   "description": "Vulnerable: cross-site scripting"
+  },
+  {
+   "id": "php-app-41",
+   "is_vulnerable": false,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "resources/views/comments.blade.php",
+   "location": {
+    "start_line": 12,
+    "end_line": 12
+   },
+   "description": "Safe look-alike: cross-site scripting"
+  }
+ ]
+}

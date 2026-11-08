@@ -1,0 +1,560 @@
+{
+ "repo_url": "local:benchmark/labeled/aspnetcore-b",
+ "commit_sha": "local",
+ "findings": [
+  {
+   "id": "aspnetcore-b-01",
+   "is_vulnerable": true,
+   "vulnerability_class": "secret",
+   "primary_cwe": "CWE-798",
+   "acceptable_cwes": [
+    "CWE-798",
+    "CWE-259",
+    "CWE-321",
+    "CWE-547"
+   ],
+   "file": "Program.cs",
+   "location": {
+    "start_line": 10,
+    "end_line": 10
+   },
+   "description": "Vulnerable: hardcoded secret"
+  },
+  {
+   "id": "aspnetcore-b-02",
+   "is_vulnerable": true,
+   "vulnerability_class": "cors",
+   "primary_cwe": "CWE-942",
+   "acceptable_cwes": [
+    "CWE-942",
+    "CWE-346",
+    "CWE-1275"
+   ],
+   "file": "Program.cs",
+   "location": {
+    "start_line": 16,
+    "end_line": 16
+   },
+   "description": "Vulnerable: permissive CORS"
+  },
+  {
+   "id": "aspnetcore-b-03",
+   "is_vulnerable": true,
+   "vulnerability_class": "debug",
+   "primary_cwe": "CWE-489",
+   "acceptable_cwes": [
+    "CWE-489",
+    "CWE-215",
+    "CWE-11",
+    "CWE-209",
+    "CWE-200"
+   ],
+   "file": "Program.cs",
+   "location": {
+    "start_line": 19,
+    "end_line": 19
+   },
+   "description": "Vulnerable: debug mode enabled"
+  },
+  {
+   "id": "aspnetcore-b-04",
+   "is_vulnerable": false,
+   "vulnerability_class": "secret",
+   "primary_cwe": "CWE-798",
+   "acceptable_cwes": [
+    "CWE-798",
+    "CWE-259",
+    "CWE-321",
+    "CWE-547"
+   ],
+   "file": "Program.cs",
+   "location": {
+    "start_line": 24,
+    "end_line": 24
+   },
+   "description": "Safe look-alike: hardcoded secret"
+  },
+  {
+   "id": "aspnetcore-b-05",
+   "is_vulnerable": true,
+   "vulnerability_class": "sqli",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564"
+   ],
+   "file": "Program.cs",
+   "location": {
+    "start_line": 29,
+    "end_line": 29
+   },
+   "description": "Vulnerable: SQL injection"
+  },
+  {
+   "id": "aspnetcore-b-06",
+   "is_vulnerable": false,
+   "vulnerability_class": "sqli",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564"
+   ],
+   "file": "Program.cs",
+   "location": {
+    "start_line": 39,
+    "end_line": 39
+   },
+   "description": "Safe look-alike: SQL injection"
+  },
+  {
+   "id": "aspnetcore-b-07",
+   "is_vulnerable": true,
+   "vulnerability_class": "sqli",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564"
+   ],
+   "file": "Program.cs",
+   "location": {
+    "start_line": 49,
+    "end_line": 49
+   },
+   "description": "Vulnerable: SQL injection"
+  },
+  {
+   "id": "aspnetcore-b-08",
+   "is_vulnerable": false,
+   "vulnerability_class": "sqli",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564"
+   ],
+   "file": "Program.cs",
+   "location": {
+    "start_line": 55,
+    "end_line": 55
+   },
+   "description": "Safe look-alike: SQL injection"
+  },
+  {
+   "id": "aspnetcore-b-09",
+   "is_vulnerable": true,
+   "vulnerability_class": "path",
+   "primary_cwe": "CWE-22",
+   "acceptable_cwes": [
+    "CWE-22",
+    "CWE-23",
+    "CWE-36",
+    "CWE-73"
+   ],
+   "file": "Program.cs",
+   "location": {
+    "start_line": 62,
+    "end_line": 62
+   },
+   "description": "Vulnerable: path traversal"
+  },
+  {
+   "id": "aspnetcore-b-10",
+   "is_vulnerable": false,
+   "vulnerability_class": "path",
+   "primary_cwe": "CWE-22",
+   "acceptable_cwes": [
+    "CWE-22",
+    "CWE-23",
+    "CWE-36",
+    "CWE-73"
+   ],
+   "file": "Program.cs",
+   "location": {
+    "start_line": 70,
+    "end_line": 70
+   },
+   "description": "Safe look-alike: path traversal"
+  },
+  {
+   "id": "aspnetcore-b-11",
+   "is_vulnerable": true,
+   "vulnerability_class": "ssrf",
+   "primary_cwe": "CWE-918",
+   "acceptable_cwes": [
+    "CWE-918",
+    "CWE-441"
+   ],
+   "file": "Program.cs",
+   "location": {
+    "start_line": 75,
+    "end_line": 75
+   },
+   "description": "Vulnerable: server-side request forgery"
+  },
+  {
+   "id": "aspnetcore-b-12",
+   "is_vulnerable": false,
+   "vulnerability_class": "ssrf",
+   "primary_cwe": "CWE-918",
+   "acceptable_cwes": [
+    "CWE-918",
+    "CWE-441"
+   ],
+   "file": "Program.cs",
+   "location": {
+    "start_line": 81,
+    "end_line": 81
+   },
+   "description": "Safe look-alike: server-side request forgery"
+  },
+  {
+   "id": "aspnetcore-b-13",
+   "is_vulnerable": true,
+   "vulnerability_class": "redirect",
+   "primary_cwe": "CWE-601",
+   "acceptable_cwes": [
+    "CWE-601",
+    "CWE-113"
+   ],
+   "file": "Program.cs",
+   "location": {
+    "start_line": 85,
+    "end_line": 85
+   },
+   "description": "Vulnerable: open redirect"
+  },
+  {
+   "id": "aspnetcore-b-14",
+   "is_vulnerable": false,
+   "vulnerability_class": "redirect",
+   "primary_cwe": "CWE-601",
+   "acceptable_cwes": [
+    "CWE-601",
+    "CWE-113"
+   ],
+   "file": "Program.cs",
+   "location": {
+    "start_line": 90,
+    "end_line": 90
+   },
+   "description": "Safe look-alike: open redirect"
+  },
+  {
+   "id": "aspnetcore-b-15",
+   "is_vulnerable": true,
+   "vulnerability_class": "cmdi",
+   "primary_cwe": "CWE-78",
+   "acceptable_cwes": [
+    "CWE-78",
+    "CWE-77",
+    "CWE-88"
+   ],
+   "file": "Program.cs",
+   "location": {
+    "start_line": 95,
+    "end_line": 95
+   },
+   "description": "Vulnerable: OS command injection"
+  },
+  {
+   "id": "aspnetcore-b-16",
+   "is_vulnerable": true,
+   "vulnerability_class": "weakrand",
+   "primary_cwe": "CWE-330",
+   "acceptable_cwes": [
+    "CWE-330",
+    "CWE-338",
+    "CWE-331",
+    "CWE-334"
+   ],
+   "file": "Program.cs",
+   "location": {
+    "start_line": 106,
+    "end_line": 106
+   },
+   "description": "Vulnerable: insecure randomness"
+  },
+  {
+   "id": "aspnetcore-b-17",
+   "is_vulnerable": true,
+   "vulnerability_class": "cookieflag",
+   "primary_cwe": "CWE-614",
+   "acceptable_cwes": [
+    "CWE-614",
+    "CWE-1004",
+    "CWE-1275",
+    "CWE-319"
+   ],
+   "file": "Program.cs",
+   "location": {
+    "start_line": 107,
+    "end_line": 107
+   },
+   "description": "Vulnerable: cookie without security flags"
+  },
+  {
+   "id": "aspnetcore-b-18",
+   "is_vulnerable": false,
+   "vulnerability_class": "cookieflag",
+   "primary_cwe": "CWE-614",
+   "acceptable_cwes": [
+    "CWE-614",
+    "CWE-1004",
+    "CWE-1275",
+    "CWE-319"
+   ],
+   "file": "Program.cs",
+   "location": {
+    "start_line": 114,
+    "end_line": 114
+   },
+   "description": "Safe look-alike: cookie without security flags"
+  },
+  {
+   "id": "aspnetcore-b-19",
+   "is_vulnerable": true,
+   "vulnerability_class": "deser",
+   "primary_cwe": "CWE-502",
+   "acceptable_cwes": [
+    "CWE-502",
+    "CWE-915"
+   ],
+   "file": "Program.cs",
+   "location": {
+    "start_line": 120,
+    "end_line": 120
+   },
+   "description": "Vulnerable: insecure deserialization"
+  },
+  {
+   "id": "aspnetcore-b-20",
+   "is_vulnerable": false,
+   "vulnerability_class": "deser",
+   "primary_cwe": "CWE-502",
+   "acceptable_cwes": [
+    "CWE-502",
+    "CWE-915"
+   ],
+   "file": "Program.cs",
+   "location": {
+    "start_line": 126,
+    "end_line": 126
+   },
+   "description": "Safe look-alike: insecure deserialization"
+  },
+  {
+   "id": "aspnetcore-b-21",
+   "is_vulnerable": true,
+   "vulnerability_class": "weakhash",
+   "primary_cwe": "CWE-328",
+   "acceptable_cwes": [
+    "CWE-328",
+    "CWE-327",
+    "CWE-916",
+    "CWE-759"
+   ],
+   "file": "Program.cs",
+   "location": {
+    "start_line": 132,
+    "end_line": 132
+   },
+   "description": "Vulnerable: weak password hashing"
+  },
+  {
+   "id": "aspnetcore-b-22",
+   "is_vulnerable": false,
+   "vulnerability_class": "weakhash",
+   "primary_cwe": "CWE-328",
+   "acceptable_cwes": [
+    "CWE-328",
+    "CWE-327",
+    "CWE-916",
+    "CWE-759"
+   ],
+   "file": "Program.cs",
+   "location": {
+    "start_line": 139,
+    "end_line": 139
+   },
+   "description": "Safe look-alike: weak password hashing"
+  },
+  {
+   "id": "aspnetcore-b-23",
+   "is_vulnerable": true,
+   "vulnerability_class": "weakcrypto",
+   "primary_cwe": "CWE-327",
+   "acceptable_cwes": [
+    "CWE-327",
+    "CWE-326",
+    "CWE-328",
+    "CWE-780",
+    "CWE-329"
+   ],
+   "file": "Program.cs",
+   "location": {
+    "start_line": 145,
+    "end_line": 145
+   },
+   "description": "Vulnerable: weak cryptographic algorithm"
+  },
+  {
+   "id": "aspnetcore-b-24",
+   "is_vulnerable": false,
+   "vulnerability_class": "weakcrypto",
+   "primary_cwe": "CWE-327",
+   "acceptable_cwes": [
+    "CWE-327",
+    "CWE-326",
+    "CWE-328",
+    "CWE-780",
+    "CWE-329"
+   ],
+   "file": "Program.cs",
+   "location": {
+    "start_line": 151,
+    "end_line": 151
+   },
+   "description": "Safe look-alike: weak cryptographic algorithm"
+  },
+  {
+   "id": "aspnetcore-b-25",
+   "is_vulnerable": true,
+   "vulnerability_class": "secret",
+   "primary_cwe": "CWE-798",
+   "acceptable_cwes": [
+    "CWE-798",
+    "CWE-259",
+    "CWE-321",
+    "CWE-547"
+   ],
+   "file": "appsettings.json",
+   "location": {
+    "start_line": 4,
+    "end_line": 4
+   },
+   "description": "Vulnerable: hardcoded secret"
+  },
+  {
+   "id": "aspnetcore-b-26",
+   "is_vulnerable": true,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "Pages/Search.cshtml",
+   "location": {
+    "start_line": 5,
+    "end_line": 5
+   },
+   "description": "Vulnerable: cross-site scripting"
+  },
+  {
+   "id": "aspnetcore-b-27",
+   "is_vulnerable": false,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "Pages/Search.cshtml",
+   "location": {
+    "start_line": 6,
+    "end_line": 6
+   },
+   "description": "Safe look-alike: cross-site scripting"
+  },
+  {
+   "id": "aspnetcore-b-28",
+   "is_vulnerable": false,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "Pages/Search.cshtml",
+   "location": {
+    "start_line": 11,
+    "end_line": 11
+   },
+   "description": "Safe look-alike: cross-site scripting"
+  },
+  {
+   "id": "aspnetcore-b-29",
+   "is_vulnerable": true,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "Pages/Search.cshtml",
+   "location": {
+    "start_line": 15,
+    "end_line": 15
+   },
+   "description": "Vulnerable: cross-site scripting"
+  },
+  {
+   "id": "aspnetcore-b-30",
+   "is_vulnerable": true,
+   "vulnerability_class": "path",
+   "primary_cwe": "CWE-22",
+   "acceptable_cwes": [
+    "CWE-22",
+    "CWE-23",
+    "CWE-36",
+    "CWE-73"
+   ],
+   "file": "Pages/Search.cshtml.cs",
+   "location": {
+    "start_line": 22,
+    "end_line": 22
+   },
+   "description": "Vulnerable: path traversal"
+  },
+  {
+   "id": "aspnetcore-b-31",
+   "is_vulnerable": true,
+   "vulnerability_class": "sqli",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564"
+   ],
+   "file": "Pages/Search.cshtml.cs",
+   "location": {
+    "start_line": 30,
+    "end_line": 30
+   },
+   "description": "Vulnerable: SQL injection"
+  },
+  {
+   "id": "aspnetcore-b-32",
+   "is_vulnerable": false,
+   "vulnerability_class": "cmdi",
+   "primary_cwe": "CWE-78",
+   "acceptable_cwes": [
+    "CWE-78",
+    "CWE-77",
+    "CWE-88"
+   ],
+   "file": "Services/GitRunner.cs",
+   "location": {
+    "start_line": 13,
+    "end_line": 13
+   },
+   "description": "Safe look-alike: OS command injection"
+  }
+ ]
+}

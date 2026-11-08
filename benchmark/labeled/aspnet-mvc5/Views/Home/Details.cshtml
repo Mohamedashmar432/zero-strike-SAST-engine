@@ -1,0 +1,5 @@
+@model LegacyShop.Models.CustomerViewModel
+
+<h2>@Model.Name</h2>
+<div class="bio">@Html.Raw(Model.BioHtml)</div>
+<p>Referrer: @Html.Raw(Request.QueryString["ref"])</p>

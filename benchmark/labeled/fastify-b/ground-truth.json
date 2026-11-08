@@ -1,0 +1,647 @@
+{
+ "repo_url": "local:benchmark/labeled/fastify-b",
+ "commit_sha": "local",
+ "findings": [
+  {
+   "id": "fastify-b-01",
+   "is_vulnerable": true,
+   "vulnerability_class": "secret",
+   "primary_cwe": "CWE-798",
+   "acceptable_cwes": [
+    "CWE-798",
+    "CWE-259",
+    "CWE-321",
+    "CWE-547"
+   ],
+   "file": "server.js",
+   "location": {
+    "start_line": 9,
+    "end_line": 9
+   },
+   "description": "Vulnerable: hardcoded secret"
+  },
+  {
+   "id": "fastify-b-02",
+   "is_vulnerable": false,
+   "vulnerability_class": "secret",
+   "primary_cwe": "CWE-798",
+   "acceptable_cwes": [
+    "CWE-798",
+    "CWE-259",
+    "CWE-321",
+    "CWE-547"
+   ],
+   "file": "server.js",
+   "location": {
+    "start_line": 10,
+    "end_line": 10
+   },
+   "description": "Safe look-alike: hardcoded secret"
+  },
+  {
+   "id": "fastify-b-03",
+   "is_vulnerable": true,
+   "vulnerability_class": "cors",
+   "primary_cwe": "CWE-942",
+   "acceptable_cwes": [
+    "CWE-942",
+    "CWE-346",
+    "CWE-1275"
+   ],
+   "file": "server.js",
+   "location": {
+    "start_line": 14,
+    "end_line": 14
+   },
+   "description": "Vulnerable: permissive CORS"
+  },
+  {
+   "id": "fastify-b-04",
+   "is_vulnerable": true,
+   "vulnerability_class": "debug",
+   "primary_cwe": "CWE-489",
+   "acceptable_cwes": [
+    "CWE-489",
+    "CWE-215",
+    "CWE-11",
+    "CWE-209",
+    "CWE-200"
+   ],
+   "file": "server.js",
+   "location": {
+    "start_line": 27,
+    "end_line": 27
+   },
+   "description": "Vulnerable: debug mode enabled"
+  },
+  {
+   "id": "fastify-b-05",
+   "is_vulnerable": false,
+   "vulnerability_class": "cmdi",
+   "primary_cwe": "CWE-78",
+   "acceptable_cwes": [
+    "CWE-78",
+    "CWE-77",
+    "CWE-88"
+   ],
+   "file": "lib/shell.js",
+   "location": {
+    "start_line": 8,
+    "end_line": 8
+   },
+   "description": "Safe look-alike: OS command injection"
+  },
+  {
+   "id": "fastify-b-06",
+   "is_vulnerable": true,
+   "vulnerability_class": "weakhash",
+   "primary_cwe": "CWE-328",
+   "acceptable_cwes": [
+    "CWE-328",
+    "CWE-327",
+    "CWE-916",
+    "CWE-759"
+   ],
+   "file": "plugins/auth.js",
+   "location": {
+    "start_line": 7,
+    "end_line": 7
+   },
+   "description": "Vulnerable: weak password hashing"
+  },
+  {
+   "id": "fastify-b-07",
+   "is_vulnerable": false,
+   "vulnerability_class": "weakhash",
+   "primary_cwe": "CWE-328",
+   "acceptable_cwes": [
+    "CWE-328",
+    "CWE-327",
+    "CWE-916",
+    "CWE-759"
+   ],
+   "file": "plugins/auth.js",
+   "location": {
+    "start_line": 9,
+    "end_line": 9
+   },
+   "description": "Safe look-alike: weak password hashing"
+  },
+  {
+   "id": "fastify-b-08",
+   "is_vulnerable": true,
+   "vulnerability_class": "weakrand",
+   "primary_cwe": "CWE-330",
+   "acceptable_cwes": [
+    "CWE-330",
+    "CWE-338",
+    "CWE-331",
+    "CWE-334"
+   ],
+   "file": "plugins/auth.js",
+   "location": {
+    "start_line": 11,
+    "end_line": 11
+   },
+   "description": "Vulnerable: insecure randomness"
+  },
+  {
+   "id": "fastify-b-09",
+   "is_vulnerable": false,
+   "vulnerability_class": "weakrand",
+   "primary_cwe": "CWE-330",
+   "acceptable_cwes": [
+    "CWE-330",
+    "CWE-338",
+    "CWE-331",
+    "CWE-334"
+   ],
+   "file": "plugins/auth.js",
+   "location": {
+    "start_line": 13,
+    "end_line": 13
+   },
+   "description": "Safe look-alike: insecure randomness"
+  },
+  {
+   "id": "fastify-b-10",
+   "is_vulnerable": true,
+   "vulnerability_class": "weakcrypto",
+   "primary_cwe": "CWE-327",
+   "acceptable_cwes": [
+    "CWE-327",
+    "CWE-326",
+    "CWE-328",
+    "CWE-780",
+    "CWE-329"
+   ],
+   "file": "plugins/auth.js",
+   "location": {
+    "start_line": 16,
+    "end_line": 16
+   },
+   "description": "Vulnerable: weak cryptographic algorithm"
+  },
+  {
+   "id": "fastify-b-11",
+   "is_vulnerable": false,
+   "vulnerability_class": "weakcrypto",
+   "primary_cwe": "CWE-327",
+   "acceptable_cwes": [
+    "CWE-327",
+    "CWE-326",
+    "CWE-328",
+    "CWE-780",
+    "CWE-329"
+   ],
+   "file": "plugins/auth.js",
+   "location": {
+    "start_line": 22,
+    "end_line": 22
+   },
+   "description": "Safe look-alike: weak cryptographic algorithm"
+  },
+  {
+   "id": "fastify-b-12",
+   "is_vulnerable": true,
+   "vulnerability_class": "cookieflag",
+   "primary_cwe": "CWE-614",
+   "acceptable_cwes": [
+    "CWE-614",
+    "CWE-1004",
+    "CWE-1275",
+    "CWE-319"
+   ],
+   "file": "plugins/auth.js",
+   "location": {
+    "start_line": 34,
+    "end_line": 34
+   },
+   "description": "Vulnerable: cookie without security flags"
+  },
+  {
+   "id": "fastify-b-13",
+   "is_vulnerable": false,
+   "vulnerability_class": "cookieflag",
+   "primary_cwe": "CWE-614",
+   "acceptable_cwes": [
+    "CWE-614",
+    "CWE-1004",
+    "CWE-1275",
+    "CWE-319"
+   ],
+   "file": "plugins/auth.js",
+   "location": {
+    "start_line": 40,
+    "end_line": 40
+   },
+   "description": "Safe look-alike: cookie without security flags"
+  },
+  {
+   "id": "fastify-b-14",
+   "is_vulnerable": true,
+   "vulnerability_class": "cmdi",
+   "primary_cwe": "CWE-78",
+   "acceptable_cwes": [
+    "CWE-78",
+    "CWE-77",
+    "CWE-88"
+   ],
+   "file": "routes/admin.js",
+   "location": {
+    "start_line": 11,
+    "end_line": 11
+   },
+   "description": "Vulnerable: OS command injection"
+  },
+  {
+   "id": "fastify-b-15",
+   "is_vulnerable": false,
+   "vulnerability_class": "cmdi",
+   "primary_cwe": "CWE-78",
+   "acceptable_cwes": [
+    "CWE-78",
+    "CWE-77",
+    "CWE-88"
+   ],
+   "file": "routes/admin.js",
+   "location": {
+    "start_line": 17,
+    "end_line": 17
+   },
+   "description": "Safe look-alike: OS command injection"
+  },
+  {
+   "id": "fastify-b-16",
+   "is_vulnerable": true,
+   "vulnerability_class": "deser",
+   "primary_cwe": "CWE-502",
+   "acceptable_cwes": [
+    "CWE-502",
+    "CWE-915"
+   ],
+   "file": "routes/admin.js",
+   "location": {
+    "start_line": 27,
+    "end_line": 27
+   },
+   "description": "Vulnerable: insecure deserialization"
+  },
+  {
+   "id": "fastify-b-17",
+   "is_vulnerable": false,
+   "vulnerability_class": "deser",
+   "primary_cwe": "CWE-502",
+   "acceptable_cwes": [
+    "CWE-502",
+    "CWE-915"
+   ],
+   "file": "routes/admin.js",
+   "location": {
+    "start_line": 31,
+    "end_line": 31
+   },
+   "description": "Safe look-alike: insecure deserialization"
+  },
+  {
+   "id": "fastify-b-18",
+   "is_vulnerable": true,
+   "vulnerability_class": "redirect",
+   "primary_cwe": "CWE-601",
+   "acceptable_cwes": [
+    "CWE-601",
+    "CWE-113"
+   ],
+   "file": "routes/admin.js",
+   "location": {
+    "start_line": 35,
+    "end_line": 35
+   },
+   "description": "Vulnerable: open redirect"
+  },
+  {
+   "id": "fastify-b-19",
+   "is_vulnerable": false,
+   "vulnerability_class": "redirect",
+   "primary_cwe": "CWE-601",
+   "acceptable_cwes": [
+    "CWE-601",
+    "CWE-113"
+   ],
+   "file": "routes/admin.js",
+   "location": {
+    "start_line": 40,
+    "end_line": 40
+   },
+   "description": "Safe look-alike: open redirect"
+  },
+  {
+   "id": "fastify-b-20",
+   "is_vulnerable": true,
+   "vulnerability_class": "sqli",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564"
+   ],
+   "file": "routes/orders.js",
+   "location": {
+    "start_line": 5,
+    "end_line": 5
+   },
+   "description": "Vulnerable: SQL injection"
+  },
+  {
+   "id": "fastify-b-21",
+   "is_vulnerable": false,
+   "vulnerability_class": "sqli",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564"
+   ],
+   "file": "routes/orders.js",
+   "location": {
+    "start_line": 10,
+    "end_line": 10
+   },
+   "description": "Safe look-alike: SQL injection"
+  },
+  {
+   "id": "fastify-b-22",
+   "is_vulnerable": true,
+   "vulnerability_class": "sqli",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564"
+   ],
+   "file": "routes/orders.js",
+   "location": {
+    "start_line": 15,
+    "end_line": 15
+   },
+   "description": "Vulnerable: SQL injection"
+  },
+  {
+   "id": "fastify-b-23",
+   "is_vulnerable": true,
+   "vulnerability_class": "nosqli",
+   "primary_cwe": "CWE-943",
+   "acceptable_cwes": [
+    "CWE-943",
+    "CWE-89",
+    "CWE-74"
+   ],
+   "file": "routes/orders.js",
+   "location": {
+    "start_line": 20,
+    "end_line": 20
+   },
+   "description": "Vulnerable: NoSQL injection"
+  },
+  {
+   "id": "fastify-b-24",
+   "is_vulnerable": false,
+   "vulnerability_class": "nosqli",
+   "primary_cwe": "CWE-943",
+   "acceptable_cwes": [
+    "CWE-943",
+    "CWE-89",
+    "CWE-74"
+   ],
+   "file": "routes/orders.js",
+   "location": {
+    "start_line": 24,
+    "end_line": 24
+   },
+   "description": "Safe look-alike: NoSQL injection"
+  },
+  {
+   "id": "fastify-b-25",
+   "is_vulnerable": true,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "routes/orders.js",
+   "location": {
+    "start_line": 33,
+    "end_line": 33
+   },
+   "description": "Vulnerable: cross-site scripting"
+  },
+  {
+   "id": "fastify-b-26",
+   "is_vulnerable": false,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "routes/orders.js",
+   "location": {
+    "start_line": 38,
+    "end_line": 38
+   },
+   "description": "Safe look-alike: cross-site scripting"
+  },
+  {
+   "id": "fastify-b-27",
+   "is_vulnerable": true,
+   "vulnerability_class": "path",
+   "primary_cwe": "CWE-22",
+   "acceptable_cwes": [
+    "CWE-22",
+    "CWE-23",
+    "CWE-36",
+    "CWE-73"
+   ],
+   "file": "routes/reports.js",
+   "location": {
+    "start_line": 10,
+    "end_line": 10
+   },
+   "description": "Vulnerable: path traversal"
+  },
+  {
+   "id": "fastify-b-28",
+   "is_vulnerable": true,
+   "vulnerability_class": "path",
+   "primary_cwe": "CWE-22",
+   "acceptable_cwes": [
+    "CWE-22",
+    "CWE-23",
+    "CWE-36",
+    "CWE-73"
+   ],
+   "file": "routes/reports.js",
+   "location": {
+    "start_line": 15,
+    "end_line": 15
+   },
+   "description": "Vulnerable: path traversal"
+  },
+  {
+   "id": "fastify-b-29",
+   "is_vulnerable": false,
+   "vulnerability_class": "path",
+   "primary_cwe": "CWE-22",
+   "acceptable_cwes": [
+    "CWE-22",
+    "CWE-23",
+    "CWE-36",
+    "CWE-73"
+   ],
+   "file": "routes/reports.js",
+   "location": {
+    "start_line": 23,
+    "end_line": 23
+   },
+   "description": "Safe look-alike: path traversal"
+  },
+  {
+   "id": "fastify-b-30",
+   "is_vulnerable": true,
+   "vulnerability_class": "ssrf",
+   "primary_cwe": "CWE-918",
+   "acceptable_cwes": [
+    "CWE-918",
+    "CWE-441"
+   ],
+   "file": "routes/webhooks.js",
+   "location": {
+    "start_line": 9,
+    "end_line": 9
+   },
+   "description": "Vulnerable: server-side request forgery"
+  },
+  {
+   "id": "fastify-b-31",
+   "is_vulnerable": true,
+   "vulnerability_class": "ssrf",
+   "primary_cwe": "CWE-918",
+   "acceptable_cwes": [
+    "CWE-918",
+    "CWE-441"
+   ],
+   "file": "routes/webhooks.js",
+   "location": {
+    "start_line": 14,
+    "end_line": 14
+   },
+   "description": "Vulnerable: server-side request forgery"
+  },
+  {
+   "id": "fastify-b-32",
+   "is_vulnerable": false,
+   "vulnerability_class": "ssrf",
+   "primary_cwe": "CWE-918",
+   "acceptable_cwes": [
+    "CWE-918",
+    "CWE-441"
+   ],
+   "file": "routes/webhooks.js",
+   "location": {
+    "start_line": 19,
+    "end_line": 19
+   },
+   "description": "Safe look-alike: server-side request forgery"
+  },
+  {
+   "id": "fastify-b-33",
+   "is_vulnerable": false,
+   "vulnerability_class": "ssrf",
+   "primary_cwe": "CWE-918",
+   "acceptable_cwes": [
+    "CWE-918",
+    "CWE-441"
+   ],
+   "file": "routes/webhooks.js",
+   "location": {
+    "start_line": 28,
+    "end_line": 28
+   },
+   "description": "Safe look-alike: server-side request forgery"
+  },
+  {
+   "id": "fastify-b-34",
+   "is_vulnerable": false,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "views/order.hbs",
+   "location": {
+    "start_line": 2,
+    "end_line": 2
+   },
+   "description": "Safe look-alike: cross-site scripting"
+  },
+  {
+   "id": "fastify-b-35",
+   "is_vulnerable": false,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "views/order.hbs",
+   "location": {
+    "start_line": 3,
+    "end_line": 3
+   },
+   "description": "Safe look-alike: cross-site scripting"
+  },
+  {
+   "id": "fastify-b-36",
+   "is_vulnerable": true,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "views/order.hbs",
+   "location": {
+    "start_line": 4,
+    "end_line": 4
+   },
+   "description": "Vulnerable: cross-site scripting"
+  },
+  {
+   "id": "fastify-b-37",
+   "is_vulnerable": true,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "views/order.hbs",
+   "location": {
+    "start_line": 5,
+    "end_line": 5
+   },
+   "description": "Vulnerable: cross-site scripting"
+  }
+ ]
+}

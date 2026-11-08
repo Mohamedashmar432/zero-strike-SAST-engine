@@ -1,0 +1,15 @@
+@page
+@model TicketDesk.Pages.SearchModel
+
+<h1>Search</h1>
+<p class="echo">You searched for: @Html.Raw(Model.Query)</p>
+<p class="echo-safe">Query: @Model.Query</p>
+
+<ul>
+@foreach (var title in Model.Titles)
+{
+    <li>@title</li>
+}
+</ul>
+
+<div class="attachment">@Html.Raw(Model.Attachment)</div>

@@ -1,0 +1,17 @@
+@model NotesApi.Models.NoteListViewModel
+
+<h1>@Model.Title</h1>
+<p>Search results for @ViewBag.Term</p>
+
+@foreach (var note in Model.Notes)
+{
+    <article>
+        <h2>@note.Heading</h2>
+        <div class="body">@Html.Raw(note.BodyHtml)</div>
+    </article>
+}
+
+<script>
+    var term = '@Html.Raw(ViewBag.Term)';
+    var safeTerm = @Json.Serialize(ViewBag.Term);
+</script>

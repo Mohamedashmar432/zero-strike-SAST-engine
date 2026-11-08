@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Notes widget</title></head>
+<body>
+<div id="greeting"></div>
+<div id="status"></div>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  document.getElementById('greeting').innerHTML = 'Welcome ' + params.get('name');
+  document.write('<p>Section: ' + window.location.hash.slice(1) + '</p>');
+  document.getElementById('status').textContent = 'Ready for ' + params.get('name');
+</script>
+</body>
+</html>
