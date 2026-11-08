@@ -1,0 +1,557 @@
+{
+ "repo_url": "https://github.com/0c34/govwa",
+ "commit_sha": "4058f79f31eeb4a36d8f1e64bba1f0c899646e6f",
+ "findings": [
+  {
+   "id": "govwa-sqli-sql_injection-1",
+   "repo_file": "vulnerability/sqli/function.go",
+   "is_vulnerable": true,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564",
+    "CWE-943"
+   ],
+   "file": "vulnerability/sqli/function.go",
+   "location": {
+    "start_line": 37,
+    "end_line": 41
+   },
+   "description": "UnsafeQueryGetData: uid formatted into the query, then DB.Query (comment: here is the vulnerable query)"
+  },
+  {
+   "id": "govwa-sqli-sql_injection-2-safe",
+   "repo_file": "vulnerability/sqli/function.go",
+   "is_vulnerable": false,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564",
+    "CWE-943"
+   ],
+   "file": "vulnerability/sqli/function.go",
+   "location": {
+    "start_line": 69,
+    "end_line": 75
+   },
+   "description": "SafeQueryGetData: prepared statement (high level)"
+  },
+  {
+   "id": "govwa-sqli-information_exposure-1",
+   "repo_file": "vulnerability/sqli/sqli.go",
+   "is_vulnerable": true,
+   "vulnerability_class": "information_exposure",
+   "primary_cwe": "CWE-209",
+   "acceptable_cwes": [
+    "CWE-209",
+    "CWE-200",
+    "CWE-210",
+    "CWE-497"
+   ],
+   "file": "vulnerability/sqli/sqli.go",
+   "location": {
+    "start_line": 51,
+    "end_line": 51
+   },
+   "description": "raw SQL error returned to the client (comment: this will return error query to client)"
+  },
+  {
+   "id": "govwa-idor-sql_injection-1-safe",
+   "repo_file": "vulnerability/idor/function.go",
+   "is_vulnerable": false,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564",
+    "CWE-943"
+   ],
+   "file": "vulnerability/idor/function.go",
+   "location": {
+    "start_line": 43,
+    "end_line": 49
+   },
+   "description": "GetData: prepared statement"
+  },
+  {
+   "id": "govwa-idor-sql_injection-2-safe",
+   "repo_file": "vulnerability/idor/function.go",
+   "is_vulnerable": false,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564",
+    "CWE-943"
+   ],
+   "file": "vulnerability/idor/function.go",
+   "location": {
+    "start_line": 66,
+    "end_line": 70
+   },
+   "description": "UpdateProfile: prepared statement"
+  },
+  {
+   "id": "govwa-login-sql_injection-1-safe",
+   "repo_file": "user/user.go",
+   "is_vulnerable": false,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564",
+    "CWE-943"
+   ],
+   "file": "user/user.go",
+   "location": {
+    "start_line": 149,
+    "end_line": 154
+   },
+   "description": "login query is prepared"
+  },
+  {
+   "id": "govwa-xss1-xss-1",
+   "repo_file": "vulnerability/xss/xss.go",
+   "is_vulnerable": true,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "vulnerability/xss/xss.go",
+   "location": {
+    "start_line": 58,
+    "end_line": 58
+   },
+   "description": "term converted to template.HTML after a bypassable script-tag filter"
+  },
+  {
+   "id": "govwa-xss1-xss-2",
+   "repo_file": "vulnerability/xss/xss.go",
+   "is_vulnerable": true,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "vulnerability/xss/xss.go",
+   "location": {
+    "start_line": 59,
+    "end_line": 59
+   },
+   "description": "comment: vulnerable function"
+  },
+  {
+   "id": "govwa-xss1-xss-3",
+   "repo_file": "vulnerability/xss/xss.go",
+   "is_vulnerable": true,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "vulnerability/xss/xss.go",
+   "location": {
+    "start_line": 62,
+    "end_line": 62
+   },
+   "description": "xss1: vulnerable xss sink"
+  },
+  {
+   "id": "govwa-xss1-xss-4",
+   "repo_file": "vulnerability/xss/xss.go",
+   "is_vulnerable": true,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "vulnerability/xss/xss.go",
+   "location": {
+    "start_line": 63,
+    "end_line": 63
+   },
+   "description": "xss1: vulnerable xss sink"
+  },
+  {
+   "id": "govwa-xss2-xss-1",
+   "repo_file": "vulnerability/xss/xss.go",
+   "is_vulnerable": true,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "vulnerability/xss/xss.go",
+   "location": {
+    "start_line": 96,
+    "end_line": 100
+   },
+   "description": "request uid written into an inline script and rendered as template.HTML (comment: here is the mistake)"
+  },
+  {
+   "id": "govwa-xss1-xss-5-safe",
+   "repo_file": "vulnerability/xss/xss.go",
+   "is_vulnerable": false,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "vulnerability/xss/xss.go",
+   "location": {
+    "start_line": 42,
+    "end_line": 42
+   },
+   "description": "high level escapes the term"
+  },
+  {
+   "id": "govwa-xss2-xss-2-safe",
+   "repo_file": "vulnerability/xss/xss.go",
+   "is_vulnerable": false,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "vulnerability/xss/xss.go",
+   "location": {
+    "start_line": 77,
+    "end_line": 77
+   },
+   "description": "high level escapes the uid"
+  },
+  {
+   "id": "govwa-idor1-idor-1",
+   "repo_file": "vulnerability/idor/idor.go",
+   "is_vulnerable": true,
+   "vulnerability_class": "idor",
+   "primary_cwe": "CWE-639",
+   "acceptable_cwes": [
+    "CWE-639",
+    "CWE-284",
+    "CWE-285",
+    "CWE-345",
+    "CWE-566",
+    "CWE-863"
+   ],
+   "file": "vulnerability/idor/idor.go",
+   "location": {
+    "start_line": 94,
+    "end_line": 106
+   },
+   "description": "level low: the uid and the Uid cookie both come from the client, so any user id can be updated"
+  },
+  {
+   "id": "govwa-idor2-idor-1",
+   "repo_file": "vulnerability/idor/idor.go",
+   "is_vulnerable": true,
+   "vulnerability_class": "idor",
+   "primary_cwe": "CWE-639",
+   "acceptable_cwes": [
+    "CWE-639",
+    "CWE-284",
+    "CWE-285",
+    "CWE-345",
+    "CWE-566",
+    "CWE-863"
+   ],
+   "file": "vulnerability/idor/idor.go",
+   "location": {
+    "start_line": 138,
+    "end_line": 150
+   },
+   "description": "level low: the signature is MD5 of the client-supplied uid, so it can be forged"
+  },
+  {
+   "id": "govwa-idor2-weak_hash-1",
+   "repo_file": "vulnerability/idor/idor.go",
+   "is_vulnerable": true,
+   "vulnerability_class": "weak_hash",
+   "primary_cwe": "CWE-328",
+   "acceptable_cwes": [
+    "CWE-328",
+    "CWE-327",
+    "CWE-916",
+    "CWE-759"
+   ],
+   "file": "vulnerability/idor/idor.go",
+   "location": {
+    "start_line": 164,
+    "end_line": 164
+   },
+   "description": "MD5 used as the IDOR integrity signature"
+  },
+  {
+   "id": "govwa-csa-hardcoded_secret-1",
+   "repo_file": "vulnerability/csa/csa.go",
+   "is_vulnerable": true,
+   "vulnerability_class": "hardcoded_secret",
+   "primary_cwe": "CWE-798",
+   "acceptable_cwes": [
+    "CWE-798",
+    "CWE-259",
+    "CWE-321",
+    "CWE-547",
+    "CWE-615"
+   ],
+   "file": "vulnerability/csa/csa.go",
+   "location": {
+    "start_line": 49,
+    "end_line": 49
+   },
+   "description": "hardcoded OTP digest"
+  },
+  {
+   "id": "govwa-csa-weak_hash-1",
+   "repo_file": "vulnerability/csa/csa.go",
+   "is_vulnerable": true,
+   "vulnerability_class": "weak_hash",
+   "primary_cwe": "CWE-328",
+   "acceptable_cwes": [
+    "CWE-328",
+    "CWE-327",
+    "CWE-916",
+    "CWE-759"
+   ],
+   "file": "vulnerability/csa/csa.go",
+   "location": {
+    "start_line": 62,
+    "end_line": 62
+   },
+   "description": "OTP compared as unsalted MD5"
+  },
+  {
+   "id": "govwa-login-weak_hash-1",
+   "repo_file": "user/user.go",
+   "is_vulnerable": true,
+   "vulnerability_class": "weak_hash",
+   "primary_cwe": "CWE-328",
+   "acceptable_cwes": [
+    "CWE-328",
+    "CWE-327",
+    "CWE-916",
+    "CWE-759"
+   ],
+   "file": "user/user.go",
+   "location": {
+    "start_line": 88,
+    "end_line": 88
+   },
+   "description": "passwords stored as unsalted MD5"
+  },
+  {
+   "id": "govwa-login-hardcoded_secret-1",
+   "repo_file": "user/user.go",
+   "is_vulnerable": true,
+   "vulnerability_class": "hardcoded_secret",
+   "primary_cwe": "CWE-798",
+   "acceptable_cwes": [
+    "CWE-798",
+    "CWE-259",
+    "CWE-321",
+    "CWE-547",
+    "CWE-615"
+   ],
+   "file": "user/user.go",
+   "location": {
+    "start_line": 23,
+    "end_line": 27
+   },
+   "description": "default credentials documented in a source comment"
+  },
+  {
+   "id": "govwa-setup-hardcoded_secret-1",
+   "repo_file": "setup/function.go",
+   "is_vulnerable": true,
+   "vulnerability_class": "hardcoded_secret",
+   "primary_cwe": "CWE-798",
+   "acceptable_cwes": [
+    "CWE-798",
+    "CWE-259",
+    "CWE-321",
+    "CWE-547",
+    "CWE-615"
+   ],
+   "file": "setup/function.go",
+   "location": {
+    "start_line": 19,
+    "end_line": 19
+   },
+   "description": "default users with MD5 password digests seeded by setup"
+  },
+  {
+   "id": "govwa-session-insecure_cookie-1",
+   "repo_file": "user/session/session.go",
+   "is_vulnerable": true,
+   "vulnerability_class": "insecure_cookie",
+   "primary_cwe": "CWE-1004",
+   "acceptable_cwes": [
+    "CWE-1004",
+    "CWE-614",
+    "CWE-732"
+   ],
+   "file": "user/session/session.go",
+   "location": {
+    "start_line": 31,
+    "end_line": 31
+   },
+   "description": "session cookie HttpOnly deliberately false, no Secure flag"
+  },
+  {
+   "id": "govwa-session-insecure_cookie-2",
+   "repo_file": "user/session/session.go",
+   "is_vulnerable": true,
+   "vulnerability_class": "insecure_cookie",
+   "primary_cwe": "CWE-1004",
+   "acceptable_cwes": [
+    "CWE-1004",
+    "CWE-614",
+    "CWE-732"
+   ],
+   "file": "user/session/session.go",
+   "location": {
+    "start_line": 69,
+    "end_line": 69
+   },
+   "description": "delete-session options, HttpOnly false"
+  },
+  {
+   "id": "govwa-cookie-insecure_cookie-1",
+   "repo_file": "util/cookie.go",
+   "is_vulnerable": true,
+   "vulnerability_class": "insecure_cookie",
+   "primary_cwe": "CWE-1004",
+   "acceptable_cwes": [
+    "CWE-1004",
+    "CWE-614",
+    "CWE-732"
+   ],
+   "file": "util/cookie.go",
+   "location": {
+    "start_line": 32,
+    "end_line": 37
+   },
+   "description": "Level and Uid cookies set without HttpOnly or Secure"
+  },
+  {
+   "id": "govwa-config-hardcoded_secret-1",
+   "repo_file": "config/config.json",
+   "is_vulnerable": true,
+   "vulnerability_class": "hardcoded_secret",
+   "primary_cwe": "CWE-798",
+   "acceptable_cwes": [
+    "CWE-798",
+    "CWE-259",
+    "CWE-321",
+    "CWE-547",
+    "CWE-615"
+   ],
+   "file": "config/config.json",
+   "location": {
+    "start_line": 3,
+    "end_line": 3
+   },
+   "description": "database password in the shipped config"
+  },
+  {
+   "id": "govwa-config-hardcoded_secret-2",
+   "repo_file": "config/config.json",
+   "is_vulnerable": true,
+   "vulnerability_class": "hardcoded_secret",
+   "primary_cwe": "CWE-798",
+   "acceptable_cwes": [
+    "CWE-798",
+    "CWE-259",
+    "CWE-321",
+    "CWE-547",
+    "CWE-615"
+   ],
+   "file": "config/config.json",
+   "location": {
+    "start_line": 10,
+    "end_line": 10
+   },
+   "description": "session cookie signing key in the shipped config"
+  },
+  {
+   "id": "govwa-cors-permissive_cors-1",
+   "repo_file": "util/template.go",
+   "is_vulnerable": true,
+   "vulnerability_class": "permissive_cors",
+   "primary_cwe": "CWE-942",
+   "acceptable_cwes": [
+    "CWE-942",
+    "CWE-346",
+    "CWE-1385"
+   ],
+   "file": "util/template.go",
+   "location": {
+    "start_line": 26,
+    "end_line": 27
+   },
+   "description": "wildcard origin together with Allow-Credentials true"
+  },
+  {
+   "id": "govwa-setup-missing_authentication-1",
+   "repo_file": "setup/setup.go",
+   "is_vulnerable": true,
+   "vulnerability_class": "missing_authentication",
+   "primary_cwe": "CWE-306",
+   "acceptable_cwes": [
+    "CWE-306",
+    "CWE-862",
+    "CWE-284",
+    "CWE-285"
+   ],
+   "file": "setup/setup.go",
+   "location": {
+    "start_line": 26,
+    "end_line": 27
+   },
+   "description": "setup and database reset routes are registered without AuthCheck"
+  },
+  {
+   "id": "govwa-middleware-information_exposure-1",
+   "repo_file": "util/middleware/middleware.go",
+   "is_vulnerable": true,
+   "vulnerability_class": "information_exposure",
+   "primary_cwe": "CWE-209",
+   "acceptable_cwes": [
+    "CWE-209",
+    "CWE-200",
+    "CWE-210",
+    "CWE-497"
+   ],
+   "file": "util/middleware/middleware.go",
+   "location": {
+    "start_line": 58,
+    "end_line": 58
+   },
+   "description": "recovered panic message returned to the client"
+  }
+ ]
+}

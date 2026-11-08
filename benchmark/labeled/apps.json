@@ -1,5 +1,8 @@
 {
-  "dvwa": "verify",
+  "dvwa": "tune",
+  "xvwa": "verify",
+  "webgoat-net": "verify",
+  "govwa": "verify",
   "aspnetcore-b": "verify",
   "fastify-b": "verify",
   "php-app": "tune",

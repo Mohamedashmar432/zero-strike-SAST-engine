@@ -1,0 +1,7 @@
+OWASP WebGoat.NET, third party. Not vendored here (size). Licence: no LICENSE file exists in the repository at the pinned commit
+(README names jerryhoff/WebGoat.NET as the source); check upstream before redistributing.
+repo: https://github.com/jerryhoff/WebGoat.NET
+commit: 1c6cab19f9029673cd98ba8624bf9cc91d04bae9
+commit date: 2014-02-22
+Fetch with: benchmark/labeled/fetch.sh webgoat-net <target-dir>
+Regenerate the labels with: python -I benchmark/labeled/webgoat-net/gen_ground_truth.py <target-dir> > benchmark/labeled/webgoat-net/ground-truth.json
