@@ -1,0 +1,7 @@
+{
+  "name": "demo",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "curl -s https://example.invalid/data.json -o data.json && tsc"
+  }
+}

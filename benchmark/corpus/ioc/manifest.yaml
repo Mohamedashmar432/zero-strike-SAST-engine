@@ -1,0 +1,247 @@
+version: "1"
+ioc_feed: feed.txt
+cases:
+  - file: cases/ZS-IOC-001/pos-postinstall-curl-sh/package.json
+    expect: [{rule_id: ZS-IOC-001, min_count: 1}]
+  - file: cases/ZS-IOC-001/pos-preinstall-wget/package.json
+    expect: [{rule_id: ZS-IOC-001, min_count: 1}]
+  - file: cases/ZS-IOC-001/pos-install-node-e-base64/package.json
+    expect: [{rule_id: ZS-IOC-001, min_count: 1}]
+  - file: cases/ZS-IOC-001/pos-prepare-trufflehog/package.json
+    expect: [{rule_id: ZS-IOC-001, min_count: 1}]
+  - file: cases/ZS-IOC-001/pos-postinstall-powershell-iwr/package.json
+    expect: [{rule_id: ZS-IOC-001, min_count: 1}]
+  - file: cases/ZS-IOC-001/pos-composer-post-install/composer.json
+    expect: [{rule_id: ZS-IOC-001, min_count: 1}]
+  - file: cases/ZS-IOC-001/pos-setup-py-install-class/setup.py
+    expect: [{rule_id: ZS-IOC-001, min_count: 1}, {rule_id: ZS-PY-005, min_count: 1}]
+  - file: cases/ZS-IOC-001/neg-postinstall-node-gyp/package.json
+    expect: []
+  - file: cases/ZS-IOC-001/neg-prepare-husky/package.json
+    expect: []
+  - file: cases/ZS-IOC-001/neg-prepare-tsc/package.json
+    expect: []
+  - file: cases/ZS-IOC-001/neg-postinstall-local-script/package.json
+    expect: []
+  - file: cases/ZS-IOC-001/neg-build-script-with-curl/package.json
+    expect: []
+  - file: cases/ZS-IOC-001/neg-postinstall-patch-package/package.json
+    expect: []
+  - file: cases/ZS-IOC-001/neg-composer-artisan/composer.json
+    expect: []
+  - file: cases/ZS-IOC-001/neg-setup-py-git-describe/setup.py
+    expect: []
+  - file: cases/ZS-IOC-002/pos-php-gzinflate-chain/loader.php
+    expect: [{rule_id: ZS-IOC-002, min_count: 1}]
+  - file: cases/ZS-IOC-002/pos-php-long-literal-var/loader.php
+    expect: [{rule_id: ZS-IOC-002, min_count: 1}]
+  - file: cases/ZS-IOC-002/pos-js-new-function-atob/loader.js
+    expect: [{rule_id: ZS-IOC-002, min_count: 1}]
+  - file: cases/ZS-IOC-002/pos-js-eval-buffer-base64/loader.js
+    expect: [{rule_id: ZS-IOC-002, min_count: 1}]
+  - file: cases/ZS-IOC-002/pos-py-exec-zlib-b64-chain/loader.py
+    expect: [{rule_id: ZS-IOC-002, min_count: 1}, {rule_id: ZS-PY-033, min_count: 1}]
+  - file: cases/ZS-IOC-002/pos-py-exec-b64-long/loader.py
+    expect: [{rule_id: ZS-IOC-002, min_count: 1}, {rule_id: ZS-PY-033, min_count: 1}]
+  - file: cases/ZS-IOC-002/pos-js-vm-run-atob/loader.js
+    expect: [{rule_id: ZS-IOC-002, min_count: 1}]
+  - file: cases/ZS-IOC-002/pos-php-assert-b64-long/loader.php
+    expect: [{rule_id: ZS-IOC-002, min_count: 1}]
+  - file: cases/ZS-IOC-002/neg-js-atob-no-executor/app.js
+    expect: []
+  - file: cases/ZS-IOC-002/neg-js-regex-exec-member/app.js
+    expect: []
+  - file: cases/ZS-IOC-002/neg-py-eval-plain/app.py
+    expect: [{rule_id: ZS-PY-001, min_count: 1}]
+  - file: cases/ZS-IOC-002/neg-php-decode-echo/app.php
+    expect: []
+  - file: cases/ZS-IOC-002/neg-js-short-single-decoder/app.js
+    expect: []
+  - file: cases/ZS-IOC-002/neg-py-exec-compile/app.py
+    expect: [{rule_id: ZS-PY-033, min_count: 1}]
+  - file: cases/ZS-IOC-002/neg-js-child-process-exec/app.js
+    expect: []
+  - file: cases/ZS-IOC-002/neg-py-embedded-font-not-executed/app.py
+    expect: []
+  - file: cases/ZS-IOC-002/neg-docs-path-loader/docs/loader.php
+    expect: []
+  - file: cases/ZS-IOC-002/neg-tests-path-loader/tests/loader.js
+    expect: []
+  - file: cases/ZS-IOC-003/pos-php-eval-post/shell.php
+    expect: [{rule_id: ZS-IOC-003, min_count: 1}]
+  - file: cases/ZS-IOC-003/pos-php-system-get/shell.php
+    expect: [{rule_id: ZS-IOC-003, min_count: 1}]
+  - file: cases/ZS-IOC-003/pos-php-assert-request/shell.php
+    expect: [{rule_id: ZS-IOC-003, min_count: 1}]
+  - file: cases/ZS-IOC-003/pos-php-passthru-b64/shell.php
+    expect: [{rule_id: ZS-IOC-003, min_count: 1}]
+  - file: cases/ZS-IOC-003/pos-php-preg-replace-e/shell.php
+    expect: [{rule_id: ZS-IOC-003, min_count: 1}]
+  - file: cases/ZS-IOC-003/pos-aspx-eval-request/shell.aspx
+    expect: [{rule_id: ZS-IOC-003, min_count: 1}]
+  - file: cases/ZS-IOC-003/pos-jsp-runtime-exec/shell.jsp
+    expect: [{rule_id: ZS-IOC-003, min_count: 1}]
+  - file: cases/ZS-IOC-003/pos-php-variable-function/shell.php
+    expect: [{rule_id: ZS-IOC-003, min_count: 1}]
+  - file: cases/ZS-IOC-003/neg-php-echo-escaped/page.php
+    expect: []
+  - file: cases/ZS-IOC-003/neg-php-escapeshellarg/page.php
+    expect: []
+  - file: cases/ZS-IOC-003/neg-php-system-literal/page.php
+    expect: []
+  - file: cases/ZS-IOC-003/neg-php-eval-literal/page.php
+    expect: []
+  - file: cases/ZS-IOC-003/neg-php-test-double-assert/page.php
+    expect: []
+  - file: cases/ZS-IOC-003/neg-php-exec-literal/page.php
+    expect: []
+  - file: cases/ZS-IOC-003/neg-aspx-plain-request/page.aspx
+    expect: []
+  - file: cases/ZS-IOC-003/neg-jsp-println-param/page.jsp
+    expect: []
+  - file: cases/ZS-IOC-003/neg-php-large-app-file/app.php
+    expect: []
+  - file: cases/ZS-IOC-004/pos-sh-bash-dev-tcp/run.sh
+    expect: [{rule_id: ZS-IOC-004, min_count: 1}]
+  - file: cases/ZS-IOC-004/pos-sh-nc-e/run.sh
+    expect: [{rule_id: ZS-IOC-004, min_count: 1}]
+  - file: cases/ZS-IOC-004/pos-sh-mkfifo-nc/run.sh
+    expect: [{rule_id: ZS-IOC-004, min_count: 1}]
+  - file: cases/ZS-IOC-004/pos-sh-socat-exec/run.sh
+    expect: [{rule_id: ZS-IOC-004, min_count: 1}]
+  - file: cases/ZS-IOC-004/pos-py-pty-spawn/run.py
+    expect: [{rule_id: ZS-IOC-004, min_count: 1}]
+  - file: cases/ZS-IOC-004/pos-py-dup2-subprocess/run.py
+    expect: [{rule_id: ZS-IOC-004, min_count: 1}]
+  - file: cases/ZS-IOC-004/pos-ps1-tcpclient-iex/run.ps1
+    expect: [{rule_id: ZS-IOC-004, min_count: 1}]
+  - file: cases/ZS-IOC-004/pos-dockerfile-bash-dev-tcp/Dockerfile
+    expect: [{rule_id: ZS-IOC-004, min_count: 1}]
+  - file: cases/ZS-IOC-004/neg-sh-wait-for-port/wait.sh
+    expect: []
+  - file: cases/ZS-IOC-004/neg-sh-dev-tcp-fd-check/check.sh
+    expect: []
+  - file: cases/ZS-IOC-004/neg-py-plain-socket-client/client.py
+    expect: []
+  - file: cases/ZS-IOC-004/neg-sh-nc-port-probe/probe.sh
+    expect: []
+  - file: cases/ZS-IOC-004/neg-sh-socat-proxy/proxy.sh
+    expect: []
+  - file: cases/ZS-IOC-004/neg-ps1-tcp-port-test/probe.ps1
+    expect: []
+  - file: cases/ZS-IOC-004/neg-py-dup2-daemonize-no-socket/daemon.py
+    expect: []
+  - file: cases/ZS-IOC-004/neg-docs-path-notes/docs/notes.sh
+    expect: []
+  - file: cases/ZS-IOC-005/pos-json-miner-config/config.json
+    expect: [{rule_id: ZS-IOC-005, min_count: 1}]
+  - file: cases/ZS-IOC-005/pos-sh-xmrig-run/run.sh
+    expect: [{rule_id: ZS-IOC-005, min_count: 1}]
+  - file: cases/ZS-IOC-005/pos-py-stratum-tcp/miner.py
+    expect: [{rule_id: ZS-IOC-005, min_count: 1}]
+  - file: cases/ZS-IOC-005/pos-sh-xmrig-download/get.sh
+    expect: [{rule_id: ZS-IOC-005, min_count: 1}]
+  - file: cases/ZS-IOC-005/pos-sh-chmod-miner/run.sh
+    expect: [{rule_id: ZS-IOC-005, min_count: 1}]
+  - file: cases/ZS-IOC-005/pos-js-stratum-ssl/miner.js
+    expect: [{rule_id: ZS-IOC-005, min_count: 1}]
+  - file: cases/ZS-IOC-005/pos-sh-cpuminer-url/run.sh
+    expect: [{rule_id: ZS-IOC-005, min_count: 1}]
+  - file: cases/ZS-IOC-005/neg-js-stratum-word/app.js
+    expect: []
+  - file: cases/ZS-IOC-005/neg-py-miner-word/app.py
+    expect: []
+  - file: cases/ZS-IOC-005/neg-json-db-pools/config.json
+    expect: []
+  - file: cases/ZS-IOC-005/neg-sh-blocklist-names/scan.sh
+    expect: []
+  - file: cases/ZS-IOC-005/neg-py-stratum-hostname/app.py
+    expect: []
+  - file: cases/ZS-IOC-005/neg-docs-path-stratum/docs/setup.md
+    expect: []
+  - file: cases/ZS-IOC-005/neg-tests-path-stratum/tests/pool.js
+    expect: []
+  - file: cases/ZS-IOC-006/pos-js-webhook-site/send.js
+    expect: [{rule_id: ZS-IOC-006, min_count: 1}]
+  - file: cases/ZS-IOC-006/pos-py-ngrok-subdomain/send.py
+    expect: [{rule_id: ZS-IOC-006, min_count: 1}]
+  - file: cases/ZS-IOC-006/pos-php-pipedream/send.php
+    expect: [{rule_id: ZS-IOC-006, min_count: 1}]
+  - file: cases/ZS-IOC-006/pos-js-discord-webhook/notify.js
+    expect: [{rule_id: ZS-IOC-006, min_count: 1}]
+  - file: cases/ZS-IOC-006/pos-py-telegram-bot/notify.py
+    expect: [{rule_id: ZS-IOC-006, min_count: 1}]
+  - file: cases/ZS-IOC-006/pos-sh-curl-oast/send.sh
+    expect: [{rule_id: ZS-IOC-006, min_count: 1}]
+  - file: cases/ZS-IOC-006/pos-go-interactsh/send.go
+    expect: [{rule_id: ZS-IOC-006, min_count: 1}]
+  - file: cases/ZS-IOC-006/pos-js-burp-collaborator/send.js
+    expect: [{rule_id: ZS-IOC-006, min_count: 1}]
+  - file: cases/ZS-IOC-006/neg-tests-path/tests/send.js
+    expect: []
+  - file: cases/ZS-IOC-006/neg-docs-path/docs/send.js
+    expect: []
+  - file: cases/ZS-IOC-006/neg-comment-line/app.js
+    expect: []
+  - file: cases/ZS-IOC-006/neg-lookalike-host/app.js
+    expect: []
+  - file: cases/ZS-IOC-006/neg-ordinary-api/app.js
+    expect: []
+  - file: cases/ZS-IOC-006/neg-domain-not-a-url/app.js
+    expect: []
+  - file: cases/ZS-IOC-006/neg-config-file-not-source/config.yml
+    expect: []
+  - file: cases/ZS-IOC-006/neg-discord-channel-link/app.py
+    expect: []
+  - file: cases/ZS-IOC-007/pos-js-domain/app.js
+    expect: [{rule_id: ZS-IOC-007, min_count: 1}]
+  - file: cases/ZS-IOC-007/pos-py-domain-constant/app.py
+    expect: [{rule_id: ZS-IOC-007, min_count: 1}]
+  - file: cases/ZS-IOC-007/pos-sh-ip-url/run.sh
+    expect: [{rule_id: ZS-IOC-007, min_count: 1}]
+  - file: cases/ZS-IOC-007/pos-yaml-url/config.yml
+    expect: [{rule_id: ZS-IOC-007, min_count: 1}]
+  - file: cases/ZS-IOC-007/pos-file-hash/payload.dat
+    expect: [{rule_id: ZS-IOC-007, min_count: 1}]
+  - file: cases/ZS-IOC-007/pos-json-domain-value/config.json
+    expect: [{rule_id: ZS-IOC-007, min_count: 1}]
+  - file: cases/ZS-IOC-007/neg-lookalike-domain-prefix/app.js
+    expect: []
+  - file: cases/ZS-IOC-007/neg-ip-digit-before/run.sh
+    expect: []
+  - file: cases/ZS-IOC-007/neg-bare-identifier/app.js
+    expect: []
+  - file: cases/ZS-IOC-007/neg-domain-longer-host/app.js
+    expect: []
+  - file: cases/ZS-IOC-007/neg-other-file-content/other.dat
+    expect: []
+  - file: cases/ZS-IOC-007/neg-ip-prefix-only/run.sh
+    expect: []
+  - file: cases/ZS-IOC-008/pos-tj-actions-tag/.github/workflows/ci.yml
+    expect: [{rule_id: ZS-IOC-008, min_count: 1}]
+  - file: cases/ZS-IOC-008/pos-tj-actions-branch/.github/workflows/ci.yml
+    expect: [{rule_id: ZS-IOC-008, min_count: 1}]
+  - file: cases/ZS-IOC-008/pos-reviewdog-setup/.github/workflows/ci.yml
+    expect: [{rule_id: ZS-IOC-008, min_count: 1}]
+  - file: cases/ZS-IOC-008/pos-tj-actions-patch-tag/.github/workflows/ci.yml
+    expect: [{rule_id: ZS-IOC-008, min_count: 1}]
+  - file: cases/ZS-IOC-008/pos-tj-actions-quoted/.github/workflows/ci.yml
+    expect: [{rule_id: ZS-IOC-008, min_count: 1}]
+  - file: cases/ZS-IOC-008/pos-reviewdog-subpath/.github/workflows/ci.yml
+    expect: [{rule_id: ZS-IOC-008, min_count: 1}]
+  - file: cases/ZS-IOC-008/neg-pinned-sha/.github/workflows/ci.yml
+    expect: []
+  - file: cases/ZS-IOC-008/neg-checkout/.github/workflows/ci.yml
+    expect: []
+  - file: cases/ZS-IOC-008/neg-local-action/.github/workflows/ci.yml
+    expect: []
+  - file: cases/ZS-IOC-008/neg-docker-image/.github/workflows/ci.yml
+    expect: []
+  - file: cases/ZS-IOC-008/neg-commented-out/.github/workflows/ci.yml
+    expect: []
+  - file: cases/ZS-IOC-008/neg-other-tj-repo/.github/workflows/ci.yml
+    expect: []
+  - file: cases/ZS-IOC-008/neg-other-reviewdog-repo/.github/workflows/ci.yml
+    expect: []
+  - file: cases/ZS-IOC-008/neg-not-a-workflow-path/ci/pipeline.yml
+    expect: []

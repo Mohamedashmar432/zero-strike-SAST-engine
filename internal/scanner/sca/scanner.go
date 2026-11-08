@@ -172,7 +172,29 @@ func (s *SCAScanner) scanDeps(ctx context.Context, deps []Dependency) ([]core.Fi
 			adv.Severity,
 			adv.Confidence,
 		)
+		// OpenSSF malicious-packages records (OSV ids beginning "MAL-") are not
+		// vulnerabilities in a package, the package itself is the attack. They are
+		// always Critical and carry an ioc marker so IOC summaries pick them up
+		// without a second lookup.
+		if isMaliciousAdvisory(adv.ID, adv.AliasIDs) {
+			f.Severity = core.SeverityCritical
+			f.Metadata = map[string]string{"ioc": "malicious-package"}
+		}
 		out = append(out, f)
 	}
 	return out, nil, nil
+}
+
+// isMaliciousAdvisory reports whether any of the advisory's ids is an OpenSSF
+// malicious-packages record ("MAL-...").
+func isMaliciousAdvisory(id string, aliases []string) bool {
+	if strings.HasPrefix(id, "MAL-") {
+		return true
+	}
+	for _, a := range aliases {
+		if strings.HasPrefix(a, "MAL-") {
+			return true
+		}
+	}
+	return false
 }

@@ -21,6 +21,7 @@ import (
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/scanner/framework"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/scanner/sast"
 	scascan "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/scanner/sca"
+	iocscan "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/scanner/ioc"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/scanner/secrets"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/version"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/walker"
@@ -117,6 +118,16 @@ func New(cfg ScanConfig) (*ScanPipeline, error) {
 	}
 	if cfg.EnableFrameworkChecks {
 		scanners = append(scanners, framework.New(cfg.RootPath))
+	}
+	if cfg.IOCFeed != "" && !cfg.EnableIOC {
+		return nil, fmt.Errorf("pipeline: an IOC feed was given but the IOC scanner is not enabled")
+	}
+	if cfg.EnableIOC {
+		iocScanner, err := iocscan.New(iocscan.Options{Root: cfg.RootPath, FeedPath: cfg.IOCFeed})
+		if err != nil {
+			return nil, err
+		}
+		scanners = append(scanners, iocScanner)
 	}
 
 	// Load allowlist: explicit path, or auto-discover .zs-allow.yaml at root.

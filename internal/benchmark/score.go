@@ -88,6 +88,8 @@ func ScoreCorpus(ctx context.Context, dirs []CorpusDir, enableGraphs bool) (*Sum
 			RootPath:              dir.Dir,
 			EnableSecrets:         true,
 			EnableSCA:             true,
+			EnableIOC:             true,
+			IOCFeed:               iocFeedPath(dir),
 			EnableFrameworkChecks: true,
 			EnableGraphs:          enableGraphs,
 			SCAOnError:            "warn",
@@ -243,7 +245,17 @@ func expectationKind(exp Expectation) core.FindingKind {
 		return core.FindingKindSecret
 	case strings.HasPrefix(exp.RuleID, "ZS-CFG-"):
 		return core.FindingKindConfig
+	case strings.HasPrefix(exp.RuleID, "ZS-IOC-"):
+		return core.FindingKindIOC
 	default:
 		return core.FindingKindSAST
 	}
+}
+
+// iocFeedPath resolves a manifest's ioc_feed against its corpus directory.
+func iocFeedPath(dir CorpusDir) string {
+	if dir.Manifest.IOCFeed == "" {
+		return ""
+	}
+	return filepath.Join(dir.Dir, dir.Manifest.IOCFeed)
 }

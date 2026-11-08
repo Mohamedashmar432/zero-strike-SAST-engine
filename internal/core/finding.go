@@ -28,6 +28,11 @@ const (
 	FindingKindSecret FindingKind = "secret"
 	FindingKindSCA    FindingKind = "sca"
 	FindingKindConfig FindingKind = "config"
+	// FindingKindIOC marks an indicator of compromise: signs that malicious
+	// code is already present (install-time downloaders, web shells, miners),
+	// as opposed to a weakness a developer wrote by mistake. Emitted only with
+	// --enable-ioc.
+	FindingKindIOC FindingKind = "ioc"
 )
 
 // Tier separates exploitable security weaknesses from hardening advice and
