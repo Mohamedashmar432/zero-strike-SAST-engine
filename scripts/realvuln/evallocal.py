@@ -77,7 +77,10 @@ for app in apps:
     sc = [e for e in ents if e.get("scoring") != "non_scoring"]; ns = [e for e in ents if e.get("scoring") == "non_scoring"]
     if not os.path.exists(out): print(app, "NO REPORT"); continue
     rep = json.load(open(out, encoding="utf-8")); root = (rep.get("RootPath") or "").replace("\\", "/").rstrip("/")
-    used = set(); tp = fp = 0
+    used = set(); tp = fp = 0; unscored = 0
+    # DVWA is labeled only in the modules that have a single-line sink, so a finding in a file with no label at all is
+    # unknown rather than wrong: it is counted as unscored instead of as a false positive. Self-built apps are fully labeled.
+    labeled_files = {e["file"] for e in ents} if app == "dvwa" else None
     for x in rep.get("Findings") or []:
         fl = x["Location"]["File"].replace("\\", "/")
         p = norm(fl[len(root) + 1:] if root and fl.startswith(root + "/") else fl)
@@ -94,12 +97,13 @@ for app in apps:
                     FPS.append(dict(repo=app, rule=rid, file=p, line=f["line"], label=b["id"], snippet=((x.get("Evidence") or [{}])[0].get("Snippet") or "")[:160].strip()))
                 continue
             if f["line"] is not None and any(where(f, e) for e in ns): continue
+            if labeled_files is not None and p not in labeled_files: unscored += 1; continue
             fp += 1; rules[rid]["fp"] += 1; bump("fp", lang(p), split)
             FPS.append(dict(repo=app, rule=rid, file=p, line=f["line"], label=None, snippet=((x.get("Evidence") or [{}])[0].get("Snippet") or "")[:160].strip()))
     fn = 0
     for e in sc:
         if e["is_vulnerable"] and e["id"] not in used: fn += 1; bump("fn", lang(e["file"]), split)
-    print(app, f"[{split}]", dict(vulnerable_labels=sum(1 for e in sc if e["is_vulnerable"]), safe_labels=sum(1 for e in sc if not e["is_vulnerable"]), tp=tp, fp=fp, fn=fn))
+    print(app, f"[{split}]", dict(vulnerable_labels=sum(1 for e in sc if e["is_vulnerable"]), safe_labels=sum(1 for e in sc if not e["is_vulnerable"]), tp=tp, fp=fp, fn=fn, unscored=unscored))
 
 json.dump({k: dict(v) for k, v in rules.items()}, open(f"{WORK}/rules.json", "w"), indent=0)
 json.dump(FPS, open(f"{WORK}/fps.json", "w"), indent=0)
