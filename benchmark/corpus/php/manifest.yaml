@@ -128,3 +128,9 @@ cases:
   - file: cases/fw_laravel_safe_service.php
     language: php
     expect: []
+  - file: cases/safe_md5_checksum.php
+    language: php
+    expect: []
+  - file: cases/vuln_md5_password_variable.php
+    language: php
+    expect: [{rule_id: ZS-PHP-010, min_count: 1}]

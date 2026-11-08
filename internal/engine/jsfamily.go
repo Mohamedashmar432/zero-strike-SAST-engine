@@ -219,6 +219,8 @@ func phpTokenText(n *ir.IRNode) string {
 	switch n.Kind {
 	case ir.NodeKindLiteral, ir.NodeKindIdentifier:
 		return n.Text
+	case ir.NodeKindCall:
+		return calleeText(n) + "()"
 	}
 	if len(n.Children) == 0 {
 		return n.Text

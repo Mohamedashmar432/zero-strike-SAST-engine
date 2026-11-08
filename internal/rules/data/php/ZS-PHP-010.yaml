@@ -24,8 +24,9 @@ rationale: |
   be used for those cases.
 description: |
   Detects calls to md5(). md5() is a plain global PHP function, so this
-  rule matches unconditionally with no filters, the same shape as the
-  other bare-function sinks in this rule set.
+  rule matches any md5() call except one whose only argument is the result of
+  a file read, timestamp, id generator or serializer (ETag, cache key and
+  checksum shapes, which are not security uses).
 message: "Weak hash algorithm MD5 detected — use SHA-256 or stronger (or password_hash() for passwords)"
 references:
   - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
@@ -33,4 +34,13 @@ tags: [weak-crypto, md5, hash]
 match:
   kind: call
   callee: md5
+  filters:
+    # md5 over file contents, a timestamp, an id generator or a serialized
+    # structure is an ETag, cache key or checksum, not a secret or a password.
+    - not:
+        kind: call
+        filters:
+          - argument_matches_at:
+              index: 0
+              pattern: '^(file_get_contents|filemtime|filesize|uniqid|microtime|time|json_encode|serialize|var_export|spl_object_id)\(\)$'
 fix_suggestion: "Replace md5() with hash('sha256', ...) for integrity checks, or use password_hash()/password_verify() for password storage."
