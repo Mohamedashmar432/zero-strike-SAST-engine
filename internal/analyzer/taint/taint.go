@@ -61,6 +61,13 @@ type Result struct {
 	// honor_path_sanitizers filter treat it as clean.
 	PathSafe map[string]bool
 
+	// SQLSafe maps tainted variables neutralized for SQL sinks to SQLSafeQuoted
+	// or SQLSafeAny (see sqlsafe.go). Only rules with honor_sql_sanitizers read
+	// it, and only SQLSafeAny clears a variable: a quote-only escape protects the
+	// value where it is used inside quotes, which is decided when the variable is
+	// folded into a larger string.
+	SQLSafe map[string]int8
+
 	// ParamsOnly marks tainted variables whose only source is a
 	// string-valued one (Express req.params), directly or by propagation. A
 	// route parameter cannot carry a NoSQL operator object, so operator
@@ -117,9 +124,10 @@ func BuildContext(file *ir.IRFile, symbols symboltable.SymbolTable, dfg *graph.D
 	paths := make(map[string][]core.Location)
 	weak := make(map[string]bool)
 	pathSafe := make(map[string]bool)
+	sqlSafe := make(map[string]int8)
 	paramsOnly := make(map[string]bool)
 	if file == nil || file.Root == nil {
-		return Result{Tainted: tainted, Reasons: reasons, Paths: paths, Weak: weak, PathSafe: pathSafe, ParamsOnly: paramsOnly}
+		return Result{Tainted: tainted, Reasons: reasons, Paths: paths, Weak: weak, PathSafe: pathSafe, SQLSafe: sqlSafe, ParamsOnly: paramsOnly}
 	}
 	pats := patternsFor(file.Language)
 	fw := frameworkSeeding(file)
@@ -200,8 +208,10 @@ func BuildContext(file *ir.IRFile, symbols symboltable.SymbolTable, dfg *graph.D
 			}
 			verdict, reason, ref := assignmentTaintsLHS(n, pats, summaries, symbols, tainted)
 			aug, _ := n.Attrs["augmented"].(bool)
+			sc := sqlClass(n, pats, tainted, sqlSafe)
 			for _, name := range lhsNames(lhs) {
 				v, rs, rf := verdict, reason, ref
+				wasTainted := tainted[name]
 				if aug && !v && tainted[name] {
 					// Inherits the previous verdict; keep the previously
 					// recorded reason instead of overwriting with empty.
@@ -227,6 +237,12 @@ func BuildContext(file *ir.IRFile, symbols symboltable.SymbolTable, dfg *graph.D
 					} else {
 						delete(pathSafe, name)
 					}
+					// An augmented assignment keeps the old value, so it is SQL-safe only if that was.
+					if sc != 0 && !(aug && wasTainted && sqlSafe[name] != SQLSafeAny) {
+						sqlSafe[name] = sc
+					} else {
+						delete(sqlSafe, name)
+					}
 					if paramsOnlySource(n, pats, tainted, paramsOnly) {
 						paramsOnly[name] = true
 					} else {
@@ -244,6 +260,7 @@ func BuildContext(file *ir.IRFile, symbols symboltable.SymbolTable, dfg *graph.D
 					delete(paths, name)
 					delete(weak, name)
 					delete(pathSafe, name)
+					delete(sqlSafe, name)
 					delete(paramsOnly, name)
 				}
 			}
@@ -266,7 +283,7 @@ func BuildContext(file *ir.IRFile, symbols symboltable.SymbolTable, dfg *graph.D
 			walkAssignments()
 		}
 	}
-	res := Result{Tainted: tainted, Reasons: reasons, Paths: paths, Weak: weak, PathSafe: pathSafe, ParamsOnly: paramsOnly}
+	res := Result{Tainted: tainted, Reasons: reasons, Paths: paths, Weak: weak, PathSafe: pathSafe, SQLSafe: sqlSafe, ParamsOnly: paramsOnly}
 	if fw != nil {
 		res.FrameworkSources = fw.sources
 	}

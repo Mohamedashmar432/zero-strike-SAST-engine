@@ -140,6 +140,12 @@ type Filter struct {
 	// sanitizer list (see internal/analyzer/taint.Result.PathSafe).
 	HonorPathSanitizers bool
 
+	// HonorSQLSanitizers makes the TaintedArgument check treat a variable that
+	// went through a SQL-class neutralizer (a numeric cast, a hash, or a string
+	// escape used only inside quotes) as not tainted. SQL-only: those do not
+	// clear HTML taint (see internal/analyzer/taint.Result.SQLSafe).
+	HonorSQLSanitizers bool
+
 	// ExcludeParamsSource makes the TaintedArgument check ignore taint whose
 	// only source is Express req.params, which is always a string and so
 	// cannot carry a NoSQL operator object. For operator-injection rules;

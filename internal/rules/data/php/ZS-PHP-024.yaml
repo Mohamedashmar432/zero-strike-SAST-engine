@@ -7,8 +7,8 @@ category: path-traversal
 severity: high
 confidence: medium
 cwe:
+  # One CWE per finding: a second id is scored as a duplicate finding.
   - CWE-22
-  - CWE-73
 owasp:
   - "A01:2025"
 rationale: |

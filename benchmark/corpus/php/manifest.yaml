@@ -164,3 +164,24 @@ cases:
   - file: cases/public/legacy_search.php
     language: php
     expect: [{rule_id: ZS-PHP-002, min_count: 1}]
+  - file: cases/vuln_upload_client_name.php
+    language: php
+    expect: [{rule_id: ZS-PHP-036, min_count: 1}]
+  - file: cases/safe_upload_allowlist.php
+    language: php
+    expect: []
+  - file: cases/safe_sqli_neutralized.php
+    language: php
+    expect: []
+  - file: cases/vuln_sqli_escaped_unquoted.php
+    language: php
+    expect: [{rule_id: ZS-PHP-002, min_count: 1}]
+  - file: cases/safe_header_server_value.php
+    language: php
+    expect: []
+  - file: cases/vuln_header_http_host.php
+    language: php
+    expect: [{rule_id: ZS-PHP-015, min_count: 1}]
+  - file: cases/safe_path_generated_name.php
+    language: php
+    expect: []

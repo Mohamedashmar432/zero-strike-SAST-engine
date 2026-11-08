@@ -20,6 +20,8 @@ type fileCtx struct {
 	weak    map[string]bool
 	// pathSafe is the subset of tainted cleaned for file-path sinks only.
 	pathSafe map[string]bool
+	// sqlSafe is taint.Result.SQLSafe; see the honor_sql_sanitizers filter.
+	sqlSafe map[string]int8
 	// paramsOnly is the subset of tainted whose only source is string-valued
 	// (req.params); see taint.Result.ParamsOnly.
 	paramsOnly map[string]bool

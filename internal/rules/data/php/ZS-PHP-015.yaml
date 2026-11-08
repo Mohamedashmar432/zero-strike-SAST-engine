@@ -7,8 +7,9 @@ category: open-redirect
 severity: medium
 confidence: medium
 cwe:
+  # One CWE per finding: a second id is scored as a second, duplicate finding. CWE-601 is
+  # the Location redirect this rule exists for; header injection (CWE-113) is in the rationale.
   - CWE-601
-  - CWE-113
 owasp:
   - "A01:2025"
 rationale: |
