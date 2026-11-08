@@ -168,9 +168,19 @@ func extractAttrs(n *ir.IRNode, node *sitter.Node, source []byte) {
 				break
 			}
 		}
+		// Raw callee text (fastify.get) for framework entry-point detection
+		// (internal/fwdetect): the IR keeps no source text on inner nodes.
+		if fn := node.ChildByFieldName("function"); fn != nil && node.Type() == "call_expression" {
+			n.Attrs["callee_src"] = calleeSrc(fn.Content(source))
+		}
 	case "function_declaration", "function_expression", "arrow_function", "method_definition":
 		if params := extractParameters(node, source); len(params) > 0 {
 			n.Attrs["parameters"] = params
+		}
+		if node.Type() == "method_definition" {
+			if name := node.ChildByFieldName("name"); name != nil {
+				n.Attrs["method_name"] = name.Content(source)
+			}
 		}
 		// The first parameter of an err-first / .catch() callback holds an
 		// error object; the engine's argument_references_error_binding filter
@@ -334,4 +344,14 @@ func isEmptyBlockBody(body *sitter.Node) bool {
 		}
 	}
 	return true
+}
+
+// calleeSrc caps the raw callee text kept on call nodes: a chained call's
+// "function" span can run to the whole statement, and only the head of it
+// (receiver.method) is ever matched.
+func calleeSrc(s string) string {
+	if len(s) > 120 {
+		return s[:120]
+	}
+	return s
 }
