@@ -106,3 +106,13 @@ func assertError(t *testing.T, r *rules.Rule, field string) {
 	}
 	t.Errorf("expected error containing %q, got: %v", field, errs)
 }
+
+func TestValidator_FrameworksList(t *testing.T) {
+	r := validRule()
+	r.Frameworks = []string{"fastify", "aspnetcore"}
+	if errs := rules.NewValidator().Validate(r); len(errs) != 0 {
+		t.Errorf("known frameworks rejected: %v", errs)
+	}
+	r.Frameworks = []string{"fastify", "rails"}
+	assertError(t, r, "unknown framework")
+}

@@ -349,3 +349,32 @@ func TestFlattenIR_DoesNotAliasOriginalAttrs(t *testing.T) {
 		t.Error("mutating the flattened Attrs map leaked a new key back into the original tree")
 	}
 }
+
+// TestRoundTrip_FrameworkAttrs checks the string-slice Attrs the framework
+// detection reads survive the AST cache's JSON hop with their concrete type.
+func TestRoundTrip_FrameworkAttrs(t *testing.T) {
+	keys := []string{"param_types", "param_attrs", "modifiers", "attributes", "bases"}
+	attrs := map[string]any{"callee_src": "app.MapGet", "class_name": "C"}
+	for _, k := range keys {
+		attrs[k] = []string{"a", "b"}
+	}
+	root := &ir.IRNode{NodeID: "r", Kind: ir.NodeKindModule, Attrs: attrs}
+	nodes := ir.FlattenIR(&ir.IRFile{Root: root})
+	data, err := json.Marshal(nodes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var back []ir.SerialNode
+	if err := json.Unmarshal(data, &back); err != nil {
+		t.Fatal(err)
+	}
+	got := ir.RebuildIR(back, core.LangCSharp, "x.cs").Root.Attrs
+	for _, k := range keys {
+		if v, ok := got[k].([]string); !ok || len(v) != 2 {
+			t.Errorf("%s = %#v, want []string{a b}", k, got[k])
+		}
+	}
+	if got["callee_src"] != "app.MapGet" || got["class_name"] != "C" {
+		t.Errorf("string attrs lost: %#v", got)
+	}
+}
