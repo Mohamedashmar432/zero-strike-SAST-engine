@@ -1,0 +1,6 @@
+DVWA (Damn Vulnerable Web Application), third party, GPL-3.0. Not vendored here (license and size).
+repo: https://github.com/digininja/DVWA
+commit: a1978a2fed195acd093010af6395f86a281537ca
+Fetch with: benchmark/labeled/fetch.sh <target-dir>
+Regenerate the labels with: python -I benchmark/labeled/dvwa/gen_ground_truth.py <target-dir> > benchmark/labeled/dvwa/ground-truth.json
+Module coverage notes: api, authbypass, bac and javascript have no server-side sink worth a single-line label and are not labeled.

@@ -1,0 +1,9 @@
+{
+  "dvwa": "verify",
+  "aspnetcore-b": "verify",
+  "fastify-b": "verify",
+  "php-app": "tune",
+  "aspnetcore-a": "tune",
+  "aspnet-mvc5": "tune",
+  "fastify-a": "tune"
+}

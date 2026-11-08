@@ -1,0 +1,1609 @@
+{
+ "repo_url": "https://github.com/digininja/DVWA",
+ "commit_sha": "a1978a2fed195acd093010af6395f86a281537ca",
+ "findings": [
+  {
+   "id": "dvwa-sqli-low-sql_injection-1",
+   "repo_file": "vulnerabilities/sqli/source/low.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564"
+   ],
+   "file": "vulnerabilities/sqli/source/low.php",
+   "location": {
+    "start_line": 10,
+    "end_line": 10
+   },
+   "description": "sqli/low: vulnerable sql_injection sink"
+  },
+  {
+   "id": "dvwa-sqli-low-sql_injection-2",
+   "repo_file": "vulnerabilities/sqli/source/low.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564"
+   ],
+   "file": "vulnerabilities/sqli/source/low.php",
+   "location": {
+    "start_line": 31,
+    "end_line": 31
+   },
+   "description": "sqli/low: vulnerable sql_injection sink"
+  },
+  {
+   "id": "dvwa-sqli_blind-low-sql_injection-1",
+   "repo_file": "vulnerabilities/sqli_blind/source/low.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564"
+   ],
+   "file": "vulnerabilities/sqli_blind/source/low.php",
+   "location": {
+    "start_line": 11,
+    "end_line": 11
+   },
+   "description": "sqli_blind/low: vulnerable sql_injection sink"
+  },
+  {
+   "id": "dvwa-sqli_blind-low-sql_injection-2",
+   "repo_file": "vulnerabilities/sqli_blind/source/low.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564"
+   ],
+   "file": "vulnerabilities/sqli_blind/source/low.php",
+   "location": {
+    "start_line": 32,
+    "end_line": 32
+   },
+   "description": "sqli_blind/low: vulnerable sql_injection sink"
+  },
+  {
+   "id": "dvwa-brute-low-sql_injection-1",
+   "repo_file": "vulnerabilities/brute/source/low.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564"
+   ],
+   "file": "vulnerabilities/brute/source/low.php",
+   "location": {
+    "start_line": 12,
+    "end_line": 12
+   },
+   "description": "brute/low: vulnerable sql_injection sink"
+  },
+  {
+   "id": "dvwa-brute-low-weak_hash-1",
+   "repo_file": "vulnerabilities/brute/source/low.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "weak_hash",
+   "primary_cwe": "CWE-328",
+   "acceptable_cwes": [
+    "CWE-328",
+    "CWE-327",
+    "CWE-916",
+    "CWE-759"
+   ],
+   "file": "vulnerabilities/brute/source/low.php",
+   "location": {
+    "start_line": 9,
+    "end_line": 9
+   },
+   "description": "brute/low: vulnerable weak_hash sink"
+  },
+  {
+   "id": "dvwa-csrf-low-csrf-1",
+   "repo_file": "vulnerabilities/csrf/source/low.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "csrf",
+   "primary_cwe": "CWE-352",
+   "acceptable_cwes": [
+    "CWE-352"
+   ],
+   "file": "vulnerabilities/csrf/source/low.php",
+   "location": {
+    "start_line": 17,
+    "end_line": 17
+   },
+   "description": "csrf/low: vulnerable csrf sink"
+  },
+  {
+   "id": "dvwa-csrf-low-weak_hash-1",
+   "repo_file": "vulnerabilities/csrf/source/low.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "weak_hash",
+   "primary_cwe": "CWE-328",
+   "acceptable_cwes": [
+    "CWE-328",
+    "CWE-327",
+    "CWE-916",
+    "CWE-759"
+   ],
+   "file": "vulnerabilities/csrf/source/low.php",
+   "location": {
+    "start_line": 12,
+    "end_line": 12
+   },
+   "description": "csrf/low: vulnerable weak_hash sink"
+  },
+  {
+   "id": "dvwa-captcha-low-csrf-1",
+   "repo_file": "vulnerabilities/captcha/source/low.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "csrf",
+   "primary_cwe": "CWE-352",
+   "acceptable_cwes": [
+    "CWE-352"
+   ],
+   "file": "vulnerabilities/captcha/source/low.php",
+   "location": {
+    "start_line": 61,
+    "end_line": 61
+   },
+   "description": "captcha/low: vulnerable csrf sink"
+  },
+  {
+   "id": "dvwa-captcha-low-weak_hash-1",
+   "repo_file": "vulnerabilities/captcha/source/low.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "weak_hash",
+   "primary_cwe": "CWE-328",
+   "acceptable_cwes": [
+    "CWE-328",
+    "CWE-327",
+    "CWE-916",
+    "CWE-759"
+   ],
+   "file": "vulnerabilities/captcha/source/low.php",
+   "location": {
+    "start_line": 57,
+    "end_line": 57
+   },
+   "description": "captcha/low: vulnerable weak_hash sink"
+  },
+  {
+   "id": "dvwa-exec-low-command_injection-1",
+   "repo_file": "vulnerabilities/exec/source/low.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "command_injection",
+   "primary_cwe": "CWE-78",
+   "acceptable_cwes": [
+    "CWE-78",
+    "CWE-77",
+    "CWE-88"
+   ],
+   "file": "vulnerabilities/exec/source/low.php",
+   "location": {
+    "start_line": 10,
+    "end_line": 10
+   },
+   "description": "exec/low: vulnerable command_injection sink"
+  },
+  {
+   "id": "dvwa-exec-low-command_injection-2",
+   "repo_file": "vulnerabilities/exec/source/low.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "command_injection",
+   "primary_cwe": "CWE-78",
+   "acceptable_cwes": [
+    "CWE-78",
+    "CWE-77",
+    "CWE-88"
+   ],
+   "file": "vulnerabilities/exec/source/low.php",
+   "location": {
+    "start_line": 14,
+    "end_line": 14
+   },
+   "description": "exec/low: vulnerable command_injection sink"
+  },
+  {
+   "id": "dvwa-fi-low-file_inclusion-1",
+   "repo_file": "vulnerabilities/fi/source/low.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "file_inclusion",
+   "primary_cwe": "CWE-98",
+   "acceptable_cwes": [
+    "CWE-98",
+    "CWE-22",
+    "CWE-73",
+    "CWE-829",
+    "CWE-94"
+   ],
+   "file": "vulnerabilities/fi/source/low.php",
+   "location": {
+    "start_line": 4,
+    "end_line": 4
+   },
+   "description": "fi/low: vulnerable file_inclusion sink"
+  },
+  {
+   "id": "dvwa-upload-low-file_upload-1",
+   "repo_file": "vulnerabilities/upload/source/low.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "file_upload",
+   "primary_cwe": "CWE-434",
+   "acceptable_cwes": [
+    "CWE-434",
+    "CWE-22",
+    "CWE-73"
+   ],
+   "file": "vulnerabilities/upload/source/low.php",
+   "location": {
+    "start_line": 9,
+    "end_line": 9
+   },
+   "description": "upload/low: vulnerable file_upload sink"
+  },
+  {
+   "id": "dvwa-xss_s-low-xss-1",
+   "repo_file": "vulnerabilities/xss_s/source/low.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "vulnerabilities/xss_s/source/low.php",
+   "location": {
+    "start_line": 16,
+    "end_line": 16
+   },
+   "description": "xss_s/low: vulnerable xss sink"
+  },
+  {
+   "id": "dvwa-xss_s-low-sql_injection-1",
+   "repo_file": "vulnerabilities/xss_s/source/low.php",
+   "is_vulnerable": false,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564"
+   ],
+   "file": "vulnerabilities/xss_s/source/low.php",
+   "location": {
+    "start_line": 16,
+    "end_line": 16
+   },
+   "description": "inputs pass mysqli_real_escape_string before the INSERT (safe look-alike for SQLi)"
+  },
+  {
+   "id": "dvwa-sqli-medium-sql_injection-1",
+   "repo_file": "vulnerabilities/sqli/source/medium.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564"
+   ],
+   "file": "vulnerabilities/sqli/source/medium.php",
+   "location": {
+    "start_line": 11,
+    "end_line": 11
+   },
+   "description": "sqli/medium: vulnerable sql_injection sink"
+  },
+  {
+   "id": "dvwa-sqli-medium-sql_injection-2",
+   "repo_file": "vulnerabilities/sqli/source/medium.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564"
+   ],
+   "file": "vulnerabilities/sqli/source/medium.php",
+   "location": {
+    "start_line": 27,
+    "end_line": 27
+   },
+   "description": "sqli/medium: vulnerable sql_injection sink"
+  },
+  {
+   "id": "dvwa-sqli_blind-medium-sql_injection-1",
+   "repo_file": "vulnerabilities/sqli_blind/source/medium.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564"
+   ],
+   "file": "vulnerabilities/sqli_blind/source/medium.php",
+   "location": {
+    "start_line": 13,
+    "end_line": 13
+   },
+   "description": "sqli_blind/medium: vulnerable sql_injection sink"
+  },
+  {
+   "id": "dvwa-sqli_blind-medium-sql_injection-2",
+   "repo_file": "vulnerabilities/sqli_blind/source/medium.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564"
+   ],
+   "file": "vulnerabilities/sqli_blind/source/medium.php",
+   "location": {
+    "start_line": 34,
+    "end_line": 34
+   },
+   "description": "sqli_blind/medium: vulnerable sql_injection sink"
+  },
+  {
+   "id": "dvwa-brute-medium-sql_injection-1",
+   "repo_file": "vulnerabilities/brute/source/medium.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564"
+   ],
+   "file": "vulnerabilities/brute/source/medium.php",
+   "location": {
+    "start_line": 14,
+    "end_line": 14
+   },
+   "description": "brute/medium: vulnerable sql_injection sink"
+  },
+  {
+   "id": "dvwa-brute-medium-weak_hash-1",
+   "repo_file": "vulnerabilities/brute/source/medium.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "weak_hash",
+   "primary_cwe": "CWE-328",
+   "acceptable_cwes": [
+    "CWE-328",
+    "CWE-327",
+    "CWE-916",
+    "CWE-759"
+   ],
+   "file": "vulnerabilities/brute/source/medium.php",
+   "location": {
+    "start_line": 11,
+    "end_line": 11
+   },
+   "description": "brute/medium: vulnerable weak_hash sink"
+  },
+  {
+   "id": "dvwa-csrf-medium-csrf-1",
+   "repo_file": "vulnerabilities/csrf/source/medium.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "csrf",
+   "primary_cwe": "CWE-352",
+   "acceptable_cwes": [
+    "CWE-352"
+   ],
+   "file": "vulnerabilities/csrf/source/medium.php",
+   "location": {
+    "start_line": 19,
+    "end_line": 19
+   },
+   "description": "csrf/medium: vulnerable csrf sink"
+  },
+  {
+   "id": "dvwa-csrf-medium-weak_hash-1",
+   "repo_file": "vulnerabilities/csrf/source/medium.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "weak_hash",
+   "primary_cwe": "CWE-328",
+   "acceptable_cwes": [
+    "CWE-328",
+    "CWE-327",
+    "CWE-916",
+    "CWE-759"
+   ],
+   "file": "vulnerabilities/csrf/source/medium.php",
+   "location": {
+    "start_line": 14,
+    "end_line": 14
+   },
+   "description": "csrf/medium: vulnerable weak_hash sink"
+  },
+  {
+   "id": "dvwa-captcha-medium-csrf-1",
+   "repo_file": "vulnerabilities/captcha/source/medium.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "csrf",
+   "primary_cwe": "CWE-352",
+   "acceptable_cwes": [
+    "CWE-352"
+   ],
+   "file": "vulnerabilities/captcha/source/medium.php",
+   "location": {
+    "start_line": 69,
+    "end_line": 69
+   },
+   "description": "captcha/medium: vulnerable csrf sink"
+  },
+  {
+   "id": "dvwa-captcha-medium-weak_hash-1",
+   "repo_file": "vulnerabilities/captcha/source/medium.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "weak_hash",
+   "primary_cwe": "CWE-328",
+   "acceptable_cwes": [
+    "CWE-328",
+    "CWE-327",
+    "CWE-916",
+    "CWE-759"
+   ],
+   "file": "vulnerabilities/captcha/source/medium.php",
+   "location": {
+    "start_line": 65,
+    "end_line": 65
+   },
+   "description": "captcha/medium: vulnerable weak_hash sink"
+  },
+  {
+   "id": "dvwa-exec-medium-command_injection-1",
+   "repo_file": "vulnerabilities/exec/source/medium.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "command_injection",
+   "primary_cwe": "CWE-78",
+   "acceptable_cwes": [
+    "CWE-78",
+    "CWE-77",
+    "CWE-88"
+   ],
+   "file": "vulnerabilities/exec/source/medium.php",
+   "location": {
+    "start_line": 19,
+    "end_line": 19
+   },
+   "description": "exec/medium: vulnerable command_injection sink"
+  },
+  {
+   "id": "dvwa-exec-medium-command_injection-2",
+   "repo_file": "vulnerabilities/exec/source/medium.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "command_injection",
+   "primary_cwe": "CWE-78",
+   "acceptable_cwes": [
+    "CWE-78",
+    "CWE-77",
+    "CWE-88"
+   ],
+   "file": "vulnerabilities/exec/source/medium.php",
+   "location": {
+    "start_line": 23,
+    "end_line": 23
+   },
+   "description": "exec/medium: vulnerable command_injection sink"
+  },
+  {
+   "id": "dvwa-fi-medium-file_inclusion-1",
+   "repo_file": "vulnerabilities/fi/source/medium.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "file_inclusion",
+   "primary_cwe": "CWE-98",
+   "acceptable_cwes": [
+    "CWE-98",
+    "CWE-22",
+    "CWE-73",
+    "CWE-829",
+    "CWE-94"
+   ],
+   "file": "vulnerabilities/fi/source/medium.php",
+   "location": {
+    "start_line": 4,
+    "end_line": 4
+   },
+   "description": "fi/medium: vulnerable file_inclusion sink"
+  },
+  {
+   "id": "dvwa-upload-medium-file_upload-1",
+   "repo_file": "vulnerabilities/upload/source/medium.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "file_upload",
+   "primary_cwe": "CWE-434",
+   "acceptable_cwes": [
+    "CWE-434",
+    "CWE-22",
+    "CWE-73"
+   ],
+   "file": "vulnerabilities/upload/source/medium.php",
+   "location": {
+    "start_line": 18,
+    "end_line": 18
+   },
+   "description": "upload/medium: vulnerable file_upload sink"
+  },
+  {
+   "id": "dvwa-xss_s-medium-xss-1",
+   "repo_file": "vulnerabilities/xss_s/source/medium.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "vulnerabilities/xss_s/source/medium.php",
+   "location": {
+    "start_line": 18,
+    "end_line": 18
+   },
+   "description": "xss_s/medium: vulnerable xss sink"
+  },
+  {
+   "id": "dvwa-xss_s-medium-sql_injection-1",
+   "repo_file": "vulnerabilities/xss_s/source/medium.php",
+   "is_vulnerable": false,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564"
+   ],
+   "file": "vulnerabilities/xss_s/source/medium.php",
+   "location": {
+    "start_line": 18,
+    "end_line": 18
+   },
+   "description": "inputs pass mysqli_real_escape_string before the INSERT (safe look-alike for SQLi)"
+  },
+  {
+   "id": "dvwa-sqli-high-sql_injection-1",
+   "repo_file": "vulnerabilities/sqli/source/high.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564"
+   ],
+   "file": "vulnerabilities/sqli/source/high.php",
+   "location": {
+    "start_line": 10,
+    "end_line": 10
+   },
+   "description": "sqli/high: vulnerable sql_injection sink"
+  },
+  {
+   "id": "dvwa-sqli-high-sql_injection-2",
+   "repo_file": "vulnerabilities/sqli/source/high.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564"
+   ],
+   "file": "vulnerabilities/sqli/source/high.php",
+   "location": {
+    "start_line": 28,
+    "end_line": 28
+   },
+   "description": "sqli/high: vulnerable sql_injection sink"
+  },
+  {
+   "id": "dvwa-sqli_blind-high-sql_injection-1",
+   "repo_file": "vulnerabilities/sqli_blind/source/high.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564"
+   ],
+   "file": "vulnerabilities/sqli_blind/source/high.php",
+   "location": {
+    "start_line": 11,
+    "end_line": 11
+   },
+   "description": "sqli_blind/high: vulnerable sql_injection sink"
+  },
+  {
+   "id": "dvwa-sqli_blind-high-sql_injection-2",
+   "repo_file": "vulnerabilities/sqli_blind/source/high.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564"
+   ],
+   "file": "vulnerabilities/sqli_blind/source/high.php",
+   "location": {
+    "start_line": 33,
+    "end_line": 33
+   },
+   "description": "sqli_blind/high: vulnerable sql_injection sink"
+  },
+  {
+   "id": "dvwa-brute-high-sql_injection-1",
+   "repo_file": "vulnerabilities/brute/source/high.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564"
+   ],
+   "file": "vulnerabilities/brute/source/high.php",
+   "location": {
+    "start_line": 19,
+    "end_line": 19
+   },
+   "description": "brute/high: vulnerable sql_injection sink"
+  },
+  {
+   "id": "dvwa-brute-high-weak_hash-1",
+   "repo_file": "vulnerabilities/brute/source/high.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "weak_hash",
+   "primary_cwe": "CWE-328",
+   "acceptable_cwes": [
+    "CWE-328",
+    "CWE-327",
+    "CWE-916",
+    "CWE-759"
+   ],
+   "file": "vulnerabilities/brute/source/high.php",
+   "location": {
+    "start_line": 16,
+    "end_line": 16
+   },
+   "description": "brute/high: vulnerable weak_hash sink"
+  },
+  {
+   "id": "dvwa-csrf-high-csrf-1",
+   "repo_file": "vulnerabilities/csrf/source/high.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "csrf",
+   "primary_cwe": "CWE-352",
+   "acceptable_cwes": [
+    "CWE-352"
+   ],
+   "file": "vulnerabilities/csrf/source/high.php",
+   "location": {
+    "start_line": 44,
+    "end_line": 44
+   },
+   "description": "csrf/high: vulnerable csrf sink"
+  },
+  {
+   "id": "dvwa-csrf-high-weak_hash-1",
+   "repo_file": "vulnerabilities/csrf/source/high.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "weak_hash",
+   "primary_cwe": "CWE-328",
+   "acceptable_cwes": [
+    "CWE-328",
+    "CWE-327",
+    "CWE-916",
+    "CWE-759"
+   ],
+   "file": "vulnerabilities/csrf/source/high.php",
+   "location": {
+    "start_line": 39,
+    "end_line": 39
+   },
+   "description": "csrf/high: vulnerable weak_hash sink"
+  },
+  {
+   "id": "dvwa-captcha-high-csrf-1",
+   "repo_file": "vulnerabilities/captcha/source/high.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "csrf",
+   "primary_cwe": "CWE-352",
+   "acceptable_cwes": [
+    "CWE-352"
+   ],
+   "file": "vulnerabilities/captcha/source/high.php",
+   "location": {
+    "start_line": 31,
+    "end_line": 31
+   },
+   "description": "captcha/high: vulnerable csrf sink"
+  },
+  {
+   "id": "dvwa-captcha-high-weak_hash-1",
+   "repo_file": "vulnerabilities/captcha/source/high.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "weak_hash",
+   "primary_cwe": "CWE-328",
+   "acceptable_cwes": [
+    "CWE-328",
+    "CWE-327",
+    "CWE-916",
+    "CWE-759"
+   ],
+   "file": "vulnerabilities/captcha/source/high.php",
+   "location": {
+    "start_line": 27,
+    "end_line": 27
+   },
+   "description": "captcha/high: vulnerable weak_hash sink"
+  },
+  {
+   "id": "dvwa-exec-high-command_injection-1",
+   "repo_file": "vulnerabilities/exec/source/high.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "command_injection",
+   "primary_cwe": "CWE-78",
+   "acceptable_cwes": [
+    "CWE-78",
+    "CWE-77",
+    "CWE-88"
+   ],
+   "file": "vulnerabilities/exec/source/high.php",
+   "location": {
+    "start_line": 26,
+    "end_line": 26
+   },
+   "description": "exec/high: vulnerable command_injection sink"
+  },
+  {
+   "id": "dvwa-exec-high-command_injection-2",
+   "repo_file": "vulnerabilities/exec/source/high.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "command_injection",
+   "primary_cwe": "CWE-78",
+   "acceptable_cwes": [
+    "CWE-78",
+    "CWE-77",
+    "CWE-88"
+   ],
+   "file": "vulnerabilities/exec/source/high.php",
+   "location": {
+    "start_line": 30,
+    "end_line": 30
+   },
+   "description": "exec/high: vulnerable command_injection sink"
+  },
+  {
+   "id": "dvwa-fi-high-file_inclusion-1",
+   "repo_file": "vulnerabilities/fi/source/high.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "file_inclusion",
+   "primary_cwe": "CWE-98",
+   "acceptable_cwes": [
+    "CWE-98",
+    "CWE-22",
+    "CWE-73",
+    "CWE-829",
+    "CWE-94"
+   ],
+   "file": "vulnerabilities/fi/source/high.php",
+   "location": {
+    "start_line": 4,
+    "end_line": 4
+   },
+   "description": "fi/high: vulnerable file_inclusion sink"
+  },
+  {
+   "id": "dvwa-upload-high-file_upload-1",
+   "repo_file": "vulnerabilities/upload/source/high.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "file_upload",
+   "primary_cwe": "CWE-434",
+   "acceptable_cwes": [
+    "CWE-434",
+    "CWE-22",
+    "CWE-73"
+   ],
+   "file": "vulnerabilities/upload/source/high.php",
+   "location": {
+    "start_line": 20,
+    "end_line": 20
+   },
+   "description": "upload/high: vulnerable file_upload sink"
+  },
+  {
+   "id": "dvwa-xss_s-high-xss-1",
+   "repo_file": "vulnerabilities/xss_s/source/high.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "vulnerabilities/xss_s/source/high.php",
+   "location": {
+    "start_line": 18,
+    "end_line": 18
+   },
+   "description": "xss_s/high: vulnerable xss sink"
+  },
+  {
+   "id": "dvwa-xss_s-high-sql_injection-1",
+   "repo_file": "vulnerabilities/xss_s/source/high.php",
+   "is_vulnerable": false,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564"
+   ],
+   "file": "vulnerabilities/xss_s/source/high.php",
+   "location": {
+    "start_line": 18,
+    "end_line": 18
+   },
+   "description": "inputs pass mysqli_real_escape_string before the INSERT (safe look-alike for SQLi)"
+  },
+  {
+   "id": "dvwa-xss_r-low-xss-1",
+   "repo_file": "vulnerabilities/xss_r/source/low.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "vulnerabilities/xss_r/source/low.php",
+   "location": {
+    "start_line": 8,
+    "end_line": 8
+   },
+   "description": "xss_r/low: vulnerable xss sink"
+  },
+  {
+   "id": "dvwa-xss_r-medium-xss-1",
+   "repo_file": "vulnerabilities/xss_r/source/medium.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "vulnerabilities/xss_r/source/medium.php",
+   "location": {
+    "start_line": 11,
+    "end_line": 11
+   },
+   "description": "xss_r/medium: vulnerable xss sink"
+  },
+  {
+   "id": "dvwa-xss_r-high-xss-1",
+   "repo_file": "vulnerabilities/xss_r/source/high.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "vulnerabilities/xss_r/source/high.php",
+   "location": {
+    "start_line": 11,
+    "end_line": 11
+   },
+   "description": "xss_r/high: vulnerable xss sink"
+  },
+  {
+   "id": "dvwa-open_redirect-low-open_redirect-1",
+   "repo_file": "vulnerabilities/open_redirect/source/low.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "open_redirect",
+   "primary_cwe": "CWE-601",
+   "acceptable_cwes": [
+    "CWE-601",
+    "CWE-113"
+   ],
+   "file": "vulnerabilities/open_redirect/source/low.php",
+   "location": {
+    "start_line": 4,
+    "end_line": 4
+   },
+   "description": "open_redirect/low: vulnerable open_redirect sink"
+  },
+  {
+   "id": "dvwa-open_redirect-medium-open_redirect-1",
+   "repo_file": "vulnerabilities/open_redirect/source/medium.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "open_redirect",
+   "primary_cwe": "CWE-601",
+   "acceptable_cwes": [
+    "CWE-601",
+    "CWE-113"
+   ],
+   "file": "vulnerabilities/open_redirect/source/medium.php",
+   "location": {
+    "start_line": 11,
+    "end_line": 11
+   },
+   "description": "open_redirect/medium: vulnerable open_redirect sink"
+  },
+  {
+   "id": "dvwa-open_redirect-high-open_redirect-1",
+   "repo_file": "vulnerabilities/open_redirect/source/high.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "open_redirect",
+   "primary_cwe": "CWE-601",
+   "acceptable_cwes": [
+    "CWE-601",
+    "CWE-113"
+   ],
+   "file": "vulnerabilities/open_redirect/source/high.php",
+   "location": {
+    "start_line": 5,
+    "end_line": 5
+   },
+   "description": "open_redirect/high: vulnerable open_redirect sink"
+  },
+  {
+   "id": "dvwa-weak_id-low-weak_session_id-1",
+   "repo_file": "vulnerabilities/weak_id/source/low.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "weak_session_id",
+   "primary_cwe": "CWE-330",
+   "acceptable_cwes": [
+    "CWE-330",
+    "CWE-331",
+    "CWE-338",
+    "CWE-341",
+    "CWE-340",
+    "CWE-614",
+    "CWE-1004",
+    "CWE-1275"
+   ],
+   "file": "vulnerabilities/weak_id/source/low.php",
+   "location": {
+    "start_line": 11,
+    "end_line": 11
+   },
+   "description": "weak_id/low: vulnerable weak_session_id sink"
+  },
+  {
+   "id": "dvwa-weak_id-medium-weak_session_id-1",
+   "repo_file": "vulnerabilities/weak_id/source/medium.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "weak_session_id",
+   "primary_cwe": "CWE-330",
+   "acceptable_cwes": [
+    "CWE-330",
+    "CWE-331",
+    "CWE-338",
+    "CWE-341",
+    "CWE-340",
+    "CWE-614",
+    "CWE-1004",
+    "CWE-1275"
+   ],
+   "file": "vulnerabilities/weak_id/source/medium.php",
+   "location": {
+    "start_line": 7,
+    "end_line": 7
+   },
+   "description": "weak_id/medium: vulnerable weak_session_id sink"
+  },
+  {
+   "id": "dvwa-weak_id-high-weak_session_id-1",
+   "repo_file": "vulnerabilities/weak_id/source/high.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "weak_session_id",
+   "primary_cwe": "CWE-330",
+   "acceptable_cwes": [
+    "CWE-330",
+    "CWE-331",
+    "CWE-338",
+    "CWE-341",
+    "CWE-340",
+    "CWE-614",
+    "CWE-1004",
+    "CWE-1275"
+   ],
+   "file": "vulnerabilities/weak_id/source/high.php",
+   "location": {
+    "start_line": 11,
+    "end_line": 11
+   },
+   "description": "weak_id/high: vulnerable weak_session_id sink"
+  },
+  {
+   "id": "dvwa-csp-low-xss-1",
+   "repo_file": "vulnerabilities/csp/source/low.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "vulnerabilities/csp/source/low.php",
+   "location": {
+    "start_line": 13,
+    "end_line": 13
+   },
+   "description": "csp/low: vulnerable xss sink"
+  },
+  {
+   "id": "dvwa-csp-low-xss-2",
+   "repo_file": "vulnerabilities/csp/source/low.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "vulnerabilities/csp/source/low.php",
+   "location": {
+    "start_line": 15,
+    "end_line": 15
+   },
+   "description": "csp/low: vulnerable xss sink"
+  },
+  {
+   "id": "dvwa-csp-medium-xss-1",
+   "repo_file": "vulnerabilities/csp/source/medium.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "vulnerabilities/csp/source/medium.php",
+   "location": {
+    "start_line": 14,
+    "end_line": 14
+   },
+   "description": "csp/medium: vulnerable xss sink"
+  },
+  {
+   "id": "dvwa-csp-medium-xss-2",
+   "repo_file": "vulnerabilities/csp/source/medium.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "vulnerabilities/csp/source/medium.php",
+   "location": {
+    "start_line": 16,
+    "end_line": 16
+   },
+   "description": "csp/medium: vulnerable xss sink"
+  },
+  {
+   "id": "dvwa-csp-high-xss-1",
+   "repo_file": "vulnerabilities/csp/source/high.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "vulnerabilities/csp/source/high.php",
+   "location": {
+    "start_line": 8,
+    "end_line": 8
+   },
+   "description": "csp/high: vulnerable xss sink"
+  },
+  {
+   "id": "dvwa-csp-high-xss-2",
+   "repo_file": "vulnerabilities/csp/source/high.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "vulnerabilities/csp/source/high.php",
+   "location": {
+    "start_line": 10,
+    "end_line": 10
+   },
+   "description": "csp/high: vulnerable xss sink"
+  },
+  {
+   "id": "dvwa-csp-jsonp-xss-1",
+   "repo_file": "vulnerabilities/csp/source/jsonp.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "vulnerabilities/csp/source/jsonp.php",
+   "location": {
+    "start_line": 12,
+    "end_line": 12
+   },
+   "description": "csp/jsonp: vulnerable xss sink"
+  },
+  {
+   "id": "dvwa-xss_d-all-xss-1",
+   "repo_file": "vulnerabilities/xss_d/index.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "vulnerabilities/xss_d/index.php",
+   "location": {
+    "start_line": 53,
+    "end_line": 53
+   },
+   "description": "xss_d/all: vulnerable xss sink"
+  },
+  {
+   "id": "dvwa-fi-all-file_inclusion-1",
+   "repo_file": "vulnerabilities/fi/index.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "file_inclusion",
+   "primary_cwe": "CWE-98",
+   "acceptable_cwes": [
+    "CWE-98",
+    "CWE-22",
+    "CWE-73",
+    "CWE-829",
+    "CWE-94"
+   ],
+   "file": "vulnerabilities/fi/index.php",
+   "location": {
+    "start_line": 36,
+    "end_line": 36
+   },
+   "description": "fi/all: vulnerable file_inclusion sink"
+  },
+  {
+   "id": "dvwa-cryptography-low-hardcoded_secret-1",
+   "repo_file": "vulnerabilities/cryptography/source/low.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "hardcoded_secret",
+   "primary_cwe": "CWE-798",
+   "acceptable_cwes": [
+    "CWE-798",
+    "CWE-321",
+    "CWE-259",
+    "CWE-547"
+   ],
+   "file": "vulnerabilities/cryptography/source/low.php",
+   "location": {
+    "start_line": 16,
+    "end_line": 16
+   },
+   "description": "cryptography/low: vulnerable hardcoded_secret sink"
+  },
+  {
+   "id": "dvwa-cryptography-medium-weak_crypto-1",
+   "repo_file": "vulnerabilities/cryptography/source/medium.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "weak_crypto",
+   "primary_cwe": "CWE-327",
+   "acceptable_cwes": [
+    "CWE-327",
+    "CWE-326",
+    "CWE-329",
+    "CWE-780"
+   ],
+   "file": "vulnerabilities/cryptography/source/medium.php",
+   "location": {
+    "start_line": 3,
+    "end_line": 3
+   },
+   "description": "cryptography/medium: vulnerable weak_crypto sink"
+  },
+  {
+   "id": "dvwa-cryptography-medium-weak_crypto-2",
+   "repo_file": "vulnerabilities/cryptography/source/medium.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "weak_crypto",
+   "primary_cwe": "CWE-327",
+   "acceptable_cwes": [
+    "CWE-327",
+    "CWE-326",
+    "CWE-329",
+    "CWE-780"
+   ],
+   "file": "vulnerabilities/cryptography/source/medium.php",
+   "location": {
+    "start_line": 79,
+    "end_line": 79
+   },
+   "description": "cryptography/medium: vulnerable weak_crypto sink"
+  },
+  {
+   "id": "dvwa-cryptography-medium-hardcoded_secret-1",
+   "repo_file": "vulnerabilities/cryptography/source/medium.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "hardcoded_secret",
+   "primary_cwe": "CWE-798",
+   "acceptable_cwes": [
+    "CWE-798",
+    "CWE-321",
+    "CWE-259",
+    "CWE-547"
+   ],
+   "file": "vulnerabilities/cryptography/source/medium.php",
+   "location": {
+    "start_line": 10,
+    "end_line": 10
+   },
+   "description": "cryptography/medium: vulnerable hardcoded_secret sink"
+  },
+  {
+   "id": "dvwa-cryptography-high-hardcoded_secret-1",
+   "repo_file": "vulnerabilities/cryptography/source/token_library_high.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "hardcoded_secret",
+   "primary_cwe": "CWE-798",
+   "acceptable_cwes": [
+    "CWE-798",
+    "CWE-321",
+    "CWE-259",
+    "CWE-547"
+   ],
+   "file": "vulnerabilities/cryptography/source/token_library_high.php",
+   "location": {
+    "start_line": 3,
+    "end_line": 3
+   },
+   "description": "cryptography/high: vulnerable hardcoded_secret sink"
+  },
+  {
+   "id": "dvwa-cryptography-high-weak_crypto-1",
+   "repo_file": "vulnerabilities/cryptography/source/token_library_high.php",
+   "is_vulnerable": true,
+   "vulnerability_class": "weak_crypto",
+   "primary_cwe": "CWE-327",
+   "acceptable_cwes": [
+    "CWE-327",
+    "CWE-326",
+    "CWE-329",
+    "CWE-780"
+   ],
+   "file": "vulnerabilities/cryptography/source/token_library_high.php",
+   "location": {
+    "start_line": 5,
+    "end_line": 5
+   },
+   "description": "static IV for CBC"
+  },
+  {
+   "id": "dvwa-sqli-impossible-sql_injection-1",
+   "repo_file": "vulnerabilities/sqli/source/impossible.php",
+   "is_vulnerable": false,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564"
+   ],
+   "file": "vulnerabilities/sqli/source/impossible.php",
+   "location": {
+    "start_line": 16,
+    "end_line": 16
+   },
+   "description": "sqli/impossible: safe sql_injection sink"
+  },
+  {
+   "id": "dvwa-sqli-impossible-sql_injection-2",
+   "repo_file": "vulnerabilities/sqli/source/impossible.php",
+   "is_vulnerable": false,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564"
+   ],
+   "file": "vulnerabilities/sqli/source/impossible.php",
+   "location": {
+    "start_line": 34,
+    "end_line": 34
+   },
+   "description": "sqli/impossible: safe sql_injection sink"
+  },
+  {
+   "id": "dvwa-sqli_blind-impossible-sql_injection-1",
+   "repo_file": "vulnerabilities/sqli_blind/source/impossible.php",
+   "is_vulnerable": false,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564"
+   ],
+   "file": "vulnerabilities/sqli_blind/source/impossible.php",
+   "location": {
+    "start_line": 17,
+    "end_line": 17
+   },
+   "description": "sqli_blind/impossible: safe sql_injection sink"
+  },
+  {
+   "id": "dvwa-sqli_blind-impossible-sql_injection-2",
+   "repo_file": "vulnerabilities/sqli_blind/source/impossible.php",
+   "is_vulnerable": false,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564"
+   ],
+   "file": "vulnerabilities/sqli_blind/source/impossible.php",
+   "location": {
+    "start_line": 26,
+    "end_line": 26
+   },
+   "description": "sqli_blind/impossible: safe sql_injection sink"
+  },
+  {
+   "id": "dvwa-brute-impossible-sql_injection-1",
+   "repo_file": "vulnerabilities/brute/source/impossible.php",
+   "is_vulnerable": false,
+   "vulnerability_class": "sql_injection",
+   "primary_cwe": "CWE-89",
+   "acceptable_cwes": [
+    "CWE-89",
+    "CWE-564"
+   ],
+   "file": "vulnerabilities/brute/source/impossible.php",
+   "location": {
+    "start_line": 53,
+    "end_line": 53
+   },
+   "description": "brute/impossible: safe sql_injection sink"
+  },
+  {
+   "id": "dvwa-csrf-impossible-csrf-1",
+   "repo_file": "vulnerabilities/csrf/source/impossible.php",
+   "is_vulnerable": false,
+   "vulnerability_class": "csrf",
+   "primary_cwe": "CWE-352",
+   "acceptable_cwes": [
+    "CWE-352"
+   ],
+   "file": "vulnerabilities/csrf/source/impossible.php",
+   "location": {
+    "start_line": 32,
+    "end_line": 32
+   },
+   "description": "csrf/impossible: safe csrf sink"
+  },
+  {
+   "id": "dvwa-captcha-impossible-csrf-1",
+   "repo_file": "vulnerabilities/captcha/source/impossible.php",
+   "is_vulnerable": false,
+   "vulnerability_class": "csrf",
+   "primary_cwe": "CWE-352",
+   "acceptable_cwes": [
+    "CWE-352"
+   ],
+   "file": "vulnerabilities/captcha/source/impossible.php",
+   "location": {
+    "start_line": 48,
+    "end_line": 48
+   },
+   "description": "captcha/impossible: safe csrf sink"
+  },
+  {
+   "id": "dvwa-exec-impossible-command_injection-1",
+   "repo_file": "vulnerabilities/exec/source/impossible.php",
+   "is_vulnerable": false,
+   "vulnerability_class": "command_injection",
+   "primary_cwe": "CWE-78",
+   "acceptable_cwes": [
+    "CWE-78",
+    "CWE-77",
+    "CWE-88"
+   ],
+   "file": "vulnerabilities/exec/source/impossible.php",
+   "location": {
+    "start_line": 22,
+    "end_line": 22
+   },
+   "description": "exec/impossible: safe command_injection sink"
+  },
+  {
+   "id": "dvwa-exec-impossible-command_injection-2",
+   "repo_file": "vulnerabilities/exec/source/impossible.php",
+   "is_vulnerable": false,
+   "vulnerability_class": "command_injection",
+   "primary_cwe": "CWE-78",
+   "acceptable_cwes": [
+    "CWE-78",
+    "CWE-77",
+    "CWE-88"
+   ],
+   "file": "vulnerabilities/exec/source/impossible.php",
+   "location": {
+    "start_line": 26,
+    "end_line": 26
+   },
+   "description": "exec/impossible: safe command_injection sink"
+  },
+  {
+   "id": "dvwa-upload-impossible-file_upload-1",
+   "repo_file": "vulnerabilities/upload/source/impossible.php",
+   "is_vulnerable": false,
+   "vulnerability_class": "file_upload",
+   "primary_cwe": "CWE-434",
+   "acceptable_cwes": [
+    "CWE-434",
+    "CWE-22",
+    "CWE-73"
+   ],
+   "file": "vulnerabilities/upload/source/impossible.php",
+   "location": {
+    "start_line": 43,
+    "end_line": 43
+   },
+   "description": "upload/impossible: safe file_upload sink"
+  },
+  {
+   "id": "dvwa-xss_r-impossible-xss-1",
+   "repo_file": "vulnerabilities/xss_r/source/impossible.php",
+   "is_vulnerable": false,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "vulnerabilities/xss_r/source/impossible.php",
+   "location": {
+    "start_line": 12,
+    "end_line": 12
+   },
+   "description": "xss_r/impossible: safe xss sink"
+  },
+  {
+   "id": "dvwa-xss_s-impossible-xss-1",
+   "repo_file": "vulnerabilities/xss_s/source/impossible.php",
+   "is_vulnerable": false,
+   "vulnerability_class": "xss",
+   "primary_cwe": "CWE-79",
+   "acceptable_cwes": [
+    "CWE-79",
+    "CWE-80",
+    "CWE-83",
+    "CWE-116"
+   ],
+   "file": "vulnerabilities/xss_s/source/impossible.php",
+   "location": {
+    "start_line": 22,
+    "end_line": 22
+   },
+   "description": "xss_s/impossible: safe xss sink"
+  },
+  {
+   "id": "dvwa-open_redirect-impossible-open_redirect-1",
+   "repo_file": "vulnerabilities/open_redirect/source/impossible.php",
+   "is_vulnerable": false,
+   "vulnerability_class": "open_redirect",
+   "primary_cwe": "CWE-601",
+   "acceptable_cwes": [
+    "CWE-601",
+    "CWE-113"
+   ],
+   "file": "vulnerabilities/open_redirect/source/impossible.php",
+   "location": {
+    "start_line": 18,
+    "end_line": 18
+   },
+   "description": "open_redirect/impossible: safe open_redirect sink"
+  },
+  {
+   "id": "dvwa-weak_id-impossible-weak_session_id-1",
+   "repo_file": "vulnerabilities/weak_id/source/impossible.php",
+   "is_vulnerable": false,
+   "vulnerability_class": "weak_session_id",
+   "primary_cwe": "CWE-330",
+   "acceptable_cwes": [
+    "CWE-330",
+    "CWE-331",
+    "CWE-338",
+    "CWE-341",
+    "CWE-340",
+    "CWE-614",
+    "CWE-1004",
+    "CWE-1275"
+   ],
+   "file": "vulnerabilities/weak_id/source/impossible.php",
+   "location": {
+    "start_line": 7,
+    "end_line": 7
+   },
+   "description": "weak_id/impossible: safe weak_session_id sink"
+  },
+  {
+   "id": "dvwa-fi-impossible-file_inclusion-1",
+   "repo_file": "vulnerabilities/fi/source/impossible.php",
+   "is_vulnerable": false,
+   "vulnerability_class": "file_inclusion",
+   "primary_cwe": "CWE-98",
+   "acceptable_cwes": [
+    "CWE-98",
+    "CWE-22",
+    "CWE-73",
+    "CWE-829",
+    "CWE-94"
+   ],
+   "file": "vulnerabilities/fi/source/impossible.php",
+   "location": {
+    "start_line": 4,
+    "end_line": 4
+   },
+   "description": "fi/impossible: safe file_inclusion sink"
+  },
+  {
+   "id": "dvwa-cryptography-impossible-weak_crypto-1",
+   "repo_file": "vulnerabilities/cryptography/source/token_library_impossible.php",
+   "is_vulnerable": false,
+   "vulnerability_class": "weak_crypto",
+   "primary_cwe": "CWE-327",
+   "acceptable_cwes": [
+    "CWE-327",
+    "CWE-326",
+    "CWE-329",
+    "CWE-780"
+   ],
+   "file": "vulnerabilities/cryptography/source/token_library_impossible.php",
+   "location": {
+    "start_line": 4,
+    "end_line": 4
+   },
+   "description": "AES-GCM with random IV"
+  }
+ ]
+}
