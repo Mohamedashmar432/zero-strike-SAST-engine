@@ -110,3 +110,21 @@ cases:
   - file: cases/fw_laravel_safe_helper.php
     language: php
     expect: []
+  - file: cases/safe_setcookie_flags.php
+    language: php
+    expect: []
+  - file: cases/vuln_setcookie_options_partial.php
+    language: php
+    expect: [{rule_id: ZS-PHP-012, min_count: 1}]
+  - file: cases/safe_shell_escapeshellarg.php
+    language: php
+    expect: []
+  - file: cases/vuln_shell_exec_mixed_escape.php
+    language: php
+    expect: [{rule_id: ZS-PHP-006, min_count: 1}]
+  - file: cases/safe_file_get_contents_local_path.php
+    language: php
+    expect: []
+  - file: cases/fw_laravel_safe_service.php
+    language: php
+    expect: []

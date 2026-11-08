@@ -33,4 +33,6 @@ match:
   callee: exec
   filters:
     - tainted_argument: true
+      # escapeshellarg() quotes the value into a single inert shell word.
+      exclude_wrapped_by: '^escapeshellarg$'
 fix_suggestion: "Avoid shelling out with user input; if unavoidable, wrap every user-derived argument in escapeshellarg() and keep the command itself a fixed literal."

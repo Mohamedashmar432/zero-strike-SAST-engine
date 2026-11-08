@@ -478,6 +478,9 @@ func evalFilter(f rules.Filter, n *ir.IRNode, fc *fileCtx) bool {
 			if f.ExcludeParamsSource && ((a.Kind == ir.NodeKindIdentifier && fc.paramsOnly[a.Text]) || paramsExpression(a, fc.lang)) {
 				return false
 			}
+			if f.ExcludeWrappedBy != "" && underWrapperCall(a, n, f.ExcludeWrappedBy, fc.lang) {
+				return false
+			}
 			if f.ExcludeBareParameter && a.Kind == ir.NodeKindIdentifier && fc.isBareParameterArg(n, a) {
 				return false
 			}
@@ -1048,6 +1051,21 @@ var paramsAccess = regexp.MustCompile(`^req\.params(\.|\[|$)`)
 func underPathSanitizer(id, sink *ir.IRNode, lang core.Language) bool {
 	for p := id.Parent; p != nil && p != sink; p = p.Parent {
 		if p.Kind == ir.NodeKindCall && pathSanitizerCallee.MatchString(calleeTextFor(p, lang)) {
+			return true
+		}
+	}
+	return false
+}
+
+// underWrapperCall reports whether node a, inside sink, sits within a call
+// whose callee text matches pattern (Filter.ExcludeWrappedBy).
+func underWrapperCall(a, sink *ir.IRNode, pattern string, lang core.Language) bool {
+	re := cachedRegexp(pattern)
+	if re == nil {
+		return false
+	}
+	for p := a.Parent; p != nil && p != sink; p = p.Parent {
+		if p.Kind == ir.NodeKindCall && re.MatchString(calleeTextFor(p, lang)) {
 			return true
 		}
 	}

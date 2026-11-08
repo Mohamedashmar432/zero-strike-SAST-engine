@@ -191,6 +191,11 @@ func exprText(n *ir.IRNode, lang core.Language) string {
 	if isJSLike(lang) {
 		return jsExprText(n, nil)
 	}
+	if lang == core.LangPHP && n.Kind == ir.NodeKindUnknown && n.Text == "" {
+		// A PHP array literal or other composite expression carries no text of
+		// its own; render its tokens so a pattern can read ['secure' => true].
+		return phpTokenText(n)
+	}
 	switch n.Kind {
 	case ir.NodeKindAttribute:
 		return attributeText(n)
@@ -205,6 +210,26 @@ func exprText(n *ir.IRNode, lang core.Language) string {
 		}
 	}
 	return n.Text
+}
+
+// phpTokenText renders a composite PHP expression as its literal, identifier and
+// punctuation tokens separated by spaces, with string quotes dropped (a string
+// literal renders as its unquoted value, as everywhere else in exprText).
+func phpTokenText(n *ir.IRNode) string {
+	switch n.Kind {
+	case ir.NodeKindLiteral, ir.NodeKindIdentifier:
+		return n.Text
+	}
+	if len(n.Children) == 0 {
+		return n.Text
+	}
+	parts := make([]string, 0, len(n.Children))
+	for _, c := range n.Children {
+		if t := phpTokenText(c); t != "" {
+			parts = append(parts, t)
+		}
+	}
+	return strings.Join(parts, " ")
 }
 
 // ---------------------------------------------------------------------------

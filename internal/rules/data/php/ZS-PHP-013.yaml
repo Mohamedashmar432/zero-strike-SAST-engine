@@ -39,6 +39,11 @@ match:
       # or a tainted value buried in a stream $context (headers, POST body),
       # does not choose where the request goes.
       tainted_argument_index: 0
+      # A value routed through a filesystem helper (storage_path, public_path,
+      # basename, realpath ...) is a local path, not a URL: reading it is a
+      # path-traversal question (the file-path rules), never SSRF.
+      honor_path_sanitizers: true
+      exclude_wrapped_by: '^(storage_path|public_path|base_path|app_path|resource_path|database_path|config_path|basename|realpath)$'
       # require_real_source was tried here and REVERTED, for the reason
       # spelled out in ZS-JAVA-019: file-scoped taint means a controller that
       # passes $_GET into a helper's $path parameter leaves only weak taint,

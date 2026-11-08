@@ -33,4 +33,6 @@ match:
   callee: passthru
   filters:
     - tainted_argument: true
+      # escapeshellarg() quotes the value into a single inert shell word.
+      exclude_wrapped_by: '^escapeshellarg$'
 fix_suggestion: "Do not build passthru() commands from user input; wrap user-derived arguments in escapeshellarg() and serve files via readfile() with a validated path instead of shelling out."

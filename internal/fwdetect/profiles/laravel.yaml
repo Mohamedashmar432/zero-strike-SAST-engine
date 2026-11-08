@@ -7,6 +7,8 @@ file_evidence:
     pattern: '(?m)^\s*use\s+Illuminate\\'
   - label: namespace App\Http\Controllers
     pattern: 'namespace\s+App\\Http\\Controllers\b'
+  - label: Laravel application namespace (App\Services, Models, Jobs ...)
+    pattern: 'namespace\s+App\\(Services|Models|Jobs|Providers|Repositories|Actions|Support|Console|Http)\b'
   - label: "Route:: registration"
     pattern: '\bRoute::(get|post|put|patch|delete|any|match|options|resource|apiResource)\('
 

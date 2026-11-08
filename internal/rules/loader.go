@@ -92,6 +92,7 @@ type filterYAML struct {
 	HonorPathSanitizers            bool                  `yaml:"honor_path_sanitizers"`
 	ExcludeParamsSource            bool                  `yaml:"exclude_params_source"`
 	ExcludeBareParameter           bool                  `yaml:"exclude_bare_parameter"`
+	ExcludeWrappedBy               string                `yaml:"exclude_wrapped_by"`
 	ArgumentHostFixed              *int                  `yaml:"argument_host_fixed"`
 	ArgumentKindNotAt              *argKindYAML          `yaml:"argument_kind_not_at"`
 	HasBareExcept                  bool                  `yaml:"has_bare_except"`
@@ -272,6 +273,7 @@ func convertFilters(fyamls []filterYAML) []Filter {
 			HonorPathSanitizers:            f.HonorPathSanitizers,
 			ExcludeParamsSource:            f.ExcludeParamsSource,
 			ExcludeBareParameter:           f.ExcludeBareParameter,
+			ExcludeWrappedBy:               f.ExcludeWrappedBy,
 			ArgumentHostFixed:              f.ArgumentHostFixed,
 			ArgumentKindNotAt:              convertArgKind(f.ArgumentKindNotAt),
 			HasBareExcept:                  f.HasBareExcept,

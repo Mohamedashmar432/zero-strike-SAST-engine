@@ -157,6 +157,15 @@ type Filter struct {
 	// handler-extracts, helper-builds split that parameter seeding exists for.
 	ExcludeBareParameter bool
 
+	// ExcludeWrappedBy is a regular expression over callee text. The
+	// TaintedArgument check ignores a tainted value that sits inside a call
+	// whose callee matches, between the value and the sink:
+	// escapeshellarg($x) for a shell sink, storage_path('docs/' . $x) for a
+	// URL-fetch sink (the result is a local path, never a URL). Unlike
+	// HonorPathSanitizers, the callee list is the rule's own, so a rule names
+	// exactly the wrappers that neutralize its sink class and no other.
+	ExcludeWrappedBy string
+
 	// CalleeMatches requires a call's callee text to match this regex. It is
 	// tested against both the callee as written and, for Python, its
 	// import-canonicalized form (md5 -> hashlib.md5), so one rule can cover a
