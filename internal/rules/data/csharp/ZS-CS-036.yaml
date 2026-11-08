@@ -1,0 +1,32 @@
+id: ZS-CS-036
+lifecycle: released
+name: Path Traversal via System.IO.File Methods
+version: "1.0.0"
+language: csharp
+category: path-traversal
+severity: high
+confidence: medium
+cwe:
+  - CWE-22
+owasp:
+  - "A01:2025"
+rationale: |
+  File.ReadAllBytes, OpenRead, Delete and the other System.IO.File methods take the path they act on as their first argument. When that path is built
+    from a request value (Path.Combine(root, name) does not stop a name of ../../etc/passwd or an absolute path) an attacker reads, overwrites or deletes
+    files outside the intended directory. Path.GetFileName() on the value removes the directory part and is treated as sanitising. ZS-CS-015 covers
+    ReadAllText and ZS-CS-026 WriteAllText.
+description: |
+  Detects System.IO.File read, open, delete, copy and move calls and PhysicalFile() whose path argument traces back to an untrusted source.
+message: "System.IO.File call with a tainted path - resolve with Path.GetFullPath() and confirm it stays inside the base directory"
+references:
+  - https://owasp.org/www-community/attacks/Path_Traversal
+tags: [path-traversal, file-io, aspnet]
+match:
+  kind: call
+  filters:
+    - callee_pattern: '(^|\.)(File\.(ReadAllBytes|ReadAllLines|ReadLines|ReadAllBytesAsync|ReadAllLinesAsync|ReadAllTextAsync|OpenRead|OpenText|Open|Delete|Copy|Move)|PhysicalFile)$'
+    - tainted_argument: true
+      tainted_argument_index: 0
+      honor_path_sanitizers: true
+      exclude_wrapped_by: '(^|\.)Path\.GetFileName$'
+fix_suggestion: "Resolve the path with Path.GetFullPath(), confirm it starts with the allowed base directory, or reduce the input with Path.GetFileName()."

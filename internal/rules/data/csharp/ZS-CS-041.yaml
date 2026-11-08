@@ -1,0 +1,26 @@
+id: ZS-CS-041
+lifecycle: released
+name: Permissive CORS Policy (AllowAnyOrigin)
+version: "1.0.0"
+language: csharp
+category: security-misconfiguration
+severity: medium
+confidence: medium
+cwe:
+  - CWE-942
+owasp:
+  - "A02:2025"
+rationale: |
+  AllowAnyOrigin() lets every website read responses from this API through the browser. Combined with cookie or header based authentication in the same
+    policy, or an API reachable only from an internal network, it turns any visited page into a client of the service.
+description: |
+  Detects calls to AllowAnyOrigin() on a CORS policy builder.
+message: "CORS policy allows any origin - restrict it with WithOrigins()"
+references:
+  - https://learn.microsoft.com/aspnet/core/security/cors
+tags: [cors, aspnet]
+match:
+  kind: call
+  filters:
+    - callee_pattern: '(^|\.)AllowAnyOrigin$'
+fix_suggestion: "List the trusted origins with WithOrigins(\"https://app.example.com\") instead of AllowAnyOrigin()."

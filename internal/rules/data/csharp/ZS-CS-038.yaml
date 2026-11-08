@@ -1,0 +1,34 @@
+id: ZS-CS-038
+lifecycle: released
+name: XXE via XmlUrlResolver
+version: "1.0.0"
+language: csharp
+category: xxe
+severity: high
+confidence: medium
+cwe:
+  - CWE-611
+owasp:
+  - "A05:2025"
+rationale: |
+  Assigning an XmlUrlResolver to XmlResolver re-enables external entity and DTD resolution on XmlDocument and XmlTextReader (the default resolver is null on
+    current .NET). A document fed from a request then lets an attacker read local files or reach internal hosts through entity references.
+description: |
+  Detects an assignment of new XmlUrlResolver() to an XmlResolver property.
+message: "XmlResolver set to XmlUrlResolver - external entities are resolved (XXE)"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html
+tags: [xxe, xml]
+match:
+  kind: assignment
+  lhs_identifier: 'XmlResolver$'
+  rhs_literal: 'new\s+XmlUrlResolver\s*\('
+  filters:
+    # ZS-CS-020 already reports the same XmlReaderSettings when it sets
+    # DtdProcessing.Parse, and a method that configures DtdProcessing at all
+    # decides the DTD question itself; one weakness, one finding.
+    - not:
+        kind: assignment
+        filters:
+          - enclosing_function_mentions: '^DtdProcessing$'
+fix_suggestion: "Leave XmlResolver at its default (null) or set it to null explicitly, and keep DtdProcessing at Prohibit."

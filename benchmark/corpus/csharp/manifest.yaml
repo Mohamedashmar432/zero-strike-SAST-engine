@@ -124,3 +124,72 @@ cases:
   - file: cases/fw_mvc5_safe_helper.cs
     language: csharp
     expect: []
+  - file: cases/vuln_redirect_controller.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-034, min_count: 1}]
+  - file: cases/safe_redirect_local.cs
+    language: csharp
+    expect: []
+  - file: cases/vuln_cookie_append.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-035, min_count: 1}]
+  - file: cases/safe_cookie_options.cs
+    language: csharp
+    expect: []
+  - file: cases/vuln_file_methods_path.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-036, min_count: 2}]
+  - file: cases/safe_file_getfilename.cs
+    language: csharp
+    expect: []
+  - file: cases/vuln_file_readalltext_qualified.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-015, min_count: 1}]
+  - file: cases/vuln_raw_sql_apis.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-037, min_count: 2}]
+  - file: cases/safe_raw_sql_parameterized.cs
+    language: csharp
+    expect: []
+  - file: cases/vuln_xmlurlresolver.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-038, min_count: 1}]
+  - file: cases/safe_xmlresolver_null.cs
+    language: csharp
+    expect: []
+  - file: cases/vuln_crypto_providers.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-039, min_count: 1}, {rule_id: ZS-CS-040, min_count: 1}]
+  - file: cases/safe_crypto_modern.cs
+    language: csharp
+    expect: []
+  - file: cases/vuln_cors_anyorigin.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-041, min_count: 1}]
+  - file: cases/safe_cors_origins.cs
+    language: csharp
+    expect: []
+  - file: cases/vuln_bson_parse.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-042, min_count: 1}]
+  - file: cases/vuln_ssrf_httpclient_receivers.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-016, min_count: 1}, {rule_id: ZS-CS-027, min_count: 1}, {rule_id: ZS-CS-043, min_count: 1}]
+  - file: cases/safe_ssrf_fixed_host_receivers.cs
+    language: csharp
+    expect: []
+  - file: cases/vuln_content_html.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-044, min_count: 1}]
+  - file: cases/safe_content_encoded.cs
+    language: csharp
+    expect: []
+  - file: cases/vuln_developer_exception_page.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-045, min_count: 1}]
+  - file: cases/safe_developer_exception_guarded.cs
+    language: csharp
+    expect: []
+  - file: cases/vuln_const_signing_key.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-006, min_count: 1}]

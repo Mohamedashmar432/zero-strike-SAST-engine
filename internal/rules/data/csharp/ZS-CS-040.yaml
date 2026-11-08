@@ -1,0 +1,27 @@
+id: ZS-CS-040
+lifecycle: released
+name: Weak Cryptographic Hash (MD5/SHA1 Provider Classes)
+version: "1.0.0"
+language: csharp
+category: cryptography
+severity: medium
+confidence: high
+cwe:
+  - CWE-328
+owasp:
+  - "A04:2025"
+rationale: |
+  MD5CryptoServiceProvider, MD5Cng, SHA1CryptoServiceProvider, SHA1Managed and SHA1Cng compute hashes that are collision-broken and far too fast for
+    password storage. Used on a password they let an attacker with the hash table recover the password in seconds. ZS-CS-005 and ZS-CS-029 cover the
+    MD5.Create() and SHA1.Create() factories.
+description: |
+  Detects instantiation of the MD5 and SHA-1 hash provider classes.
+message: "Weak hash provider (MD5/SHA-1) - use SHA-256 or a password KDF"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+tags: [weak-crypto, hash]
+match:
+  kind: call
+  filters:
+    - callee_pattern: '^(MD5CryptoServiceProvider|MD5Cng|MD5Managed|SHA1CryptoServiceProvider|SHA1Managed|SHA1Cng)$'
+fix_suggestion: "Use SHA256.Create() for integrity checks and Rfc2898DeriveBytes, ASP.NET Identity PasswordHasher or Argon2 for passwords."

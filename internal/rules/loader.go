@@ -93,6 +93,7 @@ type filterYAML struct {
 	ExcludeParamsSource            bool                  `yaml:"exclude_params_source"`
 	ExcludeBareParameter           bool                  `yaml:"exclude_bare_parameter"`
 	ExcludeWrappedBy               string                `yaml:"exclude_wrapped_by"`
+	InsideCondition                string                `yaml:"inside_condition"`
 	ArgumentHostFixed              *int                  `yaml:"argument_host_fixed"`
 	ArgumentKindNotAt              *argKindYAML          `yaml:"argument_kind_not_at"`
 	HasBareExcept                  bool                  `yaml:"has_bare_except"`
@@ -274,6 +275,7 @@ func convertFilters(fyamls []filterYAML) []Filter {
 			ExcludeParamsSource:            f.ExcludeParamsSource,
 			ExcludeBareParameter:           f.ExcludeBareParameter,
 			ExcludeWrappedBy:               f.ExcludeWrappedBy,
+			InsideCondition:                f.InsideCondition,
 			ArgumentHostFixed:              f.ArgumentHostFixed,
 			ArgumentKindNotAt:              convertArgKind(f.ArgumentKindNotAt),
 			HasBareExcept:                  f.HasBareExcept,

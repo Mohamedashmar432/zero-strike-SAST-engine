@@ -452,6 +452,9 @@ func evalFilter(f rules.Filter, n *ir.IRNode, fc *fileCtx) bool {
 	if !evalContextFilters(f, n, fc) {
 		return false
 	}
+	if f.InsideCondition != "" && !insideCondition(n, f.InsideCondition) {
+		return false
+	}
 	if f.ArgumentCount != nil {
 		ac, _ := n.Attrs["argument_count"].(int)
 		if ac != *f.ArgumentCount {
@@ -1052,6 +1055,27 @@ func underPathSanitizer(id, sink *ir.IRNode, lang core.Language) bool {
 	for p := id.Parent; p != nil && p != sink; p = p.Parent {
 		if p.Kind == ir.NodeKindCall && pathSanitizerCallee.MatchString(calleeTextFor(p, lang)) {
 			return true
+		}
+	}
+	return false
+}
+
+// insideCondition implements Filter.InsideCondition.
+func insideCondition(n *ir.IRNode, pattern string) bool {
+	re := cachedRegexp(pattern)
+	for child, p := n, n.Parent; p != nil; child, p = p, p.Parent {
+		if p.Kind != ir.NodeKindIf {
+			continue
+		}
+		for _, c := range p.Children {
+			if c == child || c.Kind == ir.NodeKindBlock {
+				break // the first block, and the branch holding n, are body
+			}
+			for _, d := range append([]*ir.IRNode{c}, ir.Descendants(c)...) {
+				if (d.Kind == ir.NodeKindIdentifier || d.Kind == ir.NodeKindLiteral) && re.MatchString(d.Text) {
+					return true
+				}
+			}
 		}
 	}
 	return false

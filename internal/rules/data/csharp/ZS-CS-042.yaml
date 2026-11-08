@@ -1,0 +1,28 @@
+id: ZS-CS-042
+lifecycle: released
+name: NoSQL Injection via BsonDocument.Parse
+version: "1.0.0"
+language: csharp
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-943
+owasp:
+  - "A05:2025"
+rationale: |
+  BsonDocument.Parse turns a JSON string into a MongoDB filter or document. When the string is a request value the caller controls the operators in the
+    filter ($ne, $where, $regex), which bypasses authentication checks and exposes other users records.
+description: |
+  Detects BsonDocument.Parse calls whose JSON argument traces back to an untrusted source.
+message: "BsonDocument.Parse on a tainted value - build the filter with typed Builders instead of parsing request JSON"
+references:
+  - https://owasp.org/www-community/attacks/NoSQL_injection
+tags: [nosql-injection, mongodb]
+match:
+  kind: call
+  filters:
+    - callee_pattern: '(^|\.)BsonDocument\.Parse$'
+    - tainted_argument: true
+      tainted_argument_index: 0
+fix_suggestion: "Use Builders<T>.Filter.Eq(field, value) with typed values rather than parsing a filter from request JSON."

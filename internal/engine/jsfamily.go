@@ -111,6 +111,23 @@ func isNewExpression(n *ir.IRNode) bool {
 		n.Children[0].Kind == ir.NodeKindUnknown && n.Children[0].Text == "new"
 }
 
+var csharpGenericArgs = regexp.MustCompile(`<[^<>()]*>`)
+
+// csharpCalleeSource is the callee as written, with generic argument lists
+// removed: the IR callee text drops a generic method name (db.Query<T>) and the
+// receiver of a chained call (new WebClient().DownloadString), which
+// callee_pattern needs to see.
+func csharpCalleeSource(n *ir.IRNode) string {
+	raw, _ := n.Attrs["callee_src"].(string)
+	for {
+		stripped := csharpGenericArgs.ReplaceAllString(raw, "")
+		if stripped == raw {
+			return raw
+		}
+		raw = stripped
+	}
+}
+
 func isLeaf(n *ir.IRNode) bool { return len(n.Children) == 0 }
 
 // jsExprText renders an expression node as dotted text in the jsCalleeText
@@ -191,6 +208,12 @@ func exprText(n *ir.IRNode, lang core.Language) string {
 	if isJSLike(lang) {
 		return jsExprText(n, nil)
 	}
+	if lang == core.LangCSharp {
+		// C# wraps each argument in an empty-text node.
+		for n.Kind == ir.NodeKindUnknown && n.Text == "" && len(n.Children) == 1 {
+			n = n.Children[0]
+		}
+	}
 	if lang == core.LangPHP && n.Kind == ir.NodeKindUnknown && n.Text == "" {
 		// A PHP array literal or other composite expression carries no text of
 		// its own; render its tokens so a pattern can read ['secure' => true].
@@ -205,7 +228,7 @@ func exprText(n *ir.IRNode, lang core.Language) string {
 		// A Python binary operator node has no Text of its own; render its
 		// operands joined by "+" as the JS family does, so a pattern can read
 		// the literal prefix of "/users/" + x or "/users/%s" % x.
-		if lang == core.LangPython {
+		if lang == core.LangPython || lang == core.LangCSharp {
 			return jsExprText(n, nil)
 		}
 	}
@@ -564,7 +587,8 @@ func (fc *fileCtx) subtreeTainted(n *ir.IRNode, realOnly bool) bool {
 // the JS/TS callee rendering. Each is inactive when unset.
 func (fc *fileCtx) evalJSFilters(f rules.Filter, n *ir.IRNode) bool {
 	if f.CalleePattern != "" {
-		if n.Kind != ir.NodeKindCall || !regexMatches(f.CalleePattern, fc.callee(n)) {
+		if n.Kind != ir.NodeKindCall || !(regexMatches(f.CalleePattern, fc.callee(n)) ||
+			(fc.lang == core.LangCSharp && regexMatches(f.CalleePattern, csharpCalleeSource(n)))) {
 			return false
 		}
 	}

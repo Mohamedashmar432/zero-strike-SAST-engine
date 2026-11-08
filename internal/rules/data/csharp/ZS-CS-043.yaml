@@ -1,0 +1,29 @@
+id: ZS-CS-043
+lifecycle: released
+name: Server-Side Request Forgery (WebRequest.Create)
+version: "1.0.0"
+language: csharp
+category: ssrf
+severity: high
+confidence: medium
+cwe:
+  - CWE-918
+owasp:
+  - "A01:2025"
+rationale: |
+  WebRequest.Create and WebRequest.CreateHttp open a connection to whatever URL they are given. A request-supplied URL lets an attacker make the server
+    call internal-only services, loopback addresses or cloud metadata endpoints and read the response.
+description: |
+  Detects WebRequest.Create and CreateHttp calls whose URL argument traces back to an untrusted source.
+message: "WebRequest.Create called with a tainted URL - validate and allowlist URLs before use"
+references:
+  - https://owasp.org/www-community/attacks/Server_Side_Request_Forgery
+tags: [ssrf, webrequest]
+match:
+  kind: call
+  filters:
+    - callee_pattern: '(^|\.)WebRequest\.(Create|CreateHttp)$'
+    - tainted_argument: true
+      tainted_argument_index: 0
+    - argument_host_fixed: 0
+fix_suggestion: "Validate the URL against an allowlist of hosts, reject private and link-local addresses, and allow only https."

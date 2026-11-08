@@ -1,0 +1,30 @@
+id: ZS-CS-037
+lifecycle: released
+name: SQL Injection via Raw SQL APIs (EF, Dapper)
+version: "1.0.0"
+language: csharp
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-89
+owasp:
+  - "A05:2025"
+rationale: |
+  FromSqlRaw, ExecuteSqlRaw, Database.SqlQuery and Dapper Query/Execute run the SQL text they are given. When that text is concatenated or
+    interpolated from a request value, an attacker rewrites the statement. The parameterised forms (FromSqlInterpolated, a {0} placeholder with arguments, or
+    an anonymous parameter object) are not reported: only argument 0, the SQL text itself, is inspected.
+description: |
+  Detects Entity Framework raw SQL methods and Dapper query methods whose SQL text argument traces back to an untrusted source.
+message: "Raw SQL built from a tainted value - use parameters (FromSqlInterpolated, {0} placeholders, or Dapper parameter objects)"
+references:
+  - https://learn.microsoft.com/ef/core/querying/sql-queries#passing-parameters
+  - https://owasp.org/www-community/attacks/SQL_Injection
+tags: [sql-injection, entity-framework, dapper]
+match:
+  kind: call
+  filters:
+    - callee_pattern: '(^|\.)(FromSqlRaw|ExecuteSqlRaw|ExecuteSqlRawAsync|ExecuteSqlCommand|ExecuteSqlCommandAsync|SqlQuery|SqlQueryRaw)(<.*>)?$|(?i:(^|\.)\w*(conn|connection|db)\w*\.(Query|QueryAsync|QueryFirst|QueryFirstOrDefault|QuerySingle|QuerySingleOrDefault|Execute|ExecuteAsync|ExecuteScalar|ExecuteScalarAsync)(<.*>)?$)'
+    - tainted_argument: true
+      tainted_argument_index: 0
+fix_suggestion: "Pass user values as parameters: FromSqlInterpolated with an interpolated string, FromSqlRaw with {0} placeholders and arguments, or Dapper with a parameter object."

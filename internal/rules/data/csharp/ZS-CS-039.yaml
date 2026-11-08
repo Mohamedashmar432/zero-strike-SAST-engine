@@ -1,0 +1,26 @@
+id: ZS-CS-039
+lifecycle: released
+name: Weak Cipher (DES, TripleDES, RC2 CryptoServiceProvider)
+version: "1.0.0"
+language: csharp
+category: cryptography
+severity: medium
+confidence: high
+cwe:
+  - CWE-327
+owasp:
+  - "A04:2025"
+rationale: |
+  DESCryptoServiceProvider, TripleDESCryptoServiceProvider and RC2CryptoServiceProvider implement ciphers with short keys or small blocks that are
+    broken or deprecated. Data encrypted with them can be recovered by brute force or block-collision attacks. ZS-CS-022 covers the DES.Create() factory.
+description: |
+  Detects instantiation of the legacy symmetric cipher provider classes.
+message: "Weak symmetric cipher provider - use Aes.Create() (AES-256)"
+references:
+  - https://learn.microsoft.com/dotnet/standard/security/cryptography-model
+tags: [weak-crypto, cipher]
+match:
+  kind: call
+  filters:
+    - callee_pattern: '^(DESCryptoServiceProvider|TripleDESCryptoServiceProvider|RC2CryptoServiceProvider)$'
+fix_suggestion: "Replace it with Aes.Create() (AES-256, GCM or CBC with HMAC) and re-encrypt existing data."

@@ -30,7 +30,7 @@ references:
 tags: [hardcoded-credential, authentication]
 match:
   kind: assignment
-  lhs_identifier: "(?i)(password|secret|api[_-]?key|apikey|token)"
+  lhs_identifier: "(?i)(password|secret|api[_-]?key|apikey|token|(signing|encryption|private|master|jwt|hmac|crypto)[_-]?key)"
   rhs_literal: "^@?[\"].+[\"]$"
   filters:
     # A guarded sentinel is not a leaked credential: it is a known-bad value
@@ -60,4 +60,9 @@ match:
     - not:
         kind: assignment
         rhs_literal: '^@?"(?:[^"]*\s[^"]*|/[^"]*|[^"]*\{[0-9]+\}[^"]*)"$'
+    # A short JWT/HMAC signing key is ZS-CS-033's finding; one weakness, one report.
+    - not:
+        kind: assignment
+        lhs_identifier: "(?i)(jwt.*key|signing.*key|hmac.*key)"
+        rhs_literal: "^\"[^\"]{1,16}\"$"
 fix_suggestion: "Replace the literal with Environment.GetEnvironmentVariable, IConfiguration, or a secrets manager lookup."

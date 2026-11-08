@@ -166,6 +166,13 @@ type Filter struct {
 	// exactly the wrappers that neutralize its sink class and no other.
 	ExcludeWrappedBy string
 
+	// InsideCondition is a regular expression over identifier and literal text.
+	// The filter passes when the node sits inside an if statement whose
+	// condition (not its body) mentions a match, as in
+	// if (app.Environment.IsDevelopment()) { app.UseDeveloperExceptionPage(); }.
+	// Rules negate it with not: to report only the unguarded call.
+	InsideCondition string
+
 	// CalleeMatches requires a call's callee text to match this regex. It is
 	// tested against both the callee as written and, for Python, its
 	// import-canonicalized form (md5 -> hashlib.md5), so one rule can cover a

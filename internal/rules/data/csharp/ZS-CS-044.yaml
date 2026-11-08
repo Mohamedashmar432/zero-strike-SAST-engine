@@ -1,0 +1,38 @@
+id: ZS-CS-044
+lifecycle: released
+name: XSS via Content() Returning Concatenated HTML
+version: "1.0.0"
+language: csharp
+category: xss
+severity: high
+confidence: medium
+cwe:
+  - CWE-79
+owasp:
+  - "A05:2025"
+rationale: |
+  Content(html) returns the string as the response body. When the body is an HTML literal concatenated with a request value, and the content type is
+    HTML (the ASP.NET MVC default, or an explicit text/html), the value is rendered unencoded and the page runs attacker script. ZS-CS-004 covers
+    Response.Write.
+description: |
+  Detects Content() calls whose first argument is a concatenation that includes an HTML tag literal and a tainted value, with the default or an explicit HTML content type.
+message: "Content() builds HTML from a tainted value - encode it with HttpUtility.HtmlEncode() or return a view"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html
+tags: [xss, aspnet]
+match:
+  kind: call
+  filters:
+    - callee_pattern: '^(this\.)?Content$'
+    - tainted_argument: true
+      tainted_argument_index: 0
+      exclude_wrapped_by: '(^|\.)(HtmlEncode|AttributeEncode|Encode)$'
+    - argument_matches_at:
+        index: 0
+        pattern: '(^|\+)[^+]*<[A-Za-z/!]'
+    - any_of:
+        - argument_count: 1
+        - argument_matches_at:
+            index: 1
+            pattern: '(?i)text/html'
+fix_suggestion: "Encode the value with HttpUtility.HtmlEncode() before concatenating it, or render a Razor view that encodes by default."

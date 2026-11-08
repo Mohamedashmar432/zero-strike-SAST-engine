@@ -85,6 +85,10 @@ var csharpPatterns = languagePatterns{
 		regexp.MustCompile(`WebUtility\.HtmlEncode\(`),
 		regexp.MustCompile(`Encoder\.Default\.Encode\(`),
 	},
+	// Path.GetFileName drops the directory part of a path (honor_path_sanitizers).
+	PathSanitizers: []*regexp.Regexp{
+		regexp.MustCompile(`Path\.GetFileName\(`),
+	},
 }
 
 var goPatterns = languagePatterns{

@@ -1,0 +1,28 @@
+id: ZS-CS-035
+lifecycle: released
+name: Insecure Cookie (Response.Cookies.Append Without Options)
+version: "1.0.0"
+language: csharp
+category: security-misconfiguration
+severity: medium
+confidence: medium
+cwe:
+  - CWE-614
+owasp:
+  - "A02:2025"
+rationale: |
+  Response.Cookies.Append(name, value) with no CookieOptions argument creates a cookie with the framework defaults: HttpOnly off and Secure off.
+    Script on the page can read it and it travels over plain HTTP, so a session or remember-me value set this way is exposed to XSS and to anyone on the
+    network path. A call that passes a CookieOptions argument is not reported, because the flags live inside that object.
+description: |
+  Detects two-argument calls to Cookies.Append, the form that cannot set HttpOnly, Secure or SameSite.
+message: "Cookies.Append() without CookieOptions - the cookie is neither HttpOnly nor Secure"
+references:
+  - https://learn.microsoft.com/aspnet/core/fundamentals/app-state#cookies
+tags: [cookie, aspnet]
+match:
+  kind: call
+  filters:
+    - callee_pattern: '(^|\.)Cookies\.Append$'
+    - argument_count: 2
+fix_suggestion: "Pass new CookieOptions { HttpOnly = true, Secure = true, SameSite = SameSiteMode.Strict } as the third argument."

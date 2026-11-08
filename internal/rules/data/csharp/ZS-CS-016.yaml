@@ -36,8 +36,10 @@ references:
 tags: [ssrf, http-client]
 match:
   kind: call
-  callee: httpClient.GetAsync
   filters:
+    # Any HttpClient-shaped receiver (httpClient, _client, Client, http) and every
+    # verb helper whose first argument is the URL.
+    - callee_pattern: '(?i:(^|\.)_?\w*(client|http)\w*\.(GetStringAsync|GetStreamAsync|GetByteArrayAsync|GetAsync|PostAsync|PutAsync|PatchAsync|DeleteAsync))$'
     - tainted_argument: true
       # GetAsync(requestUri) / GetAsync(requestUri, cancellationToken) /
       # GetAsync(requestUri, completionOption): the destination is argument 0

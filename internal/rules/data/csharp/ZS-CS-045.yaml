@@ -1,0 +1,31 @@
+id: ZS-CS-045
+lifecycle: released
+name: Developer Exception Page Enabled Outside a Development Check
+version: "1.0.0"
+language: csharp
+category: security-misconfiguration
+severity: medium
+confidence: medium
+cwe:
+  - CWE-489
+owasp:
+  - "A02:2025"
+rationale: |
+  UseDeveloperExceptionPage() renders stack traces, source snippets, request headers and environment details in the browser for every unhandled
+    exception. Outside a development-only guard it ships with the production build, which hands an attacker the application internals that make the next
+    step easier.
+description: |
+  Detects calls to UseDeveloperExceptionPage() that are not inside an if statement whose condition checks the hosting environment (IsDevelopment, IsEnvironment).
+message: "UseDeveloperExceptionPage() is not guarded by an environment check - detailed errors reach production users"
+references:
+  - https://learn.microsoft.com/aspnet/core/fundamentals/error-handling#developer-exception-page
+tags: [debug, aspnet, error-handling]
+match:
+  kind: call
+  filters:
+    - callee_pattern: '(^|\.)UseDeveloperExceptionPage$'
+    - not:
+        kind: call
+        filters:
+          - inside_condition: '^(IsDevelopment|IsEnvironment|IsStaging|EnvironmentName)$'
+fix_suggestion: "Wrap it in if (app.Environment.IsDevelopment()) { ... } and register UseExceptionHandler() for every other environment."

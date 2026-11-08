@@ -1,0 +1,34 @@
+id: ZS-CS-034
+lifecycle: released
+name: Open Redirect (Controller.Redirect)
+version: "1.0.0"
+language: csharp
+category: open-redirect
+severity: medium
+confidence: medium
+cwe:
+  - CWE-601
+owasp:
+  - "A01:2025"
+rationale: |
+  A controller action that passes a request-supplied URL to Redirect(), RedirectPermanent() or their PreserveMethod variants sends the browser to
+    any site the attacker names, which makes a link on the trusted domain a phishing and token-theft vector. LocalRedirect() and a prior Url.IsLocalUrl()
+    check are the framework guards; ZS-CS-017 covers the classic Response.Redirect.
+description: |
+  Detects calls to Redirect and RedirectPermanent (the Controller helpers) whose destination argument traces back to the request, unless the enclosing action also calls Url.IsLocalUrl.
+message: "Redirect() called with a request-controlled URL - use LocalRedirect() or validate with Url.IsLocalUrl()"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
+  - https://learn.microsoft.com/aspnet/core/security/preventing-open-redirects
+tags: [redirect, aspnet]
+match:
+  kind: call
+  filters:
+    - callee_pattern: '^(this\.)?(Redirect|RedirectPermanent|RedirectPreserveMethod|RedirectPermanentPreserveMethod)$'
+    - tainted_argument: true
+      tainted_argument_index: 0
+    - not:
+        kind: call
+        filters:
+          - enclosing_function_mentions: 'IsLocalUrl'
+fix_suggestion: "Use LocalRedirect(url) or check Url.IsLocalUrl(url) (or an allowlist of destinations) before redirecting."
