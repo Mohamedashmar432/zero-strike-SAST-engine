@@ -42,7 +42,10 @@ var Version = "dev"
 //	    context_identifier_matches / enclosing_function_* / any_of /
 //	    argument_literal_index filters, module-constant resolution for
 //	    argument_literal_matches
-const MatchSemanticsRevision = 5
+//	6 - framework-aware taint seeding (internal/fwdetect): in a file with
+//	    high-confidence framework evidence only entry-point parameters are
+//	    seeded, plus the framework's request sources
+const MatchSemanticsRevision = 6
 
 // CacheKey returns the identity the finding and IR caches must key on, pairing
 // the release version with the matching-semantics revision so that either one

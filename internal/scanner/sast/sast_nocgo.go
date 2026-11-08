@@ -8,6 +8,7 @@ import (
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/analyzer"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/cache"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/fwdetect"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/rules"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/walker"
 )
@@ -23,6 +24,9 @@ type SASTScanner struct{}
 func New(_ []*rules.Rule, _ string, _ cache.FindingCache, _ cache.ASTCache, _ bool, _ int) *SASTScanner {
 	return &SASTScanner{}
 }
+
+// Frameworks is always empty: this build detects nothing.
+func (s *SASTScanner) Frameworks() []fwdetect.Summary { return nil }
 
 func (s *SASTScanner) Name() string { return "sast" }
 

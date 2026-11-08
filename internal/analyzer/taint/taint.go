@@ -11,6 +11,7 @@
 package taint
 
 import (
+	"regexp"
 	"strings"
 
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
@@ -66,6 +67,11 @@ type Result struct {
 	// injection rules opt out of it with the exclude_params_source filter;
 	// every other rule still sees the variable as tainted.
 	ParamsOnly map[string]bool
+
+	// FrameworkSources are the request-accessor patterns added for the
+	// file's high-confidence frameworks (empty when none). The engine reuses
+	// them to recognize an inline source (sink(Request.Query["q"])).
+	FrameworkSources []*regexp.Regexp
 }
 
 // Build walks file in source order and returns the set of variable names
@@ -116,6 +122,10 @@ func BuildContext(file *ir.IRFile, symbols symboltable.SymbolTable, dfg *graph.D
 		return Result{Tainted: tainted, Reasons: reasons, Paths: paths, Weak: weak, PathSafe: pathSafe, ParamsOnly: paramsOnly}
 	}
 	pats := patternsFor(file.Language)
+	fw := frameworkSeeding(file)
+	if fw != nil {
+		pats.Sources = append(append([]*regexp.Regexp(nil), pats.Sources...), fw.sources...)
+	}
 	summaries := buildSummaries(file, pats)
 
 	// Seed function parameters as tainted before walking assignments.
@@ -140,83 +150,127 @@ func BuildContext(file *ir.IRFile, symbols symboltable.SymbolTable, dfg *graph.D
 	// precise; this is the version whose cost is measurable against the
 	// corpus's --max-fp 0 gate. Narrow it if that gate or the real-target
 	// false-positive rate says to.
-	ir.Walk(file.Root, func(n *ir.IRNode) bool {
-		if n.Kind != ir.NodeKindFunction {
-			return true
-		}
-		params, _ := n.Attrs["parameters"].([]string)
-		for _, p := range params {
-			if p == "" || p == "_" {
-				continue
+	if fw == nil {
+		ir.Walk(file.Root, func(n *ir.IRNode) bool {
+			if n.Kind != ir.NodeKindFunction {
+				return true
 			}
-			tainted[p] = true
-			reasons[p] = "unvalidated function parameter " + p
-			// Seeded taint with no source pattern behind it — see Result.Weak.
-			weak[p] = true
-		}
-		return true
-	})
+			params, _ := n.Attrs["parameters"].([]string)
+			for _, p := range params {
+				if p == "" || p == "_" {
+					continue
+				}
+				tainted[p] = true
+				reasons[p] = "unvalidated function parameter " + p
+				// Seeded taint with no source pattern behind it — see Result.Weak.
+				weak[p] = true
+			}
+			return true
+		})
+	} else {
+		// A framework with file-level evidence tells us which parameters
+		// the request actually reaches: seed those (real sources, so not
+		// weak) and leave every other function's parameters clean. The
+		// framework's own accessors joined the source patterns above.
+		ir.Walk(file.Root, func(n *ir.IRNode) bool {
+			if n.Kind != ir.NodeKindFunction && n.Kind != ir.NodeKindUnknown {
+				return true
+			}
+			for _, e := range fw.entries {
+				for _, p := range e.entries.Params(n) {
+					if p == "" || p == "_" {
+						continue
+					}
+					tainted[p] = true
+					reasons[p] = e.name + " request parameter " + p
+				}
+			}
+			return true
+		})
+	}
 
-	ir.Walk(file.Root, func(n *ir.IRNode) bool {
-		if n.Kind != ir.NodeKindAssignment {
-			return true
-		}
-		lhs, _ := n.Attrs["lhs"].(string)
-		if lhs == "" {
-			return true
-		}
-		verdict, reason, ref := assignmentTaintsLHS(n, pats, summaries, symbols, tainted)
-		aug, _ := n.Attrs["augmented"].(bool)
-		for _, name := range lhsNames(lhs) {
-			v, rs, rf := verdict, reason, ref
-			if aug && !v && tainted[name] {
-				// Inherits the previous verdict; keep the previously
-				// recorded reason instead of overwriting with empty.
-				v, rs, rf = true, reasons[name], name
+	walkAssignments := func() {
+		ir.Walk(file.Root, func(n *ir.IRNode) bool {
+			if n.Kind != ir.NodeKindAssignment {
+				return true
 			}
-			tainted[name] = v
-			if v {
-				// Weakness follows the same edge the verdict came from.
-				// assignmentTaintsLHS returns a non-empty ref only when the
-				// verdict was "RHS references an already-tainted name", so
-				// ref != "" is exactly the propagation case and inherits that
-				// name's tier. Everything else that yields true is a matched
-				// source pattern or a function summary, both of which are
-				// real sources, so the LHS becomes strong.
-				if rf != "" {
-					weak[name] = weak[rf]
+			lhs, _ := n.Attrs["lhs"].(string)
+			if lhs == "" {
+				return true
+			}
+			verdict, reason, ref := assignmentTaintsLHS(n, pats, summaries, symbols, tainted)
+			aug, _ := n.Attrs["augmented"].(bool)
+			for _, name := range lhsNames(lhs) {
+				v, rs, rf := verdict, reason, ref
+				if aug && !v && tainted[name] {
+					// Inherits the previous verdict; keep the previously
+					// recorded reason instead of overwriting with empty.
+					v, rs, rf = true, reasons[name], name
+				}
+				tainted[name] = v
+				if v {
+					// Weakness follows the same edge the verdict came from.
+					// assignmentTaintsLHS returns a non-empty ref only when the
+					// verdict was "RHS references an already-tainted name", so
+					// ref != "" is exactly the propagation case and inherits that
+					// name's tier. Everything else that yields true is a matched
+					// source pattern or a function summary, both of which are
+					// real sources, so the LHS becomes strong.
+					if rf != "" {
+						weak[name] = weak[rf]
+					} else {
+						delete(weak, name)
+					}
+					reasons[name] = rs
+					if pathSanitized(n, pats, tainted, pathSafe) {
+						pathSafe[name] = true
+					} else {
+						delete(pathSafe, name)
+					}
+					if paramsOnlySource(n, pats, tainted, paramsOnly) {
+						paramsOnly[name] = true
+					} else {
+						delete(paramsOnly, name)
+					}
+					if dfg != nil {
+						if p := extendPath(n, rf, dfg, paths); p != nil {
+							paths[name] = p
+						} else {
+							delete(paths, name)
+						}
+					}
 				} else {
+					delete(reasons, name)
+					delete(paths, name)
 					delete(weak, name)
-				}
-				reasons[name] = rs
-				if pathSanitized(n, pats, tainted, pathSafe) {
-					pathSafe[name] = true
-				} else {
 					delete(pathSafe, name)
-				}
-				if paramsOnlySource(n, pats, tainted, paramsOnly) {
-					paramsOnly[name] = true
-				} else {
 					delete(paramsOnly, name)
 				}
-				if dfg != nil {
-					if p := extendPath(n, rf, dfg, paths); p != nil {
-						paths[name] = p
-					} else {
-						delete(paths, name)
-					}
-				}
-			} else {
-				delete(reasons, name)
-				delete(paths, name)
-				delete(weak, name)
-				delete(pathSafe, name)
-				delete(paramsOnly, name)
 			}
+			return true
+		})
+	}
+	walkAssignments()
+
+	if fw != nil {
+		// Data reaches a helper through a call, not by the helper's name
+		// being a parameter: a helper whose parameters are not request-bound
+		// stays clean unless a same-file call passes it something tainted.
+		// Parameters are matched by callee name, not position, which keeps
+		// this independent of each grammar's argument layout; a few rounds
+		// carry taint through helper-calls-helper chains.
+		for round := 0; round < 3; round++ {
+			if !seedCalledHelpers(file, pats, tainted, reasons, weak) {
+				break
+			}
+			walkAssignments()
 		}
-		return true
-	})
-	return Result{Tainted: tainted, Reasons: reasons, Paths: paths, Weak: weak, PathSafe: pathSafe, ParamsOnly: paramsOnly}
+	}
+	res := Result{Tainted: tainted, Reasons: reasons, Paths: paths, Weak: weak, PathSafe: pathSafe, ParamsOnly: paramsOnly}
+	if fw != nil {
+		res.FrameworkSources = fw.sources
+	}
+	return res
 }
 
 // paramsOnlySource reports whether the assignment's taint comes only from a

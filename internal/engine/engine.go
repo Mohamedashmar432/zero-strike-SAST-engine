@@ -122,6 +122,22 @@ type MatchContext struct {
 	// or a file under a frontend/ source root (see IsBrowserContext). Rules
 	// listing "browser" in SkipContexts do not run against it.
 	Browser bool
+	// Frameworks names every framework detected for the file, at any
+	// confidence (internal/fwdetect). A rule with a frameworks list applies
+	// only when one of them is here.
+	Frameworks []string
+}
+
+// anyFramework reports whether any of want is in have.
+func anyFramework(want, have []string) bool {
+	for _, w := range want {
+		for _, h := range have {
+			if w == h {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // Engine matches rules against an AnalysisResult.
@@ -141,6 +157,9 @@ func (e *defaultEngine) Match(_ context.Context, mc *MatchContext) ([]MatchResul
 	}
 	taintedVars := mc.File.TaintedVars
 	fileLang := mc.File.IR.Language
+	if len(mc.File.FrameworkSources) > 0 {
+		markFrameworkSources(mc.File.IR.Root, fileLang, mc.File.FrameworkSources)
+	}
 	fc := newFileCtx(mc.File.IR, taintedVars, mc.File.WeakTaintVars, mc.File.PathSafeVars, mc.File.ParamsOnlyVars)
 	var out []MatchResult
 	// reported tracks rules with OncePerFile that have already matched here.
@@ -172,6 +191,9 @@ func (e *defaultEngine) Match(_ context.Context, mc *MatchContext) ([]MatchResul
 			return
 		}
 		if mc.Browser && skipsContext(r, "browser") {
+			return
+		}
+		if len(r.Frameworks) > 0 && !anyFramework(r.Frameworks, mc.Frameworks) {
 			return
 		}
 		if r.OncePerFile && reported[r] {
@@ -860,6 +882,9 @@ func rhsIsTainted(n *ir.IRNode, taintedVars, weak map[string]bool, requireRealSo
 // handles (const v = req.body.x; sink(v)) — see taint.IsSource's doc
 // comment for why the assignment-based pass alone misses this.
 func isDirectSourceExpression(n *ir.IRNode, lang core.Language) bool {
+	if fw, _ := n.Attrs[fwSourceAttr].(bool); fw {
+		return true
+	}
 	switch n.Kind {
 	case ir.NodeKindCall:
 		// Source patterns like "request.getParameter(" or "os.Getenv("
@@ -1252,4 +1277,54 @@ func argumentKindAllowed(n *ir.IRNode, spec rules.ArgumentKindPattern) bool {
 		}
 	}
 	return true
+}
+
+// fwSourceAttr marks an IR node whose text matches a request accessor of the
+// file's detected framework (see markFrameworkSources). The marker rides on the
+// node so isDirectSourceExpression, which is threaded through a dozen filters
+// by language alone, needs no new parameter.
+const fwSourceAttr = "fw_source"
+
+// markFrameworkSources tags the call, attribute and identifier nodes of root
+// whose text matches one of the file's framework source patterns, mirroring
+// the text forms isDirectSourceExpression tests for the language sources. A call
+// is tested by both its rendered callee and the builder's raw callee text, so
+// $request->input('q') and Request.Query["q"] both register. The IR belongs to
+// the one goroutine matching this file, so setting Attrs here is race free.
+func markFrameworkSources(root *ir.IRNode, lang core.Language, srcs []*regexp.Regexp) {
+	test := func(text string) bool {
+		if text == "" {
+			return false
+		}
+		for _, re := range srcs {
+			if re.MatchString(text) {
+				return true
+			}
+		}
+		return false
+	}
+	mark := func(n *ir.IRNode) {
+		if n.Attrs == nil {
+			n.Attrs = map[string]any{}
+		}
+		n.Attrs[fwSourceAttr] = true
+	}
+	ir.Walk(root, func(n *ir.IRNode) bool {
+		switch n.Kind {
+		case ir.NodeKindCall:
+			raw, _ := n.Attrs["callee_src"].(string)
+			if test(calleeTextFor(n, lang)+"(") || (raw != "" && test(raw+"(")) {
+				mark(n)
+			}
+		case ir.NodeKindAttribute:
+			if test(attributeTextFor(n, lang)) {
+				mark(n)
+			}
+		case ir.NodeKindIdentifier:
+			if test(n.Text) {
+				mark(n)
+			}
+		}
+		return true
+	})
 }
