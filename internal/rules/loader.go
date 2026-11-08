@@ -38,6 +38,8 @@ type ruleYAML struct {
 	// ReportAtDeclaration: see rules.Rule.
 	ReportAtDeclaration bool `yaml:"report_at_declaration"`
 	SkipContexts  []string  `yaml:"skip_contexts"`
+	// Frameworks: see rules.Rule.
+	Frameworks []string `yaml:"frameworks"`
 }
 
 type matchYAML struct {
@@ -223,6 +225,7 @@ func (l *defaultLoader) parseYAML(source string, data []byte) ([]*Rule, error) {
 		AggregateIdenticalCalls: ry.AggregateIdenticalCalls,
 		ReportAtDeclaration:     ry.ReportAtDeclaration,
 		SkipContexts:  ry.SkipContexts,
+		Frameworks:    ry.Frameworks,
 		Match:         convertMatch(ry.Match),
 	}
 

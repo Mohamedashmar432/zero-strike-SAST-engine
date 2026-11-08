@@ -61,9 +61,21 @@ type Report struct {
 	// run and the key is absent, while an empty non-nil slice means SCA ran over no manifests and
 	// serialises as []. The element has no Severity field, so the CI-gate grep cannot match it.
 	Dependencies []DependencyRef `json:"Dependencies,omitzero"`
+	// Frameworks lists the web frameworks detection found, per framework and confidence, with the
+	// number of files each was detected in. Additive and omitted when none were detected; the
+	// element has no Severity field, so the CI-gate grep cannot match it.
+	Frameworks []FrameworkRef `json:"Frameworks,omitempty"`
 	Stats              ScanStats
 	Diagnostics        []analyzer.Diagnostic
 	GroupBy            GroupBy
+}
+
+// FrameworkRef is one framework detection tally. Confidence is "high" (file-level evidence) or
+// "medium" (manifest only); only high changes how the engine seeds taint.
+type FrameworkRef struct {
+	Framework  string
+	Confidence string
+	Files      int
 }
 
 // DependencyRef is one parsed dependency. Manifest is repo-relative with forward slashes.

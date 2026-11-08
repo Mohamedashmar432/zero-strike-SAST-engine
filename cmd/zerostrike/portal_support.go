@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/fwdetect"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/portal"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/report"
 	jsonreport "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/report/json"
@@ -347,6 +348,18 @@ func buildDependencyRefs(deps []scascan.Dependency, rootPath, absRoot string) []
 	if len(out) > maxDependencyRefs {
 		fmt.Fprintf(os.Stderr, "WARNING: dependency inventory truncated to %d of %d entries; the portal will not match new advisories against the rest\n", maxDependencyRefs, len(out))
 		out = out[:maxDependencyRefs]
+	}
+	return out
+}
+
+// buildFrameworkRefs converts framework detection tallies to their report form.
+func buildFrameworkRefs(in []fwdetect.Summary) []report.FrameworkRef {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make([]report.FrameworkRef, len(in))
+	for i, f := range in {
+		out[i] = report.FrameworkRef{Framework: f.Framework, Confidence: f.Confidence, Files: f.Files}
 	}
 	return out
 }

@@ -30,6 +30,7 @@ type groupedDoc struct {
 	Branch         string
 	Hostname       string
 	Dependencies   []report.DependencyRef `json:"Dependencies,omitzero"`
+	Frameworks     []report.FrameworkRef  `json:"Frameworks,omitempty"`
 	Stats          report.ScanStats
 	Diagnostics    []analyzer.Diagnostic
 	GroupBy        report.GroupBy
@@ -54,6 +55,7 @@ func (r *jsonReporter) Render(rep *report.Report, dest io.Writer) error {
 		Branch:         rep.Branch,
 		Hostname:       rep.Hostname,
 		Dependencies:   rep.Dependencies,
+		Frameworks:     rep.Frameworks,
 		Stats:          rep.Stats,
 		Diagnostics:    rep.Diagnostics,
 		GroupBy:        rep.GroupBy,

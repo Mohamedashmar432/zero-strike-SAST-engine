@@ -13,6 +13,7 @@ import (
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/cache"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/findings"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/fwdetect"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/ir"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/langreg"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/rules"
@@ -40,6 +41,8 @@ type ScanResult struct {
 	// Dependencies is the SCA scanner's full parsed inventory: nil when SCA was not enabled,
 	// empty non-nil when it ran over no manifests.
 	Dependencies []scascan.Dependency
+	// Frameworks is what framework detection found, per framework and confidence; nil when none.
+	Frameworks []fwdetect.Summary
 }
 
 type scanDiagnostic struct {
@@ -56,6 +59,7 @@ type ScanPipeline struct {
 	dedup     findings.Deduplicator
 	allowList *findings.AllowList
 	sca       *scascan.SCAScanner // nil unless cfg.EnableSCA
+	sast      *sast.SASTScanner
 }
 
 // New creates a ScanPipeline. Returns an error if rules fail to load or
@@ -98,7 +102,8 @@ func New(cfg ScanConfig) (*ScanPipeline, error) {
 
 	var scanners []scanner.Scanner
 	var sca *scascan.SCAScanner
-	scanners = append(scanners, sast.New(allRules, cfg.RootPath, findingCache, astCache, cfg.EnableGraphs, cfg.WorkerCount))
+	sastScanner := sast.New(allRules, cfg.RootPath, findingCache, astCache, cfg.EnableGraphs, cfg.WorkerCount)
+	scanners = append(scanners, sastScanner)
 	if cfg.EnableSecrets {
 		scanners = append(scanners, secrets.New())
 	}
@@ -135,6 +140,7 @@ func New(cfg ScanConfig) (*ScanPipeline, error) {
 		dedup:     findings.NewDeduplicator(),
 		allowList: al,
 		sca:       sca,
+		sast:      sastScanner,
 	}, nil
 }
 
@@ -359,5 +365,6 @@ func (p *ScanPipeline) Run(ctx context.Context) (*ScanResult, error) {
 	if p.sca != nil {
 		result.Dependencies = p.sca.Inventory()
 	}
+	result.Frameworks = p.sast.Frameworks()
 	return &result, nil
 }

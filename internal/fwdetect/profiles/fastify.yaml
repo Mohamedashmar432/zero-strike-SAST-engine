@@ -1,0 +1,32 @@
+# Fastify: route handlers registered on the instance, directly or in plugins.
+name: fastify
+languages: [javascript, typescript]
+
+file_evidence:
+  - label: imports fastify
+    pattern: '''fastify''|"fastify"'
+  - label: imports an @fastify package
+    pattern: '''@fastify/[\w.-]+''|"@fastify/[\w.-]+"'
+  - label: imports fastify-plugin
+    pattern: '''fastify-plugin''|"fastify-plugin"'
+  - label: plugin function taking the fastify instance
+    pattern: '(?:function\s*\w*\s*\(|\()\s*(fastify|instance)\s*(:\s*\w+)?\s*,\s*\w+[^)]*\)\s*(=>|\{)'
+
+manifests:
+  - file: '(^|/)package\.json$'
+    contains: '"fastify"\s*:'
+    label: package.json depends on fastify
+
+sources:
+  - '\b(request|req)\.(query|body|params|headers|cookies)\b'
+
+entry_points:
+  # Verb shortcuts take a path; the handler is the (function) argument.
+  - callee: '\.(get|post|put|delete|patch|head|options|all)$'
+    path_arg: true
+  # fastify.route({ method, url, handler })
+  - callee: '\.route$'
+
+# The request is the first handler parameter.
+params:
+  mode: first

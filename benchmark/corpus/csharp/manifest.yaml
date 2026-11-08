@@ -109,3 +109,18 @@ cases:
   - file: cases/vuln_ssrf_httpclient_tainted_host.cs
     language: csharp
     expect: [{rule_id: ZS-CS-016, min_count: 1}]
+  - file: cases/fw_aspnetcore_vuln.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-001, min_count: 1}]
+  - file: cases/fw_aspnetcore_safe_helper.cs
+    language: csharp
+    expect: []
+  - file: cases/fw_aspnetcore_minimal_api.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-001, min_count: 1}]
+  - file: cases/fw_mvc5_vuln.cs
+    language: csharp
+    expect: [{rule_id: ZS-CS-001, min_count: 1}]
+  - file: cases/fw_mvc5_safe_helper.cs
+    language: csharp
+    expect: []

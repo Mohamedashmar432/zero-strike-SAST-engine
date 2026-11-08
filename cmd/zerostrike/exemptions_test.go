@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/fwdetect"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -137,6 +138,50 @@ func TestReportLayoutContractWithDependencies(t *testing.T) {
 	}
 	if doc.Dependencies[0]["Manifest"] != "requirements.txt" || doc.Dependencies[1]["Manifest"] != "web/package-lock.json" {
 		t.Errorf("manifests not repo-relative/sorted: %v", doc.Dependencies)
+	}
+}
+
+// Frameworks is additive: the gate's counts are unchanged, no element carries a Severity key, and
+// the key is absent when nothing was detected.
+func TestReportLayoutContractWithFrameworks(t *testing.T) {
+	active, exempted := applyExemptions(
+		[]core.Finding{finding("fp1", "a.py", core.SeverityCritical), finding("fp2", "b.py", core.SeverityHigh)},
+		[]portal.Exemption{{Fingerprint: "fp2", File: "b.py", Kind: "accepted_risk"}},
+		".", "/repo",
+	)
+	fws := buildFrameworkRefs([]fwdetect.Summary{{Framework: "aspnetcore", Confidence: "high", Files: 4}, {Framework: "fastify", Confidence: "medium", Files: 2}})
+	rep := &report.Report{Findings: active, AcceptedExemptions: exempted, Frameworks: fws}
+	var buf bytes.Buffer
+	if err := jsonreport.New().Render(rep, &buf); err != nil {
+		t.Fatal(err)
+	}
+	count := func(sev string) int {
+		return len(regexp.MustCompile(`(?m)^      "Severity": "` + sev + `"`).FindAllIndex(buf.Bytes(), -1))
+	}
+	if count("critical") != 1 || count("high") != 0 {
+		t.Errorf("gate counts changed: critical=%d high=%d", count("critical"), count("high"))
+	}
+	var doc struct{ Frameworks []map[string]any }
+	if err := json.Unmarshal(buf.Bytes(), &doc); err != nil {
+		t.Fatal(err)
+	}
+	if len(doc.Frameworks) != 2 || doc.Frameworks[0]["Framework"] != "aspnetcore" || doc.Frameworks[0]["Confidence"] != "high" || doc.Frameworks[0]["Files"] != float64(4) {
+		t.Fatalf("Frameworks = %v", doc.Frameworks)
+	}
+	for _, f := range doc.Frameworks {
+		if _, bad := f["Severity"]; bad {
+			t.Error("a Frameworks element carries a Severity key")
+		}
+	}
+	var none bytes.Buffer
+	if err := jsonreport.New().Render(&report.Report{Findings: active}, &none); err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Contains(none.Bytes(), []byte(`"Frameworks"`)) {
+		t.Error("Frameworks key present with no detections")
+	}
+	if buildFrameworkRefs(nil) != nil {
+		t.Error("nil tally should stay nil")
 	}
 }
 

@@ -496,3 +496,9 @@ cases:
   - file: cases/vuln_cmdi_with_callback.js
     language: javascript
     expect: [{rule_id: ZS-JS-012, min_count: 1}]
+  - file: cases/fw_fastify_vuln.js
+    language: javascript
+    expect: [{rule_id: ZS-JS-012, min_count: 1}]
+  - file: cases/fw_fastify_safe_helper.js
+    language: javascript
+    expect: []

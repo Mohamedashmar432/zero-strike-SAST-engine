@@ -8,7 +8,7 @@ import "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
 // removed, renamed, or its meaning changes) - the AST cache stores this
 // value alongside cached IR and invalidates on a mismatch rather than risk
 // deserializing stale/incompatible IR.
-const SchemaVersion = 2
+const SchemaVersion = 3
 
 // SerialNode is the flat, JSON-serializable form of one IRNode, used by the
 // AST cache to persist parsed IR across scan runs. Unlike IRNode, it has no
@@ -163,7 +163,7 @@ func restoreAttrs(attrs map[string]any) map[string]any {
 	if v, ok := out["except_handlers"]; ok {
 		out["except_handlers"] = coerceExceptHandlers(v)
 	}
-	for _, k := range []string{"decorators", "decorator_stack"} {
+	for _, k := range []string{"decorators", "decorator_stack", "param_types", "param_attrs", "modifiers", "attributes", "bases"} {
 		if v, ok := out[k]; ok {
 			out[k] = coerceStringSlice(v)
 		}

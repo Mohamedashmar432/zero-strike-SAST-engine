@@ -1,0 +1,50 @@
+# ASP.NET Core: MVC/Web API controllers, Razor Pages and minimal APIs.
+name: aspnetcore
+languages: [csharp]
+
+file_evidence:
+  - label: using Microsoft.AspNetCore
+    pattern: '(?m)^\s*(global\s+)?using\s+Microsoft\.AspNetCore\b'
+  - label: "[ApiController] attribute"
+    pattern: '\[\s*ApiController\b'
+  - label: ControllerBase base class
+    pattern: ':\s*(\w+\.)*ControllerBase\b'
+  - label: PageModel base class
+    pattern: ':\s*(\w+\.)*PageModel\b'
+  - label: WebApplication.CreateBuilder
+    pattern: '\bWebApplication\.Create(Slim)?Builder\('
+
+manifests:
+  - file: '\.csproj$'
+    contains: 'Microsoft\.NET\.Sdk\.Web|Include\s*=\s*"Microsoft\.AspNetCore'
+    label: .csproj references the ASP.NET Core web SDK or packages
+
+sources:
+  - 'Request\.(Query|QueryString|Form|Headers|Cookies|RouteValues|Path|PathBase)\b'
+  - '\.ReadFormAsync\('
+  - '\.GetRouteValue\('
+
+# Entry points: what the framework calls with request-derived arguments.
+entry_points:
+  # Public methods of controllers, by base type or attribute.
+  - class_bases: '^(\w+\.)*(Controller|ControllerBase)$'
+    class_attrs: '^(ApiController|Controller|Route)$'
+    public_only: true
+    exclude_method_attrs: '^NonAction$'
+  # Razor Page handlers: OnGet, OnPostAsync, OnPostDeleteAsync ...
+  - class_bases: '^(\w+\.)*PageModel$'
+    public_only: true
+    method_names: '^On(Get|Post|Put|Delete|Patch)'
+  # Minimal API lambdas: app.MapGet("/x", (string q) => ...)
+  - callee: '(^|\.)Map(Get|Post|Put|Delete|Patch|Methods|Fallback)$'
+
+# Parameters the framework binds from the request. Everything except injected
+# services is bound (model binding falls back to query/route/body).
+params:
+  mode: all
+  exclude_types: '^(CancellationToken|ILogger(<.*>)?|IConfiguration|IServiceProvider|IWebHostEnvironment|IHostEnvironment|HttpResponse|LinkGenerator|\w*DbContext)$'
+  exclude_attrs: '^FromServices$'
+
+# A parameter carrying one of these attributes is request-bound wherever it
+# appears, even outside an entry point.
+bound_param_attrs: '^From(Query|Body|Form|Route|Header)$'

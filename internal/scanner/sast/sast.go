@@ -17,6 +17,7 @@ import (
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/detector"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/engine"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/findings"
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/fwdetect"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/ir"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/langreg"
 	htmlparser "github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/parser/html"
@@ -47,6 +48,9 @@ type SASTScanner struct {
 	astCache     cache.ASTCache
 	enableGraphs bool
 	workers      int
+	// fw holds the scan's manifest evidence and framework tallies; built by
+	// Scan from the file list, nil before the first Scan.
+	fw *fwdetect.Detector
 }
 
 // New creates a SASTScanner from a pre-validated rule set. findingCache and
@@ -82,7 +86,24 @@ func (s *SASTScanner) Accepts(entry walker.FileEntry) bool {
 	return !entry.IsBinary && !entry.AssetData
 }
 
+// Frameworks reports the frameworks detected during the last Scan, per
+// framework and confidence; nil when none were.
+func (s *SASTScanner) Frameworks() []fwdetect.Summary {
+	if s.fw == nil {
+		return nil
+	}
+	return s.fw.Summaries()
+}
+
 func (s *SASTScanner) Scan(ctx context.Context, files []walker.FileEntry) ([]core.Finding, []analyzer.Diagnostic, error) {
+	// Manifests (.csproj, package.json, composer.json) are read once, up front:
+	// they are the project-level half of framework detection.
+	paths := make([]string, len(files))
+	for i, f := range files {
+		paths[i] = f.Path
+	}
+	s.fw = fwdetect.New(paths)
+
 	type fileResult struct {
 		fs    []core.Finding
 		diags []analyzer.Diagnostic
@@ -137,6 +158,15 @@ func (s *SASTScanner) processFile(ctx context.Context, entry walker.FileEntry) (
 
 	contentHash := sha256Hex(source)
 
+	// Framework detection is a function of the file's bytes plus the manifests
+	// above it. Only the file-evidence ("high") half changes what the analysis
+	// finds, so cached findings stay valid; the tally still wants every file.
+	lang := s.det.Detect(entry.Path, source)
+	var detected []fwdetect.Detected
+	if lang.IsKnown() && s.fw != nil {
+		detected = s.fw.Detect(entry.Path, lang, source)
+	}
+
 	// Finding-cache check: on a hit, skip language detection, parsing,
 	// analysis, and matching entirely.
 	//
@@ -158,7 +188,6 @@ func (s *SASTScanner) processFile(ctx context.Context, entry walker.FileEntry) (
 		}
 	}
 
-	lang := s.det.Detect(entry.Path, source)
 	if !lang.IsKnown() {
 		return nil, nil
 	}
@@ -172,6 +201,8 @@ func (s *SASTScanner) processFile(ctx context.Context, entry walker.FileEntry) (
 	for _, w := range warnings {
 		diags = append(diags, analyzer.Diagnostic{Severity: "warning", Message: w, Location: &core.Location{File: entry.Path}})
 	}
+
+	irFile.Frameworks = fwdetect.HighHits(detected)
 
 	// Analysis and matching always run, whether irFile came from the AST
 	// cache or a fresh parse: rules (and therefore match results) may have
@@ -188,6 +219,7 @@ func (s *SASTScanner) processFile(ctx context.Context, entry walker.FileEntry) (
 		Project: &engine.Project{Root: s.rootPath},
 		Browser: (lang == core.LangJavaScript || lang == core.LangTypeScript) &&
 			engine.IsBrowserContext(s.relPath(entry.Path), source),
+		Frameworks: fwdetect.AllNames(detected),
 	}
 	matchResults, err := s.eng.Match(ctx, mc)
 	if err != nil {

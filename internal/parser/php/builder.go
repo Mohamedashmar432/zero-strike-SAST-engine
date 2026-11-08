@@ -5,6 +5,7 @@ package php
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 	sitter "github.com/smacker/go-tree-sitter"
@@ -295,6 +296,45 @@ func extractAttrs(n *ir.IRNode, node *sitter.Node, source []byte) {
 			}
 			n.Attrs["argument_count"] = argCount
 		}
+		// Raw callee text (Route::get) for framework entry-point detection
+		// (internal/fwdetect): the IR keeps no source text on inner nodes.
+		switch node.Type() {
+		case "scoped_call_expression":
+			if sc, nm := node.ChildByFieldName("scope"), node.ChildByFieldName("name"); sc != nil && nm != nil {
+				n.Attrs["callee_src"] = sc.Content(source) + "::" + nm.Content(source)
+			}
+		case "member_call_expression":
+			if ob, nm := node.ChildByFieldName("object"), node.ChildByFieldName("name"); ob != nil && nm != nil {
+				n.Attrs["callee_src"] = ob.Content(source) + "->" + nm.Content(source)
+			}
+		case "function_call_expression":
+			if fn := node.ChildByFieldName("function"); fn != nil {
+				n.Attrs["callee_src"] = fn.Content(source)
+			}
+		}
+	case "class_declaration":
+		if name := node.ChildByFieldName("name"); name != nil {
+			n.Attrs["class_name"] = name.Content(source)
+		}
+		if base := childOfType(node, "base_clause"); base != nil {
+			var bases []string
+			for i := 0; i < int(base.ChildCount()); i++ {
+				if c := base.Child(i); c.Type() == "name" || c.Type() == "qualified_name" {
+					bases = append(bases, c.Content(source))
+				}
+			}
+			if len(bases) > 0 {
+				n.Attrs["bases"] = bases
+			}
+		}
+	case "anonymous_function_creation_expression", "arrow_function":
+		// Closures stay NodeKindUnknown (so file-wide parameter seeding is
+		// unchanged); their parameters are recorded for the framework route
+		// closure entry points (Route::get('/x', function (Request $r) {})).
+		if params := extractParameters(node, source); len(params) > 0 {
+			n.Attrs["parameters"] = params
+		}
+		setParamFacts(n, node, source)
 	case "assignment_expression", "augmented_assignment_expression":
 		if lhs := node.ChildByFieldName("left"); lhs != nil {
 			n.Attrs["lhs"] = lhs.Content(source)
@@ -313,6 +353,16 @@ func extractAttrs(n *ir.IRNode, node *sitter.Node, source []byte) {
 		}
 		if params := extractParameters(node, source); len(params) > 0 {
 			n.Attrs["parameters"] = params
+		}
+		setParamFacts(n, node, source)
+		var mods []string
+		for i := 0; i < int(node.ChildCount()); i++ {
+			if c := node.Child(i); strings.HasSuffix(c.Type(), "_modifier") {
+				mods = append(mods, c.Content(source))
+			}
+		}
+		if len(mods) > 0 {
+			n.Attrs["modifiers"] = mods
 		}
 	case "return_statement":
 		if expr := node.ChildByFieldName("return_expression"); expr != nil {
@@ -347,29 +397,50 @@ func extractAttrs(n *ir.IRNode, node *sitter.Node, source []byte) {
 // extractParameters collects the declared parameter names of a
 // function-like node into a string slice.
 func extractParameters(node *sitter.Node, source []byte) []string {
+	var out []string
+	walkParams(node, source, func(name, _ string) { out = append(out, name) })
+	return out
+}
+
+// walkParams calls fn once per declared parameter, in order, with its name and
+// declared type text (Request, ?int; empty when untyped). Every consumer shares
+// this one iteration so the parameter lists stay index-aligned.
+func walkParams(node *sitter.Node, source []byte, fn func(name, typ string)) {
 	params := node.ChildByFieldName("parameters")
 	if params == nil {
 		params = childOfType(node, "formal_parameters")
 	}
 	if params == nil {
-		return nil
+		return
 	}
-	var out []string
 	for i := 0; i < int(params.ChildCount()); i++ {
 		p := params.Child(i)
 		switch p.Type() {
 		case "simple_parameter", "variadic_parameter", "property_promotion_parameter":
+			typ := ""
+			if t := p.ChildByFieldName("type"); t != nil {
+				typ = t.Content(source)
+			}
 			if name := p.ChildByFieldName("name"); name != nil {
-				out = append(out, name.Content(source))
+				fn(name.Content(source), typ)
 				continue
 			}
 			// Fallback: the parameter name is the variable_name child.
 			if v := childOfType(p, "variable_name"); v != nil {
-				out = append(out, v.Content(source))
+				fn(v.Content(source), typ)
 			}
 		}
 	}
-	return out
+}
+
+// setParamFacts records each parameter's declared type as a slice index-aligned
+// with Attrs["parameters"], for the framework entry-point rules.
+func setParamFacts(n *ir.IRNode, node *sitter.Node, source []byte) {
+	var types []string
+	walkParams(node, source, func(_, typ string) { types = append(types, typ) })
+	if len(types) > 0 {
+		n.Attrs["param_types"] = types
+	}
 }
 
 // childOfType returns the first direct child with the given node type.

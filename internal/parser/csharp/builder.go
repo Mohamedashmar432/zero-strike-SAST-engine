@@ -5,6 +5,7 @@ package csharp
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 	sitter "github.com/smacker/go-tree-sitter"
@@ -175,6 +176,21 @@ func extractAttrs(n *ir.IRNode, node *sitter.Node, source []byte) {
 			}
 			n.Attrs["argument_count"] = argCount
 		}
+		// Raw callee text (app.MapGet) for framework entry-point detection
+		// (internal/fwdetect): the IR keeps no source text on inner nodes.
+		if fn := node.ChildByFieldName("function"); fn != nil && node.Type() == "invocation_expression" {
+			n.Attrs["callee_src"] = calleeSrc(fn.Content(source))
+		}
+	case "class_declaration", "struct_declaration", "record_declaration":
+		if name := node.ChildByFieldName("name"); name != nil {
+			n.Attrs["class_name"] = name.Content(source)
+		}
+		if bases := baseTypes(node, source); len(bases) > 0 {
+			n.Attrs["bases"] = bases
+		}
+		if attrs := attributeNames(node, source); len(attrs) > 0 {
+			n.Attrs["attributes"] = attrs
+		}
 	case "assignment_expression":
 		if lhs := node.ChildByFieldName("left"); lhs != nil {
 			n.Attrs["lhs"] = lhs.Content(source)
@@ -207,10 +223,18 @@ func extractAttrs(n *ir.IRNode, node *sitter.Node, source []byte) {
 		if params := extractParameters(node, source); len(params) > 0 {
 			n.Attrs["parameters"] = params
 		}
+		setParamFacts(n, node, source)
+		if mods := modifierNames(node, source); len(mods) > 0 {
+			n.Attrs["modifiers"] = mods
+		}
+		if attrs := attributeNames(node, source); len(attrs) > 0 {
+			n.Attrs["attributes"] = attrs
+		}
 	case "lambda_expression":
 		if params := extractParameters(node, source); len(params) > 0 {
 			n.Attrs["parameters"] = params
 		}
+		setParamFacts(n, node, source)
 	case "return_statement":
 		// Capture the returned expression's text for the taint
 		// function-summary pass (see internal/analyzer/taint).
@@ -268,33 +292,111 @@ func declaratorInitializer(node *sitter.Node) *sitter.Node {
 // extractParameters collects the declared parameter names of a
 // function-like node into a string slice.
 func extractParameters(node *sitter.Node, source []byte) []string {
+	var out []string
+	walkParams(node, source, func(name, _, _ string) { out = append(out, name) })
+	return out
+}
+
+// walkParams calls fn once per declared parameter, in order, with its name,
+// declared type text and the attribute names written on it ([FromQuery]
+// becomes "FromQuery", several are comma-joined). Every consumer shares this
+// one iteration so the parameter lists stay index-aligned.
+func walkParams(node *sitter.Node, source []byte, fn func(name, typ, attrs string)) {
 	params := node.ChildByFieldName("parameters")
 	if params == nil {
 		params = childOfType(node, "parameter_list")
 	}
 	if params == nil {
-		return nil
+		return
 	}
-	var out []string
 	for i := 0; i < int(params.ChildCount()); i++ {
 		p := params.Child(i)
 		switch p.Type() {
 		case "parameter", "implicit_parameter":
+			typ := ""
+			if t := p.ChildByFieldName("type"); t != nil {
+				typ = t.Content(source)
+			}
+			attrs := strings.Join(attributeNames(p, source), ",")
 			if name := p.ChildByFieldName("name"); name != nil {
-				out = append(out, name.Content(source))
+				fn(name.Content(source), typ, attrs)
 				continue
 			}
 			// Fallback: the parameter name is the last identifier child
 			// (an earlier identifier may be a type name).
 			for j := int(p.ChildCount()) - 1; j >= 0; j-- {
 				if c := p.Child(j); c.Type() == "identifier" {
-					out = append(out, c.Content(source))
+					fn(c.Content(source), typ, attrs)
 					break
 				}
 			}
 		case "identifier":
 			// Single-parameter lambda: x => ...
-			out = append(out, p.Content(source))
+			fn(p.Content(source), "", "")
+		}
+	}
+}
+
+// setParamFacts records each parameter's declared type and attributes as
+// index-aligned slices next to Attrs["parameters"], for the framework
+// entry-point rules ([FromQuery] string q, an injected ILogger).
+func setParamFacts(n *ir.IRNode, node *sitter.Node, source []byte) {
+	var types, attrs []string
+	walkParams(node, source, func(_, typ, a string) {
+		types = append(types, typ)
+		attrs = append(attrs, a)
+	})
+	if len(types) > 0 {
+		n.Attrs["param_types"] = types
+		n.Attrs["param_attrs"] = attrs
+	}
+}
+
+// attributeNames returns the names of the attributes in node's direct
+// attribute_list children ([ApiController], [Route("x")] -> ApiController,
+// Route).
+func attributeNames(node *sitter.Node, source []byte) []string {
+	var out []string
+	for i := 0; i < int(node.ChildCount()); i++ {
+		list := node.Child(i)
+		if list.Type() != "attribute_list" {
+			continue
+		}
+		for j := 0; j < int(list.ChildCount()); j++ {
+			if a := list.Child(j); a.Type() == "attribute" {
+				if name := a.ChildByFieldName("name"); name != nil {
+					out = append(out, name.Content(source))
+				}
+			}
+		}
+	}
+	return out
+}
+
+// modifierNames returns a declaration's modifier keywords (public, static...).
+func modifierNames(node *sitter.Node, source []byte) []string {
+	var out []string
+	for i := 0; i < int(node.ChildCount()); i++ {
+		if c := node.Child(i); c.Type() == "modifier" {
+			out = append(out, c.Content(source))
+		}
+	}
+	return out
+}
+
+// baseTypes returns the base-list entries of a type declaration as written
+// (ControllerBase, IFoo<int>).
+func baseTypes(node *sitter.Node, source []byte) []string {
+	list := childOfType(node, "base_list")
+	if list == nil {
+		return nil
+	}
+	var out []string
+	for i := 0; i < int(list.ChildCount()); i++ {
+		switch c := list.Child(i); c.Type() {
+		case ":", ",":
+		default:
+			out = append(out, c.Content(source))
 		}
 	}
 	return out
@@ -325,4 +427,14 @@ func isEmptyBlockBody(body *sitter.Node) bool {
 		}
 	}
 	return true
+}
+
+// calleeSrc caps the raw callee text kept on call nodes: a chained call's
+// "function" span can run to the whole statement, and only the head of it
+// (receiver.method) is ever matched.
+func calleeSrc(s string) string {
+	if len(s) > 120 {
+		return s[:120]
+	}
+	return s
 }

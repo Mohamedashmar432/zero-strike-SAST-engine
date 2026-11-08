@@ -2,6 +2,7 @@ package analyzer
 
 import (
 	"context"
+	"regexp"
 
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/analyzer/taint"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
@@ -45,6 +46,7 @@ func (a *defaultAnalyzer) Analyze(_ context.Context, file *ir.IRFile) (*Analysis
 		PathSafeVars:  tc.PathSafe,
 		ParamsOnlyVars: tc.ParamsOnly,
 		TaintReasons:  tc.Reasons,
+		FrameworkSources: tc.FrameworkSources,
 		TaintPaths:    tc.Paths,
 	}, nil
 }
@@ -103,8 +105,12 @@ type AnalysisResult struct {
 	// variable (see internal/analyzer/taint.Result.Paths). Nil unless
 	// --enable-graphs was set and the file's language has graph support
 	// (Python only, this sprint).
-	TaintPaths  map[string][]core.Location
-	Diagnostics []Diagnostic
+	TaintPaths map[string][]core.Location
+	// FrameworkSources are the request-accessor patterns the taint pass added
+	// for the file's high-confidence frameworks (see
+	// internal/analyzer/taint.Result.FrameworkSources); nil when none.
+	FrameworkSources []*regexp.Regexp
+	Diagnostics      []Diagnostic
 }
 
 // Analyzer runs analysis passes over an IRFile to produce an AnalysisResult.

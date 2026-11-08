@@ -1,0 +1,45 @@
+# ASP.NET Framework: MVC 5, Web API 2 and Web Forms code-behind.
+name: aspnet-framework
+languages: [csharp]
+
+file_evidence:
+  - label: using System.Web.Mvc
+    pattern: '(?m)^\s*using\s+System\.Web\.Mvc\b'
+  - label: using System.Web.Http
+    pattern: '(?m)^\s*using\s+System\.Web\.Http\b'
+  - label: using System.Web.UI
+    pattern: '(?m)^\s*using\s+System\.Web\.UI\b'
+  - label: using System.Web.Services
+    pattern: '(?m)^\s*using\s+System\.Web\.Services\b'
+  - label: ApiController base class
+    pattern: ':\s*(System\.Web\.Http\.)?ApiController\b'
+  - label: System.Web.UI.Page base class
+    pattern: ':\s*System\.Web\.UI\.Page\b'
+
+manifests:
+  - file: '(^|/)packages\.config$|\.csproj$'
+    contains: 'System\.Web\.Mvc|Microsoft\.AspNet\.(WebApi|Mvc)|System\.Web\.Http'
+    label: manifest references System.Web.Mvc or ASP.NET Web API
+
+sources:
+  - 'Request\.(QueryString|Form|Params|Cookies|Headers|RawUrl|PathInfo|ServerVariables|UserAgent)\b'
+  - 'Request\['
+  - '\.GetQueryNameValuePairs\('
+
+# Web Forms: a server control's .Text in a class deriving Page.
+conditional_sources:
+  - when_evidence: '^(using System\.Web\.UI|System\.Web\.UI\.Page base class)'
+    patterns:
+      - '\b[A-Za-z_]\w*\.Text\b'
+
+entry_points:
+  - class_bases: '^(\w+\.)*(Controller|ApiController)$'
+    public_only: true
+    exclude_method_attrs: '^NonAction$'
+
+params:
+  mode: all
+  exclude_types: '^(CancellationToken|ILogger(<.*>)?|HttpResponseBase|HttpContextBase|\w*DbContext)$'
+  exclude_attrs: '^FromServices$'
+
+bound_param_attrs: '^From(Uri|Body|Query|Form|Route|Header)$'

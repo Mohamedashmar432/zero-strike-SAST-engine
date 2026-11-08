@@ -1,0 +1,18 @@
+# Plain PHP: scripts reading the request through superglobals. There is no
+# entry-point convention (a script is its own entry), so no parameter is
+# bound from the request; data reaches a helper only through a call.
+name: php-plain
+languages: [php]
+
+file_evidence:
+  - label: reads a request superglobal
+    pattern: '\$_(GET|POST|REQUEST|COOKIE|FILES)\b'
+  - label: reads php://input
+    pattern: 'php://input'
+
+sources:
+  - '\$_(GET|POST|REQUEST|COOKIE|FILES|SERVER|SESSION|ENV)\b'
+  - '\bgetallheaders\('
+
+params:
+  mode: none
