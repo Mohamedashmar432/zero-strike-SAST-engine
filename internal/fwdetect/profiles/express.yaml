@@ -1,0 +1,23 @@
+# Express: handlers registered on an app or router.
+name: express
+languages: [javascript, typescript]
+
+file_evidence:
+  - label: imports express
+    pattern: '''express''|"express"'
+
+manifests:
+  - file: '(^|/)package\.json$'
+    contains: '"express"\s*:'
+    label: package.json depends on express
+
+sources:
+  - '\breq\.(query|body|params|headers|cookies)\b'
+  - '\breq\.(get|header)\('
+
+entry_points:
+  - callee: '\.(get|post|put|delete|patch|all)$'
+    path_arg: true
+
+params:
+  mode: first

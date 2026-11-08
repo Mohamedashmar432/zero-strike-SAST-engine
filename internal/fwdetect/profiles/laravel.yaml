@@ -1,0 +1,38 @@
+# Laravel: controller actions and route closures.
+name: laravel
+languages: [php]
+
+file_evidence:
+  - label: use Illuminate
+    pattern: '(?m)^\s*use\s+Illuminate\\'
+  - label: namespace App\Http\Controllers
+    pattern: 'namespace\s+App\\Http\\Controllers\b'
+  - label: "Route:: registration"
+    pattern: '\bRoute::(get|post|put|patch|delete|any|match|options|resource|apiResource)\('
+
+manifests:
+  - file: '(^|/)composer\.json$'
+    contains: '"laravel/framework"\s*:'
+    label: composer.json requires laravel/framework
+
+sources:
+  - '\$request(->|\.)(input|query|get|post|all|cookie|header|route|json|only|except|string|collect|file|bearerToken)\b'
+  - '\$request->[A-Za-z_]\w*($|[^\w(])'
+  - 'Request::(input|query|get|post|all|cookie|header|route|only|except)\b'
+  - '(^|[^\w$>:.])request\(\s*(\)|[''"])'
+
+entry_points:
+  # Public methods of controllers.
+  - class_bases: '^(\w+\\)*Controller$'
+    public_only: true
+    default_public: true
+  # Route::get('/x', function (Request $r) { ... })
+  - callee: '^Route::(get|post|put|patch|delete|any|match|options)$'
+
+# The Request object and untyped or scalar route parameters; a class-typed
+# parameter is dependency injection or route-model binding.
+params:
+  mode: typed
+  types:
+    - '(^|\\)\w*Request$'
+    - '^\??(string|int|float|bool|array|mixed)?$'
