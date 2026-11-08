@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/fwdetect"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/ir"
 )
 
@@ -140,6 +141,11 @@ func (v *defaultValidator) Validate(rule *Rule) []string {
 	for _, c := range rule.SkipContexts {
 		if !validSkipContexts[c] {
 			errs = append(errs, fmt.Sprintf("skip_contexts: unknown context %q", c))
+		}
+	}
+	for _, f := range rule.Frameworks {
+		if fwdetect.ProfileFor(f) == nil {
+			errs = append(errs, fmt.Sprintf("frameworks: unknown framework %q (known: %s)", f, strings.Join(fwdetect.Names(), ", ")))
 		}
 	}
 	errs = append(errs, validateFilters("match.filters", rule.Match.Filters)...)

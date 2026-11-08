@@ -396,6 +396,11 @@ type Rule struct {
 	// a frontend/ source root: a server-side sink such as log forging into
 	// console.log has no meaning in a browser's devtools console.
 	SkipContexts []string
+	// Frameworks restricts the rule to files where one of these frameworks
+	// was detected (names from internal/fwdetect, any confidence). Empty
+	// means the rule is framework-agnostic and applies everywhere, as every
+	// rule did before this field existed.
+	Frameworks []string
 }
 
 // Registry provides rule lookup by language and category.
