@@ -113,10 +113,11 @@ func isNewExpression(n *ir.IRNode) bool {
 
 var csharpGenericArgs = regexp.MustCompile(`<[^<>()]*>`)
 
-// csharpCalleeSource is the callee as written, with generic argument lists
-// removed: the IR callee text drops a generic method name (db.Query<T>) and the
-// receiver of a chained call (new WebClient().DownloadString), which
-// callee_pattern needs to see.
+// csharpCalleeSource is the callee as written (C# and PHP), with generic
+// argument lists removed: the IR callee text drops a generic method name
+// (db.Query<T>), a static receiver (DB::select) and the receiver of a chained
+// call (new WebClient().DownloadString, redirect()->to), which callee_pattern
+// needs to see.
 func csharpCalleeSource(n *ir.IRNode) string {
 	raw, _ := n.Attrs["callee_src"].(string)
 	for {
@@ -588,7 +589,7 @@ func (fc *fileCtx) subtreeTainted(n *ir.IRNode, realOnly bool) bool {
 func (fc *fileCtx) evalJSFilters(f rules.Filter, n *ir.IRNode) bool {
 	if f.CalleePattern != "" {
 		if n.Kind != ir.NodeKindCall || !(regexMatches(f.CalleePattern, fc.callee(n)) ||
-			(fc.lang == core.LangCSharp && regexMatches(f.CalleePattern, csharpCalleeSource(n)))) {
+			((fc.lang == core.LangCSharp || fc.lang == core.LangPHP) && regexMatches(f.CalleePattern, csharpCalleeSource(n)))) {
 			return false
 		}
 	}

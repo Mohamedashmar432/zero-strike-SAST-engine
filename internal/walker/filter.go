@@ -104,10 +104,14 @@ func isAssetDataFile(name string) bool {
 // assetCodeExts are the code extensions that are scanned from inside an asset
 // directory when the file is first-party (see isVendoredAsset). Browser code
 // served from public/ or static/ is authored by the project and carries real
-// DOM XSS, postMessage and inline-script findings.
+// DOM XSS, postMessage and inline-script findings; a PHP script there is the
+// application itself.
 var assetCodeExts = map[string]bool{
 	".js": true, ".mjs": true, ".cjs": true,
 	".html": true, ".htm": true,
+	// public/ is the web root of a PHP application: the scripts in it are
+	// first-party server code (search.php, index.php), not static assets.
+	".php": true,
 }
 
 // isAssetCodeFile reports whether a file inside an asset directory is

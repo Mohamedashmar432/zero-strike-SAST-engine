@@ -1,0 +1,33 @@
+id: ZS-PHP-035
+lifecycle: released
+name: Open Redirect via Laravel redirect()
+version: "1.0.0"
+language: php
+category: open-redirect
+severity: medium
+confidence: medium
+cwe:
+  - CWE-601
+owasp:
+  - "A01:2025"
+rationale: |
+  redirect($url), redirect()->to($url) and redirect()->away($url) send the browser to whatever URL they are given. A request-supplied destination turns a
+    link on the trusted domain into a phishing and token-theft vector. A check of the destination in the same function (in_array against an allowlist,
+    parse_url host comparison, str_starts_with) is treated as validation. ZS-PHP-015 covers header('Location: ...').
+description: |
+  Detects Laravel redirect helpers whose destination traces back to an untrusted source, unless the enclosing function validates a destination.
+message: "redirect() called with a request-controlled URL - validate it against an allowlist of paths or hosts"
+references:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
+tags: [redirect, laravel]
+match:
+  kind: call
+  filters:
+    - callee_pattern: '^(redirect|Redirect::(to|away)|redirect\(\)->(to|away))$'
+    - tainted_argument: true
+      tainted_argument_index: 0
+    - not:
+        kind: call
+        filters:
+          - enclosing_function_mentions: '^(in_array|parse_url|str_starts_with|startsWith|isLocalUrl|filter_var|preg_match)$'
+fix_suggestion: "Map the request value to a fixed route (redirect()->route(...)), or check it against an allowlist before redirecting."

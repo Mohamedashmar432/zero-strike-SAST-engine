@@ -1,0 +1,30 @@
+id: ZS-PHP-034
+lifecycle: released
+name: SQL Injection via Laravel Raw Query Methods
+version: "1.0.0"
+language: php
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-89
+owasp:
+  - "A05:2025"
+rationale: |
+  DB::select(), DB::statement() and the query builder's whereRaw(), selectRaw(), orderByRaw() and similar methods run the SQL text they are given. When
+    that text is concatenated from a request value an attacker rewrites the query. The bound forms (a ? placeholder with a bindings array) are not reported,
+    because only argument 0, the SQL text, is inspected.
+description: |
+  Detects Laravel raw SQL calls whose SQL text argument traces back to an untrusted source.
+message: "Raw SQL built from a tainted value - pass the value as a binding (?) instead of concatenating it"
+references:
+  - https://laravel.com/docs/queries#raw-methods
+  - https://owasp.org/www-community/attacks/SQL_Injection
+tags: [sql-injection, laravel]
+match:
+  kind: call
+  filters:
+    - callee_pattern: '^DB::(select|selectOne|statement|unprepared|raw|insert|update|delete|affectingStatement|cursor)$|(^|->|\.|::)(whereRaw|orWhereRaw|selectRaw|havingRaw|orHavingRaw|orderByRaw|groupByRaw|fromRaw|joinRaw)$'
+    - tainted_argument: true
+      tainted_argument_index: 0
+fix_suggestion: "Use bindings: DB::select('... WHERE email = ?', [$email]) or ->whereRaw('name LIKE ?', [\"%$q%\"])."

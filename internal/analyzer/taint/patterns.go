@@ -115,10 +115,10 @@ var phpPatterns = languagePatterns{
 		regexp.MustCompile(`htmlentities\(`),
 		regexp.MustCompile(`escapeshellarg\(`),
 	},
-	// File-path neutralizers for URL-fetch sinks (ZS-PHP-013, honor_path_sanitizers):
+	// File-path neutralizers (honor_path_sanitizers): ZS-PHP-013 URL-fetch and ZS-PHP-033 file sinks;
 	// the result is a local path, so it cannot steer a request to another host.
 	PathSanitizers: []*regexp.Regexp{
-		regexp.MustCompile(`\b(basename|realpath|storage_path|public_path|base_path|app_path|resource_path|database_path|config_path)\(`),
+		regexp.MustCompile(`\b(basename|realpath)\(`),
 	},
 }
 

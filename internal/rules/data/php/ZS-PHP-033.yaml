@@ -1,0 +1,38 @@
+id: ZS-PHP-033
+lifecycle: released
+name: Path Traversal via File Read and Delete Functions
+version: "1.0.0"
+language: php
+category: path-traversal
+severity: high
+confidence: medium
+cwe:
+  - CWE-22
+owasp:
+  - "A01:2025"
+rationale: |
+  readfile(), file(), fpassthru(), highlight_file(), parse_ini_file(), unlink(), copy() and rename() (and Laravel's response()->download() and Storage::get()) act on the path they are given. When that path comes
+    from a request, an attacker uses ../ sequences or an absolute path to read, overwrite or delete files outside the intended directory. file_get_contents()
+    is reported here only when its argument is built from a filesystem helper (storage_path, public_path, base_path, __DIR__ ...), because a request value
+    passed to it directly may equally be a URL and is ZS-PHP-013's finding. basename() and realpath() on the value are treated as sanitising.
+description: |
+  Detects file read, delete, copy and move calls whose path argument traces back to an untrusted source.
+message: "File function called with a tainted path - restrict it to a base directory with basename() or a realpath() prefix check"
+references:
+  - https://owasp.org/www-community/attacks/Path_Traversal
+  - https://www.php.net/manual/en/function.basename.php
+tags: [path-traversal, file-io]
+match:
+  kind: call
+  filters:
+    - callee_pattern: '^(readfile|file|fpassthru|highlight_file|show_source|parse_ini_file|unlink|copy|rename|file_get_contents)$|^response\(\)->(download|file)$|^Storage::(download|get|delete)$'
+    - tainted_argument: true
+      tainted_argument_index: 0
+      honor_path_sanitizers: true
+      exclude_wrapped_by: '^basename$'
+    - any_of:
+        - callee_pattern: '^(readfile|file|fpassthru|highlight_file|show_source|parse_ini_file|unlink|copy|rename)$|^response\(\)->(download|file)$|^Storage::(download|get|delete)$'
+        - argument_matches_at:
+            index: 0
+            pattern: '^(storage_path|public_path|base_path|app_path|resource_path|database_path|config_path|dirname)\(\)|^__DIR__|^\.\./'
+fix_suggestion: "Reduce the input with basename(), resolve it with realpath() and confirm the result starts with the allowed base directory before reading or deleting it."
