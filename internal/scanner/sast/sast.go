@@ -203,6 +203,7 @@ func (s *SASTScanner) processFile(ctx context.Context, entry walker.FileEntry) (
 	}
 
 	irFile.Frameworks = fwdetect.HighHits(detected)
+	irFile.FrameworksMedium = fwdetect.MediumHits(detected)
 
 	// Analysis and matching always run, whether irFile came from the AST
 	// cache or a fresh parse: rules (and therefore match results) may have

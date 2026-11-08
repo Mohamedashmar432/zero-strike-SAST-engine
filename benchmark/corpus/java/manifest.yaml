@@ -153,3 +153,9 @@ cases:
   - file: cases/clean.java
     language: java
     expect: []
+  - file: cases/fw_spring_vuln.java
+    language: java
+    expect: [{rule_id: ZS-JAVA-001, min_count: 1}]
+  - file: cases/fw_spring_safe_helper.java
+    language: java
+    expect: []

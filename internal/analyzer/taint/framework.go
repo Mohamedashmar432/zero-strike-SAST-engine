@@ -4,6 +4,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/fwdetect"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/ir"
 )
@@ -34,10 +35,23 @@ func frameworkSeeding(file *ir.IRFile) *fwSeeding {
 		if fw == nil {
 			fw = &fwSeeding{}
 		}
-		fw.entries = append(fw.entries, fwEntry{name: p.Name, entries: p.Index(file.Root)})
+		fw.entries = append(fw.entries, fwEntry{name: p.Name, entries: p.IndexWith(file.Root, hit.Evidence)})
 		fw.sources = append(fw.sources, p.SourcesFor(hit.Evidence)...)
 	}
 	return fw
+}
+
+// mediumSources returns the request-accessor patterns of the frameworks a file
+// only has manifest evidence for. They make those accessors explicit sources
+// but never narrow parameter seeding.
+func mediumSources(file *ir.IRFile) []*regexp.Regexp {
+	var out []*regexp.Regexp
+	for _, hit := range file.FrameworksMedium {
+		if p := fwdetect.ProfileFor(hit.Name); p != nil {
+			out = append(out, p.SourcesFor(hit.Evidence)...)
+		}
+	}
+	return out
 }
 
 // seedCalledHelpers taints the parameters of every same-file function that some
@@ -70,24 +84,56 @@ func seedCalledHelpers(file *ir.IRFile, pats languagePatterns, tainted map[strin
 		src, _ := call.Attrs["callee_src"].(string)
 		name := lastSegment(src)
 		fns := byName[name]
-		if len(fns) == 0 || !argsCarryTaint(call.Children[len(call.Children)-1], pats, tainted) {
+		if len(fns) > 0 && !callsOwnFunction(src, file.Language) {
+			return true // comments.addComment(...) is not this file's addComment
+		}
+		if len(fns) == 0 {
+			return true
+		}
+		carries, strong := anyArgCarriesTaint(call.Children[1:], pats, tainted, weak)
+		if !carries {
 			return true
 		}
 		for _, fn := range fns {
 			params, _ := fn.Attrs["parameters"].([]string)
 			for _, p := range params {
-				if p == "" || p == "_" || tainted[p] {
+				if p == "" || p == "_" || (tainted[p] && !(weak[p] && strong)) {
 					continue
 				}
 				tainted[p] = true
 				reasons[p] = "argument passed to " + name + "(...)"
-				delete(weak, p)
+				// A parameter handed only weakly tainted data is no better
+				// than the data it was handed.
+				if strong {
+					delete(weak, p)
+				} else {
+					weak[p] = true
+				}
 				changed = true
 			}
 		}
 		return true
 	})
 	return changed
+}
+
+// ownReceiver matches the receivers that name the same class or module as the
+// caller (this.run(x), self.run(x), $this->run(x), base.Run(x)).
+var ownReceiver = regexp.MustCompile(`^(\$?this|self|cls|super|base|static|parent)$`)
+
+// callsOwnFunction reports whether a call written as callee could reach a
+// function declared in the same file: a bare call, a call on the enclosing
+// object, or (Go, where a method receiver is a variable) any receiver. A call
+// on some other object (comments.addComment) shares only a name with a
+// same-file function, and seeding by name would taint that function's
+// parameters from an unrelated call.
+func callsOwnFunction(callee string, lang core.Language) bool {
+	i := strings.LastIndexAny(callee, ".>:")
+	if i < 0 || lang == core.LangGo {
+		return true
+	}
+	recv := strings.TrimRight(callee[:i], ".-:>")
+	return ownReceiver.MatchString(strings.TrimSpace(recv))
 }
 
 // helperName is a function's callable name: its declared name, or the variable
@@ -113,18 +159,38 @@ func lastSegment(callee string) string {
 	return strings.TrimSpace(callee)
 }
 
-// argsCarryTaint reports whether an argument container holds a tainted name or
-// text matching a source pattern (an inline Request.Query["q"]).
-func argsCarryTaint(args *ir.IRNode, pats languagePatterns, tainted map[string]bool) bool {
-	if args.Kind == ir.NodeKindIdentifier && tainted[args.Text] {
-		return true
-	}
-	for _, d := range ir.Descendants(args) {
-		if d.Kind == ir.NodeKindIdentifier && tainted[d.Text] {
-			return true
+// anyArgCarriesTaint reports whether any child after the callee (the argument
+// container in most grammars, the arguments themselves in Java's) holds taint,
+// and whether some of it is strong: an inline source or a name not marked weak.
+func anyArgCarriesTaint(args []*ir.IRNode, pats languagePatterns, tainted, weak map[string]bool) (carries, strong bool) {
+	for _, a := range args {
+		if matchesAny(pats.Sources, leafText(a)) {
+			return true, true
+		}
+		for _, id := range argIdentifiers(a) {
+			if tainted[id] {
+				carries = true
+				if !weak[id] {
+					return true, true
+				}
+			}
 		}
 	}
-	return matchesAny(pats.Sources, leafText(args))
+	return carries, false
+}
+
+// argIdentifiers lists the identifier names in an argument subtree.
+func argIdentifiers(n *ir.IRNode) []string {
+	var out []string
+	if n.Kind == ir.NodeKindIdentifier {
+		out = append(out, n.Text)
+	}
+	for _, d := range ir.Descendants(n) {
+		if d.Kind == ir.NodeKindIdentifier {
+			out = append(out, d.Text)
+		}
+	}
+	return out
 }
 
 // leafText joins the text of a subtree's leaves, an approximation of its source

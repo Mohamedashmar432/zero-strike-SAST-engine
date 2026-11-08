@@ -6,10 +6,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/uuid"
-	sitter "github.com/smacker/go-tree-sitter"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/ir"
+	"github.com/google/uuid"
+	sitter "github.com/smacker/go-tree-sitter"
 )
 
 // IRBuilder converts a Go tree-sitter CST into an ir.IRFile.
@@ -172,6 +172,11 @@ func extractAttrs(n *ir.IRNode, node *sitter.Node, source []byte) {
 			}
 			n.Attrs["argument_count"] = argCount
 		}
+		// Raw callee text (r.GET) for framework entry-point detection
+		// (internal/fwdetect): the IR keeps no source text on inner nodes.
+		if fn := node.ChildByFieldName("function"); fn != nil {
+			n.Attrs["callee_src"] = calleeSrc(fn.Content(source))
+		}
 	case "assignment_statement":
 		if lhs := node.ChildByFieldName("left"); lhs != nil {
 			n.Attrs["lhs"] = lhs.Content(source)
@@ -207,10 +212,12 @@ func extractAttrs(n *ir.IRNode, node *sitter.Node, source []byte) {
 		}
 		if params := extractParameters(node, source); len(params) > 0 {
 			n.Attrs["parameters"] = params
+			setParamTypes(n, node, source)
 		}
 	case "func_literal":
 		if params := extractParameters(node, source); len(params) > 0 {
 			n.Attrs["parameters"] = params
+			setParamTypes(n, node, source)
 		}
 	case "return_statement":
 		// Capture the returned expression(s)' text for the taint
@@ -254,6 +261,46 @@ func extractParameters(node *sitter.Node, source []byte) []string {
 		}
 	}
 	return out
+}
+
+// calleeSrc bounds the raw callee text kept on a call node.
+func calleeSrc(s string) string {
+	if len(s) > 120 {
+		return s[:120]
+	}
+	return s
+}
+
+// setParamTypes records each parameter's declared type (*gin.Context) as an
+// index-aligned slice next to Attrs["parameters"], for framework profiles that
+// recognize a handler by its context parameter.
+func setParamTypes(n *ir.IRNode, node *sitter.Node, source []byte) {
+	params := node.ChildByFieldName("parameters")
+	if params == nil {
+		params = childOfType(node, "parameter_list")
+	}
+	if params == nil {
+		return
+	}
+	var types []string
+	for i := 0; i < int(params.ChildCount()); i++ {
+		p := params.Child(i)
+		if p.Type() != "parameter_declaration" && p.Type() != "variadic_parameter_declaration" {
+			continue
+		}
+		typ := ""
+		if t := p.ChildByFieldName("type"); t != nil {
+			typ = t.Content(source)
+		}
+		for j := 0; j < int(p.ChildCount()); j++ {
+			if p.Child(j).Type() == "identifier" {
+				types = append(types, typ)
+			}
+		}
+	}
+	if len(types) > 0 {
+		n.Attrs["param_types"] = types
+	}
 }
 
 // childOfType returns the first direct child with the given node type.

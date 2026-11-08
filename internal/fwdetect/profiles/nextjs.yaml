@@ -1,0 +1,42 @@
+# Next.js: route handlers, pages API handlers, getServerSideProps, server actions.
+name: nextjs
+languages: [typescript, javascript]
+
+file_evidence:
+  - label: imports next/server
+    pattern: '''next/server''|"next/server"'
+  - label: imports next/headers
+    pattern: '''next/headers''|"next/headers"'
+  - label: Next API types
+    pattern: '\bNextApi(Request|Response|Handler)\b'
+  - label: getServerSideProps
+    pattern: '\bgetServerSideProps\b'
+  - label: use server directive
+    pattern: '(?m)^\s*[''"]use server[''"]'
+
+manifests:
+  - file: '(^|/)package\.json$'
+    contains: '"next"\s*:'
+    label: package.json depends on next
+
+sources:
+  - '\b(context|ctx)\.(query|params|req)\b'
+  - '\b(request|req)\.(query|body|params|cookies|headers|nextUrl)\b'
+  - '\b(request|req)\.(json|formData|text)\('
+  - 'nextUrl\.searchParams'
+  - '\bformData\.get\('
+  - '\b(cookies|headers)\(\)\.get\('
+
+entry_points:
+  # App-router route handlers and pages-router data functions / API handlers.
+  - function_names: '^(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|handler|getServerSideProps|getInitialProps)$'
+  # Every top-level function of a "use server" file is a server action.
+  - when_evidence: '^use server directive$'
+    free_functions: true
+
+params:
+  mode: all
+  # Entry parameters are request data by position only; see Entries.ParamsSplit.
+  weak: true
+  # Request and response objects are not seeded: their accessors are explicit sources.
+  exclude_names: '^(req|request|res|response|reply)$'

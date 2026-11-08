@@ -5,6 +5,7 @@ package typescript
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/ir"
@@ -190,10 +191,14 @@ func extractAttrs(n *ir.IRNode, node *sitter.Node, source []byte) {
 	case "function_declaration", "function_expression", "arrow_function", "method_definition":
 		if params := extractParameters(node, source); len(params) > 0 {
 			n.Attrs["parameters"] = params
+			setParamFacts(n, node, source)
 		}
 		if node.Type() == "method_definition" {
 			if name := node.ChildByFieldName("name"); name != nil {
 				n.Attrs["method_name"] = name.Content(source)
+			}
+			if decs := decoratorNames(node, source); len(decs) > 0 {
+				n.Attrs["attributes"] = decs
 			}
 		}
 		// See the JavaScript builder: error-carrying callback parameter,
@@ -201,6 +206,13 @@ func extractAttrs(n *ir.IRNode, node *sitter.Node, source []byte) {
 		// argument_references_error_binding filter.
 		if eb := errorCallbackParam(node, source); eb != "" {
 			n.Attrs["error_param"] = eb
+		}
+	case "class_declaration":
+		if name := node.ChildByFieldName("name"); name != nil {
+			n.Attrs["class_name"] = name.Content(source)
+		}
+		if decs := decoratorNames(node, source); len(decs) > 0 {
+			n.Attrs["attributes"] = decs
 		}
 	case "catch_clause":
 		if eb := catchBinding(node, source); eb != "" {
@@ -274,42 +286,104 @@ func extractAttrs(n *ir.IRNode, node *sitter.Node, source []byte) {
 // identifiers and JS-style defaulted/rest parameters are handled as well.
 // Destructuring patterns are skipped.
 func extractParameters(node *sitter.Node, source []byte) []string {
+	var out []string
+	walkParams(node, source, func(name, _, _ string) { out = append(out, name) })
+	return out
+}
+
+// walkParams visits every listed parameter with its name, declared type
+// (": string" -> string) and the names of its decorators joined by commas
+// (@Body() dto: CreateDto -> dto, CreateDto, Body).
+func walkParams(node *sitter.Node, source []byte, fn func(name, typ, attrs string)) {
 	params := node.ChildByFieldName("parameters")
 	if params == nil {
 		// Single-parameter arrow function: x => ...
 		if p := node.ChildByFieldName("parameter"); p != nil && p.Type() == "identifier" {
-			return []string{p.Content(source)}
+			fn(p.Content(source), "", "")
 		}
-		return nil
+		return
 	}
-	var out []string
+	typeOf := func(p *sitter.Node) string {
+		if t := p.ChildByFieldName("type"); t != nil {
+			return strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(t.Content(source)), ":"))
+		}
+		return ""
+	}
 	for i := 0; i < int(params.ChildCount()); i++ {
 		p := params.Child(i)
 		switch p.Type() {
 		case "identifier":
-			out = append(out, p.Content(source))
+			fn(p.Content(source), "", "")
 		case "required_parameter", "optional_parameter":
+			attrs := strings.Join(decoratorNames(p, source), ",")
 			if pat := p.ChildByFieldName("pattern"); pat != nil && pat.Type() == "identifier" {
-				out = append(out, pat.Content(source))
+				fn(pat.Content(source), typeOf(p), attrs)
 				continue
 			}
 			for j := 0; j < int(p.ChildCount()); j++ {
 				if c := p.Child(j); c.Type() == "identifier" {
-					out = append(out, c.Content(source))
+					fn(c.Content(source), typeOf(p), attrs)
 					break
 				}
 			}
 		case "assignment_pattern":
 			if left := p.ChildByFieldName("left"); left != nil && left.Type() == "identifier" {
-				out = append(out, left.Content(source))
+				fn(left.Content(source), "", "")
 			}
 		case "rest_pattern":
 			for j := 0; j < int(p.ChildCount()); j++ {
 				if c := p.Child(j); c.Type() == "identifier" {
-					out = append(out, c.Content(source))
+					fn(c.Content(source), "", "")
 					break
 				}
 			}
+		}
+	}
+}
+
+// setParamFacts records each parameter's type and decorators as index-aligned
+// slices next to Attrs["parameters"], for the framework profiles (NestJS
+// @Body()/@Query() binding).
+func setParamFacts(n *ir.IRNode, node *sitter.Node, source []byte) {
+	var types, attrs []string
+	walkParams(node, source, func(_, typ, a string) {
+		types = append(types, typ)
+		attrs = append(attrs, a)
+	})
+	if len(types) > 0 {
+		n.Attrs["param_types"] = types
+		n.Attrs["param_attrs"] = attrs
+	}
+}
+
+// decoratorNames returns the names of the decorators among node's direct
+// children (@Get('x'), @Controller -> Get, Controller; @a.b() -> b).
+func decoratorNames(node *sitter.Node, source []byte) []string {
+	var out []string
+	for i := 0; i < int(node.ChildCount()); i++ {
+		c := node.Child(i)
+		if c.Type() != "decorator" {
+			continue
+		}
+		var name string
+		for j := 0; j < int(c.ChildCount()); j++ {
+			d := c.Child(j)
+			switch d.Type() {
+			case "identifier":
+				name = d.Content(source)
+			case "member_expression":
+				name = d.Content(source)
+			case "call_expression":
+				if f := d.ChildByFieldName("function"); f != nil {
+					name = f.Content(source)
+				}
+			}
+		}
+		if k := strings.LastIndexByte(name, '.'); k >= 0 {
+			name = name[k+1:]
+		}
+		if name != "" {
+			out = append(out, name)
 		}
 	}
 	return out

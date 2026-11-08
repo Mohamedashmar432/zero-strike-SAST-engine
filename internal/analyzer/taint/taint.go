@@ -126,6 +126,10 @@ func BuildContext(file *ir.IRFile, symbols symboltable.SymbolTable, dfg *graph.D
 	if fw != nil {
 		pats.Sources = append(append([]*regexp.Regexp(nil), pats.Sources...), fw.sources...)
 	}
+	medium := mediumSources(file)
+	if len(medium) > 0 {
+		pats.Sources = append(append([]*regexp.Regexp(nil), pats.Sources...), medium...)
+	}
 	summaries := buildSummaries(file, pats)
 
 	// Seed function parameters as tainted before walking assignments.
@@ -177,12 +181,22 @@ func BuildContext(file *ir.IRFile, symbols symboltable.SymbolTable, dfg *graph.D
 				return true
 			}
 			for _, e := range fw.entries {
-				for _, p := range e.entries.Params(n) {
+				strong, weakParams := e.entries.ParamsSplit(n)
+				for _, p := range strong {
 					if p == "" || p == "_" {
 						continue
 					}
 					tainted[p] = true
 					reasons[p] = e.name + " request parameter " + p
+					delete(weak, p)
+				}
+				for _, p := range weakParams {
+					if p == "" || p == "_" || (tainted[p] && !weak[p]) {
+						continue
+					}
+					tainted[p] = true
+					reasons[p] = e.name + " entry-point parameter " + p
+					weak[p] = true
 				}
 			}
 			return true
@@ -269,6 +283,9 @@ func BuildContext(file *ir.IRFile, symbols symboltable.SymbolTable, dfg *graph.D
 	res := Result{Tainted: tainted, Reasons: reasons, Paths: paths, Weak: weak, PathSafe: pathSafe, ParamsOnly: paramsOnly}
 	if fw != nil {
 		res.FrameworkSources = fw.sources
+	}
+	if len(medium) > 0 {
+		res.FrameworkSources = append(append([]*regexp.Regexp(nil), res.FrameworkSources...), medium...)
 	}
 	return res
 }

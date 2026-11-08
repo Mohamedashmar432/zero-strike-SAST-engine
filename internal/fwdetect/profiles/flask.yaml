@@ -1,0 +1,33 @@
+# Flask: functions decorated with the route decorators, MethodView methods.
+name: flask
+languages: [python]
+
+file_evidence:
+  - label: imports flask
+    pattern: '(?m)^\s*(from\s+flask(\.\w+)*\s+import|import\s+flask\b)'
+
+manifests:
+  - file: '(^|/)requirements[\w.-]*\.txt$'
+    contains: '(?im)^\s*flask([<>=!~\[\s]|$)'
+    label: requirements.txt lists flask
+  - file: '(^|/)pyproject\.toml$'
+    contains: '(?i)["'']\s*flask\b'
+    label: pyproject.toml depends on flask
+  - file: '(^|/)Pipfile$'
+    contains: '(?im)^\s*flask\s*='
+    label: Pipfile lists flask
+
+sources:
+  - 'request\.(args|form|values|json|cookies|headers|files|data|view_args|stream|get_json|get_data|path)\b'
+
+entry_points:
+  - method_attrs: '\.(route|get|post|put|delete|patch)$'
+  - class_bases: '(^|\.)MethodView$'
+    method_names: '^(get|post|put|patch|delete|head|options)$'
+
+# Route variables are the function parameters.
+params:
+  mode: all
+  # Entry parameters are request data by position only; see Entries.ParamsSplit.
+  weak: true
+  exclude_names: '^(self|cls)$'

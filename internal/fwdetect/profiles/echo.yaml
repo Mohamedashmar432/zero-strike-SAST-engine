@@ -1,0 +1,25 @@
+# Echo: handlers registered on echo.Echo / Group.
+name: echo
+languages: [go]
+
+file_evidence:
+  - label: imports echo
+    pattern: '"github\.com/labstack/echo(/v\d+)?"'
+
+manifests:
+  - file: '(^|/)go\.mod$'
+    contains: 'github\.com/labstack/echo'
+    label: go.mod requires echo
+
+sources:
+  - '\.(QueryParam|QueryParams|QueryString|Param|ParamValues|FormValue|FormParams|FormFile|Cookie|Cookies)\('
+  - '\.Request\(\)\.(Header|URL|Form|PostForm|Body|Cookie)'
+
+entry_points:
+  - callee: '\.(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS|Any)$'
+    path_arg: true
+
+# The context is not seeded: its accessors are explicit sources, and seeding it
+# would taint everything read back from it (c.Get set by middleware).
+params:
+  mode: none

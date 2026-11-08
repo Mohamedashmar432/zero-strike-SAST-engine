@@ -56,12 +56,26 @@ type condSources struct {
 // (a method of a matching class) or the registration shape (passed to a
 // matching call).
 type entryPoint struct {
-	classBases, classAttrs   *regexp.Regexp
-	methodNames              *regexp.Regexp
-	excludeMethodAttrs       *regexp.Regexp
+	classBases, classAttrs    *regexp.Regexp
+	methodNames               *regexp.Regexp
+	excludeMethodAttrs        *regexp.Regexp
 	publicOnly, defaultPublic bool
-	callee                   *regexp.Regexp
-	pathArg                  bool
+	callee                    *regexp.Regexp
+	pathArg                   bool
+	// methodAttrs matches the names of the annotations or decorators on the
+	// function itself (@GetMapping, @app.route, @Get). With no class shape it
+	// stands alone (a decorated function anywhere); with one, both must match.
+	methodAttrs *regexp.Regexp
+	// functionNames matches the function's own name (Next.js GET, handler).
+	functionNames *regexp.Regexp
+	// firstParam matches the name of the function's first parameter (a Django
+	// view takes request first).
+	firstParam *regexp.Regexp
+	// whenEvidence restricts the shape to files whose evidence labels match;
+	// freeFunctions makes every non-nested function of the file match
+	// ("use server" files: each exported function is a server action).
+	whenEvidence  *regexp.Regexp
+	freeFunctions bool
 }
 
 type paramPolicy struct {
@@ -69,6 +83,8 @@ type paramPolicy struct {
 	types        []*regexp.Regexp
 	excludeTypes *regexp.Regexp
 	excludeAttrs *regexp.Regexp
+	excludeNames *regexp.Regexp
+	weak         bool
 }
 
 type profileYAML struct {
@@ -97,12 +113,19 @@ type profileYAML struct {
 		DefaultPublic      bool   `yaml:"default_public"`
 		Callee             string `yaml:"callee"`
 		PathArg            bool   `yaml:"path_arg"`
+		MethodAttrs        string `yaml:"method_attrs"`
+		FunctionNames      string `yaml:"function_names"`
+		FirstParam         string `yaml:"first_param"`
+		WhenEvidence       string `yaml:"when_evidence"`
+		FreeFunctions      bool   `yaml:"free_functions"`
 	} `yaml:"entry_points"`
 	Params struct {
 		Mode         string   `yaml:"mode"`
 		Types        []string `yaml:"types"`
 		ExcludeTypes string   `yaml:"exclude_types"`
 		ExcludeAttrs string   `yaml:"exclude_attrs"`
+		ExcludeNames string   `yaml:"exclude_names"`
+		Weak         bool     `yaml:"weak"`
 	} `yaml:"params"`
 	BoundParamAttrs string `yaml:"bound_param_attrs"`
 }
@@ -224,10 +247,12 @@ func parseProfile(data []byte) (*Profile, error) {
 		p.cond = append(p.cond, condSources{w, pats})
 	}
 	for _, e := range y.EntryPoints {
-		ep := entryPoint{publicOnly: e.PublicOnly, defaultPublic: e.DefaultPublic, pathArg: e.PathArg}
+		ep := entryPoint{publicOnly: e.PublicOnly, defaultPublic: e.DefaultPublic, pathArg: e.PathArg, freeFunctions: e.FreeFunctions}
 		for dst, pat := range map[**regexp.Regexp]string{
 			&ep.classBases: e.ClassBases, &ep.classAttrs: e.ClassAttrs, &ep.methodNames: e.MethodNames,
 			&ep.excludeMethodAttrs: e.ExcludeMethodAttrs, &ep.callee: e.Callee,
+			&ep.methodAttrs: e.MethodAttrs, &ep.functionNames: e.FunctionNames,
+			&ep.firstParam: e.FirstParam, &ep.whenEvidence: e.WhenEvidence,
 		} {
 			if *dst, err = rx(pat); err != nil {
 				return nil, err
@@ -235,6 +260,7 @@ func parseProfile(data []byte) (*Profile, error) {
 		}
 		p.entries = append(p.entries, ep)
 	}
+	p.params.weak = y.Params.Weak
 	p.params.mode = y.Params.Mode
 	if p.params.mode == "" {
 		p.params.mode = "none"
@@ -246,6 +272,9 @@ func parseProfile(data []byte) (*Profile, error) {
 		return nil, err
 	}
 	if p.params.excludeAttrs, err = rx(y.Params.ExcludeAttrs); err != nil {
+		return nil, err
+	}
+	if p.params.excludeNames, err = rx(y.Params.ExcludeNames); err != nil {
 		return nil, err
 	}
 	if p.boundAttrs, err = rx(y.BoundParamAttrs); err != nil {
@@ -282,7 +311,8 @@ func (p *Profile) SourcesFor(evidence []string) []*regexp.Regexp {
 // Entries answers, for one file's IR, which parameters of which functions the
 // framework binds from the request.
 type Entries struct {
-	p *Profile
+	p        *Profile
+	evidence []string // the file's evidence labels, for when_evidence shapes
 	// registered holds names of functions passed by reference to a
 	// registration call (fastify.get('/x', handler)), per entry point index.
 	registered map[string]int
@@ -290,8 +320,12 @@ type Entries struct {
 
 // Index scans root once for registration calls that pass a function by name,
 // so a later Params lookup is a map read.
-func (p *Profile) Index(root *ir.IRNode) *Entries {
-	e := &Entries{p: p, registered: map[string]int{}}
+func (p *Profile) Index(root *ir.IRNode) *Entries { return p.IndexWith(root, nil) }
+
+// IndexWith is Index for a file whose detection produced the given evidence
+// labels (entry-point shapes with when_evidence consult them).
+func (p *Profile) IndexWith(root *ir.IRNode, evidence []string) *Entries {
+	e := &Entries{p: p, evidence: evidence, registered: map[string]int{}}
 	ir.Walk(root, func(n *ir.IRNode) bool {
 		if n.Kind != ir.NodeKindCall {
 			return true
@@ -366,39 +400,54 @@ func hasPathLiteral(call *ir.IRNode) bool {
 // request: the entry-point parameters selected by the profile's policy, plus
 // any parameter carrying a bound attribute ([FromQuery]) wherever fn sits.
 func (e *Entries) Params(fn *ir.IRNode) []string {
+	strong, weak := e.ParamsSplit(fn)
+	return append(strong, weak...)
+}
+
+// ParamsSplit is Params split by how sure the binding is. A parameter carrying
+// a bound attribute ([FromQuery], @RequestParam) is strong. One selected only
+// by the entry-point policy is strong too, unless the profile marks its policy
+// weak (params.weak): a route variable or an unannotated argument of a view is
+// request data only by position, so the taint pass seeds it the way it seeds
+// every parameter when no framework is known.
+func (e *Entries) ParamsSplit(fn *ir.IRNode) (strong, weak []string) {
 	params, _ := fn.Attrs["parameters"].([]string)
 	if len(params) == 0 {
-		return nil
+		return nil, nil
 	}
 	types, _ := fn.Attrs["param_types"].([]string)
 	attrs, _ := fn.Attrs["param_attrs"].([]string)
 	seen := map[string]bool{}
-	var out []string
-	add := func(i int) {
-		if !seen[params[i]] {
-			seen[params[i]] = true
-			out = append(out, params[i])
+	add := func(i int, isWeak bool) {
+		if seen[params[i]] {
+			return
+		}
+		seen[params[i]] = true
+		if isWeak {
+			weak = append(weak, params[i])
+		} else {
+			strong = append(strong, params[i])
 		}
 	}
 	if e.p.boundAttrs != nil {
 		for i := range params {
 			if i < len(attrs) && attrListMatches(e.p.boundAttrs, attrs[i]) {
-				add(i)
+				add(i, false)
 			}
 		}
 	}
 	if e.isEntry(fn) {
 		for i := range params {
-			if e.p.policyBinds(i, types, attrs) {
-				add(i)
+			if e.p.policyBinds(params, i, types, attrs) {
+				add(i, e.p.params.weak)
 			}
 		}
 	}
-	return out
+	return strong, weak
 }
 
 // policyBinds applies the profile's parameter policy to parameter i.
-func (p *Profile) policyBinds(i int, types, attrs []string) bool {
+func (p *Profile) policyBinds(params []string, i int, types, attrs []string) bool {
 	typ, attr := "", ""
 	if i < len(types) {
 		typ = types[i]
@@ -407,6 +456,9 @@ func (p *Profile) policyBinds(i int, types, attrs []string) bool {
 		attr = attrs[i]
 	}
 	pp := p.params
+	if pp.excludeNames != nil && pp.excludeNames.MatchString(params[i]) {
+		return false
+	}
 	if pp.excludeAttrs != nil && attrListMatches(pp.excludeAttrs, attr) {
 		return false
 	}
@@ -450,8 +502,67 @@ func (e *Entries) isEntry(fn *ir.IRNode) bool {
 			}
 			continue
 		}
+		if ep.matchesFunction(fn, e.evidence) {
+			return true
+		}
+		if ep.methodAttrs != nil && ep.classBases == nil && ep.classAttrs == nil {
+			if ep.methodAttrsMatch(fn) {
+				return true
+			}
+			continue
+		}
 		if class != nil && ep.matchesMethod(fn, class) {
 			return true
+		}
+	}
+	return false
+}
+
+// matchesFunction applies the class-independent shapes: a function by name, by
+// first parameter, or any top-level function of a file with given evidence.
+func (ep entryPoint) matchesFunction(fn *ir.IRNode, evidence []string) bool {
+	if ep.functionNames == nil && ep.firstParam == nil && !ep.freeFunctions {
+		return false
+	}
+	if ep.whenEvidence != nil {
+		ok := false
+		for _, ev := range evidence {
+			if ep.whenEvidence.MatchString(ev) {
+				ok = true
+				break
+			}
+		}
+		if !ok {
+			return false
+		}
+	}
+	if ep.functionNames != nil && !ep.functionNames.MatchString(functionRefName(fn)) {
+		return false
+	}
+	if ep.firstParam != nil {
+		params, _ := fn.Attrs["parameters"].([]string)
+		if len(params) == 0 || !ep.firstParam.MatchString(params[0]) {
+			return false
+		}
+	}
+	if ep.freeFunctions {
+		for p := fn.Parent; p != nil; p = p.Parent {
+			if p.Kind == ir.NodeKindFunction || p.Kind == ir.NodeKindClass {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+// methodAttrsMatch reports whether any annotation or decorator on fn matches.
+func (ep entryPoint) methodAttrsMatch(fn *ir.IRNode) bool {
+	for _, key := range []string{"attributes", "decorators"} {
+		list, _ := fn.Attrs[key].([]string)
+		for _, a := range list {
+			if ep.methodAttrs.MatchString(a) {
+				return true
+			}
 		}
 	}
 	return false
@@ -476,6 +587,9 @@ func (ep entryPoint) matchesMethod(fn, class *ir.IRNode) bool {
 		return false
 	}
 	if ep.methodNames != nil && !ep.methodNames.MatchString(name) {
+		return false
+	}
+	if ep.methodAttrs != nil && !ep.methodAttrsMatch(fn) {
 		return false
 	}
 	if ep.excludeMethodAttrs != nil {

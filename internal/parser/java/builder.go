@@ -5,11 +5,12 @@ package java
 import (
 	"context"
 	"fmt"
+	"strings"
 
-	"github.com/google/uuid"
-	sitter "github.com/smacker/go-tree-sitter"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/core"
 	"github.com/Mohamedashmar432/zero-strike-SAST-engine/internal/ir"
+	"github.com/google/uuid"
+	sitter "github.com/smacker/go-tree-sitter"
 )
 
 // IRBuilder converts a Java tree-sitter CST into an ir.IRFile.
@@ -137,6 +138,16 @@ func (b *IRBuilder) buildMethodInvocation(node *sitter.Node, source []byte, pare
 	if nameField != nil {
 		nameIdent.Text = nameField.Content(source)
 	}
+
+	// Raw callee text for framework helper seeding (internal/fwdetect).
+	calleeSrc := nameIdent.Text
+	if objField := node.ChildByFieldName("object"); objField != nil {
+		calleeSrc = objField.Content(source) + "." + nameIdent.Text
+	}
+	if len(calleeSrc) > 120 {
+		calleeSrc = calleeSrc[:120]
+	}
+	irNode.Attrs["callee_src"] = calleeSrc
 
 	var calleeChild *ir.IRNode
 	if objField := node.ChildByFieldName("object"); objField != nil {
@@ -302,12 +313,23 @@ func extractAttrs(n *ir.IRNode, node *sitter.Node, source []byte) {
 		if value := node.ChildByFieldName("value"); value != nil {
 			n.Attrs["rhs"] = value.Content(source)
 		}
+	case "class_declaration", "interface_declaration", "enum_declaration", "record_declaration":
+		if name := node.ChildByFieldName("name"); name != nil {
+			n.Attrs["class_name"] = name.Content(source)
+		}
+		if attrs := annotationNames(node, source); len(attrs) > 0 {
+			n.Attrs["attributes"] = attrs
+		}
 	case "method_declaration", "constructor_declaration":
 		if name := node.ChildByFieldName("name"); name != nil {
 			n.Attrs["function_name"] = name.Content(source)
 		}
 		if params := extractParameters(node, source); len(params) > 0 {
 			n.Attrs["parameters"] = params
+			setParamFacts(n, node, source)
+		}
+		if attrs := annotationNames(node, source); len(attrs) > 0 {
+			n.Attrs["attributes"] = attrs
 		}
 	case "return_statement":
 		for i := 0; i < int(node.ChildCount()); i++ {
@@ -334,21 +356,73 @@ var nonStringTypes = map[string]bool{
 // every listed name as untrusted, and a long feedbackId concatenated into a
 // query is not an injection.
 func extractParameters(node *sitter.Node, source []byte) []string {
+	var out []string
+	walkParams(node, source, func(name, _, _ string) { out = append(out, name) })
+	return out
+}
+
+// walkParams visits each listed parameter (numeric and boolean ones skipped,
+// see extractParameters) with its name, declared type and the names of its
+// annotations joined by commas (@RequestParam String q -> q, String,
+// RequestParam).
+func walkParams(node *sitter.Node, source []byte, fn func(name, typ, attrs string)) {
 	params := node.ChildByFieldName("parameters")
 	if params == nil {
-		return nil
+		return
 	}
-	var out []string
 	for i := 0; i < int(params.ChildCount()); i++ {
 		p := params.Child(i)
 		if p.Type() != "formal_parameter" && p.Type() != "spread_parameter" {
 			continue
 		}
-		if t := p.ChildByFieldName("type"); t != nil && nonStringTypes[t.Content(source)] {
-			continue
+		typ := ""
+		if t := p.ChildByFieldName("type"); t != nil {
+			typ = t.Content(source)
+			if nonStringTypes[typ] {
+				continue
+			}
 		}
 		if name := p.ChildByFieldName("name"); name != nil {
-			out = append(out, name.Content(source))
+			fn(name.Content(source), typ, strings.Join(annotationNames(p, source), ","))
+		}
+	}
+}
+
+// setParamFacts records each parameter's declared type and annotations as
+// index-aligned slices next to Attrs["parameters"], for the framework
+// entry-point profiles (@RequestParam String q, an injected Model).
+func setParamFacts(n *ir.IRNode, node *sitter.Node, source []byte) {
+	var types, attrs []string
+	walkParams(node, source, func(_, typ, a string) {
+		types = append(types, typ)
+		attrs = append(attrs, a)
+	})
+	if len(types) > 0 {
+		n.Attrs["param_types"] = types
+		n.Attrs["param_attrs"] = attrs
+	}
+}
+
+// annotationNames returns the simple names of the annotations in node's
+// modifiers (@RestController, @GetMapping("/x"), @org.x.Foo -> RestController,
+// GetMapping, Foo).
+func annotationNames(node *sitter.Node, source []byte) []string {
+	mods := childOfType(node, "modifiers")
+	if mods == nil {
+		return nil
+	}
+	var out []string
+	for i := 0; i < int(mods.ChildCount()); i++ {
+		c := mods.Child(i)
+		if c.Type() != "marker_annotation" && c.Type() != "annotation" {
+			continue
+		}
+		if name := c.ChildByFieldName("name"); name != nil {
+			t := name.Content(source)
+			if j := strings.LastIndexByte(t, '.'); j >= 0 {
+				t = t[j+1:]
+			}
+			out = append(out, t)
 		}
 	}
 	return out

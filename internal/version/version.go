@@ -45,7 +45,10 @@ var Version = "dev"
 //	6 - framework-aware taint seeding (internal/fwdetect): in a file with
 //	    high-confidence framework evidence only entry-point parameters are
 //	    seeded, plus the framework's request sources
-const MatchSemanticsRevision = 6
+//	7 - Spring, Django, Flask, FastAPI, NestJS, Next.js, Gin and Echo profiles;
+//	    annotation/decorator/parameter-type IR attributes; a framework only a
+//	    manifest vouches for contributes its request accessors as sources
+const MatchSemanticsRevision = 7
 
 // CacheKey returns the identity the finding and IR caches must key on, pairing
 // the release version with the matching-semantics revision so that either one

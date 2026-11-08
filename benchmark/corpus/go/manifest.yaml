@@ -146,6 +146,12 @@ cases:
     language: go
     expect: []
 
+  - file: testdata/fw_gin_vuln.go
+    language: go
+    expect: [{rule_id: ZS-GO-001, min_count: 1}]
+  - file: testdata/fw_gin_safe_helper.go
+    language: go
+    expect: []
 # Fixtures live under testdata/, which walker.ClassifyRole treats as test
 # material for real users. Opt this corpus back in so the 45 Go cases are
 # still scanned; see benchmark.Manifest.IncludeTests.
