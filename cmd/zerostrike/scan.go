@@ -113,6 +113,8 @@ func scanCmd() *cobra.Command {
 		flagWorkers      int
 		flagEnableSec    bool
 		flagEnableSCA    bool
+		flagEnableIOC    bool
+		flagIOCFeed      string
 		flagEnableFW     bool
 		flagEnableGraphs bool
 		flagSCAError     string
@@ -182,6 +184,8 @@ func scanCmd() *cobra.Command {
 				NoCache:               flagNoCache,
 				EnableSecrets:         flagEnableSec,
 				EnableSCA:             flagEnableSCA,
+				EnableIOC:             flagEnableIOC,
+				IOCFeed:               flagIOCFeed,
 				EnableFrameworkChecks: flagEnableFW,
 				EnableGraphs:          flagEnableGraphs,
 				SCAOnError:            flagSCAError,
@@ -416,6 +420,8 @@ func scanCmd() *cobra.Command {
 	cmd.Flags().IntVar(&flagWorkers, "workers", 0, "worker count (default: NumCPU)")
 	cmd.Flags().BoolVar(&flagEnableSec, "enable-secrets", false, "enable the Secrets scanner")
 	cmd.Flags().BoolVar(&flagEnableSCA, "enable-sca", false, "enable the SCA/OSV dependency scanner")
+	cmd.Flags().BoolVar(&flagEnableIOC, "enable-ioc", false, "enable the indicator-of-compromise scanner (install-hook downloaders, encoded payloads, web/reverse shells, miners, exfil endpoints, compromised actions)")
+	cmd.Flags().StringVar(&flagIOCFeed, "ioc-feed", "", "organisation IOC feed file (domain:/ip:/url:/sha256: per line); requires --enable-ioc")
 	cmd.Flags().BoolVar(&flagEnableFW, "enable-framework-checks", false, "enable the framework misconfiguration scanner")
 	cmd.Flags().BoolVar(&flagEnableGraphs, "enable-graphs", false, "enable CFG/DFG-based path-sensitive taint reporting (Python only)")
 	cmd.Flags().StringVar(&flagSCAError, "sca-on-error", "warn", "SCA on network error: warn|fail")

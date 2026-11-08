@@ -15,6 +15,8 @@ type ScanConfig struct {
 	NoCache               bool
 	EnableSecrets         bool
 	EnableSCA             bool
+	EnableIOC             bool   // indicator-of-compromise scanner (ZS-IOC-*); off by default
+	IOCFeed               string // optional organisation IOC feed file (ZS-IOC-007); requires EnableIOC
 	SCAOnError            string // "warn" (default) | "fail"
 	EnableFrameworkChecks bool
 	AllowFile             string   // path to .zs-allow.yaml; "" = auto-discover from RootPath

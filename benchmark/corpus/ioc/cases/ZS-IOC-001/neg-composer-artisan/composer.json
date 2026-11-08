@@ -1,0 +1,6 @@
+{
+  "name": "demo/demo",
+  "scripts": {
+    "post-install-cmd": ["@php artisan optimize", "Illuminate\\Foundation\\ComposerScripts::postInstall"]
+  }
+}

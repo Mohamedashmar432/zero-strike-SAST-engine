@@ -60,6 +60,10 @@ type Manifest struct {
 	// The fp/ corpus deliberately leaves it off, so it verifies that the
 	// default output excludes them.
 	IncludeHardening bool `yaml:"include_hardening,omitempty"`
+
+	// IOCFeed is a feed file (relative to the corpus directory) handed to the
+	// IOC scanner as --ioc-feed, for the ZS-IOC-007 cases.
+	IOCFeed string `yaml:"ioc_feed,omitempty"`
 }
 
 // CorpusDir is one loaded corpus subdirectory (e.g. "python", "secrets").

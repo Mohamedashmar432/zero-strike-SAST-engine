@@ -1,0 +1,74 @@
+# Data for the IOC scanner (internal/scanner/ioc). Edit here, not in code.
+# Every compromised action must cite an advisory id; a test enforces it.
+
+# ZS-IOC-002: names applied by the matcher. An executor receiving a decoder's
+# output is the shape; the names are data so a new one needs no code change.
+payload:
+  executors:
+    - eval
+    - exec
+    - Function
+    - assert
+    - create_function
+    - vm.runInNewContext
+    - vm.runInThisContext
+    - vm.runInContext
+  decoders:
+    - atob
+    - base64_decode
+    - gzinflate
+    - gzuncompress
+    - gzdecode
+    - str_rot13
+    - convert_uudecode
+    - b64decode
+    - zlib.decompress
+    - marshal.loads
+
+# ZS-IOC-003: PHP functions that run commands or code. "code" sinks accept the
+# request variable anywhere in the argument; "command" sinks only when the
+# argument starts with it (a command built around request data is injection,
+# a command that is request data is a shell).
+webshell:
+  code_sinks: [eval, assert, create_function]
+  command_sinks: [system, passthru, shell_exec, exec, popen, proc_open]
+
+# ZS-IOC-005: pool URL schemes.
+mining:
+  pool_schemes: ["stratum+tcp", "stratum+ssl", "stratum+tls", "stratum2+tcp", "stratum2+ssl"]
+  binaries: [xmrig, minerd, cpuminer, cpuminer-multi, cpuminer-opt]
+
+# ZS-IOC-006: a host equals one of these or is a subdomain of one.
+exfil:
+  domains:
+    - webhook.site
+    - ngrok.io
+    - ngrok-free.app
+    - ngrok-free.dev
+    - pipedream.net
+    - requestbin.com
+    - requestbin.net
+    - requestcatcher.com
+    - interact.sh
+    - oast.pro
+    - oast.live
+    - oast.site
+    - oast.online
+    - oast.fun
+    - oast.me
+    - burpcollaborator.net
+  # Bot endpoints. The token part of the URL is redacted from evidence.
+  url_patterns:
+    - name: discord-webhook
+      regex: '(?i)https?://(?:ptb\.|canary\.)?discord(?:app)?\.com/api/webhooks/\d+/[\w-]+'
+    - name: telegram-bot
+      regex: '(?i)https?://api\.telegram\.org/bot[\w:-]+/(?:sendMessage|sendDocument|sendPhoto)'
+
+# ZS-IOC-008: actions with a published compromise.
+compromised_actions:
+  - action: tj-actions/changed-files
+    advisory: CVE-2025-30066
+    summary: tags were repointed to a commit that dumped runner secrets into workflow logs (March 2025)
+  - action: reviewdog/action-setup
+    advisory: CVE-2025-30154
+    summary: the v1 tag was repointed to a commit that leaked secrets, which also led to the tj-actions compromise (March 2025)

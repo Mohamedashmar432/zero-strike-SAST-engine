@@ -1,0 +1,7 @@
+{
+  "name": "demo",
+  "version": "1.0.0",
+  "scripts": {
+    "install": "node -e \"eval(Buffer.from('aGVsbG8gd29ybGQ=','base64').toString())\""
+  }
+}

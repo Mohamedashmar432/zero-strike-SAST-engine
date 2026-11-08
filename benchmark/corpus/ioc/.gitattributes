@@ -1,0 +1,2 @@
+cases/ZS-IOC-007/pos-file-hash/payload.dat -text
+cases/ZS-IOC-007/neg-other-file-content/other.dat -text

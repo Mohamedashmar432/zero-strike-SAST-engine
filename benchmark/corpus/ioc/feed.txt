@@ -1,0 +1,5 @@
+# Corpus feed for ZS-IOC-007 (all indicators are non-routable fixtures)
+domain:attacker-feed.invalid
+ip:203.0.113.77
+url:https://evil-feed.invalid/payload.sh
+sha256:0a9365e7748f5bbb54e91baab2567a25e6ee4fa8b739d5fd27267cf600be68b4
