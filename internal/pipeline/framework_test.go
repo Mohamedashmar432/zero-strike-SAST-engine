@@ -373,27 +373,27 @@ const fastifyApp = `const fastify = require('fastify')();
 const { exec } = require('child_process');
 
 function runTool(arg) {
-  exec('tool ' + arg); // SINK_HELPER
+  eval('tool ' + arg); // SINK_HELPER
 }
 
 fastify.get('/ping', async (request, reply) => {
   runTool('--version');
   const host = request.query.host;
-  exec('ping ' + host); // SINK_HANDLER
+  eval('ping ' + host); // SINK_HANDLER
   return 'ok';
 });
 `
 
 func TestFramework_Fastify(t *testing.T) {
 	res := scanFiles(t, map[string]string{"app.js": fastifyApp})
-	expect(t, res, fastifyApp, "ZS-JS-012", "SINK_HANDLER", true)
-	expect(t, res, fastifyApp, "ZS-JS-012", "SINK_HELPER", false)
+	expect(t, res, fastifyApp, "ZS-JS-001", "SINK_HANDLER", true)
+	expect(t, res, fastifyApp, "ZS-JS-001", "SINK_HELPER", false)
 }
 
 func TestFramework_FastifyHelperCalledWithTaint(t *testing.T) {
 	src := strings.Replace(fastifyApp, `runTool('--version');`, `runTool(request.query.tool);`, 1)
 	res := scanFiles(t, map[string]string{"app.js": src})
-	expect(t, res, src, "ZS-JS-012", "SINK_HELPER", true)
+	expect(t, res, src, "ZS-JS-001", "SINK_HELPER", true)
 }
 
 func TestFramework_FastifyPluginAndRouteObject(t *testing.T) {
@@ -401,52 +401,52 @@ func TestFramework_FastifyPluginAndRouteObject(t *testing.T) {
   const { exec } = require('child_process');
   fastify.register(async function (instance) {
     instance.post('/a', async (req, reply) => {
-      exec('a ' + req.body.cmd); // SINK_NESTED
+      eval('a ' + req.body.cmd); // SINK_NESTED
     });
   });
   fastify.route({
     method: 'GET',
     url: '/b',
     handler: async function (request, reply) {
-      exec('b ' + request.query.cmd); // SINK_ROUTE
+      eval('b ' + request.query.cmd); // SINK_ROUTE
     },
   });
   function named(request, reply) {
     const c = request.params.c;
-    exec('c ' + c); // SINK_NAMED
+    eval('c ' + c); // SINK_NAMED
   }
   fastify.get('/c/:c', named);
   function notAHandler(value) {
-    exec('d ' + value); // SINK_OTHER
+    eval('d ' + value); // SINK_OTHER
   }
 };
 `
 	res := scanFiles(t, map[string]string{"plugin.js": src})
-	expect(t, res, src, "ZS-JS-012", "SINK_NESTED", true)
-	expect(t, res, src, "ZS-JS-012", "SINK_ROUTE", true)
-	expect(t, res, src, "ZS-JS-012", "SINK_NAMED", true)
-	expect(t, res, src, "ZS-JS-012", "SINK_OTHER", false)
+	expect(t, res, src, "ZS-JS-001", "SINK_NESTED", true)
+	expect(t, res, src, "ZS-JS-001", "SINK_ROUTE", true)
+	expect(t, res, src, "ZS-JS-001", "SINK_NAMED", true)
+	expect(t, res, src, "ZS-JS-001", "SINK_OTHER", false)
 }
 
 func TestFramework_FastifyHandlerParameterIsTheRequest(t *testing.T) {
 	src := `const fastify = require('fastify')();
 const { exec } = require('child_process');
 fastify.get('/x', async (request, reply) => {
-  exec('x ' + request); // SINK_REQUEST
+  eval('x ' + request); // SINK_REQUEST
 });
 fastify.get('/y', async (request, reply) => {
-  exec('y ' + reply); // SINK_REPLY
+  eval('y ' + reply); // SINK_REPLY
 });
 `
 	res := scanFiles(t, map[string]string{"app.js": src})
-	expect(t, res, src, "ZS-JS-012", "SINK_REQUEST", true)
-	expect(t, res, src, "ZS-JS-012", "SINK_REPLY", false)
+	expect(t, res, src, "ZS-JS-001", "SINK_REQUEST", true)
+	expect(t, res, src, "ZS-JS-001", "SINK_REPLY", false)
 }
 
 func TestFramework_JsWithoutEvidenceKeepsParameterSeeding(t *testing.T) {
 	src := strings.Replace(fastifyApp, "require('fastify')()", "makeServer()", 1)
 	res := scanFiles(t, map[string]string{"app.js": src})
-	expect(t, res, src, "ZS-JS-012", "SINK_HELPER", true)
+	expect(t, res, src, "ZS-JS-001", "SINK_HELPER", true)
 }
 
 func TestFramework_ReportTally(t *testing.T) {

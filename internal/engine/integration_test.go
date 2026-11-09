@@ -136,11 +136,12 @@ func TestIntegration_RetiredAssertRuleDoesNotFire(t *testing.T) {
 
 // TestIntegration_TaintedArgumentFiresZSPY004 verifies Sprint 11 taint tracking:
 // ZS-PY-004 now only fires when the execute() argument traces back to a source.
-func TestIntegration_TaintedArgumentFiresZSPY004(t *testing.T) {
+func TestIntegration_TaintedArgumentRetiredDoesNotFireZSPY004(t *testing.T) {
 	_, idx := loadPythonRules(t)
 	results := matchSource(t, idx, "user_id = request.args.get('id')\nquery = \"SELECT \" + user_id\ncursor.execute(query)\n")
-	if !hasRule(results, "ZS-PY-004") {
-		t.Error("expected ZS-PY-004 to fire when execute() argument is tainted")
+	// ZS-PY-004 is retired (production false-positive evidence, 2026-11-09): it must stay silent.
+	if hasRule(results, "ZS-PY-004") {
+		t.Error("ZS-PY-004 is retired and must not fire")
 	}
 }
 
@@ -162,14 +163,14 @@ func TestIntegration_ConstantArgumentDoesNotFireZSPY004(t *testing.T) {
 // but Path stays empty.
 func TestIntegration_EnableGraphsPopulatesTaintPath(t *testing.T) {
 	_, idx := loadPythonRules(t)
-	src := "user_id = request.args.get('id')\nquery = \"SELECT \" + user_id\ncursor.execute(query)\n"
+	src := "user_id = request.args.get('id')\nquery = \"SELECT \" + user_id\ncursor.executescript(query)\n"
 
-	withGraphs := buildFindingForRule(t, idx, src, true, "ZS-PY-004")
+	withGraphs := buildFindingForRule(t, idx, src, true, "ZS-PY-058")
 	if withGraphs.TaintContext == nil || len(withGraphs.TaintContext.Path) == 0 {
 		t.Error("expected TaintContext.Path to be populated with --enable-graphs")
 	}
 
-	withoutGraphs := buildFindingForRule(t, idx, src, false, "ZS-PY-004")
+	withoutGraphs := buildFindingForRule(t, idx, src, false, "ZS-PY-058")
 	if withoutGraphs.TaintContext == nil {
 		t.Fatal("expected TaintContext to still be populated without --enable-graphs")
 	}
@@ -189,9 +190,9 @@ func TestIntegration_EnableGraphsPopulatesTaintPath(t *testing.T) {
 // Path stayed empty even though the flow-insensitive verdict still fired.
 func TestIntegration_EnableGraphsPopulatesTaintPathAcrossIfBranch(t *testing.T) {
 	_, idx := loadPythonRules(t)
-	src := "if flag:\n    user_id = request.args.get('id')\nquery = \"SELECT \" + user_id\ncursor.execute(query)\n"
+	src := "if flag:\n    user_id = request.args.get('id')\nquery = \"SELECT \" + user_id\ncursor.executescript(query)\n"
 
-	withGraphs := buildFindingForRule(t, idx, src, true, "ZS-PY-004")
+	withGraphs := buildFindingForRule(t, idx, src, true, "ZS-PY-058")
 	if withGraphs.TaintContext == nil || len(withGraphs.TaintContext.Path) == 0 {
 		t.Error("expected TaintContext.Path to be populated across the if-branch join with --enable-graphs")
 	}

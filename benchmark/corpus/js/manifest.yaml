@@ -32,10 +32,10 @@ cases:
     expect: [{rule_id: ZS-JS-009, min_count: 1}]
   - file: cases/vuln_sqli_sequelize.js
     language: javascript
-    expect: [{rule_id: ZS-JS-011, min_count: 1}]
+    expect: []
   - file: cases/vuln_cmdi.js
     language: javascript
-    expect: [{rule_id: ZS-JS-012, min_count: 1}]
+    expect: []
   - file: cases/vuln_xxe.js
     language: javascript
     expect: [{rule_id: ZS-JS-013, min_count: 1}]
@@ -101,7 +101,7 @@ cases:
     expect: []
   - file: cases/vuln_ssrf_axios_get.js
     language: javascript
-    expect: [{rule_id: ZS-JS-035, min_count: 1}]
+    expect: []
   - file: cases/vuln_ssrf_axios_post.js
     language: javascript
     expect: [{rule_id: ZS-JS-036, min_count: 1}]
@@ -492,13 +492,13 @@ cases:
     expect: []
   - file: cases/vuln_ssrf_axios_tainted_host.js
     language: javascript
-    expect: [{rule_id: ZS-JS-035, min_count: 1}, {rule_id: ZS-JS-036, min_count: 1}]
+    expect: [{rule_id: ZS-JS-036, min_count: 1}]
   - file: cases/vuln_cmdi_with_callback.js
     language: javascript
-    expect: [{rule_id: ZS-JS-012, min_count: 1}]
+    expect: []
   - file: cases/fw_fastify_vuln.js
     language: javascript
-    expect: [{rule_id: ZS-JS-012, min_count: 1}]
+    expect: []
   - file: cases/fw_fastify_safe_helper.js
     language: javascript
     expect: []

@@ -51,7 +51,10 @@ var Version = "dev"
 //	8 - Spring, Django, Flask, FastAPI, NestJS, Next.js, Gin and Echo profiles;
 //	    annotation/decorator/parameter-type IR attributes; a framework only a
 //	    manifest vouches for contributes its request accessors as sources
-const MatchSemanticsRevision = 8
+//	9 - nine rules retired on production false-positive evidence (ZS-JS-035,
+//	    ZS-JS-011, ZS-TS-080, ZS-PY-004, ZS-CS-016, ZS-JS-012, ZS-PY-032,
+//	    ZS-SEC-012, ZS-SEC-013)
+const MatchSemanticsRevision = 9
 
 // CacheKey returns the identity the finding and IR caches must key on, pairing
 // the release version with the matching-semantics revision so that either one

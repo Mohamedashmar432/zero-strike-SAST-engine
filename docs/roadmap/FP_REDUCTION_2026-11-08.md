@@ -51,3 +51,27 @@ Tightening ZS-HTML-002 removes up to 42 more false positives at no true-positive
 
 Internal corpus `go run ./cmd/zerostrike-bench -corpus benchmark/corpus -max-fp 0` at FP 0 and FN 0; `go test ./...`;
 `TestReportLayoutContract`. Tests that assert a retired rule fires are flipped to assert it does not.
+
+## Retired on production evidence, 2026-11-09
+
+Nine more rules retired on false-positive tags set by production portal users (Scan Engine noisy-rule list,
+2026-11-09). Counts are findings tagged false positive over total findings across production projects.
+
+| Rule | Detector | Tagged false positive | Projects |
+| --- | --- | --- | --- |
+| ZS-JS-035 | axios.get SSRF | 96 of 133 (72%) | 4 |
+| ZS-JS-011 | Sequelize SQL injection | 60 of 60 | 2 |
+| ZS-TS-080 | https.get SSRF | 45 of 75 (60%) | 1 |
+| ZS-PY-004 | SQL string formatting | 38 of 69 (55%) | 4 |
+| ZS-CS-016 | HttpClient.GetAsync SSRF | 24 of 50 (48%) | 4 |
+| ZS-JS-012 | child_process exec command injection | 20 of 20 | 2 |
+| ZS-PY-032 | XXE via ET.fromstring | 10 of 15 (67%) | 3 |
+| ZS-SEC-012 | mongodb-uri secret detector | 10 of 13 (77%) | 4 |
+| ZS-SEC-013 | postgresql-uri secret detector | 6 of 9 (67%) | 4 |
+
+The seven YAML rules carry `lifecycle: retired`; the two Go detectors use the `retired` field. All nine are
+reversible (set the lifecycle back to `released`, or delete the `retired` field), but a genuine instance of these
+patterns is not reported while they are retired. `MatchSemanticsRevision` is 9. Corpus expectations for these rules
+were removed (fixtures kept; 703 to 685 expected true positives); tests that asserted they fire now assert they do not.
+Framework taint-seeding tests that used ZS-JS-012 and ZS-PY-004 as probes now use ZS-JS-001 (eval) and ZS-PY-058
+(cursor.executescript).

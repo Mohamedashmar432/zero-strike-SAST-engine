@@ -12,11 +12,12 @@ import (
 
 // --- ZS-JS-035: SSRF via axios.get ---
 
-func TestIntegration_TaintedAxiosGetFiresZSJS035(t *testing.T) {
+func TestIntegration_TaintedAxiosGetRetiredDoesNotFireZSJS035(t *testing.T) {
 	idx := loadJSRules(t)
 	src := "const target = req.query.url;\naxios.get(target);\n"
-	if !hasRule(matchJSSource(t, idx, src), "ZS-JS-035") {
-		t.Error("expected ZS-JS-035 to fire when axios.get URL is tainted")
+	// ZS-JS-035 is retired (production false-positive evidence, 2026-11-09): it must stay silent.
+	if hasRule(matchJSSource(t, idx, src), "ZS-JS-035") {
+		t.Error("ZS-JS-035 is retired and must not fire")
 	}
 }
 

@@ -1,5 +1,9 @@
 id: ZS-PY-032
-lifecycle: released
+lifecycle: retired
+# Retired 2026-11-09 on production false-positive evidence (portal Scan Engine tags):
+# XXE via ET.fromstring: 10 of 15 findings (67%) tagged false positive across 3 production projects.
+# Reversible: set lifecycle back to released. A retired rule's findings stop appearing; no detection
+# is replaced, so a genuine instance of this pattern is no longer reported.
 name: XML External Entity (XXE) via ET.fromstring
 version: "1.0.0"
 language: python
