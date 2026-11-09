@@ -43,9 +43,9 @@ func iocFindings(res *pipeline.ScanResult) map[string]int {
 	return out
 }
 
-// TestIOCOffByDefault is the compatibility guarantee: a scan that does not ask
-// for --enable-ioc produces no ioc findings at all, so existing output and CI
-// gates are unchanged.
+// TestIOCOffByDefault: the library config is off unless set; the scan command
+// turns it on for every run unless --no-ioc is passed (see cmd/zerostrike/scan.go).
+//
 func TestIOCOffByDefault(t *testing.T) {
 	root := iocTree(t)
 	pipe, err := pipeline.New(pipeline.ScanConfig{RootPath: root, WorkerCount: 1, NoCache: true, EnableSecrets: true, EnableFrameworkChecks: true})

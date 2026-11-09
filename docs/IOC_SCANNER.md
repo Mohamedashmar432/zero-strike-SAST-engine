@@ -7,9 +7,13 @@ an attacker has already been here. It is offline and deterministic: it makes no 
 
 ## Flags
 
-`--enable-ioc` turns the scanner on. It is off by default, so a scan that does not pass the flag produces no `ioc`
-findings and its output is unchanged. `--ioc-feed <file>` supplies an organisation indicator feed for ZS-IOC-007 and
-requires `--enable-ioc`; passing a feed without the flag is an error rather than being silently ignored.
+The IOC scanner runs on every `zerostrike scan`, with no flag. Existing pipeline commands need no change. `--no-ioc`
+turns it off for a run. `--enable-ioc` is still accepted and does nothing, so commands written before the default changed
+keep working. `--ioc-feed <file>` adds an organisation indicator feed for ZS-IOC-007 and cannot be combined with
+`--no-ioc`; the error says so rather than ignoring the feed.
+
+Because an IOC finding is a finding, a scan that reports one exits with code 1 like any other finding, so a pipeline gate
+that fails on findings will fail on a planted indicator. That is the intent. In 42 benchmark applications it raised none.
 
 ## What it detects
 

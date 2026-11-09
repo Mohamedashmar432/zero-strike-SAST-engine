@@ -15,7 +15,7 @@ type ScanConfig struct {
 	NoCache               bool
 	EnableSecrets         bool
 	EnableSCA             bool
-	EnableIOC             bool   // indicator-of-compromise scanner (ZS-IOC-*); off by default
+	EnableIOC             bool   // indicator-of-compromise scanner (ZS-IOC-*); the scan command sets it unless --no-ioc
 	IOCFeed               string // optional organisation IOC feed file (ZS-IOC-007); requires EnableIOC
 	SCAOnError            string // "warn" (default) | "fail"
 	EnableFrameworkChecks bool
