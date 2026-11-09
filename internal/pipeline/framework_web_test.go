@@ -99,34 +99,34 @@ from django.db import connection
 	runWebCases(t, []webCase{
 		{"function view", "views.py", head + `def user(request, uid):
     cursor = connection.cursor()
-    cursor.execute("SELECT 1 WHERE id = '" + uid + "'")  # SINK_ENTRY
+    cursor.executescript("SELECT 1 WHERE id = '" + uid + "'")  # SINK_ENTRY
     lookup("admin")
     return HttpResponse("ok")
 
 
 def lookup(role):
     cursor = connection.cursor()
-    cursor.execute("SELECT 1 WHERE r = '" + role + "'")  # SINK_HELPER
-`, "ZS-PY-004", []string{"SINK_ENTRY"}, []string{"SINK_HELPER"}},
+    cursor.executescript("SELECT 1 WHERE r = '" + role + "'")  # SINK_HELPER
+`, "ZS-PY-058", []string{"SINK_ENTRY"}, []string{"SINK_HELPER"}},
 		{"request accessor", "views.py", head + `def search(request):
     cursor = connection.cursor()
     q = request.GET.get("q")
-    cursor.execute("SELECT 1 WHERE n = '" + q + "'")  # SINK_ENTRY
+    cursor.executescript("SELECT 1 WHERE n = '" + q + "'")  # SINK_ENTRY
     return HttpResponse("ok")
-`, "ZS-PY-004", []string{"SINK_ENTRY"}, nil},
+`, "ZS-PY-058", []string{"SINK_ENTRY"}, nil},
 		{"class-based view method", "views.py", head + `from django.views import View
 
 
 class UserView(View):
     def get(self, request, uid):
         cursor = connection.cursor()
-        cursor.execute("SELECT 1 WHERE id = '" + uid + "'")  # SINK_ENTRY
+        cursor.executescript("SELECT 1 WHERE id = '" + uid + "'")  # SINK_ENTRY
         return HttpResponse("ok")
 
     def build(self, name):
         cursor = connection.cursor()
-        cursor.execute("SELECT 1 WHERE n = '" + name + "'")  # SINK_HELPER
-`, "ZS-PY-004", []string{"SINK_ENTRY"}, []string{"SINK_HELPER"}},
+        cursor.executescript("SELECT 1 WHERE n = '" + name + "'")  # SINK_HELPER
+`, "ZS-PY-058", []string{"SINK_ENTRY"}, []string{"SINK_HELPER"}},
 	})
 }
 
@@ -143,29 +143,29 @@ cursor = sqlite3.connect("app.db").cursor()
 	runWebCases(t, []webCase{
 		{"route variable", "app.py", head + `@app.route("/user/<uid>")
 def user(uid):
-    cursor.execute("SELECT 1 WHERE id = '" + uid + "'")  # SINK_ENTRY
+    cursor.executescript("SELECT 1 WHERE id = '" + uid + "'")  # SINK_ENTRY
     return lookup("admin")
 
 
 def lookup(role):
-    cursor.execute("SELECT 1 WHERE r = '" + role + "'")  # SINK_HELPER
+    cursor.executescript("SELECT 1 WHERE r = '" + role + "'")  # SINK_HELPER
     return "ok"
-`, "ZS-PY-004", []string{"SINK_ENTRY"}, []string{"SINK_HELPER"}},
+`, "ZS-PY-058", []string{"SINK_ENTRY"}, []string{"SINK_HELPER"}},
 		{"blueprint route and accessor", "app.py", head + `@bp.get("/search")
 def search():
     q = request.args.get("q")
-    cursor.execute("SELECT 1 WHERE n = '" + q + "'")  # SINK_ENTRY
+    cursor.executescript("SELECT 1 WHERE n = '" + q + "'")  # SINK_ENTRY
     return "ok"
-`, "ZS-PY-004", []string{"SINK_ENTRY"}, nil},
+`, "ZS-PY-058", []string{"SINK_ENTRY"}, nil},
 		{"helper called with tainted", "app.py", head + `@app.route("/user/<uid>")
 def user(uid):
     return lookup(uid)
 
 
 def lookup(role):
-    cursor.execute("SELECT 1 WHERE r = '" + role + "'")  # SINK_HELPER
+    cursor.executescript("SELECT 1 WHERE r = '" + role + "'")  # SINK_HELPER
     return "ok"
-`, "ZS-PY-004", []string{"SINK_HELPER"}, nil},
+`, "ZS-PY-058", []string{"SINK_HELPER"}, nil},
 	})
 }
 
@@ -186,24 +186,24 @@ def get_db():
 	runWebCases(t, []webCase{
 		{"typed parameter", "main.py", head + `@app.get("/user")
 def user(uid: str, db=Depends(get_db)):
-    cursor.execute("SELECT 1 WHERE id = '" + uid + "'")  # SINK_ENTRY
+    cursor.executescript("SELECT 1 WHERE id = '" + uid + "'")  # SINK_ENTRY
     return lookup("admin")
 
 
 def lookup(role):
-    cursor.execute("SELECT 1 WHERE r = '" + role + "'")  # SINK_HELPER
+    cursor.executescript("SELECT 1 WHERE r = '" + role + "'")  # SINK_HELPER
     return "ok"
-`, "ZS-PY-004", []string{"SINK_ENTRY"}, []string{"SINK_HELPER"}},
+`, "ZS-PY-058", []string{"SINK_ENTRY"}, []string{"SINK_HELPER"}},
 		{"dependency is not request data", "main.py", head + `@app.get("/user")
 def user(db=Depends(get_db)):
-    cursor.execute("SELECT 1 WHERE d = '" + db + "'")  # SINK_DEP
+    cursor.executescript("SELECT 1 WHERE d = '" + db + "'")  # SINK_DEP
     return "ok"
-`, "ZS-PY-004", nil, []string{"SINK_DEP"}},
+`, "ZS-PY-058", nil, []string{"SINK_DEP"}},
 		{"router decorator", "main.py", head + `@router.post("/search")
 async def search(q: str = Query(None)):
-    cursor.execute("SELECT 1 WHERE n = '" + q + "'")  # SINK_ENTRY
+    cursor.executescript("SELECT 1 WHERE n = '" + q + "'")  # SINK_ENTRY
     return "ok"
-`, "ZS-PY-004", []string{"SINK_ENTRY"}, nil},
+`, "ZS-PY-058", []string{"SINK_ENTRY"}, nil},
 	})
 }
 
@@ -406,10 +406,10 @@ def save():
 
 
 def lookup(role):
-    cursor.execute("SELECT 1 WHERE r = '" + role + "'")  # SINK_HELPER
+    cursor.executescript("SELECT 1 WHERE r = '" + role + "'")  # SINK_HELPER
 `
 	res := scanFiles(t, map[string]string{"app.py": src})
-	expect(t, res, src, "ZS-PY-004", "SINK_HELPER", false)
+	expect(t, res, src, "ZS-PY-058", "SINK_HELPER", false)
 
 	src2 := `import sqlite3
 
@@ -426,8 +426,8 @@ def save():
 
 
 def lookup(role):
-    cursor.execute("SELECT 1 WHERE r = '" + role + "'")  # SINK_HELPER
+    cursor.executescript("SELECT 1 WHERE r = '" + role + "'")  # SINK_HELPER
 `
 	res2 := scanFiles(t, map[string]string{"app.py": src2})
-	expect(t, res2, src2, "ZS-PY-004", "SINK_HELPER", true)
+	expect(t, res2, src2, "ZS-PY-058", "SINK_HELPER", true)
 }

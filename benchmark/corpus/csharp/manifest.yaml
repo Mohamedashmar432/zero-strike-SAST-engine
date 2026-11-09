@@ -47,7 +47,7 @@ cases:
     expect: [{rule_id: ZS-CS-015, min_count: 1}]
   - file: cases/vuln_ssrf_httpclient.cs
     language: csharp
-    expect: [{rule_id: ZS-CS-016, min_count: 1}]
+    expect: []
   - file: cases/vuln_open_redirect.cs
     language: csharp
     expect: [{rule_id: ZS-CS-017, min_count: 1}]
@@ -108,7 +108,7 @@ cases:
     expect: []
   - file: cases/vuln_ssrf_httpclient_tainted_host.cs
     language: csharp
-    expect: [{rule_id: ZS-CS-016, min_count: 1}]
+    expect: []
   - file: cases/fw_aspnetcore_vuln.cs
     language: csharp
     expect: [{rule_id: ZS-CS-001, min_count: 1}]
@@ -174,7 +174,7 @@ cases:
     expect: [{rule_id: ZS-CS-042, min_count: 1}]
   - file: cases/vuln_ssrf_httpclient_receivers.cs
     language: csharp
-    expect: [{rule_id: ZS-CS-016, min_count: 1}, {rule_id: ZS-CS-027, min_count: 1}, {rule_id: ZS-CS-043, min_count: 1}]
+    expect: [{rule_id: ZS-CS-027, min_count: 1}, {rule_id: ZS-CS-043, min_count: 1}]
   - file: cases/safe_ssrf_fixed_host_receivers.cs
     language: csharp
     expect: []

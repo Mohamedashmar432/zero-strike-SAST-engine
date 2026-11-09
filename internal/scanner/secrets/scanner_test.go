@@ -203,8 +203,6 @@ func TestSecretsScanner_DatabaseURIs(t *testing.T) {
 		line   string
 		ruleID string
 	}{
-		{"mongo", `db_uri = "mongodb://admin:secretpass123@localhost:27017/mydb"`, "ZS-SEC-012"},
-		{"postgres", `db_uri = "postgresql://user:pass12345@db.host.com:5432/production"`, "ZS-SEC-013"},
 		{"mysql", `db_uri = "mysql://root:superpassword@127.0.0.1:3306/app"`, "ZS-SEC-014"},
 		{"redis", `db_uri = "redis://:mypassword123@redis.internal:6379"`, "ZS-SEC-015"},
 	}
@@ -317,13 +315,26 @@ func TestSecretsScanner_URIPlaceholderCredentials(t *testing.T) {
 		}
 	}
 	real := []string{
-		`uri = "mongodb://admin:secretpass123@localhost:27017/app"`,
-		`uri = "postgresql://app:password123@db.host.com:5432/app"`,
-		`uri = "postgresql://postgres:postgres@db.host.com:5432/app"`,
+		`uri = "mysql://root:superpassword@127.0.0.1:3306/app"`,
 	}
 	for _, line := range real {
 		if fs := scanContent("config.env", []byte(line)); len(fs) == 0 {
 			t.Errorf("literal credential URI not reported: %s", line)
+		}
+	}
+}
+
+// ZS-SEC-012 and ZS-SEC-013 are retired (production false-positive evidence,
+// 2026-11-09): a literal-credential connection string must not be reported.
+func TestSecretsScanner_MongoAndPostgresURIRetiredDoNotFire(t *testing.T) {
+	for _, line := range []string{
+		`db_uri = "mongodb://admin:secretpass123@localhost:27017/mydb"`,
+		`db_uri = "postgresql://user:pass12345@db.host.com:5432/production"`,
+	} {
+		for _, f := range scanContent("config.env", []byte(line)) {
+			if f.RuleID == "ZS-SEC-012" || f.RuleID == "ZS-SEC-013" {
+				t.Errorf("retired %s fired on %s", f.RuleID, line)
+			}
 		}
 	}
 }

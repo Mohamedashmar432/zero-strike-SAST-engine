@@ -1,5 +1,9 @@
 id: ZS-CS-016
-lifecycle: released
+lifecycle: retired
+# Retired 2026-11-09 on production false-positive evidence (portal Scan Engine tags):
+# HttpClient.GetAsync SSRF: 24 of 50 findings (48%) tagged false positive across 4 production projects.
+# Reversible: set lifecycle back to released. A retired rule's findings stop appearing; no detection
+# is replaced, so a genuine instance of this pattern is no longer reported.
 name: Server-Side Request Forgery (HttpClient.GetAsync)
 version: "1.0.0"
 language: csharp

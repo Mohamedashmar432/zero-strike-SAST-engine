@@ -167,6 +167,11 @@ var detectors = []detector{
 	{
 		ruleID:     "ZS-SEC-012",
 		detectorID: "mongodb-uri",
+		// Retired 2026-11-09 on production false-positive evidence (portal Scan Engine tags):
+		// 10 of 13 findings (77%) tagged false positive across 4 production projects.
+		// Reversible: delete the retired field. No detection is replaced, so a genuine
+		// connection-string credential is no longer reported by this detector.
+		retired: "10 of 13 findings tagged false positive in production",
 		pattern:    regexp.MustCompile(`(mongodb(?:\+srv)?:\/\/[^:\s"']+:[^@\s"']+@[^\s"']+)`),
 		severity:   core.SeverityHigh,
 		generic:    true,
@@ -175,6 +180,11 @@ var detectors = []detector{
 	{
 		ruleID:     "ZS-SEC-013",
 		detectorID: "postgresql-uri",
+		// Retired 2026-11-09 on production false-positive evidence (portal Scan Engine tags):
+		// 6 of 9 findings (67%) tagged false positive across 4 production projects.
+		// Reversible: delete the retired field. No detection is replaced, so a genuine
+		// connection-string credential is no longer reported by this detector.
+		retired: "6 of 9 findings tagged false positive in production",
 		pattern:    regexp.MustCompile(`(postgres(?:ql)?:\/\/[^:\s"']+:[^@\s"']+@[^\s"']+)`),
 		severity:   core.SeverityHigh,
 		generic:    true,
