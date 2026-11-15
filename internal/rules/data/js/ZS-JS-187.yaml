@@ -1,0 +1,42 @@
+id: ZS-JS-187
+lifecycle: released
+name: Command Injection via execa/shelljs Shell APIs
+version: "1.0.0"
+language: javascript
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-78
+owasp:
+  - "A05:2025"
+rationale: |
+  execa's execaCommand(Sync)/command(Sync) and shelljs.exec always run their
+  argument through a shell, as does execa(...) when { shell: true } (or a
+  shell path) is passed. These do not match the existing child_process
+  rules, so a tainted value reaching them allows arbitrary shell command
+  execution the same way child_process.exec does.
+description: |
+  Detects calls to a resolved execa.execaCommand(Sync)/command(Sync) or
+  shelljs.exec with a tainted command string, and calls to execa(...) with
+  shell enabled and a tainted argument.
+message: "Shell-executing call with a tainted command — command injection risk"
+references:
+  - https://owasp.org/www-community/attacks/Command_Injection
+tags: [command-injection, injection, execa, shelljs]
+match:
+  kind: call
+  filters:
+    - callee_resolved: true
+    - any_of:
+        - callee_canonical: "^(execa\\.(execaCommand|execaCommandSync|command|commandSync)|shelljs\\.exec)$"
+          tainted_argument: true
+          tainted_argument_index: 0
+          require_real_source: true
+        - callee_canonical: "^execa(\\.(execa|execaSync))?$"
+          kwarg:
+            name: shell
+            value_pattern: "^(true|[\"'`].+[\"'`])$"
+          tainted_argument: true
+          require_real_source: true
+fix_suggestion: "Avoid shell-executing APIs for untrusted input; use execa/child_process.spawn with an argv array and shell disabled, and validate any dynamic arguments."

@@ -1,0 +1,38 @@
+id: ZS-JAVA-055
+lifecycle: released
+name: JWT Decoded Without Signature Verification
+version: "1.0.0"
+language: java
+category: authentication
+severity: high
+confidence: medium
+cwe:
+  - CWE-347
+owasp:
+  - "A07:2025"
+rationale: |
+  auth0 java-jwt's JWT.decode(token), and jjwt's parseUnsecuredClaims/
+  parseUnsecuredContent/parseClaimsJwt/parsePlaintextJwt, accept unsigned or
+  "alg: none" tokens and only decode the payload. Code that then reads the
+  subject or roles from the result gives any caller an identity of their
+  choice — a full authentication bypass.
+description: |
+  Detects calls to JWT.decode, or to parseUnsecuredClaims/
+  parseUnsecuredContent/parseClaimsJwt/parsePlaintextJwt, unless the
+  enclosing function also calls a verifying API (verify/verifyWith/require/
+  JWTVerifier/setSigningKey/parseClaimsJws/parseSignedClaims).
+message: "JWT decoded without signature verification — authentication bypass risk"
+references:
+  - https://cwe.mitre.org/data/definitions/347.html
+tags: [jwt, authentication, signature-bypass]
+match:
+  kind: call
+  filters:
+    - any_of:
+        - callee_pattern: "^JWT\\.decode$"
+        - callee_pattern: "(^|\\.)(parseUnsecuredClaims|parseUnsecuredContent|parseClaimsJwt|parsePlaintextJwt)$"
+    - not:
+        kind: call
+        filters:
+          - enclosing_function_mentions: "^(verify|verifyWith|require|JWTVerifier|setSigningKey|parseClaimsJws|parseSignedClaims)$"
+fix_suggestion: "Verify the token's signature (JWTVerifier.verify / Jwts.parser with a signing key, parseClaimsJws) before trusting any claim in the payload."

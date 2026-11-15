@@ -18,8 +18,10 @@ rationale: |
   authenticate or authorize requests, letting an attacker impersonate any
   user or escalate to admin.
 description: |
-  Detects calls to jwt.decode() with verify=False.
-message: "jwt.decode(verify=False) detected — signature verification is disabled"
+  Detects calls to jwt.decode() with verify=False (legacy PyJWT), or with
+  options={"verify_signature": False} (PyJWT 2.x, which removed the verify=
+  keyword).
+message: "jwt.decode() called with signature verification disabled"
 references:
   - https://cwe.mitre.org/data/definitions/347.html
 tags: [jwt, authentication, signature-bypass]
@@ -27,7 +29,11 @@ match:
   kind: call
   callee: jwt.decode
   filters:
-    - kwarg:
-        name: verify
-        value_pattern: "^False$"
+    - any_of:
+        - kwarg:
+            name: verify
+            value_pattern: "^False$"
+        - kwarg:
+            name: options
+            value_pattern: "verify_signature[\"']?\\s*:\\s*False"
 fix_suggestion: "Remove verify=False and always validate the JWT signature with the correct algorithm and key."

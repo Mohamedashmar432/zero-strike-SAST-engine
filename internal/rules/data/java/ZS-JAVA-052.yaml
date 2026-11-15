@@ -1,0 +1,42 @@
+id: ZS-JAVA-052
+lifecycle: released
+name: Script/Expression Engine Injection (MVEL, OGNL, Velocity, generic eval)
+version: "1.0.0"
+language: java
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-94
+  - CWE-917
+  - CWE-1336
+owasp:
+  - "A03:2025"
+rationale: |
+  Rule engines, report builders and "custom formula" features pass user
+  strings to MVEL.eval/evalToString/executeExpression, Ognl.getValue/
+  setValue, Velocity.evaluate, or a generic *.eval/evaluate call. Each of
+  these executes arbitrary Java for whoever controls the expression (e.g.
+  via Runtime.getRuntime().exec() reachable through the expression
+  language), unlike XPath's evaluate which is excluded here and covered
+  separately.
+description: |
+  Detects calls to MVEL.eval/evalToString/executeExpression, Ognl.getValue/
+  setValue, Velocity.evaluate, or any *.eval/evaluate method, where an
+  argument traces back to a real untrusted source, excluding XPath's
+  evaluate (already covered by the XPath injection rules).
+message: "Expression/script engine evaluated a tainted expression — remote code execution risk"
+references:
+  - https://cwe.mitre.org/data/definitions/917.html
+tags: [injection, expression-language, rce]
+match:
+  kind: call
+  callee_pattern: "^(MVEL\\.(eval|evalToString|executeExpression)|Ognl\\.(getValue|setValue)|Velocity\\.evaluate|[A-Za-z_$][\\w$]*\\.(eval|evaluate))$"
+  filters:
+    - tainted_argument: true
+      require_real_source: true
+    - not:
+        kind: call
+        filters:
+          - callee_pattern: "(?i)^(xpath|xp|expr|expression)\\.evaluate$"
+fix_suggestion: "Avoid evaluating untrusted strings as code/expressions; if a formula feature is required, use a restricted, sandboxed expression grammar with no reflection or I/O access."

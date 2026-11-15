@@ -1,0 +1,42 @@
+id: ZS-JS-188
+lifecycle: released
+name: LDAP Injection via ldapjs Search Filter
+version: "1.0.0"
+language: javascript
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-90
+owasp:
+  - "A03:2025"
+rationale: |
+  ldapjs client.search(base, { scope, filter: `(uid=${req.body.user})` })
+  puts unescaped input directly into an LDAP filter. An attacker-supplied
+  value like "*)(uid=*))(|(uid=*" widens the query, which can bypass
+  authentication or enumerate the directory.
+description: |
+  Detects calls to a *.search(base, options) matching the ldapjs search
+  signature (an options object carrying a scope keyword) whose filter
+  keyword is built from a template-literal interpolation (the idiomatic
+  `(uid=${value})` shape), unless the enclosing function appears to escape
+  the filter value first.
+message: "LDAP search() called with a filter built by string interpolation — possible LDAP injection"
+references:
+  - https://cwe.mitre.org/data/definitions/90.html
+tags: [ldap-injection, injection, ldapjs]
+match:
+  kind: call
+  callee_pattern: "\\.search$"
+  filters:
+    - kwarg:
+        name: scope
+        value_pattern: "^[\"'](base|one|sub)[\"']$"
+    - kwarg:
+        name: filter
+        value_pattern: "\\$\\{"
+    - not:
+        kind: call
+        filters:
+          - enclosing_function_mentions: "^(parseFilter|EqualityFilter|escapeFilterValue|escape)$"
+fix_suggestion: "Escape special LDAP filter characters in any user-supplied value before building the filter string, or build it with ldapjs's filter classes (EqualityFilter, AndFilter) instead of string interpolation."

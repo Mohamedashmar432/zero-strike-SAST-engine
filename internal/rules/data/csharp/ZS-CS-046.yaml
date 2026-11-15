@@ -1,0 +1,38 @@
+id: ZS-CS-046
+lifecycle: released
+name: Insecure Deserializer (LosFormatter, ObjectStateFormatter, SoapFormatter, NetDataContractSerializer)
+version: "1.0.0"
+language: csharp
+category: deserialization
+severity: critical
+confidence: high
+cwe:
+  - CWE-502
+owasp:
+  - "A08:2025"
+rationale: |
+  LosFormatter and ObjectStateFormatter (the ViewState serializers),
+  SoapFormatter and NetDataContractSerializer embed full .NET type names and
+  can be exploited with the same ysoserial.net gadget chains as
+  BinaryFormatter, giving remote code execution from any attacker-supplied
+  payload (a ViewState field, a cache blob, a message). A JavaScriptSerializer
+  constructed with SimpleTypeResolver is equally exploitable.
+description: |
+  Detects construction of LosFormatter, ObjectStateFormatter, SoapFormatter
+  or NetDataContractSerializer, and construction of JavaScriptSerializer
+  with a SimpleTypeResolver argument.
+message: "Insecure deserializer constructed — can execute arbitrary code from untrusted input"
+references:
+  - https://cwe.mitre.org/data/definitions/502.html
+  - https://github.com/pwntester/ysoserial.net
+tags: [deserialization, dotnet]
+match:
+  kind: call
+  filters:
+    - any_of:
+        - callee_pattern: "^(LosFormatter|ObjectStateFormatter|SoapFormatter|NetDataContractSerializer)$"
+        - callee_pattern: "^JavaScriptSerializer$"
+          argument_matches_at:
+            index: 0
+            pattern: "^SimpleTypeResolver\\(\\)$"
+fix_suggestion: "Avoid these formatters for untrusted data entirely; use a data-only format (System.Text.Json, DataContractSerializer with a known type list) instead."

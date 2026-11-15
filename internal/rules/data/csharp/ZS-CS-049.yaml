@@ -1,0 +1,34 @@
+id: ZS-CS-049
+lifecycle: released
+name: Unsafe Reflection with Tainted Type Name
+version: "1.0.0"
+language: csharp
+category: dangerous-functions
+severity: high
+confidence: medium
+cwe:
+  - CWE-470
+owasp:
+  - "A08:2025"
+rationale: |
+  Plugin or "strategy by name" endpoints pass a request value to
+  Type.GetType, Assembly.Load/LoadFrom/LoadFile/LoadWithPartialName,
+  Activator.CreateInstance(From), or AppDomain.CreateInstance(AndUnwrap/
+  From). This lets an attacker instantiate arbitrary types (e.g.
+  System.Diagnostics.Process, or a known deserialization gadget) or load an
+  attacker-placed assembly, leading to code execution.
+description: |
+  Detects calls to Type.GetType, an Assembly.Load variant,
+  Activator.CreateInstance(From), or AppDomain(.CurrentDomain).CreateInstance
+  variants, where any argument traces back to a real untrusted source.
+message: "Reflection API called with a tainted type/assembly name — unsafe reflection risk"
+references:
+  - https://cwe.mitre.org/data/definitions/470.html
+tags: [reflection, dangerous-functions, dotnet]
+match:
+  kind: call
+  callee_pattern: "(^|\\.)(Type\\.GetType|Assembly\\.(Load|LoadFrom|LoadFile|LoadWithPartialName)|Activator\\.CreateInstance(From)?|AppDomain\\.(CurrentDomain\\.)?CreateInstance(AndUnwrap|From)?)$"
+  filters:
+    - tainted_argument: true
+      require_real_source: true
+fix_suggestion: "Validate the type/assembly name against a fixed allowlist before passing it to a reflection API; never let request data name an arbitrary type or assembly."

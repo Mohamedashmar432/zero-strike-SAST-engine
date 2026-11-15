@@ -1,0 +1,46 @@
+id: ZS-GO-051
+lifecycle: released
+name: SSTI via text/template or html/template Parse of Tainted Text
+version: "1.0.0"
+language: go
+category: injection
+severity: high
+confidence: low
+cwe:
+  - CWE-1336
+  - CWE-94
+owasp:
+  - "A03:2025"
+rationale: |
+  Go templates are safe only while the template text itself is trusted.
+  template.New(name).Parse(userInput), for either text/template or
+  html/template, lets the attacker call any exported field or method on the
+  data object ({{.User.Password}}, {{.DB.Exec ...}}), which can leak
+  secrets or invoke privileged methods — html/template's auto-escaping does
+  not help, because the attacker controls the template itself, not just the
+  data.
+description: |
+  Detects a Parse call (template.New(...).Parse or t.Parse) inside a
+  function that mentions template/Must/Execute/ExecuteTemplate, where the
+  template text argument traces back to a real untrusted source, excluding
+  the many unrelated .Parse methods in the standard library and common
+  packages (url, time, strconv, jwt, uuid, flag, mail, netip, semver,
+  version, big, regexp, json, yaml, toml, hcl, cron, decimal, resource, net,
+  xml, csv).
+message: "Template parsed from a tainted string — server-side template injection risk"
+references:
+  - https://pkg.go.dev/text/template
+tags: [ssti, injection, template]
+match:
+  kind: call
+  callee_pattern: "(^|\\.)Parse$"
+  filters:
+    - tainted_argument: true
+      tainted_argument_index: 0
+      require_real_source: true
+    - enclosing_function_mentions: "^(template|Must|Execute|ExecuteTemplate)$"
+    - not:
+        kind: call
+        filters:
+          - callee_pattern: "^(url|time|strconv|jwt|uuid|flag|mail|netip|semver|version|big|regexp|json|yaml|toml|hcl|cron|decimal|resource|net|xml|csv)\\.Parse$"
+fix_suggestion: "Never build the template text from request data; keep templates as fixed files/strings and pass only data to Execute/ExecuteTemplate."

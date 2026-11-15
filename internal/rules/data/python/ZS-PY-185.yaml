@@ -1,0 +1,36 @@
+id: ZS-PY-185
+lifecycle: released
+name: shutil.unpack_archive Zip-Slip
+version: "1.0.0"
+language: python
+category: path-traversal
+severity: high
+confidence: medium
+cwe:
+  - CWE-22
+owasp:
+  - "A05:2025"
+rationale: |
+  shutil.unpack_archive extracts tar/zip files without restricting member
+  paths unless a filter is given (the filter= keyword is only honored from
+  Python 3.12). An uploaded archive with entries like ../../app/settings.py
+  or an absolute path can overwrite files outside the target directory.
+description: |
+  Detects calls to shutil.unpack_archive that do not pass filter="data" or
+  filter="tar" to constrain extraction.
+message: "shutil.unpack_archive() without an extraction filter — zip-slip path traversal risk"
+references:
+  - https://cwe.mitre.org/data/definitions/22.html
+  - https://docs.python.org/3/library/tarfile.html#tarfile.data_filter
+tags: [path-traversal, zip-slip, archive]
+match:
+  kind: call
+  callee: shutil.unpack_archive
+  filters:
+    - not:
+        kind: call
+        filters:
+          - kwarg:
+              name: filter
+              value_pattern: "^[\"'](data|tar)[\"']$"
+fix_suggestion: "Pass filter=\"data\" to shutil.unpack_archive (Python 3.12+), or manually validate each member's resolved path stays inside the destination directory before extracting."

@@ -1,0 +1,45 @@
+id: ZS-CS-047
+lifecycle: released
+name: Zip-Slip via Archive Entry Name Used as Output Path
+version: "1.0.0"
+language: csharp
+category: path-traversal
+severity: high
+confidence: medium
+cwe:
+  - CWE-22
+owasp:
+  - "A05:2025"
+rationale: |
+  The idiom entry.ExtractToFile(Path.Combine(dest, entry.FullName)) writes
+  each archive entry wherever its own name says. An uploaded zip containing
+  ..\\..\\wwwroot\\shell.aspx, or an absolute path, escapes dest and can
+  plant a web shell or overwrite application files.
+description: |
+  Detects ExtractToFile calls whose path argument reads an entry's
+  FullName/Name, and Path.Combine calls whose last argument reads an
+  entry's FullName/Name inside a function that mentions a zip/tar
+  extraction API, unless the enclosing function already canonicalizes and
+  checks the resulting path.
+message: "Archive entry name used to build an extraction path — zip-slip path traversal risk"
+references:
+  - https://security.snyk.io/research/zip-slip-vulnerability
+tags: [path-traversal, zip-slip, archive]
+match:
+  kind: call
+  filters:
+    - any_of:
+        - callee_pattern: "(^|\\.)ExtractToFile$"
+          argument_matches_at:
+            index: 0
+            pattern: "\\.(FullName|Name)$"
+        - callee_pattern: "(^|\\.)Path\\.Combine$"
+          argument_matches_at:
+            index: -1
+            pattern: "\\.(FullName|Name)$"
+          enclosing_function_mentions: "^(ZipArchive|ZipFile|ZipArchiveEntry|Entries|GetEntry|TarEntry|TarReader|GetNextEntry)$"
+    - not:
+        kind: call
+        filters:
+          - enclosing_function_mentions: "^(GetFullPath|StartsWith|GetRelativePath|IsPathRooted)$"
+fix_suggestion: "Resolve the full destination path and verify it starts with the destination directory (Path.GetFullPath + StartsWith) before extracting each entry."

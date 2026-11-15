@@ -1,0 +1,42 @@
+id: ZS-TS-187
+lifecycle: released
+name: Prototype Pollution via Deep-Set Helper
+version: "1.0.0"
+language: typescript
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-1321
+owasp:
+  - "A03:2025"
+rationale: |
+  lodash set/setWith/update/updateWith, lodash.set/setWith, object-path
+  set/insert/push/ensureExists and dot-prop set/setProperty all walk a
+  dotted path and create objects along it. When the path comes from a
+  request (e.g. "__proto__.isAdmin" or "constructor.prototype.polluted"),
+  the attacker writes onto Object.prototype, which can flip authorization
+  checks elsewhere in the app or poison options later read by a template
+  engine or child_process call.
+description: |
+  Detects calls to a resolved lodash/object-path/dot-prop deep-set helper
+  where the path argument (argument 1, or argument 0 for zipObjectDeep)
+  traces back to a real untrusted source.
+message: "Deep-set helper called with a tainted path — possible prototype pollution"
+references:
+  - https://cwe.mitre.org/data/definitions/1321.html
+tags: [prototype-pollution, injection, lodash]
+match:
+  kind: call
+  filters:
+    - callee_resolved: true
+    - any_of:
+        - callee_canonical: "^((lodash|lodash-es|lodash/fp)(\\.|/)(set|setWith|update|updateWith)|lodash\\.(set|setwith)|object-path\\.(set|insert|push|ensureExists)|dot-prop\\.(set|setProperty))$"
+          tainted_argument: true
+          tainted_argument_index: 1
+          require_real_source: true
+        - callee_canonical: "^(lodash|lodash-es|lodash/fp)(\\.|/)zipObjectDeep$"
+          tainted_argument: true
+          tainted_argument_index: 0
+          require_real_source: true
+fix_suggestion: "Validate the path does not contain __proto__, prototype, or constructor segments before passing it to a deep-set helper, or use Object.create(null) for the target object."

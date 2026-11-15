@@ -1,0 +1,40 @@
+id: ZS-GO-050
+lifecycle: released
+name: "Zip-Slip: Archive Entry Name Joined into Extraction Path"
+version: "1.0.0"
+language: go
+category: path-traversal
+severity: high
+confidence: medium
+cwe:
+  - CWE-22
+owasp:
+  - "A05:2025"
+rationale: |
+  Extraction loops over archive/zip (f.Name) or archive/tar (hdr.Name) build
+  the target path with filepath.Join(dest, f.Name). filepath.Join cleans
+  ".." segments but does not stop the result from leaving dest, so an entry
+  named ../../etc/cron.d/x still writes outside the destination directory.
+description: |
+  Detects filepath.Join/path.Join calls whose last argument reads a
+  <identifier>.Name field, inside a function that mentions an
+  archive-extraction API (zip/tar/OpenReader/NewReader/hdr/header/entry),
+  unless the enclosing function already checks the resulting path
+  (HasPrefix/IsLocal/Rel/Contains).
+message: "Archive entry Name joined into an extraction path — zip-slip path traversal risk"
+references:
+  - https://security.snyk.io/research/zip-slip-vulnerability
+tags: [path-traversal, zip-slip, archive]
+match:
+  kind: call
+  callee_pattern: "^(filepath|path)\\.Join$"
+  filters:
+    - argument_matches_at:
+        index: -1
+        pattern: "^\\w+\\.Name$"
+    - enclosing_function_mentions: "^(zip|tar|OpenReader|NewReader|hdr|header|entry)$"
+    - not:
+        kind: call
+        filters:
+          - enclosing_function_mentions: "^(HasPrefix|IsLocal|Rel|Contains)$"
+fix_suggestion: "Join with filepath.Join, then verify the result's cleaned path still has the destination directory as a prefix (or use filepath.IsLocal/filepath.Rel) before writing."

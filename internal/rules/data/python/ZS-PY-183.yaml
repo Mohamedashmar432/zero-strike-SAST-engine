@@ -1,0 +1,42 @@
+id: ZS-PY-183
+lifecycle: released
+name: Pickle-Backed Loader on Untrusted Data
+version: "1.0.0"
+language: python
+category: deserialization
+severity: high
+confidence: medium
+cwe:
+  - CWE-502
+owasp:
+  - "A08:2025"
+rationale: |
+  torch.load, joblib.load, pandas.read_pickle and jsonpickle.decode/loads
+  are backed by pickle (or an equally unsafe custom protocol), so loading a
+  downloaded or user-uploaded model checkpoint or dataframe runs arbitrary
+  code embedded in the file. numpy.load with allow_pickle=True has the same
+  risk. torch.load(..., weights_only=True) is the safe form and is excluded.
+description: |
+  Detects calls to torch.load, joblib.load, pandas.read_pickle,
+  jsonpickle.decode/loads, or numpy.load(allow_pickle=True), unless
+  torch.load is called with weights_only=True.
+message: "Pickle-backed loader used — deserializing untrusted data can execute arbitrary code"
+references:
+  - https://cwe.mitre.org/data/definitions/502.html
+tags: [deserialization, pickle, ml]
+match:
+  kind: call
+  filters:
+    - any_of:
+        - callee_pattern: "^(torch\\.load|joblib\\.load|(pd|pandas)\\.read_pickle|jsonpickle\\.(decode|loads))$"
+        - callee_pattern: "^(np|numpy)\\.load$"
+          kwarg:
+            name: allow_pickle
+            value_pattern: "^True$"
+    - not:
+        kind: call
+        filters:
+          - kwarg:
+              name: weights_only
+              value_pattern: "^True$"
+fix_suggestion: "Load models/data only from trusted sources; use torch.load(..., weights_only=True), joblib's safe loaders, or a non-pickle serialization format (safetensors, JSON, parquet) for untrusted input."

@@ -1,0 +1,29 @@
+id: ZS-CS-048
+lifecycle: released
+name: JWT Lifetime Validation Disabled
+version: "1.0.0"
+language: csharp
+category: authentication
+severity: medium
+confidence: medium
+cwe:
+  - CWE-613
+owasp:
+  - "A07:2025"
+rationale: |
+  TokenValidationParameters with ValidateLifetime = false (or
+  RequireExpirationTime = false) accepts expired or revoked tokens forever,
+  which defeats session/token expiry as a security control and lets a
+  leaked or stolen token be replayed indefinitely.
+description: |
+  Detects an assignment (including an object-initializer member) of
+  ValidateLifetime or RequireExpirationTime to false.
+message: "JWT lifetime validation disabled — expired tokens will be accepted"
+references:
+  - https://cwe.mitre.org/data/definitions/613.html
+tags: [jwt, authentication, dotnet]
+match:
+  kind: assignment
+  lhs_identifier: "(ValidateLifetime|RequireExpirationTime)$"
+  rhs_literal: "^false$"
+fix_suggestion: "Remove the override so ValidateLifetime/RequireExpirationTime default to true, or set them explicitly to true."

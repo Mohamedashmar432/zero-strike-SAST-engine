@@ -1,0 +1,46 @@
+id: ZS-JS-190
+lifecycle: released
+name: "Zip-Slip: Archive Entry Name Joined into Extraction Path"
+version: "1.0.0"
+language: javascript
+category: path-traversal
+severity: high
+confidence: medium
+cwe:
+  - CWE-22
+owasp:
+  - "A05:2025"
+rationale: |
+  Extraction loops over yauzl, unzipper, adm-zip (getEntries) or
+  tar-stream build the output path as path.join(dest, entry.fileName) or
+  similar. An archive entry named ../../../.ssh/authorized_keys or
+  ../server.js escapes dest and overwrites arbitrary files. Entry names are
+  not taint sources, so the existing tainted path.join rule never fires
+  here, and nothing else in the rule set mentions archives.
+description: |
+  Detects path.join/resolve calls whose last argument reads an
+  entry.fileName/entryName property, or an entry.path/name property inside
+  a function that mentions an archive-extraction API, unless the enclosing
+  function already performs a containment check (startsWith/normalize/
+  relative/isAbsolute/realpath).
+message: "Archive entry name joined into an extraction path — zip-slip path traversal risk"
+references:
+  - https://security.snyk.io/research/zip-slip-vulnerability
+tags: [path-traversal, zip-slip, archive]
+match:
+  kind: call
+  callee_pattern: "^path\\.(join|resolve)$"
+  filters:
+    - any_of:
+        - argument_matches_at:
+            index: -1
+            pattern: "\\.(fileName|entryName)$"
+        - argument_matches_at:
+            index: -1
+            pattern: "\\.(path|name)$"
+          enclosing_function_mentions: "^(yauzl|unzipper|AdmZip|StreamZip|zip|tar|extract|Extract|openReadStream|getNextEntry|entries)$"
+    - not:
+        kind: call
+        filters:
+          - enclosing_function_mentions: "^(startsWith|normalize|relative|isAbsolute|realpath|realpathSync)$"
+fix_suggestion: "Resolve each entry's output path and verify it stays inside the destination directory (e.g. path.relative(dest, resolved) does not start with '..') before writing it."

@@ -1,0 +1,41 @@
+id: ZS-JAVA-054
+lifecycle: released
+name: "Zip-Slip: Archive Entry Name Used as Output Path"
+version: "1.0.0"
+language: java
+category: path-traversal
+severity: high
+confidence: medium
+cwe:
+  - CWE-22
+owasp:
+  - "A05:2025"
+rationale: |
+  new File(destDir, entry.getName()) or destPath.resolve(entry.getName())
+  inside a ZipInputStream/TarArchiveInputStream loop writes to wherever the
+  archive entry's own name says. An entry like
+  ../../webapps/ROOT/shell.jsp gives arbitrary file write and often remote
+  code execution. This is the original Zip-Slip disclosure class.
+description: |
+  Detects File/Paths.get/Path.of/resolve/resolveSibling calls whose last
+  argument reads entry.getName(), inside a function that mentions an
+  archive-entry API (ZipEntry/ZipInputStream/ZipFile/TarArchiveEntry/
+  JarEntry/JarFile/getNextEntry/getNextTarEntry/...), unless the enclosing
+  function already canonicalizes and checks the resulting path.
+message: "Archive entry name used as an output path — zip-slip path traversal risk"
+references:
+  - https://security.snyk.io/research/zip-slip-vulnerability
+tags: [path-traversal, zip-slip, archive]
+match:
+  kind: call
+  callee_pattern: "^(File|FileOutputStream|Paths\\.get|Path\\.of)$|(^|\\.)(resolve|resolveSibling)$"
+  filters:
+    - argument_matches_at:
+        index: -1
+        pattern: "\\.getName\\(\\)$"
+    - enclosing_function_mentions: "^(ZipEntry|ZipInputStream|ZipFile|ZipArchiveEntry|TarArchiveEntry|TarArchiveInputStream|ArchiveEntry|ArchiveInputStream|JarEntry|JarFile|getNextEntry|getNextTarEntry|getNextZipEntry|getNextJarEntry)$"
+    - not:
+        kind: call
+        filters:
+          - enclosing_function_mentions: "^(getCanonicalPath|getCanonicalFile|normalize|startsWith|toRealPath)$"
+fix_suggestion: "Resolve the full output path and verify it stays inside the destination directory (toRealPath/getCanonicalPath + startsWith) before writing each entry."

@@ -1,0 +1,30 @@
+id: ZS-GO-049
+lifecycle: released
+name: SSH Host Key Verification Disabled (ssh.InsecureIgnoreHostKey)
+version: "1.0.0"
+language: go
+category: cryptography
+severity: high
+confidence: high
+cwe:
+  - CWE-322
+  - CWE-295
+owasp:
+  - "A02:2025"
+rationale: |
+  golang.org/x/crypto/ssh ClientConfig{HostKeyCallback:
+  ssh.InsecureIgnoreHostKey()} accepts any server host key, so a
+  network-positioned attacker can impersonate the SSH server (a deploy
+  host, a git remote, an SFTP endpoint) and capture credentials or inject
+  commands.
+description: |
+  Detects calls to ssh.InsecureIgnoreHostKey.
+message: "ssh.InsecureIgnoreHostKey() used — SSH host key verification is disabled"
+references:
+  - https://cwe.mitre.org/data/definitions/295.html
+  - https://pkg.go.dev/golang.org/x/crypto/ssh#InsecureIgnoreHostKey
+tags: [cryptography, ssh, mitm]
+match:
+  kind: call
+  callee: ssh.InsecureIgnoreHostKey
+fix_suggestion: "Use ssh.FixedHostKey(knownKey) or a proper known_hosts callback (knownhosts.New) instead of InsecureIgnoreHostKey."

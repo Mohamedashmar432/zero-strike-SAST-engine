@@ -1,0 +1,36 @@
+id: ZS-TS-186
+lifecycle: released
+name: SQL Injection via TypeORM Raw Query or QueryBuilder String
+version: "1.0.0"
+language: typescript
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-89
+owasp:
+  - "A03:2025"
+rationale: |
+  TypeORM is the default ORM for NestJS. dataSource.query(`SELECT ... ${id}`)
+  and QueryBuilder .where(`user.name = '${name}'`) or .orderBy(req.query.sort)
+  put input directly into SQL text, which allows data exfiltration and
+  authentication bypass. This does not overlap pool/client/connection-based
+  rules, which cover other drivers.
+description: |
+  Detects calls to a TypeORM dataSource/manager/entityManager/queryRunner/
+  repository .query(...) with a dynamically-built SQL string (argument 0),
+  and QueryBuilder .where/.andWhere/.orWhere/.having/.orderBy/.groupBy/
+  .select calls with a dynamically-built string argument.
+message: "TypeORM query/clause built from a dynamic string — possible SQL injection"
+references:
+  - https://cwe.mitre.org/data/definitions/89.html
+tags: [sql-injection, injection, typeorm]
+match:
+  kind: call
+  filters:
+    - any_of:
+        - callee_pattern: "(^|\\.)(dataSource|manager|entityManager|queryRunner|[\\w$]*[rR]epo(sitory)?|getManager\\(\\)|getConnection\\(\\)|getRepository\\(\\))\\.query$"
+          dynamic_string_argument_index: 0
+        - callee_pattern: "createQueryBuilder\\(\\)(\\.[\\w$]+\\(\\))*\\.(where|andWhere|orWhere|having|andHaving|orHaving|orderBy|addOrderBy|groupBy|addGroupBy|select|addSelect)$|(^|\\.)(qb|queryBuilder|builder)\\.(where|andWhere|orWhere|having|orderBy)$"
+          dynamic_string_argument_index: 0
+fix_suggestion: "Use TypeORM parameter binding (:name placeholders with a params object) instead of interpolating values into the query/clause string."

@@ -1,0 +1,39 @@
+id: ZS-GO-048
+lifecycle: released
+name: SSRF via http.NewRequestWithContext/http.Head/http.PostForm
+version: "1.0.0"
+language: go
+category: ssrf
+severity: high
+confidence: medium
+cwe:
+  - CWE-918
+owasp:
+  - "A05:2025"
+rationale: |
+  http.NewRequestWithContext is the recommended way to build outbound
+  requests in Go (the URL is argument 2); http.Head and http.PostForm take
+  the URL at argument 0. A webhook or URL-preview feature that forwards a
+  user-supplied URL to any of these lets the attacker reach cloud metadata
+  endpoints or internal-only services.
+description: |
+  Detects http.NewRequestWithContext calls with a tainted URL (argument 2),
+  and http.Head/http.PostForm calls with a tainted URL (argument 0), where
+  the host portion is not fixed by a constant prefix.
+message: "Outbound HTTP call with a tainted URL — possible SSRF"
+references:
+  - https://owasp.org/www-community/attacks/Server_Side_Request_Forgery
+tags: [ssrf]
+match:
+  kind: call
+  filters:
+    - any_of:
+        - callee_pattern: "^http\\.NewRequestWithContext$"
+          tainted_argument: true
+          tainted_argument_index: 2
+          argument_host_fixed: 2
+        - callee_pattern: "^http\\.(Head|PostForm)$"
+          tainted_argument: true
+          tainted_argument_index: 0
+          argument_host_fixed: 0
+fix_suggestion: "Validate the target URL's host against an allowlist, and reject loopback/private/link-local/metadata addresses before making the request."

@@ -1,0 +1,40 @@
+id: ZS-PY-184
+lifecycle: released
+name: asyncio Subprocess with Tainted Command
+version: "1.0.0"
+language: python
+category: command-injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-78
+owasp:
+  - "A05:2025"
+rationale: |
+  Async web services (FastAPI, aiohttp) spawn processes through
+  asyncio.create_subprocess_shell, which always runs its string through
+  /bin/sh — the same risk as os.system. asyncio.create_subprocess_exec takes
+  the program directly at argument 0; a tainted program name lets an
+  attacker choose which binary runs. A request value concatenated into
+  either reaching these sinks allows arbitrary command execution.
+description: |
+  Detects asyncio.create_subprocess_shell calls with a tainted command
+  string (argument 0), and asyncio.create_subprocess_exec calls with a
+  tainted program (argument 0).
+message: "asyncio subprocess call with a tainted command/program — command injection risk"
+references:
+  - https://owasp.org/www-community/attacks/Command_Injection
+tags: [command-injection, asyncio, subprocess]
+match:
+  kind: call
+  filters:
+    - any_of:
+        - callee_pattern: "^asyncio\\.create_subprocess_shell$"
+          tainted_argument: true
+          tainted_argument_index: 0
+          require_real_source: true
+        - callee_pattern: "^asyncio\\.create_subprocess_exec$"
+          tainted_argument: true
+          tainted_argument_index: 0
+          require_real_source: true
+fix_suggestion: "Avoid building the command/program from request data; validate against an allowlist, or pass a fixed program with arguments only."

@@ -1,0 +1,35 @@
+id: ZS-JAVA-051
+lifecycle: released
+name: Jackson Polymorphic Default Typing Enabled
+version: "1.0.0"
+language: java
+category: deserialization
+severity: critical
+confidence: high
+cwe:
+  - CWE-502
+owasp:
+  - "A08:2025"
+rationale: |
+  ObjectMapper.enableDefaultTyping() and activateDefaultTyping with a
+  LaissezFaireSubTypeValidator make Jackson instantiate whatever class the
+  JSON "@class" property names. This is the root cause of the long chain of
+  jackson-databind gadget CVEs, giving remote code execution from a single
+  crafted request body.
+description: |
+  Detects calls to enableDefaultTyping(), or activateDefaultTyping() with a
+  LaissezFaireSubTypeValidator argument.
+message: "Jackson polymorphic default typing enabled — deserializing untrusted JSON can execute arbitrary code"
+references:
+  - https://cwe.mitre.org/data/definitions/502.html
+tags: [deserialization, jackson]
+match:
+  kind: call
+  filters:
+    - any_of:
+        - callee_pattern: "(^|\\.)enableDefaultTyping$"
+        - callee_pattern: "(^|\\.)activateDefaultTyping$"
+          argument_matches_at:
+            index: 0
+            pattern: "LaissezFaireSubTypeValidator"
+fix_suggestion: "Do not enable default/polymorphic typing for untrusted input; use @JsonTypeInfo with an explicit, allowlisted set of subtypes instead."

@@ -1,0 +1,43 @@
+id: ZS-JS-189
+lifecycle: released
+name: Server-Side Template Injection via Template Compile APIs
+version: "1.0.0"
+language: javascript
+category: ssti
+severity: high
+confidence: medium
+cwe:
+  - CWE-1336
+  - CWE-94
+owasp:
+  - "A03:2025"
+rationale: |
+  ejs.compile, pug.compile/compileClient, doT.template/compile,
+  nunjucks.compile, handlebars.precompile and Eta's compile/renderString all
+  compile their first argument as template SOURCE, not data. When that
+  source is built from request data, the attacker writes template code
+  (e.g. an EJS <%= process.mainModule.require('child_process').execSync(...) %>)
+  and gets remote code execution on compile/render.
+description: |
+  Detects calls to a resolved template-compile API (ejs.compile, pug.compile
+  family, doT.template/compile, nunjucks.compile, handlebars.precompile,
+  Eta compile/renderString) where the template source argument (argument 0)
+  traces back to a real untrusted source.
+message: "Template compiled from a tainted string — server-side template injection risk"
+references:
+  - https://portswigger.net/web-security/server-side-template-injection
+tags: [ssti, injection, template-engine]
+match:
+  kind: call
+  filters:
+    - any_of:
+        - callee_canonical: "^(ejs\\.compile|pug\\.(compile|compileClient|compileClientWithDependenciesTracked)|dot\\.(template|compile)|nunjucks\\.compile|handlebars\\.precompile|eta\\.(compile|renderString|renderStringAsync))$"
+          callee_resolved: true
+          tainted_argument: true
+          tainted_argument_index: 0
+          require_real_source: true
+        - callee_pattern: "(^|\\.)(eta|Eta)\\.(compile|renderString|renderStringAsync)$"
+          tainted_argument: true
+          tainted_argument_index: 0
+          require_real_source: true
+fix_suggestion: "Never compile a template from request-derived text; keep template sources as fixed files, and pass only data (never markup) to the render call."

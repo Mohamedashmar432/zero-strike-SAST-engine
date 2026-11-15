@@ -1,0 +1,52 @@
+id: ZS-CS-050
+lifecycle: released
+name: Regex Built from a Tainted Pattern Without a MatchTimeout (ReDoS)
+version: "1.0.0"
+language: csharp
+category: redos
+severity: medium
+confidence: medium
+cwe:
+  - CWE-1333
+  - CWE-400
+owasp:
+  - "A05:2025"
+rationale: |
+  .NET's backtracking Regex engine has no default timeout, so a
+  user-supplied pattern (e.g. a search/filter feature) such as (a+)+$ pins a
+  thread-pool thread indefinitely; a handful of requests can exhaust
+  ASP.NET Core's thread pool. Passing a TimeSpan matchTimeout, or using
+  RegexOptions.NonBacktracking (.NET 7+), prevents this.
+description: |
+  Detects construction of Regex, or calls to Regex.IsMatch/Match/Matches/
+  Replace/Split, where the pattern argument traces back to a real untrusted
+  source and no TimeSpan/MatchTimeout/NonBacktracking argument is present.
+message: "Regex built from a tainted pattern with no match timeout — ReDoS risk"
+references:
+  - https://cwe.mitre.org/data/definitions/1333.html
+tags: [redos, denial-of-service, dotnet]
+match:
+  kind: call
+  filters:
+    - any_of:
+        - callee_pattern: "^Regex$"
+          tainted_argument: true
+          tainted_argument_index: 0
+          require_real_source: true
+        - callee_pattern: "(^|\\.)Regex\\.(IsMatch|Match|Matches|Replace|Split)$"
+          tainted_argument: true
+          tainted_argument_index: 1
+          require_real_source: true
+    - not:
+        kind: call
+        filters:
+          - argument_matches_at:
+              index: -1
+              pattern: "TimeSpan|MatchTimeout|NonBacktracking"
+    - not:
+        kind: call
+        filters:
+          - argument_matches_at:
+              index: 2
+              pattern: "NonBacktracking"
+fix_suggestion: "Pass a bounded TimeSpan as the matchTimeout argument, or use RegexOptions.NonBacktracking, whenever the pattern or input can be influenced by a user."

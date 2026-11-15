@@ -1,0 +1,43 @@
+id: ZS-PY-181
+lifecycle: released
+name: Server-Side Request Forgery via httpx
+version: "1.0.0"
+language: python
+category: ssrf
+severity: high
+confidence: medium
+cwe:
+  - CWE-918
+owasp:
+  - "A05:2025"
+rationale: |
+  httpx is now the default HTTP client for FastAPI/async Python services.
+  When the URL passed to httpx.get/post/... (or httpx.request/stream, whose
+  URL is the second argument) traces back to an untrusted source, an
+  attacker can make the server call http://169.254.169.254/ or reach
+  internal-only services and read the response back — the classic SSRF
+  impact of credential theft and internal network access.
+description: |
+  Detects module-level httpx.get/post/put/patch/delete/head/options calls
+  where the URL (argument 0) is tainted, and httpx.request/stream calls
+  where the URL (argument 1) is tainted. Only fires when the host portion of
+  the URL argument is not fixed by a constant prefix.
+message: "httpx call with a tainted URL — possible SSRF"
+references:
+  - https://owasp.org/www-community/attacks/Server_Side_Request_Forgery
+tags: [ssrf, httpx]
+match:
+  kind: call
+  filters:
+    - any_of:
+        - callee_pattern: "^httpx\\.(get|post|put|patch|delete|head|options)$"
+          tainted_argument: true
+          tainted_argument_index: 0
+          require_real_source: true
+          argument_host_fixed: 0
+        - callee_pattern: "^httpx\\.(request|stream)$"
+          tainted_argument: true
+          tainted_argument_index: 1
+          require_real_source: true
+          argument_host_fixed: 1
+fix_suggestion: "Validate the target URL against an allowlist of hosts/schemes before passing it to httpx, or resolve and check the destination is not loopback/private/link-local."

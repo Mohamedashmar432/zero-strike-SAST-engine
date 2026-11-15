@@ -1,0 +1,39 @@
+id: ZS-GO-047
+lifecycle: released
+name: SQL Injection via Context-Aware database/sql Methods and GORM String Clauses
+version: "1.0.0"
+language: go
+category: injection
+severity: high
+confidence: medium
+cwe:
+  - CWE-89
+owasp:
+  - "A03:2025"
+rationale: |
+  Idiomatic Go handlers use db.QueryContext/ExecContext/QueryRowContext (and
+  their tx/conn variants) because they carry the request context; the query
+  string is argument 1, one position later than the non-Context forms the
+  existing SQL rules match. GORM's Raw/Where/Or/Not/Having/Order/Group/
+  Select/Joins/Pluck/Distinct accept a raw clause string at argument 0. A
+  query built with fmt.Sprintf or string concatenation from request data
+  allows full SQL injection either way.
+description: |
+  Detects calls to a *Context database/sql method with a tainted query
+  string (argument 1), and calls to a GORM clause-building method with a
+  tainted clause string (argument 0).
+message: "SQL query/clause built from a tainted string — possible SQL injection"
+references:
+  - https://cwe.mitre.org/data/definitions/89.html
+tags: [sql-injection, injection, database-sql, gorm]
+match:
+  kind: call
+  filters:
+    - any_of:
+        - callee_pattern: "(^|\\.)(QueryContext|ExecContext|QueryRowContext|PrepareContext)$"
+          tainted_argument: true
+          tainted_argument_index: 1
+        - callee_pattern: "(^|\\.)(Raw|Where|Or|Not|Having|Order|Group|Select|Joins|Pluck|Distinct)$"
+          tainted_argument: true
+          tainted_argument_index: 0
+fix_suggestion: "Use parameterized placeholders (?, or GORM's ? / named arguments) instead of building the query/clause string with fmt.Sprintf or concatenation."

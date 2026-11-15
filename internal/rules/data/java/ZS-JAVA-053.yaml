@@ -1,0 +1,37 @@
+id: ZS-JAVA-053
+lifecycle: released
+name: TLS Hostname Verification Disabled
+version: "1.0.0"
+language: java
+category: cryptography
+severity: high
+confidence: high
+cwe:
+  - CWE-297
+  - CWE-295
+owasp:
+  - "A02:2025"
+rationale: |
+  setHostnameVerifier((h, s) -> true), NoopHostnameVerifier.INSTANCE (Apache
+  HttpClient) and ALLOW_ALL_HOSTNAME_VERIFIER all accept a valid certificate
+  for any domain. An attacker holding a certificate for their own domain can
+  then intercept the connection to internal APIs or payment providers.
+description: |
+  Detects calls to setHostnameVerifier/setDefaultHostnameVerifier/
+  hostnameVerifier with a NoopHostnameVerifier/ALLOW_ALL_HOSTNAME_VERIFIER/
+  AllowAllHostnameVerifier argument, and direct references to
+  NoopHostnameVerifier/AllowAllHostnameVerifier.
+message: "TLS hostname verification disabled — vulnerable to man-in-the-middle attacks"
+references:
+  - https://cwe.mitre.org/data/definitions/297.html
+tags: [cryptography, tls, mitm]
+match:
+  kind: call
+  filters:
+    - any_of:
+        - callee_pattern: "(^|\\.)(setHostnameVerifier|setDefaultHostnameVerifier|hostnameVerifier)$"
+          argument_matches_at:
+            index: 0
+            pattern: "NoopHostnameVerifier|ALLOW_ALL_HOSTNAME_VERIFIER|AllowAllHostnameVerifier"
+        - callee_pattern: "^(NoopHostnameVerifier|AllowAllHostnameVerifier)$"
+fix_suggestion: "Use the default (strict) hostname verifier, or a custom one that actually checks the certificate's subject/SAN against the expected host."
