@@ -75,3 +75,11 @@ patterns is not reported while they are retired. `MatchSemanticsRevision` is 9. 
 were removed (fixtures kept; 703 to 685 expected true positives); tests that asserted they fire now assert they do not.
 Framework taint-seeding tests that used ZS-JS-012 and ZS-PY-004 as probes now use ZS-JS-001 (eval) and ZS-PY-058
 (cursor.executescript).
+
+## Retired on production evidence, 2026-11-17 (v0.44.1)
+
+ZS-CS-049 (unsafe reflection with tainted type name) retired: 402 findings tagged false positive across 3 production
+projects, with reviewers reporting matches on statically bound calls that have no reflection sink. It carries
+`lifecycle: retired` (reversible). `MatchSemanticsRevision` is 10. The other rules above an 80% false-positive rate
+(ZS-TS-037, ZS-PY-145, ZS-JS-085, ZS-JS-011, ZS-JS-012, ZS-JS-039, ZS-JS-061) were already retired. Rules above 80% on
+fewer than 5 tags (ZS-JS-065, ZS-PY-046, ZS-JS-024, ZS-TS-035) are left active: too little evidence.

@@ -1,5 +1,10 @@
 id: ZS-CS-049
-lifecycle: released
+lifecycle: retired
+# Retired 2026-11-17 on production false-positive evidence (portal Scan Engine tags):
+# Unsafe reflection with tainted type name: 402 of 7878 findings tagged false positive across 3 production
+# projects; reviewers report findings on statically bound calls with an empty reflection sink (taint_context.sink).
+# Reversible: set lifecycle back to released. A retired rule's findings stop appearing; no detection
+# is replaced, so a genuine instance of this pattern is no longer reported.
 name: Unsafe Reflection with Tainted Type Name
 version: "1.0.0"
 language: csharp
