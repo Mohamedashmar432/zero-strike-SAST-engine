@@ -107,7 +107,7 @@ cases:
     expect: [{rule_id: ZS-TS-034, min_count: 1}]
   - file: cases/vuln_ssrf_fetch.ts
     language: typescript
-    expect: [{rule_id: ZS-TS-035, min_count: 1}]
+    expect: []
   - file: cases/vuln_ssrf_http_get.ts
     language: typescript
     expect: [{rule_id: ZS-TS-036, min_count: 1}]

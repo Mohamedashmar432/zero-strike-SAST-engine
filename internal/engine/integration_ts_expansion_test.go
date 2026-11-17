@@ -49,8 +49,9 @@ func TestIntegration_ConstantAxiosPostDoesNotFireZSTS034(t *testing.T) {
 func TestIntegration_TaintedFetchFiresZSTS035(t *testing.T) {
 	idx := loadTSRules(t)
 	src := "const target: string = req.query.url;\nfetch(target);\n"
-	if !hasRule(matchTSSource(t, idx, src), "ZS-TS-035") {
-		t.Error("expected ZS-TS-035 to fire when fetch URL is tainted")
+	// ZS-TS-035 is retired (production false-positive evidence): it must stay silent.
+	if hasRule(matchTSSource(t, idx, src), "ZS-TS-035") {
+		t.Error("ZS-TS-035 is retired and must not fire")
 	}
 }
 

@@ -1,5 +1,9 @@
 id: ZS-TS-035
-lifecycle: released
+lifecycle: retired
+# Retired 2026-11-17 on production false-positive evidence (portal Scan Engine tags):
+# fetch SSRF: 1 of 1 finding tagged false positive across 1 production project (thin sample).
+# Reversible: set lifecycle back to released. A retired rule's findings stop appearing; no detection
+# is replaced, so a genuine instance of this pattern is no longer reported.
 name: Server-Side Request Forgery (fetch)
 version: "1.0.0"
 language: typescript

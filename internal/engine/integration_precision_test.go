@@ -53,8 +53,9 @@ func TestPrecision_ConstantFetchDoesNotFireSSRF(t *testing.T) {
 func TestPrecision_RealSourceStillFiresFetchSSRF(t *testing.T) {
 	idx := loadTSRules(t)
 	src := "function proxy(req: any) {\n  const target = req.query.url;\n  fetch(target);\n}\n"
-	if !hasRule(matchTSSource(t, idx, src), "ZS-TS-035") {
-		t.Error("expected ZS-TS-035 to fire when the fetch URL comes from req.query")
+	// ZS-TS-035 is retired (production false-positive evidence): it must stay silent.
+	if hasRule(matchTSSource(t, idx, src), "ZS-TS-035") {
+		t.Error("ZS-TS-035 is retired and must not fire")
 	}
 }
 

@@ -1,5 +1,9 @@
 id: ZS-JS-024
-lifecycle: released
+lifecycle: retired
+# Retired 2026-11-17 on production false-positive evidence (portal Scan Engine tags):
+# fs.readFile path traversal: 1 of 1 finding tagged false positive across 1 production project (thin sample).
+# Reversible: set lifecycle back to released. A retired rule's findings stop appearing; no detection
+# is replaced, so a genuine instance of this pattern is no longer reported.
 name: Path Traversal via fs.readFile
 version: "1.0.0"
 language: javascript

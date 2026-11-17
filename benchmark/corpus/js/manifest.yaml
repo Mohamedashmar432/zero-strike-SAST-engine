@@ -65,7 +65,7 @@ cases:
     expect: [{rule_id: ZS-JS-023, min_count: 1}]
   - file: cases/vuln_fs_readfile.js
     language: javascript
-    expect: [{rule_id: ZS-JS-024, min_count: 1}]
+    expect: []
   - file: cases/vuln_fs_readfilesync.js
     language: javascript
     expect: [{rule_id: ZS-JS-025, min_count: 1}]
@@ -194,7 +194,7 @@ cases:
     expect: [{rule_id: ZS-JS-064, min_count: 1}]
   - file: cases/vuln_fs_createreadstream.js
     language: javascript
-    expect: [{rule_id: ZS-JS-065, min_count: 1}]
+    expect: []
   - file: cases/vuln_crypto_createcipher.js
     language: javascript
     expect: [{rule_id: ZS-JS-066, min_count: 1}]

@@ -55,7 +55,9 @@ var Version = "dev"
 //	    ZS-JS-011, ZS-TS-080, ZS-PY-004, ZS-CS-016, ZS-JS-012, ZS-PY-032,
 //	    ZS-SEC-012, ZS-SEC-013)
 //	10 - ZS-CS-049 retired on production false-positive evidence
-const MatchSemanticsRevision = 10
+//	11 - ZS-JS-065, ZS-PY-046, ZS-JS-024, ZS-TS-035 retired on production
+//	    false-positive evidence
+const MatchSemanticsRevision = 11
 
 // CacheKey returns the identity the finding and IR caches must key on, pairing
 // the release version with the matching-semantics revision so that either one

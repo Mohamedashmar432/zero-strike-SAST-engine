@@ -20,8 +20,9 @@ func TestIntegration_ZipfileExtractallFiresZSPY046(t *testing.T) {
 	_, idx := loadPythonRules(t)
 	src := "import zipfile\nzip_ref = zipfile.ZipFile(\"upload.zip\", \"r\")\nzip_ref.extractall(\"/srv/data\")\n"
 	results := matchSource(t, idx, src)
-	if !hasRule(results, "ZS-PY-046") {
-		t.Error("expected ZS-PY-046 to fire on zip_ref.extractall() call")
+	// ZS-PY-046 is retired (production false-positive evidence): it must stay silent.
+	if hasRule(results, "ZS-PY-046") {
+		t.Error("ZS-PY-046 is retired and must not fire")
 	}
 }
 

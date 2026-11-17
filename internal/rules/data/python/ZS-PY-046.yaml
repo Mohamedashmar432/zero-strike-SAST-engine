@@ -1,5 +1,9 @@
 id: ZS-PY-046
-lifecycle: released
+lifecycle: retired
+# Retired 2026-11-17 on production false-positive evidence (portal Scan Engine tags):
+# zipfile.extractall zip-slip: 4 of 4 findings tagged false positive across 2 production projects.
+# Reversible: set lifecycle back to released. A retired rule's findings stop appearing; no detection
+# is replaced, so a genuine instance of this pattern is no longer reported.
 name: Unsafe zipfile extractall (Zip-Slip)
 version: "1.0.0"
 language: python

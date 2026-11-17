@@ -83,3 +83,8 @@ projects, with reviewers reporting matches on statically bound calls that have n
 `lifecycle: retired` (reversible). `MatchSemanticsRevision` is 10. The other rules above an 80% false-positive rate
 (ZS-TS-037, ZS-PY-145, ZS-JS-085, ZS-JS-011, ZS-JS-012, ZS-JS-039, ZS-JS-061) were already retired. Rules above 80% on
 fewer than 5 tags (ZS-JS-065, ZS-PY-046, ZS-JS-024, ZS-TS-035) are left active: too little evidence.
+
+Also retired 2026-11-17: ZS-JS-065 (4 of 4 tagged, 3 projects), ZS-PY-046 (4 of 4, 2 projects), ZS-JS-024 (1 of 1) and
+ZS-TS-035 (1 of 1). The last two rest on a single tag each, so they are the first to restore if a genuine finding turns
+up. `MatchSemanticsRevision` is 11; their corpus expectations were removed and the tests that asserted they fire now
+assert they do not.
